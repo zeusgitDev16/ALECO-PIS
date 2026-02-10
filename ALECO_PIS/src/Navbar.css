@@ -1,0 +1,72 @@
+/* Base Styles (Large Screens / Desktop) */
+.navbar {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-brand a {
+  font-size: 1.5rem; /* Desktop size */
+  font-weight: 700;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 2rem; /* Wide spacing for desktop */
+}
+
+.nav-item {
+  text-decoration: none;
+  color: #4b5563;
+  font-size: 1rem; /* Desktop size */
+  transition: all 0.2s ease;
+}
+
+/* --- RESPONSIVE DESIGN (Media Queries) --- */
+
+/* 1. Tablet View (Screens smaller than 1024px) */
+@media (max-width: 1024px) {
+  .nav-brand a {
+    font-size: 1.25rem; /* Slightly smaller title */
+  }
+  .nav-item {
+    font-size: 0.9rem; /* Slightly smaller links */
+  }
+  .nav-links {
+    gap: 1.2rem; /* Tighten the space between links */
+  }
+}
+
+/* 2. Mobile View (Screens smaller than 600px) */
+@media (max-width: 600px) {
+  .navbar {
+    padding: 0 1rem; /* Reduce side padding */
+  }
+  .nav-brand a {
+    font-size: 1.1rem; /* Smaller title for phones */
+  }
+  .nav-item {
+    font-size: 0.75rem; /* Smallest readable font for links */
+  }
+  .nav-links {
+    gap: 0.8rem; /* Very tight spacing to fit all links */
+  }
+}

@@ -1,0 +1,33 @@
+.landing-page-container {
+    background-color: #000000;
+    min-height: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.landing-page-header h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0;
+    background: linear-gradient(
+        to right,
+        #666666 0%, 
+    #ffffff 50%, 
+    #666666 100%
+    );
+    background-size: 200% auto;
+    color: #fff;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 4s linear infinite;
+}
+
+@keyframes shine {
+    to {
+        background-position: 200% center;
+    }
+}

@@ -1,5 +1,7 @@
 import React from 'react';
-import './Navbar.css';
+import './CSS/Navbar.css';
+import Login from'./components/buttons/login.jsx';
+import logo from './assets/Aleco-logo.jpg';
 
  
 const Navbar = () => {
@@ -16,7 +18,15 @@ const Navbar = () => {
       <div className="nav-container">
         {/* Logo/Title */}
         <div className="nav-brand">
-          <a href="/">ALECO</a>
+          <a href="/"className = "Aleco-Logo">
+          <img 
+           src={logo} 
+           alt="ALECO Logo" 
+           className="logo-height" /* Adjust height as needed */
+                        />
+          <span className="Title">ALECO
+            </span>
+           </a>
         </div>
 
         {/* Unordered List for Navigation */}
@@ -29,6 +39,7 @@ const Navbar = () => {
             </li>
           ))}
         </ul>
+       <Login/> 
       </div>
     </nav>
   );

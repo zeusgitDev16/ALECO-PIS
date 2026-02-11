@@ -1,0 +1,46 @@
+/* 1. TAILWIND DIRECTIVES (Must be at the top) */
+@import url('https://fonts.googleapis.com/css2?family=Anek+Latin:wght@100..800&family=Mulish:ital,wght@0,200..1000;1,200..1000&family=Roboto+Slab:wght@100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 2. GLOBAL RESETS & STYLES */
+:root {
+  --font-header: 'Anek Latin', sans-serif;
+  --font-subheader: 'Roboto Slab', serif;
+  --font-body: 'Mulish', sans-serif;
+
+  /* Proper font rendering */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* BASE TEXT (Mulish) - Applies to p, span, div, inputs, etc. */
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body); /* Forces Mulish everywhere by default */
+  line-height: 1.6;
+  color: #212529;
+  background-color: #f8f9fa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; /* Dark gray text for readability */
+}
+h1, h2, h3 {
+  font-family: var(--font-header);
+  font-weight: 700; /* Default to bold for headers */
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+}
+h4, h5, h6 {
+  font-family: var(--font-subheader);
+  font-weight: 500;
+  margin-bottom: 0.5em;
+  color: #495057; /* Slightly lighter color for subheaders */
+}
+/* 3. OPTIONAL: Fix for scrolling issues on some devices */
+html {
+  scroll-behavior: smooth;
+}

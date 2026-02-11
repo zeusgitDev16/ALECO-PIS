@@ -11,6 +11,30 @@
   z-index: 100;
 }
 
+.main-login-btn{
+background-color: #2563eb;
+color:#ffffff;
+padding: 8px;
+font-size: 14px;
+font-weight: 600;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+transition:all 0.3s ease;
+outline: none;
+}
+
+.main-login-btn:hover{
+  background-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.main-login-btn:active{
+  transform: translateY(0);
+  background-color: #004085;
+}
+
 .nav-container {
   width: 100%;
   max-width: 1200px;
@@ -18,6 +42,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0 10px;
+  height: 60px;
 }
 
 .nav-brand a {
@@ -25,12 +51,15 @@
   font-weight: 700;
   color: #2563eb;
   text-decoration: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .nav-links {
   display: flex;
   list-style: none;
-  gap: 2rem; /* Wide spacing for desktop */
+  gap: 20px;
+  margin-right: 20px;
 }
 
 .nav-item {
@@ -69,4 +98,22 @@
   .nav-links {
     gap: 0.8rem; /* Very tight spacing to fit all links */
   }
+}
+
+.logo-height {
+  height: 50px;        
+  width: 50px;  
+  border-radius: 50%;  
+  object-fit: cover;   
+  border: 2px solid white;
+}
+
+.Title {
+  margin: -12px;
+  padding-bottom: 15px;
+  padding-top: 10px;
+  height: fit-content;
+  /* Optional: Ensure it stands out if you haven't styled it yet */
+  font-weight: bold;
+  font-size: 1.5rem;
 }

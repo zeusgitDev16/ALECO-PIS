@@ -3,7 +3,7 @@ function Footer (){
 
     return (
        <footer>
-        <p>&copy; {new Date().getFullYear()} Your Website name</p>
+        <p>&copy; {new Date().getFullYear()} ALECO's Power Interruption Information System, all rights reserved.</p>
        </footer>
     );
 

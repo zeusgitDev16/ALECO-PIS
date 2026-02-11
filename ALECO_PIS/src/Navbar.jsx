@@ -1,7 +1,7 @@
 import React from 'react';
 import './CSS/Navbar.css';
 import Login from'./components/buttons/login.jsx';
-import logo from './assets/Aleco-logo.jpg';
+import logo from './assets/Aleco-logo-modified.png';
 
  
 const Navbar = () => {
@@ -14,6 +14,7 @@ const Navbar = () => {
     ];
 
    return (
+    <>
     <nav className="navbar">
       <div className="nav-container">
         {/* Logo/Title */}
@@ -42,6 +43,7 @@ const Navbar = () => {
        <Login/> 
       </div>
     </nav>
+    </>
   );
 }
 

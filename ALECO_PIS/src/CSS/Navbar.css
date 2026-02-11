@@ -1,6 +1,6 @@
 /* Base Styles (Large Screens / Desktop) */
 .navbar {
-  height: 70px;
+  height: (30px,55px,70px);
   display: flex;
   align-items: center;
   background-color: #ffffff;
@@ -63,13 +63,41 @@ outline: none;
 }
 
 .nav-item {
+  position: relative;
   text-decoration: none;
   color: #4b5563;
   font-size: 1rem; /* Desktop size */
   transition: all 0.2s ease;
+  padding-bottom: 5px;
+}
+
+.nav-item:hover {
+  color: #007bff; 
+}
+
+.nav-item::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%;
+  background-color: #007bff; /* Line color */
+  transition: all 0.3s ease-in-out; /* Animation speed */
+}
+
+.nav-item:hover::after {
+  width: 100%;
+  left: 0;
 }
 
 /* --- RESPONSIVE DESIGN (Media Queries) --- */
+
+@media (max-width: 2768px){
+   .logo-height {
+    padding-left: 20px;
+  }
+}
 
 /* 1. Tablet View (Screens smaller than 1024px) */
 @media (max-width: 1024px) {
@@ -82,38 +110,54 @@ outline: none;
   .nav-links {
     gap: 1.2rem; /* Tighten the space between links */
   }
+  .logo-height {
+    padding-left: 17px;
+  }
 }
 
 /* 2. Mobile View (Screens smaller than 600px) */
 @media (max-width: 600px) {
   .navbar {
-    padding: 0 1rem; /* Reduce side padding */
+    padding: 0.4rem; /* Reduce side padding */
   }
   .nav-brand a {
-    font-size: 1.1rem; /* Smaller title for phones */
+    font-size: 0.8rem; /* Smaller title for phones */
   }
   .nav-item {
-    font-size: 0.75rem; /* Smallest readable font for links */
+    font-size: 0.65rem; /* Smallest readable font for links */
   }
   .nav-links {
     gap: 0.8rem; /* Very tight spacing to fit all links */
   }
+  .logo-height {
+    padding-left: 15px;
+  }
 }
 
 .logo-height {
-  height: 50px;        
-  width: 50px;  
-  border-radius: 50%;  
+  height: clamp(1.8rem, 10vw, 50px);       
+  width: clamp(1.8rem, 10vw, 50px); 
   object-fit: cover;   
-  border: 2px solid white;
 }
 
 .Title {
-  margin: -12px;
-  padding-bottom: 15px;
-  padding-top: 10px;
-  height: fit-content;
+  margin:4px;
+  padding-bottom: 5px;
+  padding-top: clamp(5px, -1px, -8px);
+  height: clamp(10px,8px, 10px);
   /* Optional: Ensure it stands out if you haven't styled it yet */
   font-weight: bold;
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 4vw, 1.5rem);
+}
+
+.fix-container-nav {
+  position: fixed;   /* Freezes the group to the screen */
+  top: 0;            /* Sticks it to the very top */
+  left: 0;
+  width: 100%;       /* Spans the full width */
+  z-index: 1000;     /* Ensures it sits on top of everything else */
+  
+  /* Optional: keeps them stacked neatly */
+  display: flex;
+  flex-direction: column;
 }

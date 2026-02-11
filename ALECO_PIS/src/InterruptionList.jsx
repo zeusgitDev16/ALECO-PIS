@@ -1,3 +1,7 @@
+import React from 'react';
+import './CSS/BodyLandPage.css';
+
+
 function InterruptionList() {
 
     const interruptions = [
@@ -38,7 +42,7 @@ function InterruptionList() {
 
     return (
         <div className="interruption-list">
-            <h2>Power Interruption Updates</h2>
+            <h2>Power Interruption Updates (Brownout)</h2>
             {interruptions.map((item) => (
                 <div key={item.id} className="interruption-card" style={{border: '1px solid #ccc', margin: '10px', padding: '10px', borderRadius: '5px'}}>
                     <h3 style={{color: item.status === 'Ongoing' ? 'red' : item.status === 'Pending' ? 'orange' : 'green'}}>

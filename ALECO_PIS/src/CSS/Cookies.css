@@ -1,0 +1,128 @@
+
+.card {
+ position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  
+  /* Original Design Specs */
+  --shadow: rgba(60, 64, 67, 0.3) 0 1px 2px 0,
+    rgba(60, 64, 67, 0.15) 0 2px 6px 2px;
+  width: 80%;
+  max-width: 300px;
+  background-color: white;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  margin: 0;
+  
+  /* Animation to slide in */
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translate(-50%, -40%); /* Starts slightly lower */
+  }
+  to { 
+    opacity: 1; 
+    transform: translate(-50%, -50%); /* Lands in the perfect center */
+  }
+}
+
+/* --- ORIGINAL DESIGN CONTENT --- */
+.content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 1.5rem;
+  position: relative;
+}
+
+.icon {
+  position: relative;
+  margin: -4rem auto 2rem;
+  /* Center the SVG icon wrapper */
+  display: flex;
+  justify-content: center; 
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  text-align: center; /* Centered looks better for this card layout */
+  color: #4b5563; 
+  margin-top: 0;
+}
+
+.description {
+  width: 100%;
+  margin-bottom: 2.5rem;
+  font-size: 0.875rem;
+  text-align: justify;
+  color: #4b5563; 
+  line-height: 1.4;
+}
+
+.privacy-link {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #634647;
+  transition: color 0.3s;
+  text-decoration: none;
+}
+
+.privacy-link:hover {
+  color: #845556; 
+  text-decoration: underline;
+}
+
+.more-options {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #4b5563; 
+  cursor: pointer;
+  font-weight: 600;
+  transition: color 0.3s;
+  position: absolute;
+  left: 1.5rem;
+  bottom: 1.5rem;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.more-options:hover {
+  color: #634647; 
+  text-decoration: underline;
+}
+
+.accept-button {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #634647;
+  background-color: #ddad81;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.accept-button:hover {
+  background-color: #634647; 
+  color: #ddad81; 
+}
+
+/* Mobile Tweak: Ensure it doesn't get cut off on small screens */
+@media (max-width: 400px) {
+  .card {
+    width: 90%;
+    /* No need to change top/left, the main class handles it */
+  }
+}

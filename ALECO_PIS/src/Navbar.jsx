@@ -6,13 +6,13 @@ import logo from './assets/Aleco-logo-modified.png';
  
 const Navbar = () => {
 
+  
     const navItems = [
      {label: 'Visit us', href: '#visit'},
      {label: 'Report a problem', href: '#report'},
      {label: 'About', href: '#about'},
      {label: 'Privacy Notice', href: '#privacy'},
     ];
-
    return (
     <>
     <nav className="navbar">
@@ -31,6 +31,7 @@ const Navbar = () => {
         </div>
 
         {/* Unordered List for Navigation */}
+        <div className ="nav-links-container">
         <ul className="nav-links">
           {navItems.map((item, index) => (
             <li key={index}>
@@ -41,6 +42,7 @@ const Navbar = () => {
           ))}
         </ul>
        <Login/> 
+       </div>
       </div>
     </nav>
     </>

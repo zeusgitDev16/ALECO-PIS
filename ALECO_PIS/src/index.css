@@ -3,42 +3,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 2. GLOBAL RESETS & STYLES */
+/* 1. DEFINE THE THEME COLORS */
 :root {
+  /* --- LIGHT MODE (Default) --- */
+  --bg-body: #f8f9fa;
+  --bg-card: #e0e0e0;      /* Your specific card gray */
+  --bg-glass: rgba(255, 255, 255, 0.9);
+  
+  --text-main: #212529;
+  --text-header: #1f2937;
+  --text-secondary: #495057;
+  
+  --shadow-color-light: #ffffff;
+  --shadow-color-dark: #bebebe;
+  
   --font-header: 'Anek Latin', sans-serif;
   --font-subheader: 'Roboto Slab', serif;
   --font-body: 'Mulish', sans-serif;
-
-  /* Proper font rendering */
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
-/* BASE TEXT (Mulish) - Applies to p, span, div, inputs, etc. */
+
+/* --- DARK MODE OVERRIDES --- */
+[data-theme="dark"] {
+  --bg-body: #111827;      /* Very Dark Blue/Gray */
+  --bg-card: #1f2937;      /* Dark Gray Card */
+  --bg-glass: rgba(31, 41, 55, 0.85); /* Dark Glass */
+  
+  --text-main: #f9fafb;    /* Almost White */
+  --text-header: #f3f4f6;
+  --text-secondary: #9ca3af; /* Light Gray */
+  
+  /* In dark mode, shadows act differently (usually simpler or darker) */
+  --shadow-color-light: #374151; /* Lighter gray for highlight */
+  --shadow-color-dark: #000000;  /* Pure black for shadow */
+}
+
+/* 2. APPLY VARIABLES GLOBALLY */
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: var(--font-body); /* Forces Mulish everywhere by default */
+  font-family: var(--font-body);
   line-height: 1.6;
-  color: #212529;
-  background-color: #f8f9fa;
+  
+  /* USE VARIABLES HERE */
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  
+  /* Smooth transition when switching themes */
+  transition: background-color 0.3s ease, color 0.3s ease;
+  
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale; /* Dark gray text for readability */
+  -moz-osx-font-smoothing: grayscale;
 }
+
 h1, h2, h3 {
   font-family: var(--font-header);
-  font-weight: 700; /* Default to bold for headers */
+  font-weight: 700;
   line-height: 1.2;
   margin-bottom: 0.5em;
+  color: var(--text-header); /* Variable */
 }
+
 h4, h5, h6 {
   font-family: var(--font-subheader);
   font-weight: 500;
   margin-bottom: 0.5em;
-  color: #495057; /* Slightly lighter color for subheaders */
+  color: var(--text-secondary); /* Variable */
 }
-/* 3. OPTIONAL: Fix for scrolling issues on some devices */
+
 html {
   scroll-behavior: smooth;
 }

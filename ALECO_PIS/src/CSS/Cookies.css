@@ -1,23 +1,26 @@
-
 .card {
- position: fixed;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 9999;
   
-  /* Original Design Specs */
+  /* UPDATED: Dynamic Background */
+  background-color: var(--bg-card);
+  
+  /* Original Design Specs (Shadows) */
   --shadow: rgba(60, 64, 67, 0.3) 0 1px 2px 0,
     rgba(60, 64, 67, 0.15) 0 2px 6px 2px;
+    
   width: 80%;
   max-width: 300px;
-  background-color: white;
   border-radius: 1.5rem;
   box-shadow: var(--shadow);
   margin: 0;
   
   /* Animation to slide in */
   animation: fadeIn 0.5s ease-out;
+  transition: background-color 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -31,7 +34,7 @@
   }
 }
 
-/* --- ORIGINAL DESIGN CONTENT --- */
+/* --- CONTENT --- */
 .content {
   display: flex;
   flex-direction: column;
@@ -43,7 +46,6 @@
 .icon {
   position: relative;
   margin: -4rem auto 2rem;
-  /* Center the SVG icon wrapper */
   display: flex;
   justify-content: center; 
 }
@@ -52,8 +54,11 @@
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  text-align: center; /* Centered looks better for this card layout */
-  color: #4b5563; 
+  text-align: center; 
+  
+  /* UPDATED: Uses Header Variable */
+  color: var(--text-header);
+  
   margin-top: 0;
 }
 
@@ -62,14 +67,18 @@
   margin-bottom: 2.5rem;
   font-size: 0.875rem;
   text-align: justify;
-  color: #4b5563; 
+  
+  /* UPDATED: Uses Secondary Text Variable */
+  color: var(--text-secondary);
+  
   line-height: 1.4;
 }
 
+/* --- LINKS & BUTTONS --- */
 .privacy-link {
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #634647;
+  color: #634647; /* Original Brown for Light Mode */
   transition: color 0.3s;
   text-decoration: none;
 }
@@ -82,7 +91,10 @@
 .more-options {
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
-  color: #4b5563; 
+  
+  /* UPDATED: Dynamic Text */
+  color: var(--text-secondary);
+  
   cursor: pointer;
   font-weight: 600;
   transition: color 0.3s;
@@ -106,8 +118,11 @@
   padding: 0.5rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 600;
+  
+  /* Light Mode Colors */
   color: #634647;
   background-color: #ddad81;
+  
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
@@ -119,10 +134,29 @@
   color: #ddad81; 
 }
 
-/* Mobile Tweak: Ensure it doesn't get cut off on small screens */
+/* =========================================
+   DARK MODE OVERRIDES 
+   ========================================= */
+
+/* Make links easier to see in Dark Mode (Yellow) */
+[data-theme="dark"] .privacy-link,
+[data-theme="dark"] .more-options:hover {
+  color: #FACC15; 
+}
+
+/* Make button match the Navbar style (Yellow/Black) */
+[data-theme="dark"] .accept-button {
+  background-color: #FACC15; 
+  color: #000000;
+}
+
+[data-theme="dark"] .accept-button:hover {
+  background-color: #EAB308; /* Slightly darker yellow hover */
+}
+
+/* Mobile Tweak */
 @media (max-width: 400px) {
   .card {
     width: 90%;
-    /* No need to change top/left, the main class handles it */
   }
 }

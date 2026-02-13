@@ -1,26 +1,31 @@
 /* Base Styles (Large Screens / Desktop) */
+/* Base Styles (Large Screens / Desktop) */
 .navbar {
   height: 50px;
   display: flex;
   align-items: center;
-  background-color: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
+  
+  /* UPDATED: Adapts to Dark/Light Mode */
+  background-color: var(--bg-body); 
+  border-bottom: 1px solid var(--text-secondary); /* UPDATED: Dynamic border */
+  
   padding: 0 2rem;
   top: 0;
   z-index: 100;
+  transition: background-color 0.3s ease;
 }
 
 .main-login-btn{
-background-color: #2563eb;
-color:#ffffff;
-padding: 8px;
-font-size: 14px;
-font-weight: 600;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-transition:all 0.3s ease;
-outline: none;
+  background-color: #2563eb; /* Keep Blue for Light Mode */
+  color: #ffffff;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
 }
 
 .main-login-btn:hover{
@@ -46,12 +51,13 @@ outline: none;
 }
 
 .nav-brand a {
-  font-size: 1.5rem; /* Desktop size */
+  font-size: 1.5rem; 
   font-weight: 700;
-  color: #2563eb;
+  color: #2563eb; /* Keep Blue for Light Mode */
   text-decoration: none;
   display: flex;
   flex-direction: row;
+  transition: color 0.3s ease;
 }
 
 .nav-links {
@@ -68,16 +74,17 @@ outline: none;
   gap: 20px;
   margin-left: auto;
 }
+
 .nav-links li::after {
-  content: "|";       /* The separator character */
-  color: #d1d5db;     /* Light gray color (Tailwind gray-300) */
-  margin-left: 2px;  /* Space between link and separator */
-  margin-right: 2px; /* Space between separator and next link */
-  font-weight: 300;   /* Make it thin */
+  content: "|";
+  color: var(--text-secondary); /* UPDATED */
+  margin-left: 2px;
+  margin-right: 2px;
+  font-weight: 300;
 }
 
 .nav-links li:last-child::after {
-  display: none;      /* Removes it completely */
+  display: none;
 }
 
 @media (max-width: 700px) {
@@ -87,11 +94,15 @@ outline: none;
     font-size: 0.8rem;
   }
 }
+
 .nav-item {
   position: relative;
   text-decoration: none;
-  color: #4b5563;
-  font-size: 1rem; /* Desktop size */
+  
+  /* UPDATED: Dynamic Text Color */
+  color: var(--text-secondary);
+  
+  font-size: 1rem;
   transition: all 0.2s ease;
   padding-bottom: 5px;
   white-space: nowrap;
@@ -108,19 +119,18 @@ outline: none;
   height: 2px;
   bottom: 0;
   left: 50%;
-  background-color: #007bff; /* Line color */
-  transition: all 0.3s ease-in-out; /* Animation speed */
+  background-color: #007bff;
+  transition: all 0.3s ease-in-out;
 }
 
 .nav-item:hover::after {
   width: 100%;
   left: 0;
 }
+
 .Aleco-Logo {
-  display: flex;       /* Keeps them side-by-side or stacked correctly */
-  align-items: center; /* Aligns them nicely */
-  
-  /* OPTIONAL: Add a transition for smooth resizing */
+  display: flex;
+  align-items: center;
   transition: transform 0.3s ease; 
 }
 
@@ -129,13 +139,13 @@ outline: none;
 /* 1. Tablet View (Screens smaller than 1024px) */
 @media (max-width: 1024px) {
   .nav-brand a {
-    font-size: 1rem; /* Slightly smaller title */
+    font-size: 1rem;
   }
   .nav-item {
-    font-size: 0.9rem; /* Slightly smaller links */
+    font-size: 0.9rem;
   }
   .nav-links {
-    gap: 0.5rem; /* Tighten the space between links */
+    gap: 0.5rem;
   }
   .main-login-btn{
     font-size: 0.8rem;
@@ -148,60 +158,42 @@ outline: none;
     font-size: 20px;
   }
   .Aleco-Logo {
-    /* 0.8 means 80% of original size */
     transform: scale(0.8); 
-    
-    /* Important: By default, scale shrinks from the center. 
-       Use 'transform-origin' to anchor it to the left side so it doesn't drift. */
     transform-origin: left center; 
     margin-right: -25px;
   }
-  
 }
 
-/* 2. Mobile View (Screens smaller than 600px) */
+/* 2. Mobile View (Screens smaller than 700px) */
 @media (max-width: 700px) {
   .nav-links-container {
-    /* 1. Enable horizontal scrolling */
     overflow-x: auto;
-    
-    /* 2. Make it scroll smoothly on iOS */
     -webkit-overflow-scrolling: touch;
-    
-    /* 3. Reduce the gap so more items fit initially */
     gap: 5px; 
-    
-    /* 4. Ensure the container takes available space but doesn't overflow parent */
     max-width: 100%;
-    
-    /* 5. Add a little padding on the right so the button isn't glued to the screen edge */
     padding-right: 15px; 
-    
-    /* Optional: Hide the scrollbar so it looks cleaner */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
-  /* Hide scrollbar for Chrome/Safari */
   .nav-links-container::-webkit-scrollbar {
     display: none;
   }
   
-  /* Prevent the button from getting squashed */
   .main-login-btn {
     flex-shrink: 0; 
   }
   .navbar {
-    padding: 0 0.4rem; /* Reduce side padding */
+    padding: 0 0.4rem;
   }
   .nav-brand a {
-    font-size: 0.8rem; /* Smaller title for phones */
+    font-size: 0.8rem;
   }
   .nav-item {
-    font-size: 0.65rem; /* Smallest readable font for links */
+    font-size: 0.65rem;
   }
   .nav-links {
-    gap: 0.1rem; /* Very tight spacing to fit all links */
+    gap: 0.1rem;
     white-space: nowrap;
   }
   .main-login-btn{
@@ -215,11 +207,7 @@ outline: none;
     font-size: 15px;
   }
   .Aleco-Logo {
-    /* 0.8 means 80% of original size */
     transform: scale(0.5); 
-    
-    /* Important: By default, scale shrinks from the center. 
-       Use 'transform-origin' to anchor it to the left side so it doesn't drift. */
     transform-origin: left center; 
     margin-right: -70px;
   }
@@ -235,20 +223,49 @@ outline: none;
   padding-left: 10px;
   font-weight: bold;
   font-size: 25px;
+  /* UPDATED: Transition for color change */
+  transition: color 0.3s ease;
 }
 
 .fix-container-nav {
-  position: fixed;   /* Freezes the group to the screen */
-  top: 0;            /* Sticks it to the very top */
+  position: fixed;
+  top: 0;
   left: 0;
-  width: 100%;       /* Spans the full width */
-  z-index: 1000;     /* Ensures it sits on top of everything else */
-  
-  /* Optional: keeps them stacked neatly */
+  width: 100%;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
 }
 
 .login-container {
   position: absolute;
+}
+
+/* =========================================
+   DARK MODE OVERRIDES 
+   ========================================= */
+
+[data-theme="dark"] .nav-brand a,
+[data-theme="dark"] .Title {
+  color: #FACC15 !important; /* YELLOW for ALECO Title */
+}
+
+[data-theme="dark"] .main-login-btn {
+  background-color: #FACC15; /* YELLOW Container */
+  color: #000000;            /* BLACK Text for contrast */
+}
+
+[data-theme="dark"] .main-login-btn:hover {
+  background-color: #EAB308; /* Slightly darker yellow on hover */
+}
+/* ... existing dark mode styles ... */
+
+/* 1. Nav Item Hover Text (Yellow in Dark Mode) */
+[data-theme="dark"] .nav-item:hover {
+  color: #FACC15 !important; 
+}
+
+/* 2. Nav Item Underline Animation (Yellow in Dark Mode) */
+[data-theme="dark"] .nav-item::after {
+  background-color: #FACC15 !important;
 }

@@ -1,7 +1,277 @@
-.interruption-list{
-    padding-top: 120px;
+.interruption-list-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 60px 20px;
+  overflow: hidden; /* Prevents full page horizontal scroll */
 }
 
-.interruption-list h2 {
-    padding-left: 10px;
+.section-title {
+  font-size: 1.8rem;
+  /* UPDATED: Uses variable for dark mode text */
+  color: var(--text-header);
+  margin-bottom: 30px;
+  border-bottom: 3px solid var(--text-secondary); /* UPDATED: Dynamic border color */
+  padding-bottom: 10px;
+  font-family: var(--font-header);
+}
+
+/* --- THE SLIDER (Replaces Grid) --- */
+.interruption-slider {
+  display: flex;             /* Lines them up horizontally */
+  gap: 30px;
+  overflow-x: auto;          /* Enables scrolling */
+  scroll-behavior: smooth;   /* Smooth sliding effect */
+  padding: 20px 10px;        /* Padding for shadow visibility */
+  
+  /* Snap effect (Like a mobile app carousel) */
+  scroll-snap-type: x mandatory;
+  
+  /* Hide scrollbar but keep functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE */
+}
+
+.interruption-slider::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* --- The Card Container --- */
+.interruption-card {
+  /* Prevent squishing */
+  flex: 0 0 auto; 
+  scroll-snap-align: center; /* Snaps card to center when scrolling stops */
+  
+  position: relative;
+  width: 190px;
+  height: 254px;
+  border-radius: 14px;
+  z-index: 1;
+  overflow: hidden;
+  
+  /* UPDATED: Dynamic Background */
+  background: var(--bg-card);
+  
+  /* UPDATED: Dynamic Shadows for Light/Dark mode */
+  box-shadow: 20px 20px 60px var(--shadow-color-dark), 
+              -20px -20px 60px var(--shadow-color-light);
+              
+  transition: transform 0.2s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.interruption-card:hover {
+  transform: translateY(-5px);
+}
+
+/* --- Controls Section (Bottom) --- */
+.slider-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 5px; /* Keeps your reduced margin */
+    padding: 0 10px;
+}
+
+/* Progress Bar */
+.progress-track {
+    width: 70%; /* Takes up most space */
+    height: 4px;
+    
+    /* UPDATED: Track matches card color so it looks good in dark mode */
+    background-color: var(--bg-card);
+    
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--text-secondary); /* Added subtle border for visibility */
+}
+
+.progress-indicator {
+    height: 100%;
+    background-color: #3b82f6; /* THE BLUE LINE (Kept distinct) */
+    border-radius: 2px;
+    transition: width 0.3s ease-out;
+}
+[data-theme="dark"] .progress-indicator {
+  background-color: #FACC15 !important; /* Yellow */
+}
+
+/* Navigation Buttons */
+.nav-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    
+    /* UPDATED: Dynamic borders and background */
+    border: 1px solid var(--text-secondary);
+    background: var(--bg-body);
+    color: var(--text-main);
+    
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+    background: #3b82f6; /* Blue on hover */
+    color: white;
+    border-color: #3b82f6;
+}
+
+.nav-btn:active {
+    transform: scale(0.95);
+}
+
+/* --- The Blob & Glass (Preserved) --- */
+.blob {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  opacity: 1;
+  filter: blur(12px);
+  animation: blob-bounce 5s infinite ease;
+}
+
+.blob-ongoing { background-color: #dc2626; }
+.blob-pending, .blob-scheduled { background-color: #f59e0b; }
+.blob-restored { background-color: #16a34a; }
+
+@keyframes blob-bounce {
+  0% { transform: translate(-100%, -100%) translate3d(0, 0, 0); }
+  25% { transform: translate(-100%, -100%) translate3d(100%, 0, 0); }
+  50% { transform: translate(-100%, -100%) translate3d(100%, 100%, 0); }
+  75% { transform: translate(-100%, -100%) translate3d(0, 100%, 0); }
+  100% { transform: translate(-100%, -100%) translate3d(0, 0, 0); }
+}
+
+.bg {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  z-index: 2;
+  
+  /* UPDATED: Dynamic Glass Effect */
+  background: var(--bg-glass);
+  
+  backdrop-filter: blur(24px);
+  border-radius: 10px;
+  overflow: hidden;
+  
+  /* UPDATED: Outline matches card background */
+  outline: 2px solid var(--bg-card);
+  
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  transition: background-color 0.3s ease;
+}
+
+/* --- Typography (Preserved) --- */
+.status-header {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 3;
+}
+
+.status-ongoing { color: #dc2626; }
+.status-pending { color: #d97706; }
+.status-restored { color: #16a34a; }
+
+.card-details {
+  font-size: 0.8rem;
+  /* UPDATED: Dynamic Text Color */
+  color: var(--text-main);
+  
+  overflow-y: auto;
+  flex-grow: 1;
+  scrollbar-width: none; 
+  -ms-overflow-style: none;
+  z-index: 3;
+}
+.card-details::-webkit-scrollbar { display: none; }
+
+.card-details p { 
+    margin: 6px 0; 
+    line-height: 1.3;
+    /* UPDATED: Secondary text for details */
+    color: var(--text-secondary); 
+}
+
+/* Added specific rule for bold text inside details */
+.card-details strong {
+    color: var(--text-header);
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 600px) {
+  .interruption-card {
+    width: 190px; /* Keep fixed width on mobile for carousel feel */
+  }
+  .section-title {
+    font-size: 1.5rem; 
+  }
+  .progress-track {
+    width: 50%; /* Make bar shorter on phone */
+  }
+}
+
+/* --- Desktop Scaling --- */
+@media (min-width: 1024px) {
+  .section-title {
+    font-size: 2.2rem;
+  }
+
+  .interruption-card {
+    width: 260px;
+    height: 340px;
+    border-radius: 20px;
+  }
+  
+  .bg { top: 6px; left: 6px; right: 6px; bottom: 6px; }
+  .blob { width: 200px; height: 200px; }
+  
+  .status-header { font-size: 1.2rem; margin-bottom: 20px; }
+  .card-details { font-size: 1rem; }
+  .card-details p { margin: 10px 0; }
+}
+
+.date-tracker {
+  text-align: left;       /* Aligns it with the progress bar */
+  margin-top: 20px;       /* Spacing from the cards */
+  margin-bottom: 5px;     /* Spacing from the controls */
+  font-size: 0.9rem;
+  font-weight: bold;
+  
+  /* UPDATED: Dynamic text color */
+  color: var(--text-secondary);
+  
+  font-style: italic;     /* Optional: Adds a nice touch */
+  padding-left: 10px;     /* Aligns with the track padding */
+}
+
+/* Ensure slider-controls doesn't have too much top margin now */
+.slider-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 5px; /* Reduced from 20px since we have the text now */
+    padding: 0 10px;
 }

@@ -1,0 +1,137 @@
+.report-problem-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 60px 20px; /* Adjust spacing as needed */
+    text-align: left;
+}
+
+.report-title {
+    font-size: 1.8rem;
+    font-family: var(--font-header);
+    color: var(--text-header); /* Adapts to Dark Mode */
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.report-description {
+    font-size: 1.1rem;
+    font-family: var(--font-body);
+    color: var(--text-secondary); /* Adapts to Dark Mode */
+    margin-top: 0;
+    margin-bottom: 30px;
+}
+
+/* --- Dark Mode Overrides (Just in case specific tweaks are needed) --- */
+[data-theme="dark"] .report-title {
+    color: var(--text-header); /* Optional: Makes the title Yellow in dark mode like the Navbar */
+}
+
+/* From Uiverse.io by arafatrahat94 */ 
+/* --- LIGHT MODE (DEFAULT) --- */
+.form__group_one {
+  position: relative;
+  margin-left: 20px;
+  margin-bottom: 50px;
+  max-width: 500px;
+}
+
+.form__group_oneform__field {
+  border: 1px solid silver !important;
+  border-radius: 5px;
+  box-sizing: border-box;
+  color: var(--text-header); /* Dark blue for light mode */
+  background-color: var(--bg-body) !important;
+  height: 40px;
+  padding: 0rem 20px;
+  box-shadow: 5px 5px 0 0 #0b2447; /* Dark shadow for light mode */
+  width: 100%;
+  transition: all 0.3s ease;
+  caret-color: #0b2447;
+}
+
+.form__group_oneform__field::placeholder {
+  color: transparent;
+}
+
+.form__group_oneform__field:placeholder-shown ~ .form__group_oneform__label {
+  top: 10px;
+  border-right: none;
+  border-left: none;
+  color: var(--text-header);
+}
+
+.form__group_oneform__label {
+  background-color: var(--bg-body);
+  border-left: 1px solid silver;
+  border-right: 1px solid silver;
+  color: #9b9b9b;
+  display: block;
+  font-size: 0.9em;
+  margin-left: 10px;
+  padding: 0 10px;
+  pointer-events: none;
+  position: absolute;
+  top: -10px;
+  transition: 0.2s;
+}
+
+/* Light Mode Focus */
+.form__group_oneform__field:focus {
+  border: 1px solid #0b2447 !important;
+  box-shadow: none;
+  /* This ensures the blinking line (caret) is visible in light mode */
+  caret-color: #0b2447; 
+  outline: none;
+}
+
+.form__group_oneform__field:focus ~ .form__group_oneform__label {
+  background-color: var(--bg-body);
+  color: #0b2447;
+  border-color: #0b2447;
+  caret-color: #0b2447;
+}
+
+/* --- DARK MODE IMPLEMENTATION --- */
+/* This triggers when your theme is set to 'dark' */
+
+[data-theme="dark"] .form__group_oneform__field {
+  /* Use the background variable we set for the app */
+  background-color: var(--bg-body) !important; 
+  color: var(--text-main); /* White/Off-white text */
+  
+  border: 1px solid var(--text-secondary) !important;
+  /* Yellow highlight shadow for that 'pop' effect */
+  box-shadow: 5px 5px 0 0 #FACC15; 
+  
+  transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .form__group_oneform__label {
+  /* Matches the background so the label 'cuts' the border line */
+  background-color: var(--bg-body); 
+  color: #FACC15; /* Yellow text for the label */
+  border-left: 1px solid #FACC15;
+  border-right: 1px solid #FACC15;
+}
+
+/* Dark Mode Focus State */
+[data-theme="dark"] .form__group_oneform__field:focus {
+  border: 1px solid #FACC15 !important;
+  box-shadow: none; /* Remove shadow when active for a clean look */
+  /* Ensures the blinking line is also yellow in dark mode */
+  caret-color: #FACC15;
+  outline: none;
+}
+
+[data-theme="dark"] .form__group_oneform__field:focus ~ .form__group_oneform__label {
+  background-color: var(--bg-body);
+  color: #FACC15;
+  border-color: #FACC15;
+}
+
+/* Ensure the label looks correct when the field is empty in dark mode */
+[data-theme="dark"] .form__group_oneform__field:placeholder-shown ~ .form__group_oneform__label {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--text-header);
+}

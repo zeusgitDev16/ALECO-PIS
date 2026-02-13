@@ -6,6 +6,8 @@ import LandingPage from './components/headers/landingPage.jsx';
 import './CSS/BodyLandPage.css';
 import CookieBanner from './components/CookieBanner.jsx';
 import DarkLightButton from './components/buttons/darkLightButton.jsx'; 
+import ReportaProblem from './ReportaProblem.jsx';
+
 
 function App() {
   
@@ -31,6 +33,7 @@ function App() {
     
     <div className = "body-padding">
       <InterruptionList/>
+      <ReportaProblem/>
       <Footer/>
     </div>
     <CookieBanner/>

@@ -125,6 +125,12 @@
     border-color: #3b82f6;
 }
 
+[data-theme="dark"] .nav-btn:hover {
+  background: #FACC15; /* Yellow on hover */
+  color: black;
+  border-color: #FACC15;
+}
+
 .nav-btn:active {
     transform: scale(0.95);
 }

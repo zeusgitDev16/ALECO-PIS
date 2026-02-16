@@ -1,0 +1,120 @@
+.login-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  /* Keeps the backdrop dark even in light mode to make the modal pop */
+  background-color: rgba(0, 0, 0, 0.6); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2em;
+  /* THEME FIX: Uses your body background variable */
+  background-color: var(--bg-body); 
+  border-radius: 25px;
+  transition: .4s ease-in-out;
+  border: 1px solid var(--text-secondary);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.login-form:hover {
+  transform: scale(1.02);
+}
+
+#login-heading {
+  text-align: center;
+  margin: 1.5em;
+  /* THEME FIX: Uses your header text variable */
+  color: var(--text-header); 
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.login-field {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border-radius: 25px;
+  padding: 0.8em;
+  /* THEME FIX: Uses body background for the inner shadow effect */
+  background-color: var(--bg-body); 
+  /* Adjusted shadow for light mode visibility */
+  box-shadow: inset 2px 5px 10px rgba(0, 0, 0, 0.1); 
+  border: 1px solid var(--text-secondary);
+}
+
+/* Dark mode specific shadow depth */
+[data-theme="dark"] .login-field {
+  box-shadow: inset 2px 5px 10px rgb(5, 5, 5);
+  background-color: #171717; /* Keeps the deep dark look in dark mode */
+}
+
+.login-input-icon {
+  height: 1.3em;
+  width: 1.3em;
+  fill: #FACC15; 
+}
+
+.login-input-field {
+  background: none;
+  border: none;
+  outline: none;
+  width: 100%;
+  /* THEME FIX: Uses header text color */
+  color: var(--text-header); 
+}
+
+/* Placeholder color styling */
+.login-input-field::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.login-btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 2.5em;
+}
+
+.login-button1, .login-button2, .login-button3 {
+  padding: 0.6em 1.5em;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  transition: .4s ease-in-out;
+  /* THEME FIX: Buttons use a tinted background based on theme */
+  background-color: var(--text-secondary); 
+  color: var(--bg-body);
+  cursor: pointer;
+}
+
+.login-button1:hover { 
+  background-color: #0b2447; 
+  color: white;
+}
+
+.login-button2:hover { 
+  background-color: #FACC15; 
+  color: #000; 
+}
+
+.login-button3 {
+  margin-top: 10px;
+  background-color: transparent;
+  color: var(--text-secondary);
+}
+
+.login-button3:hover { 
+  color: #ff4d4d; 
+}

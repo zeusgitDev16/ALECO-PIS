@@ -31,7 +31,7 @@
 .form__group_one {
   position: relative;
   margin-left: 20px;
-  margin-bottom: 50px;
+  margin-bottom: 33px;
   max-width: 500px;
 }
 
@@ -134,4 +134,282 @@
     background-color: transparent;
     border-color: transparent;
     color: var(--text-header);
+}
+
+/* --- LAYOUT WRAPPER --- */
+.report-main-card {
+    border: 1px solid var(--text-secondary); /* Thin line using secondary color */
+    border-radius: 12px;
+    padding: 40px;
+    background-color: transparent;
+    margin-top: 20px;
+    /* Optional: Add a slight shadow to match your Lego theme */
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); 
+}
+.report-content-wrapper {
+  display: flex;         
+  flex-direction: row; 
+  justify-content: flex-start;  
+  align-items: flex-start;
+  gap: 50px;
+  margin-top: 30px;
+  width: 100%;
+  align-items: stretch;
+}
+.report-form-column {
+  /* This stays the same to keep your 4 fields stacked */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.report-upload-column {
+  flex: 1;
+  display: flex;
+  /* CHANGE: This aligns the modal to the bottom of the available row space */
+  align-self: flex-end; 
+  justify-content: flex-start;
+}
+.modal {
+  margin-top: 0 !important;
+  width: 100%;
+  max-width: 500px;
+  background-color: var(--bg-body); /* Original layout, dynamic color */
+  border-radius: 0.5rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--text-secondary); /* Added thin border for visibility */
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.5rem 1.5rem 1rem;
+}
+
+.logo-circle {
+  width: 3.5rem;
+  height: 1rem;
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  border-radius: 50%;
+  background-color: (--bg-body); /* Original Uiverse purple tint */
+}
+
+.btn-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.25rem;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  background-color: #e9e5ff;
+}
+
+.modal-body {
+  padding: 0.1rem 1.5rem;
+}
+
+.modal-title {
+  margin-top: -15px;
+  font-weight: 700;
+  color: var(--text-header); /* Dynamic color */
+}
+
+.modal-description {
+  color: var(--text-secondary); /* Dynamic color */
+  margin-top: -15px;
+}
+
+.upload-area {
+  margin-top: 1.25rem;
+  background-color: transparent;
+  padding: 1.8rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px dashed var(--text-secondary); /* Dynamic dashed line */
+}
+
+.upload-area:hover, .upload-area:focus {
+  cursor: pointer;
+  border: 1px solid var(--text-header); /* Dynamic solid line */
+}
+
+.upload-area-icon {
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  fill: #0b2447; /* Keep original green */
+}
+
+.upload-area-title {
+  margin-top: 1rem;
+  display: block;
+  font-weight: 700;
+  color: var(--text-header); /* Dynamic color */
+}
+
+.upload-area-description {
+  display: block;
+  color: var(--text-secondary); /* Dynamic color */
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-secondary, .btn-primary {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border: 2px solid var(--text-secondary);
+  border-radius: 0.25rem;
+  background-color: transparent;
+  cursor: pointer;
+  color: var(--text-header);
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: #0b2447;
+  border-color: #0b2447;
+}
+
+[data-theme="dark"] .btn-primary {
+  color: #000000;
+  background-color: #FACC15;
+  border-color: #FACC15;
+}
+
+/* Container for the new column style */
+.report-details-column {
+    flex: 1.5; /* Makes this column slightly wider to accommodate essays */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+.concern-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.concern-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-header);
+}
+
+.concern-field {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid var(--text-secondary);
+    background-color: var(--bg-body);
+    color: var(--text-header);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: none; /* Removing the 'Lego' shadow for this new style */
+}
+
+/* The 'Big' Textbox for essays */
+.textarea-large {
+    min-height: 200px; /* Forces it to be big */
+    resize: vertical;  /* Allows user to expand but not break width */
+    line-height: 1.5;
+}
+
+/* Focus State: Clean glow instead of offset box */
+.concern-field:focus {
+    outline: none;
+    border-color: #0b2447; /* ALECO Yellow */
+    box-shadow: 0 0 0 3px rgba(138, 146, 159, 0.422); 
+}
+
+/* Dark Mode Tweaks */
+[data-theme="dark"] .concern-field {
+    background-color: rgba(255, 255, 255, 0.05); /* Slight tint for depth */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .concern-field:focus {
+    border-color: #FACC15;
+    background-color: var(--bg-body);
+}
+
+/* --- RESPONSIVENESS SETTINGS --- */
+
+/* 1. When screen reaches 1140px: 
+   Left (Info) and Middle (Concern) stay in row, 
+   Right (Upload) moves under and stretches. */
+@media (max-width: 1140px) {
+  .report-content-wrapper {
+    flex-wrap: wrap; /* Allows items to wrap to a new line */
+    justify-content: center;
+    gap: 40px;
+  }
+
+  .report-form-column, 
+  .report-details-column {
+    flex: 1; /* These two stay side-by-side */
+    min-width: 300px;
+  }
+
+  .report-upload-column {
+    flex: 0 0 100%; /* Forces this column to take 100% width below the others */
+    align-self: center; /* Centers the modal horizontally */
+    justify-content: center;
+  }
+
+  .modal {
+    max-width: 100%; /* Stretches the modal to fill the width */
+  }
+}
+
+/* 2. When screen reaches 800px: 
+   All items stack vertically (row/column swap). */
+@media (max-width: 800px) {
+  .report-main-card {
+    padding: 20px; /* Shrink padding for smaller screens */
+  }
+
+  .report-content-wrapper {
+    flex-direction: column; /* Stack all 3 columns vertically */
+    align-items: center;
+    gap: 30px;
+  }
+
+  .report-form-column, 
+  .report-details-column, 
+  .report-upload-column {
+    width: 100%; /* Every column takes full width */
+    max-width: none;
+  }
+
+  .concern-field {
+    width: 100%; /* Ensure textfields fill the smaller screen */
+  }
+
+  .form__group_one {
+    margin-left: 0; /* Align left info fields better on mobile */
+    width: 100%;
+  }
+
+  .form__group_oneform__field {
+    width: 100%;
+  }
 }

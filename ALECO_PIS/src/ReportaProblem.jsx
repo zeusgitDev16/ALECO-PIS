@@ -55,14 +55,8 @@ const ReportaProblem = () => {
                     {/* RIGHT COLUMN: The Upload Modal (Switched) */}
                     <div className="report-upload-column">
                         <div className="modal">
-                            <div className="modal-header">
-                                <div className="modal-logo">
-                                    <span className="logo-circle">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 512 419.116">
-                                            <path d="M16.991,419.116A16.989,16.989,0,0,1,0,402.125V16.991A16.989,16.989,0,0,1,16.991,0H146.124a17,17,0,0,1,10.342,3.513L227.217,57.77H437.805A16.989,16.989,0,0,1,454.8,74.761v53.244h40.213A16.992,16.992,0,0,1,511.6,148.657L454.966,405.222a17,17,0,0,1-16.6,13.332H410.053v.562ZM63.06,384.573H424.722L473.86,161.988H112.2Z" fill="#1cc972" />
-                                        </svg>
-                                    </span>
-                                </div>
+                           <div className="modal-header">
+                                
                             </div>
                             <div className="modal-body">
                                 <p className="modal-title">Upload a picture</p>

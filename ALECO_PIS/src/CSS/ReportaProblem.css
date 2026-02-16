@@ -186,16 +186,6 @@
   padding: 1.5rem 1.5rem 1rem;
 }
 
-.logo-circle {
-  width: 3.5rem;
-  height: 1rem;
-  display: flex;
-  justify-content: start;
-  align-items: center;
-  border-radius: 50%;
-  background-color: (--bg-body); /* Original Uiverse purple tint */
-}
-
 .btn-close {
   display: flex;
   align-items: center;

@@ -1,0 +1,291 @@
+/* --- VARIABLES --- */
+:root {
+  /* Dimensions */
+  --expanded: 16.875rem;
+  --collapsed: 4.5rem; /* Slightly wider to fit your logo nicely */
+  --item: 3rem; /* Height of buttons */
+  
+  /* --- LIGHT MODE THEME (Original Dark Blue) --- */
+  --sb-bg: #18283b;
+  --sb-bg-hover: #2c3e50;
+  --sb-text: #f5f6fa;
+  --sb-text-muted: #8392a5;
+  --sb-accent: #FACC15; /* ALECO Yellow Accent */
+  
+  /* Constants */
+  --brad-outer: 1rem;
+  --brad-inner: 0.5rem;
+  --transition-speed: 300ms;
+}
+
+/* --- DARK MODE THEME (Requested Yellow Background) --- */
+/* --- DARK MODE THEME (UPDATED: Matches ALECO Dashboard) --- */
+[data-theme="dark"] {
+  /* BACKGROUND: Deep Blue/Grey to match your dashboard header */
+  --sb-bg: #111827; /* Or use var(--bg-body) if you want it identical to the page */
+  
+  /* HOVER: Slightly lighter for contrast */
+  --sb-bg-hover: #1f2937; 
+  
+  /* TEXT: White/Light Gray */
+  --sb-text: #f9fafb;
+  --sb-text-muted: #9ca3af;
+  
+  /* ACCENT: Your ALECO Yellow (kept ONLY for small highlights like icons) */
+  --sb-accent: #FACC15; 
+}
+
+/* --- RESET & LAYOUT --- */
+.vertical-sidebar {
+  /* OLD: position: fixed; (Removed to stop floating) */
+  /* NEW: Sticky keeps it visible, but Flexbox handles the positioning */
+  position: sticky; 
+  top: 0; 
+  height: 100vh; /* Full Height */
+  
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  font-family: inherit;
+  
+  /* Remove margins so it touches the edges */
+  margin: 0;
+  left: 0;
+  bottom: 0;
+  
+  /* Ensure it has a background to cover anything behind it */
+  background: var(--sb-bg); 
+  border-right: 1px solid rgba(0,0,0,0.1); /* Subtle divider line */
+}
+
+/* Hides the actual checkbox */
+.checkbox-input {
+  display: none;
+}
+
+/* --- NAV CONTAINER --- */
+.sidebar-nav {
+  height: 100%;
+  background: var(--sb-bg);
+  display: flex;
+  flex-flow: column;
+  /* Width Transition */
+  width: var(--collapsed);
+  border-radius: 0;
+  padding: 1rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transition: width var(--transition-speed) ease-out;
+  overflow: hidden; /* Clips content when closed */
+  color: var(--sb-text);
+}
+
+/* EXPAND LOGIC: When checkbox is Checked */
+.vertical-sidebar:has(:checked) .sidebar-nav {
+  width: var(--expanded);
+}
+
+/* --- HEADER --- */
+.sidebar-header {
+  display: flex;
+  flex-flow: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Toggle Button Container */
+.sidebar__toggle-container {
+  display: flex;
+  justify-content: flex-end; /* Pushes toggle to right */
+}
+
+.nav__toggle {
+  width: 2rem;
+  height: 2rem;
+  background: rgba(255,255,255,0.1);
+  border-radius: var(--brad-inner);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nav__toggle:hover {
+  background: var(--sb-accent);
+  color: var(--sb-bg); /* Invert color on hover */
+}
+
+/* Toggle Icons Switching */
+.toggle--open, .toggle--close {
+  font-size: 1rem;
+  position: absolute; /* Stack them */
+  transition: opacity 0.2s;
+}
+
+.vertical-sidebar:has(:checked) .toggle--close { opacity: 0; }
+.vertical-sidebar:not(:has(:checked)) .toggle--open { opacity: 0; }
+
+/* --- BRANDING (LOGO & TEXT) --- */
+.sidebar-brand {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden; /* Ensures text doesn't spill when closed */
+}
+
+.aleco-logo {
+  display: block;
+  width: 2.5rem; /* Fixed size for icon state */
+  height: 2.5rem;
+  object-fit: contain;
+  flex-shrink: 0; /* Prevents logo squishing */
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap; /* Prevents text wrapping */
+  opacity: 1;
+  transition: opacity 0.2s; /* Fades out fast when closing */
+}
+
+.user-id {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--sb-text);
+  margin: 0;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: var(--sb-text-muted);
+  margin: 0;
+}
+
+/* HIDE TEXT WHEN CLOSED */
+.vertical-sidebar:not(:has(:checked)) .brand-text {
+  opacity: 0;
+  pointer-events: none;
+  width: 0; /* Ensures container shrinks properly */
+}
+
+/* CENTER LOGO WHEN CLOSED */
+.vertical-sidebar:not(:has(:checked)) .sidebar-brand {
+  justify-content: center;
+}
+
+/* --- LIST ITEMS --- */
+.sidebar__wrapper {
+  display: flex;
+  flex-flow: column;
+  gap: 1rem;
+  flex: 1; /* Pushes content to fill space */
+}
+
+.sidebar__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-flow: column;
+  gap: 0.5rem;
+}
+
+.sidebar__item--heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: var(--sb-text-muted);
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+/* Hide headings when closed */
+.vertical-sidebar:not(:has(:checked)) .sidebar__item--heading {
+  opacity: 0;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* LINKS */
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  height: var(--item);
+  padding: 0 0.75rem;
+  border-radius: var(--brad-inner);
+  transition: background 0.2s, color 0.2s;
+  color: var(--sb-text-muted);
+}
+
+.sidebar__link:hover {
+  background: var(--sb-bg-hover);
+  color: var(--sb-text);
+}
+
+.sidebar__link .icon {
+  width: 1.5rem; /* Icon container width */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.sidebar__link .text {
+  margin-left: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.1s;
+}
+
+/* Hover Effect: Icon Color */
+.sidebar__link:hover .icon i {
+  color: var(--sb-accent);
+}
+
+/* COLLAPSED STATE: LINKS */
+.vertical-sidebar:not(:has(:checked)) .sidebar__link .text {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+}
+
+.vertical-sidebar:not(:has(:checked)) .sidebar__link {
+  justify-content: center; /* Center icon */
+  padding: 0;
+}
+
+/* --- TOOLTIPS (Only when Closed) --- */
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%; /* Push to right of sidebar */
+  margin-left: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--sb-bg-hover);
+  color: var(--sb-text);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-10px);
+  transition: all 0.2s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  z-index: 2000;
+}
+
+/* Show tooltip ONLY when sidebar is collapsed AND hovered */
+.vertical-sidebar:not(:has(:checked)) .sidebar__link:hover::before {
+  opacity: 1;
+  transform: translateX(0);
+}

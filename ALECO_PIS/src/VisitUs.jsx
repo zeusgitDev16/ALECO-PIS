@@ -3,7 +3,7 @@ import './CSS/BodyLandPage.css'; // Reusing existing styles
 
 const VisitUs = () => {
     return (
-        <div className="interruption-list-container">
+        <div id="visit-us" className="interruption-list-container">
             <h2 className="section-title">Visit Us</h2>
             <div className="report-main-card" style={{ color: 'var(--text-main)' }}>
                 <p><strong>Main Office:</strong> Albay Electric Cooperative, Inc.</p>

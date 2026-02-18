@@ -9,9 +9,9 @@ const Navbar = () => {
 
   
     const navItems = [
-     {label: 'Visit us', to: '/visit-us'},
+     {label: 'Visit us', href: 'https://web.alecoinc.com.ph/'},
      {label: 'Report a problem', href: '#report'},
-     {label: 'About', to: '/about'},
+     {label: 'About', href: '#about'},
      {label: 'Privacy Notice', href: '#privacy'},
     ];
    return (

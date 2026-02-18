@@ -1,8 +1,9 @@
 .report-problem-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 60px 20px; /* Adjust spacing as needed */
+    padding:  20px; /* Adjust spacing as needed */
     text-align: left;
+    margin-bottom: -80px;
 }
 
 .report-title {
@@ -253,7 +254,7 @@
 }
 
 .modal-footer {
-  padding: 1rem 1.5rem 1.5rem;
+  padding: 1rem 1.5rem;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -279,6 +280,16 @@
   color: #000000;
   background-color: #FACC15;
   border-color: #FACC15;
+}
+
+/* --- AGREE BUTTON (Privacy Notice) --- */
+.btn-agree {
+  padding: 0.5rem 4rem; /* Wider for emphasis */
+  box-shadow: 0 0 20px rgba(11, 36, 71, 0.6); /* Blue Glow */
+}
+
+[data-theme="dark"] .btn-agree {
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.6); /* Yellow Glow */
 }
 
 /* Container for the new column style */

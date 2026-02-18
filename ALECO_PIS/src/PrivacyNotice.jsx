@@ -1,0 +1,21 @@
+import React from 'react';
+import './CSS/BodyLandPage.css';
+import './CSS/ReportaProblem.css'; // Reusing card and button styles
+
+const PrivacyNotice = () => {
+    return (
+        <div id="privacy" className="interruption-list-container">
+            <h2 className="section-title">Privacy Notice</h2>
+            <div className="report-main-card" style={{ color: 'var(--text-main)' }}>
+                <p style={{ lineHeight: '1.6', textAlign: 'justify' }}>
+                    We, at the Albay Electric Cooperative Inc. (ALECO), respect your privacy and will keep secure and confidential the personal data which you shall provide in our Service Application Form. We shall collect, use, and store your Personal Data and dispose of it in accordance with our policies and applicable laws, and regulations. We may disclose your Personal Data to authorized subsidiaries, affiliates, service providers, government agencies and third-parties.
+                </p>
+                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
+                    <button className="btn-primary btn-agree">Agree</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default PrivacyNotice;

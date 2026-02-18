@@ -9,6 +9,8 @@ import CookieBanner from './components/CookieBanner.jsx';
 import DarkLightButton from './components/buttons/darkLightButton.jsx'; 
 import ReportaProblem from './ReportaProblem.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
+import About from './About.jsx';
+import PrivacyNotice from './PrivacyNotice.jsx';
 
 // --- NEW HELPER COMPONENT ---
 // We put the UI logic here so it can "talk" to the Router
@@ -34,6 +36,8 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
           <div className="body-padding">
             <InterruptionList />
             <ReportaProblem />
+            <About />
+            <PrivacyNotice />
             <Footer />
           </div>
         } />

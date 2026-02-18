@@ -1,7 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import './CSS/ReportaProblem.css';
 
+// --- NEW COMPONENT: Validated Input with Filtering ---
+const ValidatedInput = ({ id, label, value, onChange, filterType, maxLength, placeholder }) => {
+    const handleChange = (e) => {
+        let val = e.target.value;
+
+        if (filterType === 'numeric') {
+            // Security: Remove any non-digit characters
+            val = val.replace(/[^0-9]/g, '');
+        } else if (filterType === 'name') {
+            // Security: Remove numbers and special characters (allow letters and spaces)
+            val = val.replace(/[^a-zA-Z\s]/g, '');
+            // Formatting: Capitalize the first letter of every word
+            val = val.replace(/\b\w/g, (char) => char.toUpperCase());
+        }
+
+        onChange(val);
+    };
+
+    return (
+        <div className="form__group_one">
+            <input 
+                type="text" 
+                id={id} 
+                className="form__group_oneform__field" 
+                placeholder={placeholder}
+                value={value}
+                onChange={handleChange}
+                maxLength={maxLength}
+                autoComplete="off"
+            />
+            <label htmlFor={id} className="form__group_oneform__label">{label}</label>
+        </div>
+    );
+};
+
+// Using PropTypes for filtering definition as requested
+ValidatedInput.propTypes = {
+    id: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
+    onChange: PropTypes.func.isRequired,
+    filterType: PropTypes.oneOf(['numeric', 'name']).isRequired,
+    maxLength: PropTypes.number,
+    placeholder: PropTypes.string
+};
+
 const ReportaProblem = () => {
+    // State to manage the controlled inputs
+    const [formData, setFormData] = useState({
+        accountNumber: '',
+        firstName: '',
+        middleName: '',
+        lastName: ''
+    });
+
+    const handleFieldChange = (field) => (value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
     return (
         <div id="report" className="report-problem-container">
             <h2 className="report-title">Report a problem</h2>
@@ -12,22 +71,39 @@ const ReportaProblem = () => {
                     
                     {/* LEFT COLUMN: User Info */}
                     <div className="report-form-column">
-                        <div className="form__group_one">
-                            <input type="text" id="acc_num" className="form__group_oneform__field" placeholder="Account Number" />
-                            <label htmlFor="acc_num" className="form__group_oneform__label">Account Number</label>
-                        </div>
-                        <div className="form__group_one">
-                            <input type="text" id="fname" className="form__group_oneform__field" placeholder="First Name" />
-                            <label htmlFor="fname" className="form__group_oneform__label">First Name</label>
-                        </div>
-                        <div className="form__group_one">
-                            <input type="text" id="mname" className="form__group_oneform__field" placeholder="Middle Name" />
-                            <label htmlFor="mname" className="form__group_oneform__label">Middle Name</label>
-                        </div>
-                        <div className="form__group_one">
-                            <input type="text" id="lname" className="form__group_oneform__field" placeholder="Last Name" />
-                            <label htmlFor="lname" className="form__group_oneform__label">Last Name</label>
-                        </div>
+                        <ValidatedInput 
+                            id="acc_num"
+                            label="Account Number"
+                            placeholder="Account Number"
+                            value={formData.accountNumber}
+                            onChange={handleFieldChange('accountNumber')}
+                            filterType="numeric"
+                            maxLength={15}
+                        />
+                        <ValidatedInput 
+                            id="fname"
+                            label="First Name"
+                            placeholder="First Name"
+                            value={formData.firstName}
+                            onChange={handleFieldChange('firstName')}
+                            filterType="name"
+                        />
+                        <ValidatedInput 
+                            id="mname"
+                            label="Middle Name"
+                            placeholder="Middle Name"
+                            value={formData.middleName}
+                            onChange={handleFieldChange('middleName')}
+                            filterType="name"
+                        />
+                        <ValidatedInput 
+                            id="lname"
+                            label="Last Name"
+                            placeholder="Last Name"
+                            value={formData.lastName}
+                            onChange={handleFieldChange('lastName')}
+                            filterType="name"
+                        />
                     </div>
 
                     {/* MIDDLE COLUMN: Concern & Location (Switched) */}

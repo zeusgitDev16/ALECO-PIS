@@ -8,8 +8,8 @@ const Navbar = () => {
 
   
     const navItems = [
-     {label: 'Visit us', href: '#visit'},
-     {label: 'Report a problem', href: '#report'},
+     {label: 'Visit us', href: 'https://web.alecoinc.com.ph/'},
+     {label: 'Report me', href: '#report'},
      {label: 'About', href: '#about'},
      {label: 'Privacy Notice', href: '#privacy'},
     ];
@@ -35,7 +35,12 @@ const Navbar = () => {
         <ul className="nav-links">
           {navItems.map((item, index) => (
             <li key={index}>
-              <a href={item.href} className="nav-item">
+              <a 
+                href={item.href} 
+                className="nav-item"
+                target={item.href.startsWith('http') ? "_blank" : undefined}
+                rel={item.href.startsWith('http') ? "noopener noreferrer" : undefined}
+              >
                 {item.label}
               </a>
             </li>

@@ -9,7 +9,7 @@ const Navbar = () => {
   
     const navItems = [
      {label: 'Visit us', href: '#visit'},
-     {label: 'Report a problem', href: '#report'},
+     {label: 'Report me', href: '#report'},
      {label: 'About', href: '#about'},
      {label: 'Privacy Notice', href: '#privacy'},
     ];

@@ -1,0 +1,98 @@
+/* src/CSS/AdminDashboard.css */
+
+.admin-dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-body);
+}
+
+.admin-content {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+    color: var(--text-header);
+}
+
+/* --- TOP NAVIGATION --- */
+.admin-top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+/* Search Bar */
+.search-container {
+    position: relative;
+    width: 300px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+.search-input {
+    padding: 10px 20px 10px 45px;
+    border-radius: 25px;
+    border: 1px solid var(--text-secondary);
+    background-color: rgba(128, 128, 128, 0.1);
+    color: var(--text-header);
+    width: 100%;
+    outline: none;
+    box-sizing: border-box;
+}
+
+/* Action Icons */
+.action-icons {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-header);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.icon-btn:hover {
+    color: var(--text-secondary);
+}
+
+/* --- HEADER SECTION --- */
+.dashboard-header {
+    margin-bottom: 30px;
+}
+
+.header-title {
+    margin: 0;
+}
+
+.header-subtitle {
+    color: var(--text-secondary);
+    margin-top: 10px;
+}
+
+/* --- WIDGETS / CONTENT --- */
+.dashboard-widget {
+    margin-top: 20px;
+    padding: 50px;
+    border: 2px dashed var(--text-secondary);
+    border-radius: 12px;
+    background-color: rgba(128, 128, 128, 0.05);
+    text-align: center;
+}
+
+.widget-text {
+    color: var(--text-secondary);
+}

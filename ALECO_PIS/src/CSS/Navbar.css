@@ -41,12 +41,9 @@
 
 .nav-container {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 10px;
   height: 60px;
 }
 
@@ -212,6 +209,25 @@
     margin-right: -70px;
   }
 }
+
+/* 3. Extra Small Mobile View (Screens smaller than 400px) */
+@media (max-width: 400px) {
+  .navbar {
+    padding: 0 0.2rem;
+  }
+  .Aleco-Logo {
+    transform: scale(0.4); 
+    margin-right: -90px; /* Adjust if needed */
+  }
+  .nav-item {
+    font-size: 0.6rem;
+  }
+  .main-login-btn {
+    font-size: 0.4rem;
+    padding: 6px;
+  }
+}
+
 
 .logo-height {
   height: 40px;       

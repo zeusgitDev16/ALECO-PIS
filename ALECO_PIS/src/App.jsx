@@ -22,7 +22,7 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
 
   return (
     <>
-      <div className="fix-container-nav">
+      <div className="fix-container-nav" style={{ zIndex: 1100 }}>
         {/* LandingPage stays on every screen per your request */}
         <LandingPage />
         

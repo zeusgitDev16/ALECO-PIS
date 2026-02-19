@@ -1,3 +1,0 @@
-mysql://avnadmin:AVNS_uAphvCPOvKGxSXIe1ir@aleco-db-aezymillete16-956d.i.aivencloud.com:16415/defaultdb?ssl-mode=REQUIRED
-
-418104412380-opfq91k3clkkd01220f4f4d8trl6ar6n.apps.googleusercontent.com

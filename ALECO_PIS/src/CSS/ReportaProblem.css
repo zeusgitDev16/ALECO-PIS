@@ -399,6 +399,7 @@
   .report-upload-column {
     width: 100%; /* Every column takes full width */
     max-width: none;
+    min-width: 0;
   }
 
   .concern-field {
@@ -412,5 +413,20 @@
 
   .form__group_oneform__field {
     width: 100%;
+  }
+}
+
+@media (max-width: 400px) {
+  .report-main-card {
+    padding: 10px;
+  }
+  .report-content-wrapper {
+    gap: 20px;
+  }
+  .report-title {
+    font-size: 1.5rem;
+  }
+  .report-description {
+    font-size: 1rem;
   }
 }

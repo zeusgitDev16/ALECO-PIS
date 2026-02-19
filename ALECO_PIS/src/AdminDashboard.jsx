@@ -7,7 +7,7 @@ const AdminDashboard = () => {
         <div className="admin-dashboard-container">
             
             {/* 1. Sidebar (Now a solid column) */}
-            <AdminSidebar />
+            <AdminSidebar activePage="home" />
 
             {/* 2. Main Content Area */}
             {/* flex: 1 makes this take up ALL remaining width automatically */}

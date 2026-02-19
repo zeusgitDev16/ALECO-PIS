@@ -167,7 +167,7 @@
   flex: 1;
   display: flex;
   /* CHANGE: This aligns the modal to the bottom of the available row space */
-  align-self: flex-end; 
+  align-self: flex-start; 
   justify-content: flex-start;
 }
 .modal {
@@ -296,12 +296,15 @@
     flex-direction: column;
     gap: 8px;
     width: 100%;
+    margin-left: 20px;
+    margin-bottom: 33px;
 }
 
 .concern-label {
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-header);
+    margin-left: 15px;
 }
 
 .concern-field {

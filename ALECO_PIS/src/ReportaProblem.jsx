@@ -4,10 +4,17 @@ import './CSS/ReportaProblem.css';
 
 // --- NEW COMPONENT: Validated Input with Filtering ---
 const ValidatedInput = ({ id, label, value, onChange, filterType, maxLength, placeholder }) => {
+    const [hasError, setHasError] = useState(false);
+
     const handleChange = (e) => {
         let val = e.target.value;
 
         if (filterType === 'numeric') {
+            // Check for invalid characters (letters/symbols) to trigger error state
+            if (/[^0-9]/.test(val)) {
+                setHasError(true);
+                setTimeout(() => setHasError(false), 1500);
+            }
             // Security: Remove any non-digit characters
             val = val.replace(/[^0-9]/g, '');
         } else if (filterType === 'name') {
@@ -31,8 +38,10 @@ const ValidatedInput = ({ id, label, value, onChange, filterType, maxLength, pla
                 onChange={handleChange}
                 maxLength={maxLength}
                 autoComplete="off"
+                style={hasError ? { border: '1px solid red', outline: '1px solid red' } : {}}
             />
             <label htmlFor={id} className="form__group_oneform__label">{label}</label>
+            {hasError && <span style={{ color: 'red', fontSize: '12px', marginTop: '5px', display: 'block' }}>Numbers only</span>}
         </div>
     );
 };
@@ -43,7 +52,7 @@ ValidatedInput.propTypes = {
     label: PropTypes.string.isRequired,
     value: PropTypes.string.isRequired,
     onChange: PropTypes.func.isRequired,
-    filterType: PropTypes.oneOf(['numeric', 'name']).isRequired,
+    filterType: PropTypes.oneOf(['numeric', 'name', 'text']).isRequired,
     maxLength: PropTypes.number,
     placeholder: PropTypes.string
 };
@@ -54,7 +63,10 @@ const ReportaProblem = () => {
         accountNumber: '',
         firstName: '',
         middleName: '',
-        lastName: ''
+        lastName: '',
+        phoneNumber: '',
+        address: '',
+        location: ''
     });
 
     const handleFieldChange = (field) => (value) => {
@@ -79,6 +91,15 @@ const ReportaProblem = () => {
                             onChange={handleFieldChange('accountNumber')}
                             filterType="numeric"
                             maxLength={15}
+                        />
+                        <ValidatedInput 
+                            id="phone"
+                            label="Phone Number"
+                            placeholder="Phone Number"
+                            value={formData.phoneNumber}
+                            onChange={handleFieldChange('phoneNumber')}
+                            filterType="numeric"
+                            maxLength={11}
                         />
                         <ValidatedInput 
                             id="fname"
@@ -106,7 +127,7 @@ const ReportaProblem = () => {
                         />
                     </div>
 
-                    {/* MIDDLE COLUMN: Concern & Location (Switched) */}
+                    {/* MIDDLE COLUMN: Concern & Location */}
                     <div className="report-details-column">
                         <div className="concern-group">
                             <label htmlFor="concern" className="concern-label">Describe your concern</label>
@@ -116,19 +137,25 @@ const ReportaProblem = () => {
                                 placeholder="Please explain the problem in detail (e.g., specific pole numbers, wires sparking, etc.)..."
                             ></textarea>
                         </div>
-
-                        <div className="concern-group">
-                            <label htmlFor="location" className="concern-label">Address and Location</label>
-                            <input 
-                                type="text" 
-                                id="location" 
-                                className="concern-field" 
-                                placeholder="Enter the complete address" 
-                            />
-                        </div>
+                        <ValidatedInput 
+                            id="address"
+                            label="Address"
+                            placeholder="Address"
+                            value={formData.address}
+                            onChange={handleFieldChange('address')}
+                            filterType="text"
+                        />
+                        <ValidatedInput 
+                            id="location"
+                            label="Location"
+                            placeholder="Location"
+                            value={formData.location}
+                            onChange={handleFieldChange('location')}
+                            filterType="text"
+                        />
                     </div>
 
-                    {/* RIGHT COLUMN: The Upload Modal (Switched) */}
+                    {/* RIGHT COLUMN: The Upload Modal */}
                     <div className="report-upload-column">
                         <div className="modal">
                            <div className="modal-header">

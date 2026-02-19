@@ -9,6 +9,11 @@ import CookieBanner from './components/CookieBanner.jsx';
 import DarkLightButton from './components/buttons/darkLightButton.jsx'; 
 import ReportaProblem from './ReportaProblem.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
+import About from './About.jsx';
+import PrivacyNotice from './PrivacyNotice.jsx';
+import AdminUsers from './components/AdminUsers.jsx';
+import AdminTickets from './components/AdminTickets.jsx';
+import AdminInterruptions from './components/AdminInterruptions.jsx';
 
 // --- NEW HELPER COMPONENT ---
 // We put the UI logic here so it can "talk" to the Router
@@ -16,11 +21,11 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
   const location = useLocation();
   
   // This checks if we are currently looking at the admin dashboard
-  const isAdminPage = location.pathname === '/admin-dashboard';
+  const isAdminPage = location.pathname.startsWith('/admin-');
 
   return (
     <>
-      <div className="fix-container-nav">
+      <div className="fix-container-nav" style={{ position: 'sticky', top: 0, zIndex: 1100, backgroundColor: 'var(--bg-body)' }}>
         {/* LandingPage stays on every screen per your request */}
         <LandingPage />
         
@@ -34,12 +39,17 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
           <div className="body-padding">
             <InterruptionList />
             <ReportaProblem />
+            <About />
+            <PrivacyNotice />
             <Footer />
           </div>
         } />
 
         {/* ADMIN ROUTE */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin-users" element={<AdminUsers />} />
+        <Route path="/admin-tickets" element={<AdminTickets />} />
+        <Route path="/admin-interruptions" element={<AdminInterruptions />} />
       </Routes>
 
       <CookieBanner />

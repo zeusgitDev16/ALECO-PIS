@@ -1,8 +1,19 @@
+.body-padding {
+  padding-top: 130px;
+  padding-bottom: 60px;
+}
+
 .interruption-list-container {
   max-width: 1400px;
-  margin: 0 auto;
-  padding: 60px 20px;
+  margin: 0 auto 60px auto;
+  padding: 0 20px;
   overflow: hidden; /* Prevents full page horizontal scroll */
+}
+
+.about-aleco {
+  font-size: 1.9rem;
+  font-family: var(--font-header);
+
 }
 
 .section-title {
@@ -280,4 +291,50 @@
     justify-content: space-between;
     margin-top: 5px; /* Reduced from 20px since we have the text now */
     padding: 0 10px;
+}
+
+/* --- ABOUT SECTION LAYOUT --- */
+.about-content-container {
+  display: flex;
+  flex-direction: row;
+  gap: 40px;
+  align-items: stretch; /* Makes image and text card same height */
+}
+
+.about-text-section {
+  flex: 1; /* Equal width */
+}
+
+.about-image-wrapper {
+  flex: 1;
+  margin-top: 20px; /* Matches the .report-main-card margin so they align */
+  overflow: hidden; /* Masks the images sliding out of view */
+  border-radius: 12px;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.about-slider-track {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  transition: transform 0.8s ease-in-out; /* Smooth sliding animation */
+}
+
+.about-image {
+  min-width: 100%; /* Ensures each image takes the full width of the window */
+  height: 100%; /* Fills the height of the container */
+  object-fit: cover;
+}
+
+@media (max-width: 900px) {
+  .about-content-container {
+    flex-direction: column;
+  }
+  .about-image-wrapper {
+    margin-top: 0;
+  }
+  .about-image {
+    height: auto;
+    max-height: 400px;
+  }
 }

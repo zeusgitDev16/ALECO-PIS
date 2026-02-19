@@ -111,6 +111,10 @@
   color: var(--text-secondary);
   margin-bottom: 0.5rem;
   transition: all 0.3s ease;
+<<<<<<< HEAD
+=======
+  text-align: center;
+>>>>>>> c1be5b9cf075bf70a789a41c357bfdec0b58a4ea
 }
 
 /* --- CONTENT AREA --- */

@@ -16,15 +16,16 @@
 /* --- TOP NAVIGATION --- */
 .admin-top-nav {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 40px;
+    gap: 20px;
 }
 
 /* Search Bar */
 .search-container {
     position: relative;
     width: 300px;
+    margin-right: auto;
 }
 
 .search-icon {
@@ -48,9 +49,7 @@
 
 /* Action Icons */
 .action-icons {
-    display: flex;
-    gap: 20px;
-    align-items: center;
+    display: contents;
 }
 
 .icon-btn {

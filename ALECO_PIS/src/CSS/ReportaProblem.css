@@ -282,16 +282,6 @@
   border-color: #FACC15;
 }
 
-/* --- AGREE BUTTON (Privacy Notice) --- */
-.btn-agree {
-  padding: 0.5rem 4rem; /* Wider for emphasis */
-  box-shadow: 0 0 20px rgba(11, 36, 71, 0.6); /* Blue Glow */
-}
-
-[data-theme="dark"] .btn-agree {
-  box-shadow: 0 0 20px rgba(250, 204, 21, 0.6); /* Yellow Glow */
-}
-
 /* Container for the new column style */
 .report-details-column {
     flex: 1.5; /* Makes this column slightly wider to accommodate essays */

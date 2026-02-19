@@ -169,3 +169,35 @@
     display: none;
   }
 }
+
+/* --- FOOTER SECTION --- */
+.sidebar-footer {
+  margin-top: 1rem;
+}
+
+/* From Uiverse.io by felipesntr - Modified to Light Blue with Glow */
+.sidebar-footer button {
+  border: none;
+  background-color: #24b4fb;
+  border-radius: 0.9em;
+  cursor: pointer;
+  padding: 0.8em 1.2em 0.8em 1em;
+  transition: all ease-in-out 0.2s;
+  font-size: 16px;
+  width: 100%;
+  box-shadow: 0 0 10px rgba(36, 180, 251, 0.6);
+}
+
+.sidebar-footer button span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-weight: 600;
+}
+
+.sidebar-footer button:hover {
+  background-color: #0071e2;
+  box-shadow: 0 0 20px rgba(36, 180, 251, 0.8), 0 0 40px rgba(36, 180, 251, 0.4);
+  transform: scale(1.02);
+}

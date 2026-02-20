@@ -6,6 +6,7 @@ const AdminUsers = () => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('employee');
   const [invitationCode, setInvitationCode] = useState('');
+  const [emailValid, setEmailValid] = useState(null);
 
   const handleGenerateCode = (e) => {
     e.preventDefault();
@@ -22,6 +23,20 @@ const AdminUsers = () => {
     setEmail('');
     setRole('employee');
     setInvitationCode('');
+    setEmailValid(null);
+  };
+
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    setEmail(val);
+
+    if (val.trim() === '') {
+      setEmailValid(null);
+    } else {
+      // Validate email format (supports standard emails and gmail)
+      const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      setEmailValid(isValid);
+    }
   };
 
   const copyToClipboard = () => {
@@ -83,14 +98,31 @@ const AdminUsers = () => {
             <form onSubmit={handleGenerateCode} className="invite-form">
               <div className="form-group">
                 <label>Email Address</label>
-                <input 
-                  type="email" 
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter user email"
-                  className="form-input"
-                />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={handleEmailChange}
+                    placeholder="Enter user email"
+                    className="form-input"
+                    style={{ 
+                      paddingRight: '40px',
+                      borderColor: emailValid === true ? '#2e7d32' : emailValid === false ? '#d32f2f' : ''
+                    }}
+                  />
+                  {emailValid === true && (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  )}
+                  {emailValid === false && (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  )}
+                </div>
               </div>
               
               <div className="form-group">
@@ -108,6 +140,8 @@ const AdminUsers = () => {
               <button 
                 type="submit"
                 className="main-login-btn invite-btn"
+                disabled={!emailValid}
+                style={{ opacity: !emailValid ? 0.6 : 1, cursor: !emailValid ? 'not-allowed' : 'pointer' }}
               >
                 Generate Code
               </button>
@@ -125,8 +159,8 @@ const AdminUsers = () => {
               gap: '20px'
             }}>
               <div>
-                <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#2e7d32' }}>Invitation Code for <strong>{email}</strong> ({role})</p>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', fontFamily: 'monospace', color: '#1b5e20' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--text-main)' }}>Invitation Code for <strong>{email}</strong> ({role})</p>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', fontFamily: 'monospace', color: 'var(--text-header)' }}>
                   {invitationCode}
                 </div>
               </div>

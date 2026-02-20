@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AdminSidebar from './AdminSidebar';
+import AdminSidebar from './Sidebar';
 import '../CSS/AdminDashboard.css';
 
 const AdminUsers = () => {

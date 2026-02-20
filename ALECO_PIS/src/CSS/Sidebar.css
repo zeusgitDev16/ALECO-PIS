@@ -24,6 +24,12 @@
   overflow-x: hidden;
   transition: opacity 0.2s ease, padding 0.3s ease;
   white-space: nowrap; /* Prevents text wrapping during shrink */
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sidebar-layout::-webkit-scrollbar {
+  display: none;
 }
 
 /* --- HEADER SECTION --- */
@@ -32,22 +38,32 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+  padding-bottom: 0.5rem;
+  margin-top: 0;
+  padding-top: 0.5rem;
+  margin-bottom: 0.2rem;
   transition: all 0.3s ease;
+  background-color: var(--bg-body);
+  box-shadow: none;
+  border-radius: 0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .sidebar-logo {
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
-  margin-bottom: 0.5rem;
-  margin-top: 1rem;
+  margin-bottom: 0.2rem;
+  margin-top: 0.2rem;
   transition: all 0.3s ease;
 }
 
 .sidebar-header h5 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-header);
   text-align: center;
@@ -61,7 +77,7 @@
   border: 0;
   height: 1px;
   background-color: var(--text-secondary);
-  margin: 0.5rem 0 1.5rem 0;
+  margin: 0.2rem 0 0.5rem 0;
   width: 100%;
   opacity: 0.5;
 }
@@ -70,29 +86,32 @@
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 0.75rem;
+  gap: 0.8rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 8px;
   text-decoration: none;
   color: var(--text-secondary);
   transition: all 0.3s ease;
   cursor: pointer;
+  background-color: var(--bg-card);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  margin-bottom: 4px;
 }
 
 .sidebar-item svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
 .sidebar-item span {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -106,10 +125,10 @@
 
 /* --- LABELS --- */
 .sidebar-label {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-style: italic;
   color: var(--text-secondary);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
   transition: all 0.3s ease;
   text-align: center;
 }
@@ -119,8 +138,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  /* Ready for nav items */
+  gap: 0.2rem;
+  /* Nav items container */
 }
 
 /* --- RESPONSIVE BEHAVIOR --- */
@@ -140,29 +159,33 @@
     height: 40px;
     margin-top: 0.5rem;
   }
+  
+  .sidebar-header {
+    padding: 0.5rem;
+    border-radius: 0;
+  }
 
   /* Adjust text elements for small sidebar */
   .sidebar-header h5 {
-    opacity: 1;
-    height: auto;
-    margin: 0.2rem 0 0 0;
+    display: block;
     font-size: 0.7rem;
-    overflow: visible;
+    margin: 0.2rem 0 0 0;
   }
 
   .sidebar-label {
-    opacity: 1;
-    height: auto;
-    margin: 0 0 0.5rem 0;
+    display: block;
     font-size: 0.65rem;
     text-align: center;
-    overflow: visible;
   }
 
   /* Sidebar Item Responsive */
   .sidebar-item {
     justify-content: center;
-    padding: 0.5rem 0;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    margin: 0 auto 10px auto;
   }
 
   .sidebar-item span {
@@ -172,7 +195,14 @@
 
 /* --- FOOTER SECTION --- */
 .sidebar-footer {
-  margin-top: 1rem;
+  margin-top: 0;
+  padding-top: 0.5rem;
+  margin-bottom: 0;
+  padding-bottom: 0.5rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  background-color: var(--bg-body);
 }
 
 /* From Uiverse.io by felipesntr - Modified to Light Blue with Glow */
@@ -186,6 +216,7 @@
   font-size: 16px;
   width: 100%;
   box-shadow: 0 0 10px rgba(36, 180, 251, 0.6);
+  color: #fff;
 }
 
 .sidebar-footer button span {
@@ -198,15 +229,18 @@
 
 .sidebar-footer button:hover {
   background-color: #0071e2;
+  transform: translateY(-2px);
   box-shadow: 0 0 20px rgba(36, 180, 251, 0.8), 0 0 40px rgba(36, 180, 251, 0.4);
-  transform: scale(1.02);
+}
+
+.sidebar-footer button:hover span {
 }
 
 /* --- RESPONSIVE CREATE POST BUTTON (Phone/Tablet) --- */
 @media (max-width: 1000px) {
   .sidebar-footer button {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
     padding: 0;
     display: flex;
@@ -223,5 +257,8 @@
     font-weight: 700;
     color: #fff;
     line-height: 1;
+  }
+
+  .sidebar-footer button:hover::after {
   }
 }

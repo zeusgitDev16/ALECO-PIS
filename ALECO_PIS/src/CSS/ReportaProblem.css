@@ -331,7 +331,7 @@
 .concern-field:focus {
     outline: none;
     border-color: #0b2447; /* ALECO Yellow */
-    box-shadow: 0 0 0 3px rgba(138, 146, 159, 0.422); 
+    box-shadow: none;
 }
 
 /* Dark Mode Tweaks */
@@ -426,19 +426,6 @@
 
 /* --- PRIVACY NOTICE AGREE BUTTON GLOW --- */
 .btn-agree {
-  animation: btn-glow 1.5s infinite alternate;
-}
-
-@keyframes btn-glow {
-  from { box-shadow: 0 0 5px -2px #0b2447; }
-  to { box-shadow: 0 0 20px 2px #0b2447; }
-}
-
-[data-theme="dark"] .btn-agree {
-  animation: btn-glow-dark 1.5s infinite alternate;
-}
-
-@keyframes btn-glow-dark {
-  from { box-shadow: 0 0 5px -2px #FACC15; }
-  to { box-shadow: 0 0 20px 2px #FACC15; }
+  /* Removed glow animation */
+  box-shadow: none;
 }

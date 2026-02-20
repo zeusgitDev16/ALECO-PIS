@@ -5,7 +5,7 @@ import alecoLogo from '../assets/Aleco-logo-modified.png';
 
 const AdminSidebar = ({ activePage }) => {
   return (
-    <aside id="sidebar" className="sidebar" style={{ height: '100vh', overflowY: 'auto' }}>
+    <aside id="sidebar" className="sidebar" style={{ height: '100vh' }}>
       <div className="sidebar-layout">
         <div className="sidebar-header">
           <img src={alecoLogo} alt="Aleco Logo" className="sidebar-logo" />
@@ -60,6 +60,14 @@ const AdminSidebar = ({ activePage }) => {
           </Link>
 
           <span className="sidebar-label">Archives*</span>
+
+          {/* History */}
+          <Link to="/admin-history" className={`sidebar-item ${activePage === 'history' ? 'active' : ''}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>History</span>
+          </Link>
         </div>
 
         <div className="sidebar-footer">

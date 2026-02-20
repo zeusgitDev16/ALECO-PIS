@@ -56,7 +56,7 @@
 
 .admin-content {
     flex: 1;
-    padding: 20px 20px 40px 10px;
+    padding: 40px 20px 40px 40px;
     overflow-y: auto;
     color: var(--text-header);
 }
@@ -65,7 +65,7 @@
 .admin-top-nav {
     display: flex;
     align-items: center;
-    padding: 30px 20px 10px 10px;
+    padding: 30px 20px 30px 40px;
     gap: 20px;
     background-color: var(--bg-body);
     flex-shrink: 0;
@@ -75,8 +75,7 @@
 /* Search Bar */
 .search-container {
     position: relative;
-    width: 300px;
-    margin-right: auto;
+    flex: 1;
 }
 
 .search-icon {
@@ -138,11 +137,43 @@
 /* --- WIDGETS / CONTENT --- */
 .dashboard-widget {
     margin-top: 20px;
-    padding: 50px;
-    border: 2px dashed var(--text-secondary);
-    border-radius: 12px;
-    background-color: rgba(128, 128, 128, 0.05);
-    text-align: center;
+    padding: 30px;
+    border: none;
+    border-radius: 20px;
+    
+    /* UPDATED: Matches User's "Independent" Card Style (Neumorphism) */
+    background-color: var(--bg-card);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                
+    text-align: left;
+    transition: transform 0.2s ease;
+}
+
+.dashboard-widget:hover {
+    transform: translateY(-5px);
+}
+
+/* Independent Cards for Tickets & Interruptions */
+.admin-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 30px;
+    padding: 10px;
+}
+
+.ticket-card, .interruption-card-admin {
+    padding: 25px;
+    border-radius: 20px;
+    background-color: var(--bg-card);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ticket-card:hover, .interruption-card-admin:hover {
+    transform: translateY(-5px);
 }
 
 .widget-text {

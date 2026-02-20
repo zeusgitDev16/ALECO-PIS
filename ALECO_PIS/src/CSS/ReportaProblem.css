@@ -31,7 +31,7 @@
 /* --- LIGHT MODE (DEFAULT) --- */
 .form__group_one {
   position: relative;
-  margin-left: 20px;
+  margin-left: 0;
   margin-bottom: 33px;
   max-width: 500px;
 }
@@ -296,7 +296,7 @@
     flex-direction: column;
     gap: 8px;
     width: 100%;
-    margin-left: 20px;
+    margin-left: 0;
     margin-bottom: 33px;
 }
 
@@ -422,4 +422,23 @@
   .report-description {
     font-size: 1rem;
   }
+}
+
+/* --- PRIVACY NOTICE AGREE BUTTON GLOW --- */
+.btn-agree {
+  animation: btn-glow 1.5s infinite alternate;
+}
+
+@keyframes btn-glow {
+  from { box-shadow: 0 0 5px -2px #0b2447; }
+  to { box-shadow: 0 0 20px 2px #0b2447; }
+}
+
+[data-theme="dark"] .btn-agree {
+  animation: btn-glow-dark 1.5s infinite alternate;
+}
+
+@keyframes btn-glow-dark {
+  from { box-shadow: 0 0 5px -2px #FACC15; }
+  to { box-shadow: 0 0 20px 2px #FACC15; }
 }

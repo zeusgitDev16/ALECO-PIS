@@ -201,3 +201,27 @@
   box-shadow: 0 0 20px rgba(36, 180, 251, 0.8), 0 0 40px rgba(36, 180, 251, 0.4);
   transform: scale(1.02);
 }
+
+/* --- RESPONSIVE CREATE POST BUTTON (Phone/Tablet) --- */
+@media (max-width: 1000px) {
+  .sidebar-footer button {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+  }
+  .sidebar-footer button span {
+    display: none;
+  }
+  .sidebar-footer button::after {
+    content: '+';
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+}

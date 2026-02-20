@@ -1,0 +1,75 @@
+/* --- INVITE FORM RESPONSIVE LAYOUT --- */
+.invite-form {
+    display: grid;
+    grid-template-columns: 3fr 2fr auto; /* Email (wide), Role (medium), Button (auto) */
+    gap: 20px;
+    align-items: end; /* Aligns button with input fields */
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    background-color: var(--bg-body);
+    color: var(--text-header);
+    outline: none;
+    font-size: var(--fs-base);
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.form-input:focus {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+}
+
+/* Custom Select Styling */
+select.form-input {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+    cursor: pointer;
+}
+
+.invite-btn {
+    padding: 12px 24px;
+    height: auto; /* Let padding define height to match inputs */
+    font-size: var(--fs-base);
+    white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+    .invite-form {
+        grid-template-columns: 1fr 1fr; /* Stack Email and Role side-by-side */
+    }
+    .invite-btn {
+        grid-column: 1 / -1; /* Button takes full width below */
+    }
+}
+
+@media (max-width: 600px) {
+    .invite-form {
+        grid-template-columns: 1fr; /* Stack everything vertically */
+    }
+    .invite-btn {
+        grid-column: auto;
+    }
+}

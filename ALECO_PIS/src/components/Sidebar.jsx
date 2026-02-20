@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import '../CSS/AdminSidebar.css';
+import '../CSS/Sidebar.css';
 import alecoLogo from '../assets/Aleco-logo-modified.png';
 
 const AdminSidebar = ({ activePage }) => {

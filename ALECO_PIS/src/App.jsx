@@ -8,12 +8,12 @@ import './CSS/BodyLandPage.css';
 import CookieBanner from './components/CookieBanner.jsx';
 import DarkLightButton from './components/buttons/darkLightButton.jsx'; 
 import ReportaProblem from './ReportaProblem.jsx';
-import AdminDashboard from './AdminDashboard.jsx';
+import AdminDashboard from './Dashboard.jsx';
 import About from './About.jsx';
 import PrivacyNotice from './PrivacyNotice.jsx';
-import AdminUsers from './components/AdminUsers.jsx';
-import AdminTickets from './components/AdminTickets.jsx';
-import AdminInterruptions from './components/AdminInterruptions.jsx';
+import AdminUsers from './components/Users.jsx';
+import AdminTickets from './components/Tickets.jsx';
+import AdminInterruptions from './components/Interruptions.jsx';
 
 // --- NEW HELPER COMPONENT ---
 // We put the UI logic here so it can "talk" to the Router

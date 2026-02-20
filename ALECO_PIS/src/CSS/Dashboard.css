@@ -1,0 +1,92 @@
+/* src/CSS/AdminDashboard.css */
+
+/* --- GLOBAL RESPONSIVE SIZING --- */
+:root {
+    --fs-xl: 2rem;      /* ~32px */
+    --fs-lg: 1.5rem;    /* ~24px */
+    --fs-md: 1.125rem;  /* ~18px */
+    --fs-base: 1rem;    /* ~16px */
+    --fs-sm: 0.875rem;  /* ~14px */
+}
+
+@media (max-width: 1024px) {
+    :root {
+        --fs-xl: 1.75rem;
+        --fs-lg: 1.25rem;
+        --fs-md: 1rem;
+        --fs-base: 0.9375rem;
+        --fs-sm: 0.8125rem;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --fs-xl: 1.5rem;
+        --fs-lg: 1.125rem;
+        --fs-md: 0.9375rem;
+        --fs-base: 0.875rem;
+        --fs-sm: 0.75rem;
+    }
+}
+
+@media (max-width: 350px) {
+    :root {
+        --fs-xl: 1.25rem;
+        --fs-lg: 1rem;
+        --fs-md: 0.875rem;
+        --fs-base: 0.8125rem;
+        --fs-sm: 0.7rem;
+    }
+}
+
+.admin-dashboard-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--bg-body);
+    font-size: var(--fs-base);
+}
+
+.admin-main-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.admin-content {
+    flex: 1;
+    padding: 20px 40px 40px 40px;
+    overflow-y: auto;
+    color: var(--text-header);
+}
+
+/* --- HEADER SECTION --- */
+.dashboard-header {
+    margin-bottom: 30px;
+}
+
+.header-title {
+    margin: 0;
+    font-size: var(--fs-xl);
+}
+
+.header-subtitle {
+    color: var(--text-secondary);
+    margin-top: 10px;
+    font-size: var(--fs-sm);
+}
+
+/* --- WIDGETS / CONTENT --- */
+.dashboard-widget {
+    margin-top: 20px;
+    padding: 50px;
+    border: 2px dashed var(--text-secondary);
+    border-radius: 12px;
+    background-color: rgba(128, 128, 128, 0.05);
+    text-align: center;
+}
+
+.widget-text {
+    color: var(--text-secondary);
+}

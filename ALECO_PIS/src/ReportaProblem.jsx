@@ -18,6 +18,11 @@ const ValidatedInput = ({ id, label, value, onChange, filterType, maxLength, pla
             // Security: Remove any non-digit characters
             val = val.replace(/[^0-9]/g, '');
         } else if (filterType === 'name') {
+            // Check for invalid characters (numbers/symbols) to trigger error state
+            if (/[^a-zA-Z\s]/.test(val)) {
+                setHasError(true);
+                setTimeout(() => setHasError(false), 1500);
+            }
             // Security: Remove numbers and special characters (allow letters and spaces)
             val = val.replace(/[^a-zA-Z\s]/g, '');
             // Formatting: Capitalize the first letter of every word
@@ -32,16 +37,17 @@ const ValidatedInput = ({ id, label, value, onChange, filterType, maxLength, pla
             <input 
                 type="text" 
                 id={id} 
-                className="form__group_oneform__field" 
+                className={`form__group_oneform__field ${hasError ? 'error' : ''}`} 
                 placeholder={placeholder}
                 value={value}
                 onChange={handleChange}
                 maxLength={maxLength}
                 autoComplete="off"
-                style={hasError ? { border: '1px solid red', outline: '1px solid red' } : {}}
             />
             <label htmlFor={id} className="form__group_oneform__label">{label}</label>
-            {hasError && <span style={{ color: 'red', fontSize: '12px', marginTop: '5px', display: 'block' }}>Numbers only</span>}
+            <span className="error-message">
+                {filterType === 'numeric' ? 'Numbers only' : 'Letters only'}
+            </span>
         </div>
     );
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import '../CSS/Sidebar.css';
 import alecoLogo from '../assets/Aleco-logo-modified.png';
+import CreatePost from './buttons/CreatePost';
 
 const AdminSidebar = ({ activePage }) => {
   return (
@@ -60,18 +61,19 @@ const AdminSidebar = ({ activePage }) => {
           </Link>
 
           <span className="sidebar-label">Archives*</span>
+
+          {/* History */}
+          <Link to="/admin-history" className={`sidebar-item ${activePage === 'history' ? 'active' : ''}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>History</span>
+          </Link>
         </div>
 
         <div className="sidebar-footer">
-          <button>
-            <span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Create Post
-            </span>
-          </button>
+          <CreatePost />
         </div>
       </div>
     </aside>

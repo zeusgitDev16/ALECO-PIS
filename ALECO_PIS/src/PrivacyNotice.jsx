@@ -5,6 +5,18 @@ import './CSS/ReportaProblem.css'; // Reusing card and button styles
 const PrivacyNotice = () => {
     return (
         <div id="privacy" className="interruption-list-container">
+            <style>
+                {`
+                    .btn-agree {
+                        box-shadow: 0 0 15px rgba(36, 180, 251, 0.5);
+                        transition: all 0.3s ease-in-out;
+                    }
+                    .btn-agree:hover {
+                        box-shadow: 0 0 25px rgba(36, 180, 251, 0.8), 0 0 50px rgba(36, 180, 251, 0.4);
+                        transform: scale(1.02);
+                    }
+                `}
+            </style>
             <h2 className="section-title">Privacy Notice</h2>
             <div className="report-main-card" style={{ color: 'var(--text-main)' }}>
                 <p style={{ lineHeight: '1.6', textAlign: 'justify' }}>

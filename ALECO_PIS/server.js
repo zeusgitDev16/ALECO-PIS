@@ -42,21 +42,39 @@ const transporter = nodemailer.createTransport({
 app.post('/api/invite', async (req, res) => {
   const { email, role, code } = req.body;
 
-  // Basic validation to ensure the conveyor belt isn't empty
   if (!email || !role || !code) {
     return res.status(400).json({ error: "Missing information in the package." });
   }
 
+  // THE SANITIZER: Clean the email of accidental spaces and uppercase letters
+  const cleanEmail = email.trim().toLowerCase();
+
+  console.log(`--- [DEBUG] Raw Email: '${email}' ---`);
+  console.log(`--- [DEBUG] Cleaned Email: '${cleanEmail}' ---`);
+
   try {
-    console.log(`Attempting to file invitation for: ${email}`);
+    // STEP 1: Search using the clean email in the access_codes table
+    const [existingRecord] = await pool.execute(
+      'SELECT * FROM access_codes WHERE email = ?', 
+      [cleanEmail]
+    );
 
-    // THE COMMIT: Writing the SQL command to the cabinet
-    const query = 'INSERT INTO access_codes (email, role_assigned, code) VALUES (?, ?, ?)';
-await pool.execute(query, [email, role, code]);
+    console.log(`--- [DEBUG] Found Records Count: ${existingRecord.length} ---`);
 
-    console.log("--- Success! Data committed to Aiven MySQL ---");
-    
-    res.status(200).json({ message: "Invitation saved to database!" });
+    if (existingRecord.length > 0) {
+      // If it's already in the table, reject it with a 409! 
+      // (This matches your frontend React error trigger)
+      console.log("--- [DEBUG] Duplicate found. Blocking invite creation. ---");
+      return res.status(409).json({ message: "Account already exists" });
+
+    } else {
+      // STEP 2: Insert the new row with the clean email
+      const insertQuery = 'INSERT INTO access_codes (email, role_assigned, code) VALUES (?, ?, ?)';
+      await pool.execute(insertQuery, [cleanEmail, role, code]);
+      console.log("--- Success! New data committed to Aiven MySQL ---");
+      
+      return res.status(200).json({ message: "New invitation saved to database!" });
+    }
 
   } catch (error) {
     console.error("Database Error:", error.message);
@@ -83,6 +101,40 @@ app.post('/api/send-email', async (req, res) => {
   } catch (error) {
     console.error("Nodemailer Error:", error);
     res.status(500).json({ error: "The mailman couldn't reach the recipient." });
+  }
+});
+
+// Add this inside your Express server/routes file
+
+app.post('/api/check-email', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ exists: false, message: "No email provided" });
+  }
+
+  // Sanitize exactly like your invite route
+  const cleanEmail = email.trim().toLowerCase();
+  console.log(`--- [DEBUG] Checking if email exists: '${cleanEmail}' ---`);
+
+  try {
+    // Check the access_codes table using your Aiven pool
+    const query = 'SELECT * FROM access_codes WHERE email = ?';
+    const [rows] = await pool.execute(query, [cleanEmail]);
+
+    if (rows.length > 0) {
+      console.log(`--- [DEBUG] Found duplicate in access_codes! Triggering red UI. ---`);
+      // The email was found! Tell React to show the red indicator.
+      return res.json({ exists: true }); 
+    } else {
+      console.log(`--- [DEBUG] Email is completely new. Keeping UI green. ---`);
+      // The email is new. Tell React to keep things green.
+      return res.json({ exists: false });
+    }
+
+  } catch (error) {
+    console.error("Error checking email:", error.message);
+    res.status(500).json({ message: "Server error during email check" });
   }
 });
 

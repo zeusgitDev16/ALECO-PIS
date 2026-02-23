@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import API from '../../api/axiosConfig'; // Using the Global Hub instead of raw axios
+import React, { useState, useEffect } from 'react';
+import API from '../../api/axiosConfig'; 
 import '../../CSS/InviteNewUsers.css';
 
 const USER_ROLES = {
@@ -12,9 +12,35 @@ const InviteNewUsers = ({ onUserInvited }) => {
   const [role, setRole] = useState(USER_ROLES.EMPLOYEE);
   const [invitationCode, setInvitationCode] = useState('');
   const [emailValid, setEmailValid] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // NEW: Real-time database check with a 500ms debounce
+  useEffect(() => {
+    if (emailValid && email.trim() !== '') {
+      const delayDebounceFn = setTimeout(async () => {
+        try {
+          // Asks your Node.js server to check the Aiven MySQL database
+          const response = await API.post('/api/check-email', { email });
+          
+          if (response.data.exists) {
+            setErrorMessage('Account already exists in the system');
+          } else {
+            setErrorMessage('');
+          }
+        } catch (error) {
+          console.error("Database Check Error:", error);
+        }
+      }, 500); // Waits 500ms after the user stops typing
+
+      return () => clearTimeout(delayDebounceFn);
+    } else {
+      setErrorMessage('');
+    }
+  }, [email, emailValid]);
 
   const handleGenerateCode = async (e) => { 
     e.preventDefault();
+    setErrorMessage('');
     const code = Math.floor(100000000000 + Math.random() * 900000000000).toString();
     
     const newUser = {
@@ -24,8 +50,6 @@ const InviteNewUsers = ({ onUserInvited }) => {
     };
 
     try {
-      // Clean and simple: only the mailbox name is needed
-      // The Hub handles the 'http://localhost:5000' automatically
       const response = await API.post('/api/invite', newUser);
 
       if (response.status === 200) {
@@ -36,8 +60,12 @@ const InviteNewUsers = ({ onUserInvited }) => {
         }
       }
     } catch (error) {
-      console.error("Global Hub Error:", error);
-      alert("Communication failed. Is the Node.js office open?");
+     if (error.response && error.response.status === 409) {
+          setErrorMessage('Account already exists in the system');
+      } else {
+          console.error("Global Hub Error:", error);
+          alert("Communication failed. Is the Node.js office open?");
+      }
     }
   };
 
@@ -62,11 +90,14 @@ const InviteNewUsers = ({ onUserInvited }) => {
     setRole(USER_ROLES.EMPLOYEE);
     setInvitationCode('');
     setEmailValid(null);
+    setErrorMessage('');
   };
 
   const handleEmailChange = (e) => {
     const val = e.target.value;
     setEmail(val);
+    
+    // We remove setErrorMessage('') from here because useEffect handles it now!
 
     if (val.trim() === '') {
       setEmailValid(null);
@@ -88,7 +119,22 @@ const InviteNewUsers = ({ onUserInvited }) => {
       {!invitationCode ? (
         <form onSubmit={handleGenerateCode} className="invite-form">
           <div className="form-group">
-            <label>Email Address</label>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+              <label style={{ margin: 0 }}>Email Address</label>
+              
+              {errorMessage && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#d32f2f', fontSize: '8px', fontWeight: 'bold' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+            </div>
+
             <div style={{ position: 'relative' }}>
               <input 
                 type="email" 
@@ -99,15 +145,15 @@ const InviteNewUsers = ({ onUserInvited }) => {
                 className="form-input"
                 style={{ 
                   paddingRight: '40px',
-                  borderColor: emailValid === true ? '#2e7d32' : emailValid === false ? '#d32f2f' : ''
+                  borderColor: emailValid === true ? (errorMessage ? '#d32f2f' : '#2e7d32') : emailValid === false ? '#d32f2f' : ''
                 }}
               />
-              {emailValid === true && (
+              {emailValid === true && !errorMessage && (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               )}
-              {emailValid === false && (
+              {(emailValid === false || errorMessage) && (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -131,8 +177,8 @@ const InviteNewUsers = ({ onUserInvited }) => {
           <button 
             type="submit"
             className="main-login-btn invite-btn"
-            disabled={!emailValid}
-            style={{ opacity: !emailValid ? 0.6 : 1, cursor: !emailValid ? 'not-allowed' : 'pointer' }}
+            disabled={!emailValid || errorMessage}
+            style={{ opacity: (!emailValid || errorMessage) ? 0.6 : 1, cursor: (!emailValid || errorMessage) ? 'not-allowed' : 'pointer' }}
           >
             Generate Code
           </button>
@@ -154,7 +200,6 @@ const InviteNewUsers = ({ onUserInvited }) => {
     Invitation Code for <strong>{email}</strong> ({role})
   </p>
   
-  {/* The Flex Container: This puts the code and icon on the same line */}
   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
     <div style={{ 
       fontSize: '1.5rem', 

@@ -37,7 +37,7 @@
 }
 
 .form__group_oneform__field {
-  border: 1px solid silver !important;
+  border: 1px solid silver;
   border-radius: 5px;
   box-sizing: border-box;
   color: var(--text-header); /* Dark blue for light mode */
@@ -78,7 +78,7 @@
 
 /* Light Mode Focus */
 .form__group_oneform__field:focus {
-  border: 1px solid #0b2447 !important;
+  border: 1px solid #0b2447;
   box-shadow: none;
   /* This ensures the blinking line (caret) is visible in light mode */
   caret-color: #0b2447; 
@@ -135,6 +135,64 @@
     background-color: transparent;
     border-color: transparent;
     color: var(--text-header);
+}
+
+/* --- VALIDATION ERROR STATES --- */
+.form__group_oneform__field.error,
+.form__group_oneform__field:invalid {
+  border: 2px solid #ef5350 !important;
+  box-shadow: 5px 5px 0 0 #ef5350; /* Red Shadow */
+  caret-color: #ef5350;
+  color: #ef5350 !important; /* Turns the typed text red */
+  background-color: #fff5f5 !important; /* Adds a visible red tint to background */
+}
+
+.form__group_oneform__field.error:focus,
+.form__group_oneform__field:invalid:focus {
+  border: 2px solid #ef5350 !important;
+  box-shadow: 5px 5px 0 0 #ef5350 !important;
+}
+
+.form__group_oneform__field.error ~ .form__group_oneform__label,
+.form__group_oneform__field:invalid ~ .form__group_oneform__label {
+  color: #ef5350;
+  border-left-color: #ef5350;
+  border-right-color: #ef5350;
+}
+
+.form__group_oneform__field.error ~ .error-message,
+.form__group_oneform__field:invalid ~ .error-message {
+  display: block;
+}
+
+.error-message {
+  color: #ef5350;
+  font-size: 0.8rem;
+  margin-top: 8px;
+  margin-left: 5px;
+  font-weight: 600;
+  display: none;
+}
+
+/* Dark Mode Error Overrides */
+[data-theme="dark"] .form__group_oneform__field.error,
+[data-theme="dark"] .form__group_oneform__field:invalid {
+  border-color: #ef5350 !important;
+  box-shadow: 5px 5px 0 0 #ef5350;
+  caret-color: #ef5350;
+  color: #ef5350 !important;
+  background-color: rgba(239, 83, 80, 0.1) !important; /* Dark mode red tint */
+}
+
+[data-theme="dark"] .form__group_oneform__field.error ~ .form__group_oneform__label,
+[data-theme="dark"] .form__group_oneform__field:invalid ~ .form__group_oneform__label {
+  color: #ef5350;
+  border-left-color: #ef5350;
+  border-right-color: #ef5350;
+}
+
+[data-theme="dark"] .error-message {
+  color: #ef5350;
 }
 
 /* --- LAYOUT WRAPPER --- */

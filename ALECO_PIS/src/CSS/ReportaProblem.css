@@ -404,6 +404,10 @@
     width: 100%;
   }
 
+  .concern-group {
+    margin-left: 0;
+  }
+
   .form__group_oneform__field {
     width: 100%;
   }

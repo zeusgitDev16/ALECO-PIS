@@ -14,6 +14,7 @@ import PrivacyNotice from './PrivacyNotice.jsx';
 import AdminUsers from './components/Users.jsx';
 import AdminTickets from './components/Tickets.jsx';
 import AdminInterruptions from './components/Interruptions.jsx';
+import AdminHistory from './components/History.jsx';
 
 // --- NEW HELPER COMPONENT ---
 // We put the UI logic here so it can "talk" to the Router
@@ -50,6 +51,7 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
         <Route path="/admin-users" element={<AdminUsers />} />
         <Route path="/admin-tickets" element={<AdminTickets />} />
         <Route path="/admin-interruptions" element={<AdminInterruptions />} />
+        <Route path="/admin-history" element={<AdminHistory />} />
       </Routes>
 
       <CookieBanner />

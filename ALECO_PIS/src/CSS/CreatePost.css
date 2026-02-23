@@ -1,0 +1,60 @@
+/* From Uiverse.io by felipesntr - Modified to Light Blue with Glow */
+.create-post-btn {
+  border: none;
+  background-color: #24b4fb;
+  border-radius: 0.9em;
+  cursor: pointer;
+  padding: 0.8em 1.2em 0.8em 1em;
+  transition: all ease-in-out 0.2s;
+  font-size: 16px;
+  width: 100%;
+  box-shadow: 0 0 10px rgba(36, 180, 251, 0.6);
+  overflow: hidden;
+}
+
+.create-post-btn span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-weight: 600;
+}
+
+.create-post-btn svg {
+  margin-right: 8px;
+}
+
+.create-post-btn:hover {
+  background-color: #0071e2;
+  box-shadow: 0 0 20px rgba(36, 180, 251, 0.8), 0 0 40px rgba(36, 180, 251, 0.4);
+  transform: scale(1.02);
+}
+
+/* Responsive: Icon only on small screens (matches Sidebar breakpoint) */
+@media (max-width: 1000px) {
+  .create-post-btn {
+    width: 45px;
+    height: 45px;
+    padding: 0;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+  }
+
+  .create-post-btn .btn-text {
+    display: none;
+  }
+
+  .create-post-btn svg {
+    margin-right: 0;
+    width: 24px;
+    height: 24px;
+  }
+
+  .create-post-btn span {
+    width: 100%;
+    justify-content: center;
+  }
+}

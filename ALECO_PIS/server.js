@@ -2,6 +2,7 @@ import express from 'express';
 import mysql from 'mysql2/promise'; // We use the /promise version for cleaner 'async' code
 import cors from 'cors';
 import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
 
 // 1. Initialize environment variables (Security)
 dotenv.config();
@@ -28,6 +29,15 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// the mailman configuration
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
 // 4. The Mailbox (The API Route)
 app.post('/api/invite', async (req, res) => {
   const { email, role, code } = req.body;
@@ -41,8 +51,8 @@ app.post('/api/invite', async (req, res) => {
     console.log(`Attempting to file invitation for: ${email}`);
 
     // THE COMMIT: Writing the SQL command to the cabinet
-    const query = 'INSERT INTO access_codes (assigned_to_email, role_to_assign, code) VALUES (?, ?, ?)';
-    await pool.execute(query, [email, role, code]);
+    const query = 'INSERT INTO access_codes (email, role_assigned, code) VALUES (?, ?, ?)';
+await pool.execute(query, [email, role, code]);
 
     console.log("--- Success! Data committed to Aiven MySQL ---");
     
@@ -51,6 +61,28 @@ app.post('/api/invite', async (req, res) => {
   } catch (error) {
     console.error("Database Error:", error.message);
     res.status(500).json({ error: "The filing cabinet is jammed (Database error)." });
+  }
+});
+
+app.post('/api/send-email', async (req, res) => {
+  const { email, code } = req.body;
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email, // The user's gmail from your UI
+    subject: 'ALECO PIS - Your Official Invitation Code',
+    text: `Hello! You have been invited to the ALECO Power Outage Tracking system. 
+           Your 12-digit invitation code is: ${code}
+           Please use this code to register your account.`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Email successfully delivered to ${email}`);
+    res.status(200).json({ message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Nodemailer Error:", error);
+    res.status(500).json({ error: "The mailman couldn't reach the recipient." });
   }
 });
 

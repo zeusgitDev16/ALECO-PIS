@@ -41,6 +41,22 @@ const InviteNewUsers = ({ onUserInvited }) => {
     }
   };
 
+  const handleSendEmail = async () => {
+    try {
+      const response = await API.post('/api/send-email', {
+        email: email,
+        code: invitationCode
+      });
+
+      if (response.status === 200) {
+        alert(`Email successfully sent to ${email}!`);
+      }
+    } catch (error) {
+      console.error("Email Error:", error);
+      alert("The mailman failed to deliver the message. Check the server console.");
+    }
+  };
+
   const handleClear = () => {
     setEmail('');
     setRole(USER_ROLES.EMPLOYEE);
@@ -133,16 +149,49 @@ const InviteNewUsers = ({ onUserInvited }) => {
           flexWrap: 'wrap',
           gap: '20px'
         }}>
-          <div>
-            <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--text-main)' }}>Invitation Code for <strong>{email}</strong> ({role})</p>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', fontFamily: 'monospace', color: 'var(--text-header)' }}>
-              {invitationCode}
-            </div>
-          </div>
+         <div>
+  <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--text-main)' }}>
+    Invitation Code for <strong>{email}</strong> ({role})
+  </p>
+  
+  {/* The Flex Container: This puts the code and icon on the same line */}
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div style={{ 
+      fontSize: '1.5rem', 
+      fontWeight: 'bold', 
+      fontFamily: 'monospace', 
+      color: 'var(--text-header)' 
+    }}>
+      {invitationCode}
+    </div>
+
+    <button 
+      onClick={copyToClipboard} 
+      title="Copy to clipboard"
+      style={{
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '4px',
+        color: 'var(--text-secondary)',
+        transition: 'color 0.2s'
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-header)'}
+      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+    </button>
+  </div>
+</div>
           
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={copyToClipboard} className="main-login-btn" style={{ padding: '8px 16px' }}>
-              Copy Code
+            <button onClick={handleSendEmail} className="main-login-btn" style={{ padding: '8px 16px' }}>
+              send
             </button>
             <button onClick={handleClear} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--text-secondary)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-header)' }}>
               Done

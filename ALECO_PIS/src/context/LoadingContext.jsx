@@ -25,7 +25,7 @@ export const LoadingProvider = ({ children }) => {
             {isLoading && (
                 <div className="global-loader-overlay">
                     <div className="loader-spinner"></div>
-                    <p className="loader-text">Connecting to ALECO Servers...</p>
+                    <p className="loader-text">Loading, Please wait...</p>
                 </div>
             )}
         </LoadingContext.Provider>

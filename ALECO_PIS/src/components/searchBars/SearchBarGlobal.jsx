@@ -1,37 +1,73 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../CSS/SearchBarGlobal.css';
 
 const SearchBarGlobal = () => {
-  // 1. Set up a state to hold the profile picture URL
   const [profilePic, setProfilePic] = useState('');
+  const [role, setRole] = useState('employee');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
+  // NEW: Secure feature state for global logout
+  const [logoutAllDevices, setLogoutAllDevices] = useState(false);
+  
+  const navigate = useNavigate();
 
-  // 2. Grab it from local storage when the header loads
   useEffect(() => {
-    const storedPic = localStorage.getItem('googleProfilePic');
-    if (storedPic) {
-      setProfilePic(storedPic);
-    } else {
-      // A fallback default avatar just in case it's missing
-      setProfilePic('https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'); 
-    }
+    const updateProfile = () => {
+      const storedPic = localStorage.getItem('googleProfilePic');
+      const storedRole = localStorage.getItem('userRole'); 
+      
+      if (storedPic && storedPic !== 'null' && storedPic !== 'undefined') {
+        setProfilePic(storedPic);
+      } else {
+        setProfilePic('https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'); 
+      }
+
+      if (storedRole) {
+        setRole(storedRole.toLowerCase());
+      } else {
+        setRole('employee');
+      }
+    };
+
+    updateProfile(); 
+    window.addEventListener('storage', updateProfile);
+    return () => window.removeEventListener('storage', updateProfile);
   }, []);
+
+  // UPDATED: Async handleLogout to support the server-side global flush
+  const handleLogout = async () => {
+    try {
+      if (logoutAllDevices) {
+        // We retrieve the email to tell the server which account to flush
+        const userEmail = localStorage.getItem('userEmail'); 
+        
+        if (userEmail) {
+          await fetch('http://localhost:5000/api/logout-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail })
+          });
+          console.log("--- [SECURITY] Global session flush completed ---");
+        }
+      }
+    } catch (error) {
+      console.error("Global Logout Failed:", error);
+      // We continue with local logout anyway to ensure the user is logged out of this session
+    } finally {
+      localStorage.clear(); 
+      setIsDropdownOpen(false); 
+      setShowLogoutConfirm(false);
+      setLogoutAllDevices(false); // Reset state for next user
+      navigate('/'); 
+    }
+  };
 
   return (
     <header className="admin-top-nav">
-      
       <div className="search-container">
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="20" 
-          height="20" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-          className="search-icon"
-        >
+        <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
@@ -40,26 +76,80 @@ const SearchBarGlobal = () => {
       
       <div className="action-icons">
         <button className="icon-btn" title="Notifications">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
         </button>
+        
         <button className="icon-btn" title="Inbox">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
         </button>
-        <button className="icon-btn" title="Settings">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        </button>
+        
+        <div className="profile-menu-wrapper">
+          <button 
+            className="profile-btn" 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            title="Account Menu"
+          >
+            <div className={`profile-image-border role-${role}`}>
+              <img src={profilePic} alt="User" className="profile-image" referrerPolicy="no-referrer" />
+            </div>
+          </button>
 
-        {/* Dynamic Profile Picture Button */}
-        <button className="profile-btn" title="My Profile">
-          <div className="profile-image-border">
-            <img 
-              src={profilePic} 
-              alt="User Profile" 
-              className="profile-image"
-              referrerPolicy="no-referrer" // CRUCIAL: Google images sometimes block loading without this!
-            />
-          </div>
-        </button>
+          {isDropdownOpen && (
+            <div className="profile-dropdown">
+              <div className="dropdown-info">
+                <span className="user-name">{localStorage.getItem('userName') || 'User'}</span>
+                <span className="user-role">{role.toUpperCase()}</span>
+              </div>
+              <div className="dropdown-divider"></div>
+              <button className="dropdown-link" onClick={() => navigate('/profile')}>View Profile</button>
+              
+              <button 
+                className="dropdown-link logout-red" 
+                onClick={() => {
+                  setShowLogoutConfirm(true);
+                  setIsDropdownOpen(false);
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+
+          {showLogoutConfirm && (
+            <div className="logout-modal-overlay">
+              <div className="logout-modal">
+                <h3>Confirm Logout</h3>
+                <p>Are you sure you want to sign out of the ALECO PIS?</p>
+                
+                {/* NEW: Security Checkbox UI */}
+                <div className="security-option">
+                  <label className="checkbox-container">
+                    <input 
+                      type="checkbox" 
+                      checked={logoutAllDevices} 
+                      onChange={(e) => setLogoutAllDevices(e.target.checked)} 
+                    />
+                    <span className="checkbox-label">Logout from all devices</span>
+                  </label>
+                </div>
+
+                <div className="modal-actions">
+                  <button className="cancel-btn" onClick={() => {
+                    setShowLogoutConfirm(false);
+                    setLogoutAllDevices(false);
+                  }}>Cancel</button>
+                  <button className="confirm-btn" onClick={handleLogout}>Logout</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

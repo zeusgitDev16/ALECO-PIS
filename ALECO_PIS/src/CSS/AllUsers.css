@@ -53,3 +53,21 @@
 .status-dot.active {
     color: #2e7d32;
 }
+
+.status-dot.disabled {
+    color: #ef4444; /* Alert Red for disabled accounts */
+}
+
+.action-btn-toggle {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--text-secondary);
+    background: transparent;
+    color: var(--text-header);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.action-btn-toggle:hover {
+    background: rgba(128, 128, 128, 0.1);
+}

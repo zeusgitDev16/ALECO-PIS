@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
 import InterruptionList from './InterruptionList.jsx'
@@ -16,11 +16,43 @@ import AdminTickets from './components/Tickets.jsx';
 import AdminInterruptions from './components/Interruptions.jsx';
 import AdminHistory from './components/History.jsx';
 
-// --- NEW HELPER COMPONENT ---
-// We put the UI logic here so it can "talk" to the Router
+// --- UPDATED HELPER COMPONENT ---
 const NavigationWrapper = ({ theme, toggleTheme }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   
+  // 1. SESSION SECURITY CHECK
+  useEffect(() => {
+    const verifySession = async () => {
+      const email = localStorage.getItem('userEmail');
+      const currentTokenVersion = localStorage.getItem('tokenVersion');
+
+      // If no email is stored, they aren't logged in, so we skip the check
+      if (!email) return;
+
+      try {
+        const response = await fetch('http://localhost:5000/api/verify-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, tokenVersion: currentTokenVersion })
+        });
+
+        const data = await response.json();
+
+        // If the server says 'invalid', it means a "Logout from all devices" was triggered elsewhere
+        if (!response.ok || data.status === 'invalid') {
+          console.log("--- [SECURITY] Session stale. Clearing local data. ---");
+          localStorage.clear();
+          navigate('/'); // Kick to landing page
+        }
+      } catch (error) {
+        console.error("Session verification failed:", error);
+      }
+    };
+
+    verifySession();
+  }, [location.pathname, navigate]); // Runs on every navigation change
+
   // This checks if we are currently looking at the admin dashboard
   const isAdminPage = location.pathname.startsWith('/admin-');
 
@@ -46,7 +78,7 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
           </div>
         } />
 
-        {/* ADMIN ROUTE */}
+        {/* ADMIN ROUTES */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-users" element={<AdminUsers />} />
         <Route path="/admin-tickets" element={<AdminTickets />} />
@@ -77,7 +109,6 @@ function App() {
 
   return (
     <Router>
-      {/* We call the wrapper inside the Router */}
       <NavigationWrapper theme={theme} toggleTheme={toggleTheme} />
     </Router>
   );

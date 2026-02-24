@@ -163,50 +163,42 @@ app.post('/api/check-email', async (req, res) => {
 });
 
 app.post('/api/setup-account', async (req, res) => {
-  const { email, inviteCode, password } = req.body;
-
-  if (!email || !inviteCode || !password) {
-    return res.status(400).json({ error: "Missing required fields." });
-  }
+  const { email, inviteCode, password, name } = req.body; // Added name for AllUsers display
+  if (!email || !inviteCode || !password) return res.status(400).json({ error: "Missing required fields." });
 
   const cleanEmail = email.trim().toLowerCase();
-
   try {
-    // 1. VERIFY: Check if the email and 12-digit code match AND status is still pending
+    // 1. VERIFY: Ensure the code is valid and still "pending"
     const [inviteRecord] = await pool.execute(
       'SELECT * FROM access_codes WHERE email = ? AND code = ? AND status = "pending"',
       [cleanEmail, inviteCode]
     );
 
     if (inviteRecord.length === 0) {
-      // If it's 0, either the email/code is wrong, or the account is already active.
       return res.status(401).json({ error: "Invalid email, invite code, or account already active." });
     }
 
-    // Grab the role they were assigned by the Admin when invited
+    // 2. SYNC ROLE: Pull the exact role the Admin assigned in access_codes
     const userRole = inviteRecord[0].role_assigned;
-
-    // 2. SECURE: Hash the password (salts it 10 times for heavy security)
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. REGISTER: Insert them into your official users table
-    const insertUserQuery = 'INSERT INTO users (email, password, role) VALUES (?, ?, ?)';
-    await pool.execute(insertUserQuery, [cleanEmail, hashedPassword, userRole]);
+    // 3. REGISTER: Official users table with Security Defaults
+    // We initialize status as 'Active' and token_version as 1
+    const insertUserQuery = `
+      INSERT INTO users (name, email, password, role, auth_method, status, token_version) 
+      VALUES (?, ?, ?, ?, "password", "Active", 1)
+    `;
+    await pool.execute(insertUserQuery, [name || "New User", cleanEmail, hashedPassword, userRole]);
 
-    // 4. CLEAN UP: Update the status to 'active' instead of deleting the row!
-    await pool.execute('UPDATE access_codes SET status = "active" WHERE email = ?', [cleanEmail]);
+    // 4. UPDATE STATUS: Mark the invite as "used"
+    await pool.execute('UPDATE access_codes SET status = "used" WHERE email = ?', [cleanEmail]);
 
-    console.log(`--- Success! Account officially set up for ${cleanEmail} (Status changed to active) ---`);
+    console.log(`--- [REGISTRATION] Standard user ${cleanEmail} created as ${userRole} ---`);
     res.status(200).json({ message: "Account setup successful! You can now log in." });
-
+    
   } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: "Account already set up." });
     console.error("Setup Error:", error.message);
-    
-    // Safety check: If the email already exists in the users table somehow
-    if (error.code === 'ER_DUP_ENTRY') {
-        return res.status(409).json({ error: "This account has already been set up. Please use the standard login." });
-    }
-    
     res.status(500).json({ error: "Server error during account setup." });
   }
 });
@@ -221,32 +213,42 @@ app.post('/api/login', async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
 
   try {
-    // 1. Search for the user in your official 'users' table
+    // Fetch user details including the new status and token_version columns
     const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [cleanEmail]);
 
     if (users.length === 0) {
-      // User not found
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
     const user = users[0];
 
-    // 2. Compare the typed password with the hashed password in the database
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // 1. THE KILL SWITCH: Block disabled accounts immediately
+    if (user.status === 'Disabled') {
+      console.log(`--- [SECURITY] Blocked login attempt for disabled account: ${cleanEmail} ---`);
+      return res.status(403).json({ 
+        error: "Your account has been disabled by an administrator. Please contact IT support." 
+      });
+    }
 
+    // 2. PASSWORD CHECK
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      // Wrong password
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
-    // 3. Success! Log them in and send back their role for the dashboard
     console.log(`--- Success! ${cleanEmail} has logged in. ---`);
     
+    // 3. SECURE RESPONSE: Send tokenVersion and user info
     return res.status(200).json({ 
       message: "Login successful!",
       user: {
+        id: user.id,
+        name: user.name,
         email: user.email,
-        role: user.role // We pass the role back so React knows if they are an admin or employee
+        role: user.role,
+        profilePic: user.profile_pic,
+        // Send the version to be stored in localStorage for App.jsx checks
+        tokenVersion: user.token_version 
       }
     });
 
@@ -256,6 +258,140 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// NEW: Route to handle "Automatic Detection" Google Login
+app.post('/api/google-login', async (req, res) => {
+  const { email, profilePic, name } = req.body; // Added name for data consistency
+  if (!email) return res.status(400).json({ error: "Missing Google email." });
+
+  try {
+    const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+
+    if (users.length === 0) {
+      return res.status(401).json({ error: "Account not found. Please use 'First Time Setup' with your 12-digit code." });
+    }
+
+    const user = users[0];
+
+    // 1. THE KILL SWITCH: Block disabled accounts even if Google auth is valid
+    if (user.status === 'Disabled') {
+      console.log(`--- [SECURITY] Blocked Google Login for disabled account: ${email} ---`);
+      return res.status(403).json({ 
+        error: "This account has been disabled. Access denied." 
+      });
+    }
+
+    // 2. DATA SYNC: Update profile pic and name from Google every time they log in
+    await pool.execute(
+      'UPDATE users SET profile_pic = ?, name = ? WHERE email = ?', 
+      [profilePic, name || user.name, email]
+    );
+
+    // 3. SECURE RESPONSE: Include token_version for App.jsx security handshake
+    return res.status(200).json({
+      message: "Google Login successful!",
+      user: { 
+        id: user.id,
+        name: name || user.name,
+        email: user.email, 
+        role: user.role, 
+        profilePic: profilePic,
+        tokenVersion: user.token_version // Essential for session verification
+      }
+    });
+  } catch (error) {
+    console.error("Google Login Error:", error.message);
+    res.status(500).json({ error: "Server error during Google login." });
+  }
+});
+
+// NEW: Google Setup (The 12-Digit Guard for NEW Google Users)
+app.post('/api/setup-google-account', async (req, res) => {
+  // Added 'name' to the request body to ensure the AllUsers table is populated
+  const { email, inviteCode, profilePic, name } = req.body; 
+  if (!email || !inviteCode) return res.status(400).json({ error: "Missing info." });
+
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    // 1. VERIFY: Ensure the code matches and is still "pending"
+    const [invite] = await pool.execute(
+      'SELECT * FROM access_codes WHERE email = ? AND code = ? AND status = "pending"',
+      [cleanEmail, inviteCode]
+    );
+
+    if (invite.length === 0) {
+      return res.status(401).json({ error: "Invalid invite code or account already active." });
+    }
+
+    const userRole = invite[0].role_assigned;
+
+    // 2. REGISTER: Create user with Google info and Security Defaults
+    // We initialize 'status' as 'Active' and 'token_version' as 1
+    const insertQuery = `
+      INSERT INTO users (name, email, role, profile_pic, auth_method, status, token_version) 
+      VALUES (?, ?, ?, ?, "google", "Active", 1)
+    `;
+    await pool.execute(insertQuery, [name || "Google User", cleanEmail, userRole, profilePic]);
+
+    // 3. UPDATE STATUS: Mark the invitation as "used"
+    await pool.execute('UPDATE access_codes SET status = "used" WHERE email = ?', [cleanEmail]);
+
+    console.log(`--- [NEW USER] ${cleanEmail} linked Google as ${userRole} (Invite used) ---`);
+    res.status(200).json({ message: "Google account linked successfully!" });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: "Account already exists." });
+    console.error("Google Setup Error:", error.message);
+    res.status(500).json({ error: "Database error during Google setup." });
+  }
+});
+
+app.post('/api/logout-all', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Missing email." });
+
+  try {
+    // Incrementing the version 'bricks' all current session tokens for this user
+    const [result] = await pool.execute(
+      'UPDATE users SET token_version = token_version + 1 WHERE email = ?',
+      [email]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    res.status(200).json({ message: "Successfully logged out from all devices." });
+  } catch (error) {
+    console.error("Global Logout Error:", error.message);
+    res.status(500).json({ error: "Failed to perform global logout." });
+  }
+});
+
+// Fetch all registered users from the 'users' table
+app.get('/api/users', async (req, res) => {
+  try {
+    // We select the specific columns needed for the AllUsers table
+    const [rows] = await pool.execute(
+      'SELECT id, name, email, role, status FROM users ORDER BY created_at DESC'
+    );
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching users:", error.message);
+    res.status(500).json({ error: "Failed to fetch users from the filing cabinet." });
+  }
+});
+
+// Toggle User Status (Enable/Disable)
+app.post('/api/users/toggle-status', async (req, res) => {
+  const { id, currentStatus } = req.body;
+  const newStatus = currentStatus === 'Active' ? 'Disabled' : 'Active';
+
+  try {
+    await pool.execute('UPDATE users SET status = ? WHERE id = ?', [newStatus, id]);
+    res.status(200).json({ message: `User status updated to ${newStatus}` });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update user status." });
+  }
+});
 // 5. Start the Office
 app.listen(PORT, () => {
   console.log(`Server running automatically on http://localhost:${PORT}`);

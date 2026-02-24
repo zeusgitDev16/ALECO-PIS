@@ -12,7 +12,7 @@
     box-sizing: border-box;
 }
 
-/* Search Bar */
+/* --- Search Bar --- */
 .search-container {
     position: relative;
     width: 300px;
@@ -37,7 +37,7 @@
     box-sizing: border-box;
 }
 
-/* Action Icons */
+/* --- Action Icons --- */
 .action-icons {
     display: flex;
     align-items: center;
@@ -62,7 +62,6 @@
 
 /* --- PROFILE PICTURE BUTTON --- */
 
-/* The clickable button container */
 .profile-btn {
     background: none;
     border: none;
@@ -71,43 +70,234 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 10px; /* Gives a little breathing room from the settings icon */
+    margin-left: 10px;
     outline: none;
 }
 
-/* The container that creates the Google colored border */
+/* The base container for the border and glow */
 .profile-image-border {
-    /* ADJUST THESE TWO VALUES TO CHANGE THE OVERALL SIZE */
-    width: 32px;  
-    height: 32px; 
-    
+    width: 36px;  
+    height: 36px; 
     border-radius: 50%;
-    /* The Google Brand Colors Gradient */
-    background: conic-gradient(from 0deg, #EA4335, #FBBC05, #34A853, #4285F4, #EA4335);
-    
-    /* This padding controls the THICKNESS of the colored border */
     padding: 2px; 
-    
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    box-sizing: border-box;
 }
 
-/* Smooth hover effect */
+/* ADMIN: Vibrant Purple Glazing Glow */
+.profile-image-border.role-admin {
+    border: 1.5px solid #a855f7; 
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    animation: pulse-admin 3s infinite ease-in-out;
+}
+
+/* EMPLOYEE: Fresh Green Glazing Glow */
+.profile-image-border.role-employee {
+    border: 1.5px solid #22c55e; 
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    animation: pulse-employee 3s infinite ease-in-out;
+}
+
+/* --- Hover Effects --- */
 .profile-btn:hover .profile-image-border {
-    transform: scale(1.05);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transform: scale(1.1);
 }
 
-/* The actual image inside */
+.profile-btn:hover .profile-image-border.role-admin {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+}
+
+.profile-btn:hover .profile-image-border.role-employee {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+
+/* --- Actual Image --- */
 .profile-image {
     width: 100%;
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
     background-color: var(--bg-body); 
-    
-    /* This creates the tiny theme-colored gap between the image and the colored border */
     border: 2px solid var(--bg-body); 
+    box-sizing: border-box;
+}
+
+/* --- Role-Based Pulse Animations --- */
+@keyframes pulse-admin {
+    0% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.2); }
+    50% { box-shadow: 0 0 18px rgba(168, 85, 247, 0.5); }
+    100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.2); }
+}
+
+@keyframes pulse-employee {
+    0% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.2); }
+    50% { box-shadow: 0 0 18px rgba(34, 197, 94, 0.5); }
+    100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.2); }
+}
+
+/* --- DROPDOWN SYSTEM --- */
+
+.profile-menu-wrapper {
+    position: relative; /* Anchor for the absolute dropdown */
+}
+
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 15px);
+    right: 0;
+    width: 200px;
+    background-color: var(--bg-body); /* Theme sync */
+    border: 1px solid var(--text-secondary);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    padding: 12px 0;
+    z-index: 100;
+    animation: slideDown 0.2s ease-out;
+}
+
+.dropdown-info {
+    padding: 8px 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-header);
+}
+
+.user-role {
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--text-secondary);
+    opacity: 0.2;
+    margin: 10px 0;
+}
+
+.dropdown-link {
+    width: 100%;
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    color: var(--text-header);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.dropdown-link:hover {
+    background-color: rgba(128, 128, 128, 0.1); 
+    color: var(--text-header);
+}
+
+.logout-red {
+    color: #ef4444 !important; /* Professional warning red */
+    font-weight: 600;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- LOGOUT CONFIRMATION MODAL --- */
+
+.logout-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6); /* Dim the background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Stay above everything else */
+}
+
+.logout-modal {
+    background-color: var(--bg-body); /* Theme sync */
+    padding: 30px;
+    border-radius: 15px;
+    width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--text-secondary);
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.logout-modal h3 {
+    color: var(--text-header);
+    margin-bottom: 15px;
+}
+
+.logout-modal p {
+    color: var(--text-secondary);
+    margin-bottom: 25px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.cancel-btn, .confirm-btn {
+    padding: 10px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.cancel-btn {
+    background-color: rgba(128, 128, 128, 0.1);
+    color: var(--text-header);
+}
+
+.confirm-btn {
+    background-color: #ef4444; /* Alert red */
+    color: white;
+}
+
+.confirm-btn:hover {
+    background-color: #dc2626;
+    transform: scale(1.05);
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.security-option {
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.checkbox-container input {
+    cursor: pointer;
+    accent-color: #ef4444; /* Matches your logout button color */
 }

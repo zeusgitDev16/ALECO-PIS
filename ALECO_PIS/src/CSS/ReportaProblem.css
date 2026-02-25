@@ -1,25 +1,31 @@
 /* Main Wrapper */
 .report-problem-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 40px 20px;
     font-family: var(--font-body);
+    box-sizing: border-box;
+    width: 100%;
 }
 
 /* Header Elements */
 .report-header-section {
-    margin-bottom: 30px;
+   margin-bottom: 35px;
+    /* Adds the horizontal line to match the 'Power Interruption Updates' section */
+    border-bottom: 2px solid var(--text-secondary);
+    padding-bottom: 20px; 
+    opacity: 0.9;
 }
 
 .report-title {
     color: var(--text-header);
-    margin: 0 0 10px 0;
+    margin: 0;
     font-size: 32px;
 }
 
 .report-description {
     color: var(--text-secondary);
-    margin: 0;
+    margin: 8px 0 0 0;
     font-size: 16px;
 }
 
@@ -28,13 +34,17 @@
  */
 .report-main-card {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 50px;
-    background-color: var(--bg-card); /* Theme adaptive background */
-    padding: 40px;
+    /* Forces columns to shrink to 100% of the screen if smaller than 300px */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 30px; /* Tighter gap for mobile */
+    background-color: var(--bg-card);
+    padding: 20px; /* Snug padding for mobile */
     border-radius: 12px;
-    box-shadow: 0 4px 15px var(--shadow-color-dark); /* Theme adaptive shadow */
+    box-shadow: 0 4px 15px var(--shadow-color-dark);
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box;
+    width: 100%;
+    overflow: hidden; /* Prevents any child elements from spilling out */
 }
 
 /* Columns */
@@ -87,7 +97,29 @@
 
 /* Tablet & Desktop Adjustments */
 @media (min-width: 768px) {
+  .report-problem-container {
+        padding: 40px 20px;
+    }
+    
+    .report-main-card {
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Restores your original 2-column rule */
+        gap: 50px;
+        padding: 35px; /* Restores the spacious padding */
+    }
+
     .btn-submit-report {
-        width: auto; /* Shrinks to normal button size on desktop */
+        width: auto;
+        padding: 12px 20px; /* Thinner button */
+        font-size: 14px; 
+    }
+    .report-title { 
+        font-size: 24px; /* Shrinks the main title */
+    }
+    .report-description { 
+        font-size: 14px; 
+    }
+    .column-section-title { 
+        font-size: 16px; 
+        margin-bottom: 15px; 
     }
 }

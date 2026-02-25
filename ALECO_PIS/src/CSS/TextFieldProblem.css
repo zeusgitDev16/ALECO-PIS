@@ -75,3 +75,19 @@
     from { opacity: 0; transform: translateY(-2px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* --- MOBILE SHRINKING --- */
+@media (max-width: 768px) {
+    .textfield-label { 
+        font-size: 12px; /* Smaller labels */
+        margin-bottom: 5px; 
+    }
+    .textfield-input { 
+        padding: 10px 12px; /* Thinner input box */
+        font-size: 13px; /* Smaller typing text */
+    }
+    .textfield-error-msg {
+        font-size: 10px; /* Shrink error text */
+        top: 12px;
+    }
+}

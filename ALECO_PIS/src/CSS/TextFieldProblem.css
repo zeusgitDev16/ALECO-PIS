@@ -1,0 +1,77 @@
+/* Container for the whole input group */
+.textfield-group {
+    margin-bottom: 20px;
+    width: 100%;
+    font-family: var(--font-body); /* Hooks into your global font */
+}
+
+/* Wrapper to position the error message absolute to the input */
+.textfield-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* The Label */
+.textfield-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main); /* Shifts between #212529 and #f9fafb automatically */
+    transition: color 0.3s ease;
+}
+
+/* The Input Field */
+.textfield-input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 15px;
+    color: var(--text-main);
+    background-color: var(--bg-body); /* Blends perfectly with your theme background */
+    border: 1px solid var(--text-secondary); /* Uses your secondary text color for a clean border */
+    border-radius: 8px;
+    outline: none;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box;
+}
+
+.textfield-input::placeholder {
+    color: var(--text-secondary); /* Shifts between #495057 and #9ca3af */
+    opacity: 0.7;
+}
+
+/* ==========================================
+   INTERACTIVE STATES (Applies universally)
+   ========================================== */
+
+/* Focus state: Retains the ALECO green from your SVG */
+.textfield-input:focus {
+    border-color: #1cc972;
+    box-shadow: 0 0 0 3px rgba(28, 201, 114, 0.15);
+}
+
+/* Error state: Triggers when regex catches an invalid character */
+.textfield-input.error {
+    border-color: #ff4d4d !important;
+}
+
+.textfield-input.error:focus {
+    box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.15) !important;
+}
+
+/* The red warning text */
+.textfield-error-msg {
+    position: absolute;
+    right: 12px;
+    top: 14px;
+    font-size: 12px;
+    color: #ff4d4d;
+    font-weight: 600;
+    pointer-events: none; 
+    animation: textfieldFadeIn 0.3s ease;
+}
+
+@keyframes textfieldFadeIn {
+    from { opacity: 0; transform: translateY(-2px); }
+    to { opacity: 1; transform: translateY(0); }
+}

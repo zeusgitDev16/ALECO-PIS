@@ -392,6 +392,103 @@ app.post('/api/users/toggle-status', async (req, res) => {
     res.status(500).json({ error: "Failed to update user status." });
   }
 });
+
+// HELPER: Generate an 8-character alphanumeric code (e.g., g5hYYu32)
+const generateResetCode = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+// --- FORGOT PASSWORD: SEND RESET CODE ---
+app.post('/api/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Missing email address." });
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  try {
+    // 1. Check if user exists in ALECO PIS system
+    const [user] = await pool.execute('SELECT id FROM users WHERE email = ?', [cleanEmail]);
+    if (user.length === 0) return res.status(404).json({ error: "Email not registered in the system." });
+
+    // 2. Generate 8-character alphanumeric token (e.g., g5hYYu32)
+    const resetCode = generateResetCode(); 
+    const expiresAt = new Date(Date.now() + 15 * 60000); // 15-minute window
+
+    // 3. IDEMPOTENCY: Clear old codes for this email
+    await pool.execute('DELETE FROM password_resets WHERE email = ?', [cleanEmail]);
+    
+    // 4. SAVE: Store in password_resets table
+    await pool.execute(
+      'INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)', 
+      [cleanEmail, resetCode, expiresAt]
+    );
+
+    // 5. EMAIL: Send using functional Nodemailer template
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: cleanEmail, 
+      subject: 'ALECO PIS - Password Reset Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+          <h2 style="color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px;">Security Alert: Password Reset</h2>
+          <p style="font-size: 16px;">Use the 8-character code below to reset your ALECO PIS password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <span style="font-size: 2.2rem; font-weight: bold; color: #d32f2f; letter-spacing: 4px; background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px dashed #d32f2f;">
+              ${resetCode}
+            </span>
+          </div>
+          <p style="font-size: 14px; color: #888;">Valid for 15 minutes. If this wasn't you, ignore this email.</p>
+        </div>`
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`--- [SECURITY] Reset code successfully delivered to ${cleanEmail} ---`);
+    res.status(200).json({ message: "Reset code sent to your email!" });
+
+  } catch (error) {
+    console.error("--- [DEBUG] Forgot Password Error:", error.message);
+    res.status(500).json({ error: "Failed to send reset code. Please try again later." });
+  }
+});
+
+app.post('/api/reset-password', async (req, res) => {
+  const { email, code, newPassword } = req.body;
+  if (!email || !code || !newPassword) return res.status(400).json({ error: "Missing required info." });
+
+  try {
+    // 1. VERIFY: Check code and expiration
+    const [record] = await pool.execute(
+      'SELECT * FROM password_resets WHERE email = ? AND token = ? AND expires_at > NOW()',
+      [email, code]
+    );
+
+    if (record.length === 0) return res.status(400).json({ error: "Invalid or expired reset code." });
+
+    // 2. UPDATE: Securely hash and update the existing user row
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Bump token_version to flush all existing sessions
+    await pool.execute(
+      'UPDATE users SET password = ?, token_version = token_version + 1 WHERE email = ?', 
+      [hashedPassword, email]
+    );
+
+    // 3. CLEANUP: Delete used token
+    await pool.execute('DELETE FROM password_resets WHERE email = ?', [email]);
+
+    console.log(`--- [SUCCESS] Password updated for ${email} ---`);
+    res.status(200).json({ message: "Password updated successfully!" });
+
+  } catch (error) {
+    console.error("--- [DEBUG] Reset Password Error:", error.message);
+    res.status(500).json({ error: "Server error during password update." });
+  }
+});
 // 5. Start the Office
 app.listen(PORT, () => {
   console.log(`Server running automatically on http://localhost:${PORT}`);

@@ -9,8 +9,10 @@ const USER_ROLES = {
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // NEW: Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. Fetch users from the database on mount
   const fetchUsers = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/users');
@@ -27,21 +29,24 @@ const AllUsers = () => {
     fetchUsers();
   }, []);
 
-  // 2. Handle the Enable/Disable toggle with Safety Measures
-  const handleToggleStatus = async (user) => {
-    const currentAdminEmail = localStorage.getItem('userEmail'); // The email of the person logged in
+  // Filter Logic: Searches through Name and Email in real-time
+  const filteredUsers = users.filter((user) => {
+    const searchTerm = searchQuery.toLowerCase();
+    return (
+      (user.name && user.name.toLowerCase().includes(searchTerm)) ||
+      (user.email && user.email.toLowerCase().includes(searchTerm))
+    );
+  });
 
-    // SAFETY PROCEDURE 2: Self-Preservation Check
-    // Prevents an Admin from accidentally locking their own account
+  const handleToggleStatus = async (user) => {
+    const currentAdminEmail = localStorage.getItem('userEmail');
+
     if (user.email === currentAdminEmail) {
-      alert("Safety Error: You cannot disable your own administrator account. This prevents accidental lockouts.");
+      alert("Safety Error: You cannot disable your own administrator account.");
       return;
     }
 
     const action = user.status === 'Active' ? 'DISABLE' : 'ENABLE';
-
-    // SAFETY PROCEDURE 1: Typed Confirmation
-    // Requires the admin to type the target email exactly to proceed
     const confirmation = window.prompt(
       `To ${action} ${user.name || user.email}, please type the exact email of the user to confirm:`
     );
@@ -58,12 +63,11 @@ const AllUsers = () => {
         body: JSON.stringify({ 
           id: user.id, 
           currentStatus: user.status,
-          requesterEmail: currentAdminEmail // Passed for backend verification
+          requesterEmail: currentAdminEmail 
         })
       });
 
       if (response.ok) {
-        // Refresh the list after the change
         fetchUsers();
       } else {
         const errorData = await response.json();
@@ -78,8 +82,19 @@ const AllUsers = () => {
 
   return (
     <div className="dashboard-widget">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div className="widget-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h4 style={{ margin: 0 }}>All Registered Users</h4>
+        
+        {/* NEW: Search Input Field */}
+        <div className="table-search-container">
+          <input 
+            type="text" 
+            placeholder="Search by name or email..." 
+            className="table-search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
       
       <div className="widget-text">
@@ -95,8 +110,9 @@ const AllUsers = () => {
               </tr>
             </thead>
             <tbody>
-              {users.length > 0 ? (
-                users.map((user) => (
+              {/* UPDATED: Map through filteredUsers instead of raw users */}
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
                   <tr key={user.id}>
                     <td className="user-name">{user.name || 'N/A'}</td>
                     <td className="user-email">{user.email}</td>
@@ -113,7 +129,6 @@ const AllUsers = () => {
                     <td>
                       <button 
                         className="action-btn-toggle" 
-                        // Updated to pass the full user object for safety checks
                         onClick={() => handleToggleStatus(user)}
                       >
                         {user.status === 'Active' ? 'Disable' : 'Enable'}
@@ -124,7 +139,7 @@ const AllUsers = () => {
               ) : (
                 <tr>
                   <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>
-                    No registered users found in the database.
+                    {searchQuery ? `No users matching "${searchQuery}"` : "No registered users found in the database."}
                   </td>
                 </tr>
               )}

@@ -118,3 +118,44 @@
 .login-button3:hover { 
   color: #ff4d4d; 
 }
+
+/* --- Forgot Password Modal Specifics --- */
+
+/* Ensures the help text under the heading is readable and professional */
+.login-form p[style*="font-size: 12px"] {
+    line-height: 1.5;
+    text-align: center;
+    width: 90%;
+    margin: 0 auto 15px auto;
+}
+
+/* Adds space specifically for the reset code and password fields */
+.login-form .login-field:last-of-type {
+    margin-bottom: 20px;
+}
+
+/* Hover effects for the 'Cancel' button to differentiate it from the primary action */
+.login-button2[type="button"]:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ff4d4d; /* Subtle red hint for cancellation */
+    border-color: #ff4d4d;
+}
+
+/* --- Responsive Adjustments (< 700px) --- */
+@media (max-width: 700px) {
+    .login-form {
+        width: 90%; /* Scale form width for mobile ALECO staff */
+        padding: 25px 20px;
+    }
+
+    #login-heading {
+        font-size: 22px; /* Slightly smaller heading for mobile */
+        margin-bottom: 15px;
+    }
+
+    .login-button1, .login-button2 {
+        width: 100%; /* Stack buttons for easier tapping on touchscreens */
+        margin-left: 0;
+        margin-right: 0;
+    }
+}

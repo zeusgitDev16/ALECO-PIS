@@ -71,3 +71,68 @@
 .action-btn-toggle:hover {
     background: rgba(128, 128, 128, 0.1);
 }
+
+.table-search-input {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #ccc);
+  background-color: var(--bg-secondary, #f9f9f9);
+  color: var(--text-primary, #333);
+  width: 250px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.table-search-input:focus {
+  border-color: #7c4dff; /* Using your Admin Purple theme color */
+}
+
+/* --- Base Styles for the Header Row --- */
+.widget-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 15px; /* Adds space between title and search on medium screens */
+}
+
+.table-search-input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  background-color: var(--bg-input, rgba(0, 0, 0, 0.2));
+  color: var(--text-header, #ffffff);
+  width: 280px; /* Default fixed width for desktop */
+  outline: none;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.table-search-input:focus {
+  border-color: #7c4dff; /* Your Admin Purple theme */
+  box-shadow: 0 0 8px rgba(124, 77, 255, 0.3);
+  width: 320px; /* Subtle expansion on focus for desktop */
+}
+
+/* --- Responsive Layout (Under 700px) --- */
+@media (max-width: 700px) {
+  .widget-header-row {
+    flex-direction: column; /* Stacks the Title and Search Bar vertically */
+    align-items: flex-start; /* Aligns them to the left */
+    gap: 12px;
+  }
+
+  .table-search-container {
+    width: 100%; /* Ensures the container takes full width */
+  }
+
+  .table-search-input {
+    width: 100%; /* Input takes full width of the widget */
+    box-sizing: border-box; /* Prevents padding from breaking width */
+    font-size: 16px; /* Better for mobile to prevent iOS auto-zoom */
+  }
+
+  .table-search-input:focus {
+    width: 100%; /* Keeps it full width even when focused */
+  }
+}

@@ -1,0 +1,48 @@
+/* Container to ensure it fills the right column properly */
+.concern-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+/* The Label */
+.concern-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    transition: color 0.3s ease;
+}
+
+/* The Textarea (Preserving your original 'textarea-large' intent) */
+.concern-field.textarea-large {
+    flex: 1;
+    min-height: 180px; /* Gives plenty of room to type the problem */
+    resize: none; /* Preserved from your original inline styles */
+    width: 100%;
+    padding: 15px;
+    font-size: 15px;
+    font-family: var(--font-body);
+    color: var(--text-main);
+    background-color: var(--bg-body);
+    border: 1px solid var(--text-secondary);
+    border-radius: 8px;
+    outline: none;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box;
+}
+
+/* Placeholder visibility */
+.concern-field.textarea-large::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* Focus state matches the green upload SVG for consistency */
+.concern-field.textarea-large:focus {
+    border-color: #1cc972;
+    box-shadow: 0 0 0 3px rgba(28, 201, 114, 0.15);
+}

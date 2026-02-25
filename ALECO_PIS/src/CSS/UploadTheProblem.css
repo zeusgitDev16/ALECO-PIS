@@ -1,0 +1,132 @@
+/* Container to ensure it fills the right column properly */
+.report-upload-column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    height: 100%;
+}
+
+/* The outer card for the upload area */
+.upload-modal {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background-color: var(--bg-card); /* Integrates with your theme */
+    border: 1px solid var(--text-secondary); /* Subtle border matching your theme */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px var(--shadow-color-dark);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Modal Body */
+.upload-modal-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.upload-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 5px 0;
+    font-family: var(--font-header);
+}
+
+.upload-modal-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 15px 0;
+}
+
+/* The Drag & Drop Area */
+.upload-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    min-height: 200px;
+    background-color: var(--bg-body); /* Creates contrast against the card */
+    border: 2px dashed var(--text-secondary); /* Signature dashed upload border */
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.upload-area:hover {
+    background-color: var(--bg-glass);
+    border-color: #1cc972; /* ALECO Green hover effect */
+}
+
+.upload-area-icon {
+    margin-bottom: 15px;
+}
+
+.upload-area-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 5px;
+}
+
+.upload-area-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.4;
+}
+
+.upload-area-description strong {
+    color: #1cc972; /* Emphasize 'clicking here' in green */
+}
+
+/* Modal Footer Buttons */
+.upload-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-secondary {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    background-color: transparent;
+    border: 1px solid var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: var(--bg-body);
+}
+
+.btn-primary {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background-color: #1a365d; /* Professional dark blue */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #2e5c9e;
+}
+
+/* Dark Mode Button overrides */
+[data-theme="dark"] .btn-primary {
+    background-color: #2979ff; /* Brighter blue for dark mode contrast */
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    background-color: #1c54b2;
+}

@@ -4,9 +4,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
+import { upload } from './cloudinaryConfig.js';
 
 // 1. Initialize environment variables (Security)
 dotenv.config();
+
+process.env.TZ = 'Asia/Manila';
 
 const app = express();
 const PORT = 5000;
@@ -37,6 +40,47 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+});
+
+// THE MASTER TICKET SUBMISSION ROUTE
+app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
+    try {
+        // 1. Pull data from the form fields
+        const { 
+            account_number, first_name, middle_name, last_name, 
+            phone_number, address, location, concern 
+        } = req.body;
+
+        // 2. The Cloudinary URL is automatically provided by the middleware
+        const image_url = req.file ? req.file.path : null;
+
+        // 3. Generate a professional Ticket ID (e.g., ALECO-X892J)
+        const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+
+        // 4. SQL Query for your new 'aleco_tickets' table
+        const sql = `
+            INSERT INTO aleco_tickets 
+            (ticket_id, account_number, first_name, middle_name, last_name, phone_number, address, location, concern, image_url, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+        `;
+
+        // 5. Use your 'pool' to execute the save
+        await pool.execute(sql, [
+            ticket_id, account_number, first_name, middle_name, last_name, 
+            phone_number, address, location, concern, image_url
+        ]);
+
+        // 6. Success Response
+        res.status(201).json({ 
+            success: true, 
+            ticketId: ticket_id,
+            message: "Your report has been received by ALECO." 
+        });
+
+    } catch (error) {
+        console.error("Database Error:", error);
+        res.status(500).json({ success: false, message: "Server error, please try again later." });
+    }
 });
 
 // 4. The Mailbox (The API Route)
@@ -488,6 +532,107 @@ app.post('/api/reset-password', async (req, res) => {
     console.error("--- [DEBUG] Reset Password Error:", error.message);
     res.status(500).json({ error: "Server error during password update." });
   }
+});
+
+app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
+    try {
+        // Extract based on the snake_case keys we appended in React
+        const { 
+            first_name, 
+            last_name, 
+            phone_number, 
+            address, 
+            concern 
+        } = req.body;
+
+        // SERVER-SIDE HARD BLOCK
+        if (!first_name || first_name.trim() === "" || 
+            !last_name || last_name.trim() === "" || 
+            !phone_number || phone_number.trim() === "" || 
+            !address || address.trim() === "" || 
+            !concern || concern.trim() === "") {
+            
+            return res.status(400).json({ 
+                success: false, 
+                message: "Missing mandatory fields on server side." 
+            });
+        }
+
+        const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+        const image_url = req.file ? req.file.path : null;
+
+        const sql = `
+            INSERT INTO aleco_tickets 
+            (ticket_id, account_number, first_name, middle_name, last_name, phone_number, address, location, concern, image_url, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+        `;
+
+        await pool.execute(sql, [
+            ticket_id, 
+            req.body.account_number || null, 
+            first_name, 
+            req.body.middle_name || null, 
+            last_name, 
+            phone_number, 
+            address, 
+            req.body.location || null, 
+            concern, 
+            image_url
+        ]);
+
+        res.status(201).json({ success: true, ticketId: ticket_id });
+
+    } catch (error) {
+        console.error("Database Error:", error);
+        res.status(500).json({ success: false, message: "Internal server error." });
+    }
+});
+
+// --- 2. TRACK TICKET ROUTE ---
+app.get('/api/tickets/track/:ticketId', async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const [rows] = await pool.execute(
+            'SELECT status, created_at, concern FROM aleco_tickets WHERE ticket_id = ?',
+            [ticketId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Ticket ID not found." });
+        }
+
+        res.json({ success: true, data: rows[0] });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// --- 3. SEND EMAIL COPY ROUTE ---
+app.post('/api/tickets/send-copy', async (req, res) => {
+    const { email, ticketId } = req.body;
+    
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: `ALECO Tracking Number: ${ticketId}`,
+        html: `
+            <div style="font-family: sans-serif; padding: 20px; background-color: #f4f4f4;">
+                <h2 style="color: #006bb3;">ALECO Report Received</h2>
+                <p>Thank you for reporting your concern. Your tracking ID is:</p>
+                <div style="font-size: 24px; font-weight: bold; color: #ff4d4d; margin: 20px 0;">
+                    ${ticketId}
+                </div>
+                <p>Use this ID on our portal to check the status of your report.</p>
+            </div>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        res.json({ success: true, message: "Copy sent to your email!" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Email failed to send." });
+    }
 });
 // 5. Start the Office
 app.listen(PORT, () => {

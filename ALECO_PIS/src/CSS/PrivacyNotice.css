@@ -1,24 +1,24 @@
 /* Header alignment */
 .privacy-header-section {
-    max-width: 1400px; /* Expanded to 1380px */
-    margin: 0 auto 35px auto;
-    border-bottom: 2px solid var(--text-secondary); /* The ONE true line */
-    padding-bottom: 20px;
+    max-width: 1400px; 
+    margin: 0 auto 25px auto; /* Shorter margin for mobile */
+    border-bottom: 2px solid var(--text-secondary); 
+    padding-bottom: 15px;
     opacity: 0.9;
 }
 
-/* Force the global title class to drop its extra border here */
 .privacy-header-section .section-title {
     border-bottom: none !important; 
     margin-bottom: 0;
+    font-size: 1.5rem; /* Matches your mobile .section-title */
 }
 
 /* The standalone card for the privacy text */
 .privacy-card {
-    max-width: 1380px; /* Expanded to 1380px */
+    max-width: 1380px; 
     margin: 0 auto;
     background-color: var(--bg-card);
-    padding: 40px;
+    padding: 20px; /* Snug padding for mobile */
     border-radius: 12px;
     box-shadow: 0 4px 15px var(--shadow-color-dark);
     color: var(--text-main);
@@ -27,27 +27,25 @@
 
 /* Text formatting */
 .privacy-text {
-    line-height: 1.8;
+    line-height: 1.6;
     text-align: justify;
-    font-size: 16px;
-    margin: 0 0 30px 0;
+    font-size: 14px; /* Shrunk for mobile */
+    margin: 0 0 20px 0;
     color: var(--text-main);
     font-family: var(--font-body);
 }
 
-/* Button Container */
 .privacy-btn-wrapper {
     display: flex;
     justify-content: center;
 }
 
-/* The Glowing Agree Button */
 .privacy-btn-agree {
-    padding: 12px 40px;
-    font-size: 16px;
+    padding: 10px 30px; /* Thinner button for mobile */
+    font-size: 14px; /* Smaller text */
     font-weight: 700;
     color: #ffffff;
-    background-color: #24b4fb; /* Bright electric blue */
+    background-color: #24b4fb; 
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -59,4 +57,45 @@
     background-color: #1aa0e2; 
     box-shadow: 0 0 25px rgba(36, 180, 251, 0.8), 0 0 50px rgba(36, 180, 251, 0.4);
     transform: scale(1.02);
+}
+
+/* --- DESKTOP SCALING (Matching BodyLandPage.css) --- */
+@media (min-width: 1024px) {
+    .privacy-header-section {
+        margin: 0 auto 35px auto;
+        padding-bottom: 20px;
+    }
+
+    .privacy-header-section .section-title {
+        font-size: 2.2rem; /* Matches your desktop .section-title */
+    }
+
+    .privacy-card {
+        padding: 40px; /* Spacious padding */
+    }
+
+    .privacy-text {
+        font-size: 16px; /* Scales up */
+        margin: 0 0 30px 0;
+        line-height: 1.8;
+    }
+
+    .privacy-btn-agree {
+        padding: 12px 40px;
+        font-size: 16px;
+    }
+}
+
+/* ==========================================
+   DARK MODE OVERRIDES (The Yellow Button)
+   ========================================== */
+[data-theme="dark"] .privacy-btn-agree {
+    background-color: #FACC15; /* ALECO Dark Mode Yellow */
+    color: #000000; /* Black text for perfect contrast */
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.5); /* Yellow glow */
+}
+
+[data-theme="dark"] .privacy-btn-agree:hover {
+    background-color: #eab308; /* Slightly darker yellow on hover */
+    box-shadow: 0 0 25px rgba(250, 204, 21, 0.8), 0 0 50px rgba(250, 204, 21, 0.4); /* Intense yellow glow */
 }

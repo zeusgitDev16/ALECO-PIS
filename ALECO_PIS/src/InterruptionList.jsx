@@ -85,7 +85,7 @@ function InterruptionList() {
 
   return (
     <div className="interruption-list-container">
-      <h2 className="section-title">Power Interruption Updates (Brownout)</h2>
+      <h2 className="section-title">Power Outages Updates (Brownout)</h2>
 
       {/* The Scrollable Horizontal Container */}
       <div 

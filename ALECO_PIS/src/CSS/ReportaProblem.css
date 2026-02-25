@@ -1,125 +1,332 @@
+/* --- PREVIOUS STYLES (Backward Compatible) --- */
+
 /* Main Wrapper */
 .report-problem-container {
-    max-width: 1400px;
+    max-width: 1440px;
     margin: 0 auto;
     padding: 40px 20px;
     font-family: var(--font-body);
     box-sizing: border-box;
     width: 100%;
+    perspective: 1500px; /* Essential for the 3D flip */
 }
 
-/* Header Elements */
+/* Header Section */
 .report-header-section {
-   margin-bottom: 35px;
-    /* Adds the horizontal line to match the 'Power Interruption Updates' section */
+    margin-bottom: 25px;
     border-bottom: 2px solid var(--text-secondary);
-    padding-bottom: 20px; 
+    padding-bottom: 15px; 
     opacity: 0.9;
 }
 
 .report-title {
     color: var(--text-header);
     margin: 0;
-    font-size: 32px;
+    font-size: 1.5rem;
 }
 
 .report-description {
     color: var(--text-secondary);
     margin: 8px 0 0 0;
-    font-size: 16px;
+    font-size: 14px;
 }
 
-/* * THE TWO-COLUMN GRID 
- * Uses auto-fit to perfectly adapt to desktop, tablet, or mobile. 
- */
+/* THE TWO-COLUMN GRID */
 .report-main-card {
     display: grid;
-    /* Forces columns to shrink to 100% of the screen if smaller than 300px */
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-    gap: 30px; /* Tighter gap for mobile */
+    grid-template-columns: 1fr;
+    gap: 30px;
     background-color: var(--bg-card);
-    padding: 20px; /* Snug padding for mobile */
+    padding: 20px;
     border-radius: 12px;
     box-shadow: 0 4px 15px var(--shadow-color-dark);
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
     box-sizing: border-box;
     width: 100%;
-    overflow: hidden; /* Prevents any child elements from spilling out */
+    overflow: hidden;
 }
 
-/* Columns */
-.report-form-column, 
-.report-details-column {
+/* --- FLIP ANIMATION LOGIC --- */
+
+.report-card-inner {
+    position: relative;
+    width: 100%;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+}
+
+.is-flipped {
+    transform: rotateY(180deg);
+}
+
+.report-card-front, .report-card-back {
+    width: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+.report-card-back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: rotateY(180deg);
+}
+
+/* --- THE RED FLIP BUTTON (Apply Now Style) --- */
+
+.flip-button-style {
+    position: relative;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    padding-block: 0.25rem;
+    padding-inline: 0.75rem;
+    background: linear-gradient(135deg, #ff4d4d 0%, #f73b6b 100%);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #ffffff;
+    gap: 6px;
+    font-weight: 600;
+    border: 2px solid #ffffff33;
+    outline: none;
+    overflow: hidden;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.flip-icon {
+    width: 14px;
+    height: 14px;
+    transition: all 0.3s ease-in-out;
+    background: white;
+    color: #ff4d4d;
+    border-radius: 50%;
+    padding: 1px;
+}
+
+.flip-button-style:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #ff1a1a 0%, #e60045 100%);
+    border-color: #fff6;
+}
+
+.flip-button-style:hover::before {
+    animation: shine 1.5s ease-out infinite;
+}
+
+@keyframes shine {
+    0% { left: -100px; }
+    60% { left: 100%; }
+    to { left: 100%; }
+}
+
+/* --- NEW TRACKING RESULTS UI (Step 3 & 4) --- */
+
+.track-input-container {
     display: flex;
     flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
 }
 
-/* Section Dividers inside columns */
-.column-section-title {
-    border-bottom: 2px solid var(--text-secondary);
-    padding-bottom: 10px;
-    margin-bottom: 25px;
-    color: var(--text-header);
-    font-size: 18px;
-    opacity: 0.8;
+.btn-track-submit {
+    padding: 12px;
+    background-color: #006bb3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
 }
 
-/* Wraps the upload component to keep spacing correct */
-.upload-wrapper {
-    margin-top: 10px;
-    flex-grow: 1; /* Pushes the submit button down */
+.tracking-card-content {
+    background: var(--bg-card) !important;
+    color: var(--text-main);
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* Master Submit Button Styling */
+.btn-track-submit:hover {
+    background-color: #005a96;
+}
+
+/* --- THEME-AWARE STATUS CONTAINER --- */
+.status-results-container {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--bg-body);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+/* --- THE MAIN STEPPER WRAPPER --- */
+.status-stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Aligns the tops of the steps (the circles) */
+    position: relative; /* Essential for absolute positioning of the line */
+    margin-bottom: 30px;
+    width: 100%;
+    isolation: isolate;
+}
+
+/* --- INDIVIDUAL STEPS --- */
+.status-stepper .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: bold;
+    width: 60px;
+    z-index: 2;
+}
+
+/* --- THE CIRCLES --- */
+.status-stepper .circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    
+    /* CRITICAL FIX: Forces a solid background so the line doesn't bleed through */
+    background-color: var(--bg-card) !important; 
+    
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s ease;
+    color: var(--text-secondary);
+}
+
+/* --- THE SINGLE CONNECTING LINE --- */
+.status-stepper .line {
+    /* THE FIX: Absolute positioning makes top, left, and right actually work */
+    position: absolute; 
+    
+    top: 15px; /* Exactly half of your 30px circle height */
+    height: 2px;
+    
+    /* THE THEME FIX: Uses your text color (Dark in light mode, White in dark mode) */
+    background-color: var(--text-main);
+    opacity: 0.3; /* Keeps it subtle */
+    
+    z-index: 1; /* Sits behind circles */
+    
+    /* This connects the center of the first circle to the center of the last */
+    left: 15px; 
+    right: 15px;
+}
+
+/* --- SPECIFIC ACTIVE COLORS --- */
+/* 1. Pending: Orange */
+.yellow-glow.active { 
+    border-color: #ff9800 !important; 
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5); 
+    background: rgba(255, 152, 0, 0.1); 
+    color: #ff9800; 
+}
+
+/* 2. Ongoing: Blue */
+.blue-glow.active { 
+    border-color: #3b82f6 !important; 
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); 
+    background: rgba(59, 130, 246, 0.1); 
+    color: #3b82f6; 
+}
+
+/* 3. Restored: Green */
+.green-glow.active { 
+    border-color: #22c55e !important; 
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); 
+    background: rgba(34, 197, 94, 0.1); 
+    color: #22c55e; 
+}
+
+/* --- STATUS TEXT DETAILS --- */
+.status-details-card {
+    text-align: left;
+    font-size: 13px;
+    color: var(--text-main);
+}
+
+.status-tag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 11px;
+}
+
+.status-tag.pending { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+.status-tag.ongoing { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.status-tag.restored { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+
+.concern-preview {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* --- DESKTOP SCALING --- */
+@media (min-width: 1024px) {
+    .report-title { font-size: 2.2rem; }
+    .report-main-card {
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 50px;
+        padding: 35px;
+    }
+    .btn-submit-report { width: auto; padding: 14px 35px; }
+    .status-stepper .step { font-size: 12px; }
+    .status-stepper .circle { width: 35px; height: 35px; }
+}
+
+/* --- THEME-AWARE SUBMIT BUTTON --- */
 .form-submit-row {
-    margin-top: 30px;
+    margin-top: 25px;
     display: flex;
     justify-content: flex-end;
 }
 
 .btn-submit-report {
-    padding: 14px 35px;
-    font-size: 16px;
+    padding: 12px 20px;
+    font-size: 14px;
     font-weight: 700;
-    color: #ffffff;
-    background-color: #1cc972; /* ALECO Green */
-    border: none;
+    color: #ffffff; /* Text stays white for contrast on green */
+    background-color: #1cc972; 
+    
+    /* Theme-Aware Border: Light/Dark compatibility */
+    border: 2px solid var(--bg-card); 
     border-radius: 8px;
+    
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    width: 100%; /* Default to full width for mobile ease */
+    transition: all 0.3s ease;
+    width: 100%;
+    
+    /* Dynamic Shadow: Uses your theme's shadow variable */
+    box-shadow: 0 4px 10px var(--shadow-color-dark);
 }
 
 .btn-submit-report:hover {
     background-color: #17a65e;
     transform: translateY(-2px);
+    
+    /* Highlight border on hover using theme text color */
+    border-color: var(--text-secondary);
+    
+    /* Glow effect that works in both modes */
+    box-shadow: 0 6px 15px rgba(28, 201, 114, 0.4);
 }
 
-/* Tablet & Desktop Adjustments */
-@media (min-width: 768px) {
-  .report-problem-container {
-        padding: 40px 20px;
-    }
-    
-    .report-main-card {
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Restores your original 2-column rule */
-        gap: 50px;
-        padding: 35px; /* Restores the spacious padding */
-    }
-
+/* --- DESKTOP SCALING --- */
+@media (min-width: 1024px) {
     .btn-submit-report {
         width: auto;
-        padding: 12px 20px; /* Thinner button */
-        font-size: 14px; 
-    }
-    .report-title { 
-        font-size: 24px; /* Shrinks the main title */
-    }
-    .report-description { 
-        font-size: 14px; 
-    }
-    .column-section-title { 
-        font-size: 16px; 
-        margin-bottom: 15px; 
+        padding: 14px 35px;
+        font-size: 16px;
     }
 }

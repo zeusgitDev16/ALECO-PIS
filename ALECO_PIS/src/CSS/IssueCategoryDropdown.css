@@ -1,0 +1,56 @@
+.issue-dropdown-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+    width: 100%;
+    text-align: left;
+}
+
+.issue-dropdown-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-main, #333); /* Uses your existing CSS variables if available */
+}
+
+.required-asterisk {
+    color: #d9534f; /* Red asterisk to match required fields */
+    margin-left: 2px;
+}
+
+.issue-select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #ccc);
+    background-color: var(--bg-card, #fff);
+    color: var(--text-main, #333);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Add a nice glow effect when the user clicks the dropdown */
+.issue-select:focus {
+    border-color: #0056b3; 
+    box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.15);
+}
+
+/* Styles the group headers (e.g., "1. No Light / Power Outage") */
+.issue-select optgroup {
+    font-weight: bold;
+    font-style: normal;
+    background-color: var(--bg-main, #f4f6f9);
+    color: var(--text-main, #111);
+    padding: 4px;
+}
+
+/* Styles the actual selectable items */
+.issue-select option {
+    font-weight: normal;
+    background-color: var(--bg-card, #fff);
+    color: var(--text-main, #333);
+    padding: 8px;
+}

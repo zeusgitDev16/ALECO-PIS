@@ -26,8 +26,13 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
   ssl: {
-    rejectUnauthorized: false // Required for Aiven connections
+    rejectUnauthorized: false
   },
+  
+  // MOVED THESE OUTSIDE OF SSL:
+  timezone: '+08:00',
+  dateStrings: true,
+  
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -48,29 +53,60 @@ app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
         // 1. Pull data from the form fields
         const { 
             account_number, first_name, middle_name, last_name, 
-            phone_number, address, location, concern 
+            phone_number, address, location, category, concern 
         } = req.body;
 
-        // 2. The Cloudinary URL is automatically provided by the middleware
+        // 2. IDEMPOTENCY CHECK (Anti-Spam / Double-Click Prevention)
+        // Check if the same user submitted the exact same problem in the last 5 minutes
+        const duplicateCheckSql = `
+            SELECT ticket_id FROM aleco_tickets 
+            WHERE phone_number = ? 
+              AND category = ? 
+              AND concern = ? 
+              AND created_at >= NOW() - INTERVAL 5 MINUTE
+            LIMIT 1
+        `;
+        const [existingTickets] = await pool.execute(duplicateCheckSql, [phone_number, category, concern]);
+
+        if (existingTickets.length > 0) {
+            // If it's a duplicate, return a 200 OK and give them the existing ID 
+            // instead of creating a second ticket in the database.
+            return res.status(200).json({
+                success: true,
+                ticketId: existingTickets[0].ticket_id,
+                message: "Your report has already been received. Thank you!"
+            });
+        }
+
+        // 3. The Cloudinary URL is automatically provided by the middleware
         const image_url = req.file ? req.file.path : null;
 
-        // 3. Generate a professional Ticket ID (e.g., ALECO-X892J)
+        // 4. Generate a professional Ticket ID (e.g., ALECO-X892J)
         const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-        // 4. SQL Query for your new 'aleco_tickets' table
+        // 5. FIXED SQL Query: Added the correct number of '?' and mapped 'category'
         const sql = `
             INSERT INTO aleco_tickets 
-            (ticket_id, account_number, first_name, middle_name, last_name, phone_number, address, location, concern, image_url, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+            (ticket_id, account_number, first_name, middle_name, last_name, phone_number, address, location, category, concern, image_url, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
         `;
 
-        // 5. Use your 'pool' to execute the save
+        // 6. Execute the save (Ensure the array perfectly matches the '?' order)
         await pool.execute(sql, [
-            ticket_id, account_number, first_name, middle_name, last_name, 
-            phone_number, address, location, concern, image_url
+            ticket_id, 
+            account_number || null, 
+            first_name, 
+            middle_name || null, 
+            last_name, 
+            phone_number, 
+            address, 
+            location || null, 
+            category,  // <-- Category safely injected here
+            concern, 
+            image_url
         ]);
 
-        // 6. Success Response
+        // 7. Success Response
         res.status(201).json({ 
             success: true, 
             ticketId: ticket_id,
@@ -592,18 +628,38 @@ app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
 app.get('/api/tickets/track/:ticketId', async (req, res) => {
     try {
         const { ticketId } = req.params;
+
+        // 1. ADDED BASIC VALIDATION: Prevents empty queries from hitting the DB
+        if (!ticketId || ticketId.trim() === '') {
+            return res.status(400).json({ success: false, message: "Please provide a valid Ticket ID." });
+        }
+
+        // 2. FIXED SQL QUERY: We are now explicitly asking for the names!
         const [rows] = await pool.execute(
-            'SELECT status, created_at, concern FROM aleco_tickets WHERE ticket_id = ?',
+            `SELECT 
+                first_name, 
+                middle_name, 
+                last_name, 
+                status, 
+                created_at, 
+                concern 
+             FROM aleco_tickets 
+             WHERE ticket_id = ?`,
             [ticketId]
         );
 
         if (rows.length === 0) {
-            return res.status(404).json({ success: false, message: "Ticket ID not found." });
+            // Made the error message a bit more user-friendly
+            return res.status(404).json({ success: false, message: "Ticket ID not found. Please check your tracking number and try again." });
         }
 
         res.json({ success: true, data: rows[0] });
+        
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        // 3. SECURITY FIX: Never send `error.message` to the frontend in production! 
+        // It can expose your SQL table structures to hackers. Log it securely instead.
+        console.error("Database Tracking Error:", error);
+        res.status(500).json({ success: false, message: "An internal server error occurred. Please try again later." });
     }
 });
 

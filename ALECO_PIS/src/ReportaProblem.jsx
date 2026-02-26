@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import './CSS/ReportaProblem.css';
+import { formatToPhilippineTime } from './utils/dateUtils';
 
 // Importing the Lego Bricks
 import TextFieldProblem from './components/textfields/TextFieldProblem';
 import ExplainTheProblem from './components/textfields/ExplainTheProblem';
 import UploadTheProblem from './components/buckets/UploadTheProblem';
 import TicketPopUp from './components/containers/TicketPopUp'; 
+import IssueCategoryDropdown from './components/dropdowns/IssueCategoryDropdown';
 
 const ReportaProblem = () => {
     // --- Phase State Management ---
@@ -47,6 +49,7 @@ const ReportaProblem = () => {
         { key: 'lastName', label: 'Last Name' },
         { key: 'phoneNumber', label: 'Phone Number' },
         { key: 'address', label: 'Full Address' },
+        { key: 'category', label: 'Issue Category' },
         { key: 'concern', label: 'Issue Details' }
     ];
 
@@ -70,6 +73,7 @@ const ReportaProblem = () => {
     submissionData.append('phone_number', formData.phoneNumber);
     submissionData.append('address', formData.address);
     submissionData.append('location', formData.location || "");
+    submissionData.append('category', formData.category);
     submissionData.append('concern', formData.concern);
 
     if (selectedFile) {
@@ -139,27 +143,6 @@ const ReportaProblem = () => {
         }
     };
 
-    const formatToPhilippineTime = (dateString) => {
-        if (!dateString) return "";
-        
-        // Force standard UTC parsing if the database strips the timezone data
-        const safeDateString = dateString.includes('Z') 
-            ? dateString 
-            : dateString.replace(' ', 'T') + 'Z';
-            
-        const dateObj = new Date(safeDateString);
-        
-        return dateObj.toLocaleString('en-US', {
-            timeZone: 'Asia/Manila',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-    };
-
     return (
         <div id="report" className="report-problem-container">
             <div className={`report-card-inner ${isFlipped ? 'is-flipped' : ''}`}>
@@ -190,8 +173,14 @@ const ReportaProblem = () => {
                             <TextFieldProblem id="address" label="Full Address *" value={formData.address} onChange={handleFieldChange('address')} />
                             <TextFieldProblem id="location" label="Specific Landmark" value={formData.location} onChange={handleFieldChange('location')} />
                         </div>
-
+                        
                         <div className="report-details-column">
+                            <h3 className="column-section-title">Issue Details</h3>
+                             {/* Issue Category Dropdown Lego Brick */}
+                                    <IssueCategoryDropdown 
+                                      value={formData.category} 
+                                         onChange={handleFieldChange('category')} 
+                                                                                />
                             <h3 className="column-section-title">Issue Details</h3>
                             <ExplainTheProblem value={formData.concern} onChange={handleFieldChange('concern')} />
                             <div className="upload-wrapper">
@@ -226,7 +215,7 @@ const ReportaProblem = () => {
                         </div>
 
                         {ticketData && (
-      <div className="status-results-container">
+    <div className="status-results-container">
     <div className="status-stepper">
         <div className="line"></div>
         {/* STEP 1 */}
@@ -246,12 +235,27 @@ const ReportaProblem = () => {
             <div className={`circle green-glow ${ticketData.status === 'Restored' ? 'active' : ''}`}>3</div>
             <span>Restored</span>
         </div>
-        
     </div>
 
     <div className="status-details-card">
-        <p><strong>Current Status:</strong> <span className={`status-tag ${ticketData.status.toLowerCase()}`}>{ticketData.status}</span></p>
-      <p><strong>Reported:</strong> {formatToPhilippineTime(ticketData.created_at)}</p>
+        <p>
+            <strong>Current Status:</strong> 
+            <span className={`status-tag ${ticketData.status.toLowerCase()}`}>{ticketData.status}</span>
+        </p>
+        
+        {/* NEW: Displays the full name cleanly, ignoring the middle name if it is blank */}
+        <p>
+    <strong>Reported By:</strong> {
+        [ticketData.first_name, ticketData.middle_name, ticketData.last_name]
+        .filter(Boolean) // This automatically removes any NULL or blank middle names
+        .join(' ') || "Name not provided" // Fallback if all 3 are NULL
+    }
+</p>
+        
+        <p>
+            <strong>Date Reported:</strong> {formatToPhilippineTime(ticketData.created_at)}
+        </p>
+        
         <div className="concern-preview">
             <label>Your Concern:</label>
             <p>{ticketData.concern}</p>

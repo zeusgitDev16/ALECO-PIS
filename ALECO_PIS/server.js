@@ -50,22 +50,32 @@ const transporter = nodemailer.createTransport({
 // THE MASTER TICKET SUBMISSION ROUTE
 app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
     try {
-        // 1. Pull data from the form fields
+        // 1. Generate the Manila Timestamp as a MySQL-friendly string
+        // This fixes the time drift by using your Node.js system time
+        const manilaTime = new Date().toISOString().slice(0, 19).replace('T', ' '); 
+
+        // 2. Pull data from the form fields
         const { 
             account_number, first_name, middle_name, last_name, 
             phone_number, address, location, category, concern 
         } = req.body;
 
-        // 2. IDEMPOTENCY CHECK (Anti-Spam / Double-Click Prevention)
+        // 3. IDEMPOTENCY CHECK (Anti-Spam / Double-Click Prevention)
+        // We now pass manilaTime as the 4th parameter to fix the malformed packet error
         const duplicateCheckSql = `
             SELECT ticket_id FROM aleco_tickets 
             WHERE phone_number = ? 
               AND category = ? 
               AND concern = ? 
-              AND created_at >= NOW() - INTERVAL 5 MINUTE
+              AND created_at >= ? - INTERVAL 5 MINUTE
             LIMIT 1
         `;
-        const [existingTickets] = await pool.execute(duplicateCheckSql, [phone_number, category, concern]);
+        const [existingTickets] = await pool.execute(duplicateCheckSql, [
+            phone_number, 
+            category, 
+            concern, 
+            manilaTime // Correctly synced 4th parameter
+        ]);
 
         if (existingTickets.length > 0) {
             return res.status(200).json({
@@ -75,20 +85,18 @@ app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
             });
         }
 
-        // 3. Process the Image and Generate Ticket ID
+        // 4. Process the Image and Generate Ticket ID
         const image_url = req.file ? req.file.path : null;
         const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-        // 4. THE FIX: Perfectly aligned SQL Columns
-        // Notice how 'category', 'concern', 'image_url', and 'status' are strictly defined.
-        // MySQL will automatically handle 'created_at' and 'updated_at' with current timestamps.
+        // 5. THE FIX: Balanced SQL Columns and Placeholders
         const sql = `
             INSERT INTO aleco_tickets 
-            (ticket_id, account_number, first_name, middle_name, last_name, phone_number, address, location, category, concern, image_url, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+            (ticket_id, account_number, first_name, middle_name, last_name, phone_number, address, location, category, concern, image_url, status, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
         `;
 
-        // 5. THE FIX: The Execution Array exactly mirrors the 11 '?' placeholders above
+        // 6. THE FIX: Execution Array now correctly has 12 items
         await pool.execute(sql, [
             ticket_id,               // 1
             account_number || null,  // 2
@@ -98,12 +106,13 @@ app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
             phone_number,            // 6
             address,                 // 7
             location || null,        // 8
-            category,                // 9: Category cleanly drops here
-            concern,                 // 10: Typed text safely drops here
-            image_url                // 11: Image link safely drops here
+            category,                // 9
+            concern,                 // 10
+            image_url,               // 11
+            manilaTime               // 12: Matches the new '?' for created_at
         ]);
 
-        // 6. Success Response
+        // 7. Success Response
         res.status(201).json({ 
             success: true, 
             ticketId: ticket_id,

@@ -175,7 +175,7 @@ const ReportaProblem = () => {
                         </div>
                         
                         <div className="report-details-column">
-                            <h3 className="column-section-title">Issue Details</h3>
+                            <h3 className="column-section-title">Issue Category</h3>
                              {/* Issue Category Dropdown Lego Brick */}
                                     <IssueCategoryDropdown 
                                       value={formData.category} 

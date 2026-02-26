@@ -4,9 +4,6 @@ import '../../CSS/IssueCategoryDropdown.css'; // Connects to your CSS file
 const IssueCategoryDropdown = ({ value, onChange }) => {
     return (
         <div className="issue-dropdown-container">
-            <label className="issue-dropdown-label">
-                Issue Category <span className="required-asterisk">*</span>
-            </label>
             <select 
                 className="issue-select"
                 value={value}

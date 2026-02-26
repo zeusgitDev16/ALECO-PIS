@@ -57,7 +57,6 @@ app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
         } = req.body;
 
         // 2. IDEMPOTENCY CHECK (Anti-Spam / Double-Click Prevention)
-        // Check if the same user submitted the exact same problem in the last 5 minutes
         const duplicateCheckSql = `
             SELECT ticket_id FROM aleco_tickets 
             WHERE phone_number = ? 
@@ -69,8 +68,6 @@ app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
         const [existingTickets] = await pool.execute(duplicateCheckSql, [phone_number, category, concern]);
 
         if (existingTickets.length > 0) {
-            // If it's a duplicate, return a 200 OK and give them the existing ID 
-            // instead of creating a second ticket in the database.
             return res.status(200).json({
                 success: true,
                 ticketId: existingTickets[0].ticket_id,
@@ -78,35 +75,35 @@ app.post('/api/tickets/submit', upload.single('image'), async (req, res) => {
             });
         }
 
-        // 3. The Cloudinary URL is automatically provided by the middleware
+        // 3. Process the Image and Generate Ticket ID
         const image_url = req.file ? req.file.path : null;
-
-        // 4. Generate a professional Ticket ID (e.g., ALECO-X892J)
         const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-        // 5. FIXED SQL Query: Added the correct number of '?' and mapped 'category'
+        // 4. THE FIX: Perfectly aligned SQL Columns
+        // Notice how 'category', 'concern', 'image_url', and 'status' are strictly defined.
+        // MySQL will automatically handle 'created_at' and 'updated_at' with current timestamps.
         const sql = `
             INSERT INTO aleco_tickets 
             (ticket_id, account_number, first_name, middle_name, last_name, phone_number, address, location, category, concern, image_url, status) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
         `;
 
-        // 6. Execute the save (Ensure the array perfectly matches the '?' order)
+        // 5. THE FIX: The Execution Array exactly mirrors the 11 '?' placeholders above
         await pool.execute(sql, [
-            ticket_id, 
-            account_number || null, 
-            first_name, 
-            middle_name || null, 
-            last_name, 
-            phone_number, 
-            address, 
-            location || null, 
-            category,  // <-- Category safely injected here
-            concern, 
-            image_url
+            ticket_id,               // 1
+            account_number || null,  // 2
+            first_name,              // 3
+            middle_name || null,     // 4
+            last_name,               // 5
+            phone_number,            // 6
+            address,                 // 7
+            location || null,        // 8
+            category,                // 9: Category cleanly drops here
+            concern,                 // 10: Typed text safely drops here
+            image_url                // 11: Image link safely drops here
         ]);
 
-        // 7. Success Response
+        // 6. Success Response
         res.status(201).json({ 
             success: true, 
             ticketId: ticket_id,

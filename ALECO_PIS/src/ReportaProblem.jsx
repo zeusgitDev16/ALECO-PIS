@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import './CSS/ReportaProblem.css';
 import { formatToPhilippineTime } from './utils/dateUtils';
 
@@ -8,6 +8,7 @@ import ExplainTheProblem from './components/textfields/ExplainTheProblem';
 import UploadTheProblem from './components/buckets/UploadTheProblem';
 import TicketPopUp from './components/containers/TicketPopUp'; 
 import IssueCategoryDropdown from './components/dropdowns/IssueCategoryDropdown';
+import AlecoScopeDropdown from './components/dropdowns/AlecoScopeDropdown';
 
 const ReportaProblem = () => {
     // --- Phase State Management ---
@@ -32,47 +33,93 @@ const ReportaProblem = () => {
         phoneNumber: '',
         address: '',
         location: '',
-        concern: ''
+        category: '',
+        concern: '',
+        district: '',
+        municipality: '',
+        barangay: '',
+        purok: ''
     });
 
-    const handleFieldChange = (field) => (value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
+   const handleFieldChange = useCallback((field) => (value) => {
+    setFormData(prev => {
+        // Only update if the value actually changed to prevent unnecessary re-renders
+        if (prev[field] === value) return prev; 
+        return { ...prev, [field]: value };
+    });
+}, []);
+
+const handleLocationUpdate = useCallback((locationObj) => {
+    setFormData(prev => {
+        // If data is null and already empty, bail out to prevent render
+        if (!locationObj && !prev.district) return prev;
+
+        // Semantic Equality Check (Content-based)
+        const isSame = locationObj && 
+            prev.district === locationObj.district &&
+            prev.municipality === locationObj.municipality &&
+            prev.barangay === locationObj.barangay &&
+            prev.purok === locationObj.purok;
+
+        if (isSame) return prev; // BAIL OUT: This snaps the infinite loop
+
+        return { 
+            ...prev, 
+            district: locationObj?.district || '',
+            municipality: locationObj?.municipality || '',
+            barangay: locationObj?.barangay || '',
+            purok: locationObj?.purok || ''
+        };
+    });
+}, []);
 
     // --- Backend: Submit Ticket ---
     const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. STRICT VALIDATION (Enhanced)
+    // 1. STRICT VALIDATION (Updated for Object compatibility)
     const mandatoryFields = [
         { key: 'firstName', label: 'First Name' },
         { key: 'lastName', label: 'Last Name' },
         { key: 'phoneNumber', label: 'Phone Number' },
-        { key: 'address', label: 'Full Address' },
+        { key: 'address', label: 'Street Address' },
+        // Instead of validating 'location' as a string, we check the new columns
+        { key: 'municipality', label: 'Municipality/City' },
+        { key: 'barangay', label: 'Barangay' },
+        { key: 'purok', label: 'Purok' },
         { key: 'category', label: 'Issue Category' },
         { key: 'concern', label: 'Issue Details' }
     ];
 
     for (const field of mandatoryFields) {
-        // We use || "" to handle cases where state might be undefined
-        const val = formData[field.key] || ""; 
-        if (val.trim() === "") {
+        const val = formData[field.key];
+        
+        // Safety check: Only trim if the value is a string
+        const isInvalid = typeof val === 'string' ? val.trim() === "" : !val;
+
+        if (isInvalid) {
             alert(`Error: The "${field.label}" is required. Please fill it out.`);
-            return; // THIS STOPS THE ENTIRE PROCESS
+            return; 
         }
     }
 
     // 2. DATA PREPARATION
     const submissionData = new FormData();
     
-    // Explicitly mapping the keys to match your backend exactly
+    // Explicit mapping to match your new backend columns exactly
     submissionData.append('account_number', formData.accountNumber || "");
     submissionData.append('first_name', formData.firstName);
     submissionData.append('middle_name', formData.middleName || "");
     submissionData.append('last_name', formData.lastName);
     submissionData.append('phone_number', formData.phoneNumber);
     submissionData.append('address', formData.address);
-    submissionData.append('location', formData.location || "");
+
+    // NEW ANALYTICS COLUMNS
+    submissionData.append('district', formData.district || "");
+    submissionData.append('municipality', formData.municipality || "");
+    submissionData.append('barangay', formData.barangay || "");
+    submissionData.append('purok', formData.purok || "");
+
     submissionData.append('category', formData.category);
     submissionData.append('concern', formData.concern);
 
@@ -93,11 +140,12 @@ const ReportaProblem = () => {
             setGeneratedId(data.ticketId);
             setShowModal(true); 
             
-            // RESET FORM
+            // RESET FORM (Matches the new structure)
             setFormData({ 
                 accountNumber: '', firstName: '', middleName: '', 
                 lastName: '', phoneNumber: '', address: '', 
-                location: '', concern: '' 
+                category: '', concern: '', district: '', 
+                municipality: '', barangay: '', purok: ''
             });
             setSelectedFile(null); 
         } else {
@@ -171,7 +219,13 @@ const ReportaProblem = () => {
                             
                             <h3 className="column-section-title" style={{ marginTop: '30px' }}>Location Details</h3>
                             <TextFieldProblem id="address" label="Full Address *" value={formData.address} onChange={handleFieldChange('address')} />
-                            <TextFieldProblem id="location" label="Specific Landmark" value={formData.location} onChange={handleFieldChange('location')} />
+                            {/* NEW: AlecoScopeDropdown replaces the "Specific Landmark" free text field */}
+                            <h3 className="column-section-title" style={{ marginTop: '30px' }}>Specific Area: (District/muni/brgy/purok)</h3>
+                            <div className="dropdown-location-wrapper">
+                                <AlecoScopeDropdown  
+                                    onLocationSelect={handleLocationUpdate} 
+                                />
+                            </div>
                         </div>
                         
                         <div className="report-details-column">

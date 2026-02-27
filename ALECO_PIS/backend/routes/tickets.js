@@ -24,7 +24,8 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         // 2. Pull data from the form fields
         const { 
             account_number, first_name, middle_name, last_name, 
-            phone_number, address, location, category, concern 
+            phone_number, address, location, category, concern,
+            district, municipality, barangay, purok
         } = req.body;
 
         // 3. IDEMPOTENCY CHECK (Anti-Spam / Double-Click Prevention)
@@ -57,10 +58,12 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
         // 5. THE FIX: Balanced SQL Columns and Placeholders
-        const sql = `
+       const sql = `
             INSERT INTO aleco_tickets 
-            (ticket_id, account_number, first_name, middle_name, last_name, phone_number, address, location, category, concern, image_url, status, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
+            (ticket_id, account_number, first_name, middle_name, last_name, 
+             phone_number, address, district, municipality, barangay, purok, 
+             category, concern, image_url, status, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
         `;
 
         // 6. THE FIX: Execution Array now correctly has 12 items
@@ -72,11 +75,14 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             last_name,               // 5
             phone_number,            // 6
             address,                 // 7
-            location || null,        // 8
-            category,                // 9
-            concern,                 // 10
-            image_url,               // 11
-            manilaTime               // 12: Matches the new '?' for created_at
+            district || null,        // 8 (NEW)
+            municipality || null,    // 9 (NEW)
+            barangay || null,        // 10 (NEW)
+            purok || null,           // 11 (NEW)
+            category,                // 12
+            concern,                 // 13
+            image_url,               // 14
+            manilaTime               // 15
         ]);
 
         // 7. Success Response
@@ -103,14 +109,16 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
         }
 
         // 2. FIXED SQL QUERY: We are now explicitly asking for the names!
-        const [rows] = await pool.execute(
+       const [rows] = await pool.execute(
             `SELECT 
                 first_name, 
                 middle_name, 
                 last_name, 
                 status, 
                 created_at, 
-                concern 
+                concern,
+                municipality,
+                barangay 
              FROM aleco_tickets 
              WHERE ticket_id = ?`,
             [ticketId]

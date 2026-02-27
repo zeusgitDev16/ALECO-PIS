@@ -1,0 +1,205 @@
+/* --- Master Container Logic --- */
+.aleco-mini-scope {
+    background: transparent;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Label Design Symmetry --- */
+.aleco-mini-scope-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    transition: color 0.3s ease;
+    text-align: left;
+}
+
+.mini-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+/* --- Input Elements Logic (Desktop/Tablet) --- */
+.mini-row select, 
+.purok-select, 
+.mini-search {
+    flex: 1;
+    padding: 12px 15px;
+    font-size: 15px;
+    color: var(--text-main);
+    background-color: var(--bg-body);
+    border: 1px solid var(--text-secondary);
+    border-radius: 8px;
+    outline: none;
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+/* --- INTERACTIVE SEARCH & SELECTION DESIGN --- */
+.search-box-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-card);
+    border: 1px solid var(--text-secondary);
+    border-radius: 8px;
+    z-index: 100;
+    margin-top: 5px;
+    box-shadow: 0 4px 12px var(--shadow-color-dark);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.result-item {
+    padding: 12px 15px;
+    font-size: 14px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.result-item:hover {
+    background-color: rgba(28, 201, 114, 0.1);
+    color: #1cc972;
+}
+
+.selected-tag {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: var(--bg-body);
+    border: 1px dashed #1cc972;
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* --- THE STRICT MOBILE SIZING (480px and below) --- */
+@media (max-width: 480px) {
+    .aleco-mini-scope {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin-bottom: 12px;
+        box-sizing: border-box !important;
+    }
+
+    .aleco-mini-scope-label {
+        font-size: 11px !important;
+        margin-bottom: 4px;
+    }
+
+    .mini-row {
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 8px;
+        width: 100% !important;
+    }
+
+    /* THE BARANGAY SEARCH & SELECTS FIX */
+    .mini-row select, 
+    .purok-select, 
+    .mini-search { 
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important; /* Forces shrinkage below default browser size */
+        padding: 8px 10px !important;
+        font-size: 13px !important;
+        border-radius: 6px !important;
+        box-sizing: border-box !important;
+        display: block;
+    }
+
+    .search-box-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .selected-tag {
+        font-size: 13px !important;
+        padding: 8px 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .search-results {
+        width: 100% !important;
+        max-width: 100% !important;
+        font-size: 13px !important;
+        box-sizing: border-box !important;
+        left: 0 !important;
+        right: 0 !important;
+    }
+
+    .result-item {
+        padding: 10px !important;
+        word-wrap: break-word; /* Prevents long names like 'Barangay 37 - Bitano' from stretching width */
+    }
+}
+
+/* --- Restoring the Green Interactive Tag --- */
+.selected-tag {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: var(--bg-body);
+    /* Restore the dashed green border */
+    border: 1px dashed #1cc972 !important; 
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+/* The Glow Effect on Hover */
+.selected-tag:hover {
+    background-color: rgba(28, 201, 114, 0.05);
+    border-style: solid !important; /* Solidifies the border */
+    /* Add the subtle green glow (box-shadow) */
+    box-shadow: 0 0 10px rgba(28, 201, 114, 0.2);
+}
+
+/* The "(Change)" Button styling */
+.selected-tag span {
+    font-size: 11px;
+    font-weight: 700;
+    color: #1cc972 !important; /* Forces the ALECO green */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+
+.selected-tag:hover span {
+    color: #17a65e !important; /* Darker green on hover */
+}
+
+/* --- Mobile Consistency (480px) --- */
+@media (max-width: 480px) {
+    .selected-tag {
+        padding: 8px 10px !important;
+        font-size: 13px !important;
+        border-width: 1px !important;
+    }
+}

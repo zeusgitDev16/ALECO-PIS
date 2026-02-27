@@ -330,3 +330,86 @@
         font-size: 16px;
     }
 }
+
+/* --- MOBILE OPTIMIZATION (480px and below) --- */
+/* Strictly scoped to preserve desktop/tablet integrity */
+@media (max-width: 480px) {
+    .report-problem-container {
+        padding: 20px 10px; /* Reduced outer padding to maximize usable space */
+    }
+
+    /* Header Section: Scaled down for readability without crowding */
+    .report-header-section {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+
+    .report-title {
+        font-size: 1.25rem; /* Shrunk from 1.5rem */
+    }
+
+    .report-description {
+        font-size: 12px; /* Shrunk from 14px */
+    }
+
+    /* Main Card: Ensuring 100% parent-dependent width */
+    .report-main-card {
+        padding: 15px; /* Shrunk from 20px to prevent squeezing content */
+        gap: 20px;     /* Tighter gap between sections */
+        border-radius: 8px;
+    }
+
+    /* Contact & Location Titles: Shrunk to keep vertical flow tight */
+    .column-section-title {
+        font-size: 1rem !important;
+        margin-bottom: 12px !important;
+        margin-top: 20px !important;
+    }
+
+    /* Ensure all Inputs/Lego Bricks are 100% width and box-border aware */
+    .report-form-column, 
+    .report-details-column,
+    .dropdown-location-wrapper,
+    .upload-wrapper {
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* Flip Button Scaling */
+    .flip-button-style {
+        width: 100%; /* Full width on mobile for easier thumb access */
+        padding-block: 0.5rem;
+        font-size: 10px;
+    }
+
+    /* Stepper: Scaled for small screens to prevent clipping */
+    .status-stepper .step {
+        width: 50px; /* Reduced from 60px */
+        font-size: 9px;
+    }
+
+    .status-stepper .circle {
+        width: 26px;  /* Reduced from 30px */
+        height: 26px;
+    }
+
+    .status-stepper .line {
+        top: 13px; /* Re-centered to match 26px circle */
+    }
+
+    /* Results UI: Ensure text doesn't overflow */
+    .status-results-container {
+        padding: 12px;
+    }
+
+    .status-details-card {
+        font-size: 12px;
+    }
+
+    /* Submit Button: Full width for touch ergonomics */
+    .btn-submit-report {
+        padding: 14px;
+        font-size: 14px;
+        width: 100% !important;
+    }
+}

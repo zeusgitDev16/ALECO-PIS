@@ -5,10 +5,11 @@
     margin-bottom: 20px;
     width: 100%;
     text-align: left;
+    box-sizing: border-box; /* Ensures padding stays internal */
 }
 
 .required-asterisk {
-    color: #d9534f; /* Red asterisk to match required fields */
+    color: #d9534f;
     margin-left: 2px;
 }
 
@@ -24,27 +25,56 @@
     outline: none;
     cursor: pointer;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box; /* CRITICAL for parent-dependent width */
 }
 
-/* Add a nice glow effect when the user clicks the dropdown */
 .issue-select:focus {
     border-color: #0056b3; 
     box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.15);
 }
 
-/* Styles the group headers (e.g., "1. No Light / Power Outage") */
 .issue-select optgroup {
     font-weight: bold;
     font-style: normal;
-    background-color: var(--bg-main, #f4f6f9);
+    /* Use var(--bg-body) instead of a hardcoded light color to match dark mode */
+    background-color: var(--bg-body, #f4f6f9); 
+    /* Ensure the title text follows the theme's main text color */
     color: var(--text-main, #111);
     padding: 4px;
 }
 
-/* Styles the actual selectable items */
 .issue-select option {
     font-weight: normal;
     background-color: var(--bg-card, #fff);
     color: var(--text-main, #333);
     padding: 8px;
+}
+
+/* --- STRICT MOBILE SIZING (480px and below) --- */
+@media (max-width: 480px) {
+    .issue-dropdown-container {
+        margin-bottom: 12px; /* Matching textfield-group margin */
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Scaling label to match .textfield-label */
+    .issue-dropdown-container label {
+        font-size: 11px !important; 
+        margin-bottom: 4px;
+    }
+
+    .issue-select {
+        width: 100% !important;
+        min-width: 0;           /* Enforces shrink behavior */
+        padding: 8px 10px;      /* Exact match to textfield-input */
+        font-size: 13px;        /* Exact match to textfield-input */
+        border-radius: 6px;     /* Matching your established mobile radius */
+        box-sizing: border-box;
+    }
+
+    /* Scaling the internal options for better mobile readability */
+    .issue-select option, .issue-select optgroup {
+        font-size: 13px;
+    }
 }

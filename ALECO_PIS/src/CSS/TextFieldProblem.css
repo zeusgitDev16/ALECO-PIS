@@ -91,3 +91,43 @@
         top: 12px;
     }
 }
+
+/* --- MOBILE SHRINKING (480px and below) --- */
+@media (max-width: 480px) {
+    /* The Group Container: Strictly follows parent width */
+    .textfield-group {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 12px;
+        padding: 0 !important; /* Prevents double-padding issues */
+        box-sizing: border-box;
+    }
+
+    /* The Wrapper: Forces the search/input area to behave */
+    .textfield-input-wrapper {
+        width: 100% !important;
+        display: block; /* Ensures it doesn't try to flex-grow outside parent */
+        box-sizing: border-box;
+    }
+
+    /* The Input itself: The core fix */
+    .textfield-input { 
+        width: 100% !important; /* Overrides any fixed width from logic */
+        min-width: 0;           /* Allows the flex-item to shrink below its content size */
+        padding: 8px 10px; 
+        font-size: 13px;
+        border-radius: 6px;
+        box-sizing: border-box; /* Includes padding/border in the 100% width calculation */
+    }
+
+    .textfield-label { 
+        font-size: 11px;
+        margin-bottom: 4px; 
+    }
+
+    .textfield-error-msg {
+        font-size: 9px; 
+        top: 9px; /* Re-aligned for thinner mobile input */
+        right: 8px;
+    }
+}

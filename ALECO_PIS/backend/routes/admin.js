@@ -20,15 +20,16 @@ router.post('/invite', async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
   
-  // THE PREVIOUS FIX: Sync the clock to Node.js to avoid the 9-minute Aiven database drift
+  // Sync the clock to Node.js to avoid database time drift
   const manilaTime = new Date().toISOString().slice(0, 19).replace('T', ' '); 
 
   try {
-    // 1. Are they already a fully registered user?
+    // 1. Are they already a fully registered user in the 'users' table?
     const [existingUser] = await pool.execute('SELECT * FROM users WHERE email = ?', [cleanEmail]);
 
     if (existingUser.length > 0) {
       console.log(`--- [DEBUG] User ${cleanEmail} is registered. Promoting to ${role}... ---`);
+      // Update 'role' in the users table
       await pool.execute('UPDATE users SET role = ? WHERE email = ?', [role, cleanEmail]);
       
       return res.status(200).json({ 
@@ -37,14 +38,18 @@ router.post('/invite', async (req, res) => {
       });
     }
 
-    // 2. Are they in the waiting room with an old invite?
+    // 2. Are they in the waiting room ('access_codes' table)?
     const [pendingInvite] = await pool.execute('SELECT * FROM access_codes WHERE email = ?', [cleanEmail]);
 
     if (pendingInvite.length > 0) {
       console.log("--- [DEBUG] Overwriting existing pending invite... ---");
       
-      // THE FIX: Replaced CURRENT_TIMESTAMP with manilaTime (?) to keep timestamps perfectly synced
-      const updateQuery = 'UPDATE access_codes SET code = ?, role_assigned = ?, status = "pending", created_at = ? WHERE email = ?';
+      // FIXED: Using 'status' column and 'role_assigned' column from your schema
+     const updateQuery = `
+        UPDATE access_codes 
+        SET code = ?, role_assigned = ?, status = 'pending', created_at = ? 
+        WHERE email = ?
+      `;
       await pool.execute(updateQuery, [code, role, manilaTime, cleanEmail]);
       
       return res.status(200).json({ message: "Invitation code re-generated!", action: "code_regenerated" });
@@ -53,10 +58,20 @@ router.post('/invite', async (req, res) => {
     // 3. They are brand new.
     console.log("--- [DEBUG] Email is new. Creating fresh invite... ---");
     
-    // THE FIX: Added a 5th placeholder (?) for the created_at column so it stops crashing
-    const insertQuery = 'INSERT INTO access_codes (email, role_assigned, code, status, created_at) VALUES (?, ?, ?, ?, ?)';
-    // THE FIX: Passed manilaTime as the 4th item in the execution array (matching the 5th placeholder)
-    await pool.execute(insertQuery, [cleanEmail, role, code,"pending",manilaTime]);
+    // THE FIX: Ensure exactly 5 columns match exactly 5 placeholders
+   const insertQuery = `
+      INSERT INTO access_codes (email, role_assigned, code, status, created_at) 
+      VALUES (?, ?, ?, 'pending', ?)
+    `;
+    
+    // THE FIX: Added "pending" into the array so it has 5 items to match the 5 '?' above
+    await pool.execute(insertQuery, [
+        cleanEmail, 
+        role, 
+        code, 
+        "pending", // The missing 4th value
+        manilaTime  // The 5th value
+    ]);
     
     return res.status(200).json({ message: "New invitation saved!", action: "code_generated" });
 
@@ -138,31 +153,33 @@ router.post('/check-email', async (req, res) => {
     res.status(500).json({ status: 'error' });
   }
 });
-
-// Fetch all registered users from the 'users' table
+// Fetch all registered users
 router.get('/users', async (req, res) => {
   try {
-    // We select the specific columns needed for the AllUsers table
+    // Matches schema columns: id, name, email, role, status
     const [rows] = await pool.execute(
-      'SELECT id, name, email, role, status FROM users ORDER BY created_at DESC'
+      'SELECT id, name, email, role, status, profile_pic FROM users ORDER BY created_at DESC'
     );
     res.status(200).json(rows);
   } catch (error) {
     console.error("Error fetching users:", error.message);
-    res.status(500).json({ error: "Failed to fetch users from the filing cabinet." });
+    res.status(500).json({ error: "Failed to fetch users." });
   }
 });
 
-// Toggle User Status (Enable/Disable)
+// Toggle Status (Matches Schema Casing)
 router.post('/users/toggle-status', async (req, res) => {
   const { id, currentStatus } = req.body;
+  
+  // Ensure we use 'Active' and 'Disabled' to match the Enum definition
   const newStatus = currentStatus === 'Active' ? 'Disabled' : 'Active';
 
   try {
     await pool.execute('UPDATE users SET status = ? WHERE id = ?', [newStatus, id]);
-    res.status(200).json({ message: `User status updated to ${newStatus}` });
+    res.status(200).json({ message: `User status updated to ${newStatus}`, newStatus });
   } catch (error) {
-    res.status(500).json({ error: "Failed to update user status." });
+    console.error("Toggle Error:", error.message);
+    res.status(500).json({ error: "Failed to update status." });
   }
 });
 

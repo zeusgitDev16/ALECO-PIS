@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ALECO_SCOPE } from '../../data/alecoScope';
 import '../../CSS/AlecoScopeDropdown.css';
 
-const AlecoScopeDropdown = ({ label, onLocationSelect }) => {
+/**
+ * @param {boolean} isFilter - If true, allows partial selections to be emitted to the parent.
+ */
+const AlecoScopeDropdown = ({ label, onLocationSelect, isFilter = false }) => {
     const [sel, setSel] = useState({ dist: "", muni: "", brgy: "", purok: "" });
     const [searchTerm, setSearchTerm] = useState("");
     const [isSearching, setIsSearching] = useState(false);
     
-    // TRACKER: Prevents objects from triggering loops by using a string key
     const lastEmittedKey = useRef("");
 
-    // 1. Memoized Filter Logic: Prevents recalculation on every minor render
+    // 1. Memoized Filter Logic
     const districtData = useMemo(() => ALECO_SCOPE.find(d => d.district === sel.dist), [sel.dist]);
     const availableMunis = useMemo(() => districtData?.municipalities || [], [districtData]);
     const muniData = useMemo(() => availableMunis.find(m => m.name === sel.muni), [availableMunis, sel.muni]);
@@ -28,16 +30,24 @@ const AlecoScopeDropdown = ({ label, onLocationSelect }) => {
         [brgyData]
     );
 
-    // 3. NUCLEAR LOOP PREVENTION: Syncing with Parent
+    // 3. NUCLEAR LOOP PREVENTION & CONDITIONAL SYNC
     useEffect(() => {
-        // Create a unique key for the current selection state
         const currentKey = `${sel.dist}|${sel.muni}|${sel.brgy}|${sel.purok}`;
         
-        // ONLY fire if the values have changed (Semantic check)
         if (currentKey !== lastEmittedKey.current) {
             lastEmittedKey.current = currentKey; 
 
-            if (sel.dist && sel.muni && sel.brgy && sel.purok) {
+            // BRANCH 1: Admin Filter Mode (Allows partial data like just District or Muni)
+            if (isFilter) {
+                onLocationSelect({
+                    district: sel.dist || null,
+                    municipality: sel.muni || null,
+                    barangay: sel.brgy || null,
+                    purok: sel.purok || null
+                });
+            } 
+            // BRANCH 2: User Report Mode (Original Strict Requirement)
+            else if (sel.dist && sel.muni && sel.brgy && sel.purok) {
                 onLocationSelect({
                     district: sel.dist,
                     municipality: sel.muni,
@@ -45,17 +55,16 @@ const AlecoScopeDropdown = ({ label, onLocationSelect }) => {
                     purok: sel.purok
                 });
             } else {
-                // Important: Backwards compatibility if user clears a field
+                // Backward compatibility for clearing fields
                 onLocationSelect(null);
             }
         }
-    }, [sel, onLocationSelect]);
+    }, [sel, onLocationSelect, isFilter]);
 
     return (
         <div className="aleco-mini-scope">
             {label && <label className="aleco-mini-scope-label">{label}</label>}
 
-            {/* District & Municipality Row */}
             <div className="mini-row">
                 <select 
                     value={sel.dist} 
@@ -65,7 +74,8 @@ const AlecoScopeDropdown = ({ label, onLocationSelect }) => {
                         setIsSearching(false);
                     }}
                 >
-                    <option value="">District...</option>
+                    {/* DYNAMIC LABEL */}
+                    <option value="">{isFilter ? "All Districts" : "District..."}</option>
                     {ALECO_SCOPE.map(d => <option key={d.district} value={d.district}>{d.district}</option>)}
                 </select>
 
@@ -78,19 +88,18 @@ const AlecoScopeDropdown = ({ label, onLocationSelect }) => {
                             setIsSearching(false);
                         }}
                     >
-                        <option value="">Town/City...</option>
+                        <option value="">{isFilter ? "All Municipalities" : "Town/City..."}</option>
                         {availableMunis.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
                     </select>
                 )}
             </div>
 
-            {/* Searchable Barangay */}
             {sel.muni && (
                 <div className="search-box-container">
                     {!sel.brgy || isSearching ? (
                         <input 
                             type="text" 
-                            placeholder="Type to search Barangay..." 
+                            placeholder={isFilter ? "Filter by Barangay..." : "Type to search Barangay..."} 
                             className="mini-search"
                             value={searchTerm}
                             onFocus={() => setIsSearching(true)}
@@ -126,14 +135,13 @@ const AlecoScopeDropdown = ({ label, onLocationSelect }) => {
                 </div>
             )}
 
-            {/* Purok Selection */}
             {sel.brgy && !isSearching && (
                 <select 
                     className="purok-select" 
                     value={sel.purok} 
                     onChange={(e) => setSel(prev => ({...prev, purok: e.target.value}))}
                 >
-                    <option value="">Select Purok...</option>
+                    <option value="">{isFilter ? "All Puroks" : "Select Purok..."}</option>
                     {availablePuroks.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
             )}

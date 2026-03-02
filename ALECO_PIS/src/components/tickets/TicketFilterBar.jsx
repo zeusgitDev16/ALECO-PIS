@@ -1,33 +1,66 @@
 import React from 'react';
-import '../../CSS/TicketDashboard.css'; // Adjust path as needed
+import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown'; // Adjust paths
+import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';      // Adjust paths
+import '../../CSS/TicketDashboard.css';
 
 const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
     
+    // 1. Generic handler for standard inputs (like Search)
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
+    // 2. Specialized handler for the complex location object
+    const handleLocationChange = (locObj) => {
+        // Only update if we have a valid object (null is sent when cleared)
+        if (locObj) {
+            setFilters(prev => ({
+                ...prev,
+                district: locObj.district || "",
+                municipality: locObj.municipality || "",
+                barangay: locObj.barangay || "",
+                purok: locObj.purok || ""
+            }));
+        } else {
+            // Reset location filters if cleared
+            setFilters(prev => ({
+                ...prev,
+                district: "",
+                municipality: "",
+                barangay: "",
+                purok: ""
+            }));
+        }
+    };
+
+    // 3. Simple handler for the Category string
+    const handleCategoryChange = (val) => {
+        setFilters(prev => ({ ...prev, category: val }));
+    };
+
     return (
         <div className="ticket-filter-bar">
-            {/* TABS */}
+            {/* TABS (Open/Closed) */}
             <div className="ticket-tabs">
                 <button 
                     className={`ticket-tab-btn ${activeTab === 'Open' ? 'active' : 'inactive'}`}
                     onClick={() => setActiveTab('Open')}
                 >
-                    Open Issues
+                    Open 
                 </button>
                 <button 
                     className={`ticket-tab-btn ${activeTab === 'Closed' ? 'active' : 'inactive'}`}
                     onClick={() => setActiveTab('Closed')}
                 >
-                    Restored
+                    Closed
                 </button>
             </div>
 
-            {/* FILTERS */}
+            {/* ADVANCED ANALYTICS FILTERS */}
             <div className="ticket-filters">
+                
+                {/* Text Search */}
                 <input 
                     type="text" 
                     name="searchQuery"
@@ -37,31 +70,19 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
                     onChange={handleFilterChange}
                 />
                 
-                <select 
-                    name="municipality" 
-                    className="filter-select"
-                    value={filters.municipality}
-                    onChange={handleFilterChange}
-                >
-                    <option value="">All Municipalities</option>
-                    <option value="Legazpi City">Legazpi City</option>
-                    <option value="Daraga">Daraga</option>
-                    <option value="Tabaco City">Tabaco City</option>
-                    {/* Add remaining ALECO scope municipalities */}
-                </select>
+                {/* Reusable Category Filter */}
+                <IssueCategoryDropdown 
+                    value={filters.category} 
+                    onChange={handleCategoryChange}
+                    isFilter={true} // Enables "All Categories" mode
+                />
 
-                <select 
-                    name="category" 
-                    className="filter-select"
-                    value={filters.category}
-                    onChange={handleFilterChange}
-                >
-                    <option value="">All Categories</option>
-                    <option value="Power Outage">Power Outage</option>
-                    <option value="Fallen Post">Fallen Post</option>
-                    <option value="Broken Wire">Broken Wire</option>
-                    <option value="Billing Issue">Billing Issue</option>
-                </select>
+                {/* Reusable Location Filter (District/Muni/Brgy/Purok) */}
+                <AlecoScopeDropdown 
+                    onLocationSelect={handleLocationChange}
+                    isFilter={true} // Enables partial/all selection mode
+                />
+
             </div>
         </div>
     );

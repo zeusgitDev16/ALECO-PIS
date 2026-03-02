@@ -196,7 +196,7 @@ router.post('/setup-google-account', async (req, res) => {
     await pool.execute(insertQuery, [name || "Google User", cleanEmail, userRole, profilePic]);
 
     // 3. UPDATE STATUS: Mark the invitation as "used"
-    await pool.execute('UPDATE access_codes SET status = "used" WHERE email = ?', [cleanEmail]);
+    await pool.execute('UPDATE access_codes SET status = ? WHERE email = ?', [cleanEmail]);
 
     console.log(`--- [NEW USER] ${cleanEmail} linked Google as ${userRole} (Invite used) ---`);
     res.status(200).json({ message: "Google account linked successfully!" });

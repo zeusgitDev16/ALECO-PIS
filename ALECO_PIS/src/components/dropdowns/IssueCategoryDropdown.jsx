@@ -1,16 +1,25 @@
 import React from 'react';
-import '../../CSS/IssueCategoryDropdown.css'; // Connects to your CSS file
+import '../../CSS/IssueCategoryDropdown.css'; 
 
-const IssueCategoryDropdown = ({ value, onChange }) => {
+/**
+ * @param {boolean} isFilter - If true, removes 'required' and enables the default option as "All Categories"
+ */
+const IssueCategoryDropdown = ({ value, onChange, isFilter = false }) => {
     return (
         <div className="issue-dropdown-container">
             <select 
                 className="issue-select"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                required
+                // BACKWARD COMPATIBILITY: Required for reporting, optional for filtering
+                required={!isFilter} 
             >
-                <option value="" disabled>Select the type of problem...</option>
+                {/* If isFilter is true: Acts as a selectable "Clear" or "All" option.
+                   If isFilter is false: Acts as a disabled placeholder (Original Behavior).
+                */}
+                <option value="" disabled={!isFilter}>
+                    {isFilter ? "All Categories" : "Select the type of problem..."}
+                </option>
 
                 <optgroup label="1. No Light / Power Outage">
                     <option value="Residence No Power">Residence No Power</option>

@@ -1,19 +1,35 @@
 /* src/CSS/AdminSidebar.css */
 
+/* --- ADD THESE TO THE TOP (Overlay) --- */
+/* (Note: mobile-menu-btn was moved to SearchBarGlobal.css to prevent collisions) */
+
+.sidebar-overlay {
+  display: none; /* Hidden on Desktop */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+/* ... KEEP YOUR DESKTOP CSS EXACTLY AS IS ... */
 .sidebar {
   position: sticky;
   top: 0;
   height: 100vh;
-  width: 240px; /* Expanded width for big screens */
-  background-color: var(--bg-body); /* Adapts to theme */
+  width: 240px; 
+  background-color: var(--bg-body); 
   border-right: 1px solid var(--text-secondary);
-  transition: width 0.3s ease, border-right 0.3s ease;
+  transition: left 0.3s ease, width 0.3s ease, border-right 0.3s ease; /* Added left transition */
   z-index: 1000;
   display: flex;
   flex-direction: column;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
-  overflow: hidden; /* Ensures content doesn't spill when closing */
+  overflow: hidden; 
 }
 
 .sidebar-layout {
@@ -23,7 +39,7 @@
   padding: 1.5rem;
   overflow-x: hidden;
   transition: opacity 0.2s ease, padding 0.3s ease;
-  white-space: nowrap; /* Prevents text wrapping during shrink */
+  white-space: nowrap; 
 }
 
 /* --- HEADER SECTION --- */
@@ -100,8 +116,8 @@
 /* Hover & Active State */
 .sidebar-item:hover,
 .sidebar-item.active {
-  background-color: var(--text-header); /* Background becomes the header text color */
-  color: var(--bg-body); /* Text becomes the body background color */
+  background-color: var(--text-header); 
+  color: var(--bg-body); 
 }
 
 /* --- LABELS --- */
@@ -120,62 +136,30 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  /* Ready for nav items */
 }
 
-/* --- RESPONSIVE BEHAVIOR --- */
-/* On smaller screens (Tablets/Mobile), collapse to icon-only mode */
-@media (max-width: 1000px) {
-  .sidebar {
-    width: 80px;
-  }
-
-  .sidebar-layout {
-    padding: 1.5rem 0.5rem;
-    align-items: center; /* Center content for icon mode */
-  }
-
-  .sidebar-menu,
-  .sidebar-content {
-    width: 100%;
-  }
-
-  .sidebar-logo {
-    width: 40px;
-    height: 40px;
-    margin-top: 0.5rem;
-  }
-
-  /* Adjust text elements for small sidebar */
-  .sidebar-header h5 {
-    opacity: 1;
-    height: auto;
-    margin: 0.2rem 0 0 0;
-    font-size: 0.7rem;
-    overflow: visible;
-  }
-
-  .sidebar-label {
-    opacity: 1;
-    height: auto;
-    margin: 0 0 0.5rem 0;
-    font-size: 0.65rem;
-    text-align: center;
-    overflow: visible;
-  }
-
-  /* Sidebar Item Responsive */
-  .sidebar-item {
-    justify-content: center;
-    padding: 0.5rem 0;
-  }
-
-  .sidebar-item span {
-    display: none;
-  }
-}
-
-/* --- FOOTER SECTION --- */
 .sidebar-footer {
   margin-top: 1rem;
+}
+
+/* =========================================
+   RESPONSIVE BEHAVIOR (The Gemini Sliding UI Revamp)
+   ========================================= */
+@media (max-width: 1000px) {
+  .sidebar-overlay {
+    display: block; /* Allows overlay to mount when active */
+  }
+
+  .sidebar {
+    position: fixed; /* Detach from layout, making main content 100% wide */
+    left: -260px; /* Hide off-screen by default */
+    width: 240px; /* Keep full readable width */
+    z-index: 1001; /* Must be higher than overlay */
+  }
+
+  /* This is triggered by the React state */
+  .sidebar.open {
+    left: 0; /* Slide in smoothly */
+    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.5); /* Stronger shadow to pop over content */
+  }
 }

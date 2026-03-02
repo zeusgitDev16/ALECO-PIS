@@ -1,82 +1,97 @@
-import React from 'react';
+import React from 'react'; // Removed redundant useState
 import { Link } from 'react-router-dom';
 import '../CSS/Sidebar.css';
 import alecoLogo from '../assets/Aleco-logo-modified.png';
 import CreatePost from './buttons/CreatePost';
 
-const AdminSidebar = ({ activePage }) => {
+// Accept isOpen and toggleSidebar from AdminLayout
+const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
+  
+  // Safely close the sidebar only if it's currently open (Mobile behavior)
+  const handleLinkClick = () => {
+    if (isOpen) {
+      toggleSidebar();
+    }
+  };
+
   return (
-    <aside id="sidebar" className="sidebar" style={{ height: '100vh', overflowY: 'auto' }}>
-      <div className="sidebar-layout">
-        <div className="sidebar-header">
-          <img src={alecoLogo} alt="Aleco Logo" className="sidebar-logo" />
-          <h5>ALECO</h5>
+    <>
+      {/* The Glass Overlay (Clicking outside closes the menu) */}
+      {isOpen && <div className="sidebar-overlay" onClick={toggleSidebar}></div>}
+
+      {/* Dynamic Class applied here: ${isOpen ? 'open' : ''} */}
+      <aside id="sidebar" className={`sidebar ${isOpen ? 'open' : ''}`} style={{ height: '100vh', overflowY: 'auto' }}>
+        <div className="sidebar-layout">
+          <div className="sidebar-header">
+            <img src={alecoLogo} alt="Aleco Logo" className="sidebar-logo" />
+            <h5>ALECO</h5>
+          </div>
+          <hr className="sidebar-separator" />
+          
+          {/* Main Navigation */}
+          <div className="sidebar-menu">
+            <Link to="/admin-dashboard" className={`sidebar-item ${activePage === 'home' ? 'active' : ''}`} onClick={handleLinkClick}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Home</span>
+            </Link>
+          </div>
+
+          <span className="sidebar-label">Tools*</span>
+          <div className="sidebar-content">
+            {/* Users */}
+            <Link to="/admin-users" className={`sidebar-item ${activePage === 'users' ? 'active' : ''}`} onClick={handleLinkClick}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span>Users</span>
+            </Link>
+
+            {/* Tickets */}
+            <Link to="/admin-tickets" className={`sidebar-item ${activePage === 'tickets' ? 'active' : ''}`} onClick={handleLinkClick}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Tickets</span>
+            </Link>
+
+            <span className="sidebar-label">Posts*</span>
+
+            {/* Interruptions */}
+            <Link to="/admin-interruptions" className={`sidebar-item ${activePage === 'interruptions' ? 'active' : ''}`} onClick={handleLinkClick}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              <span>Interruptions</span>
+            </Link>
+
+            <span className="sidebar-label">Archives*</span>
+
+            {/* History */}
+            <Link to="/admin-history" className={`sidebar-item ${activePage === 'history' ? 'active' : ''}`} onClick={handleLinkClick}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>History</span>
+            </Link>
+          </div>
+
+          <div className="sidebar-footer">
+            <CreatePost />
+          </div>
         </div>
-        <hr className="sidebar-separator" />
-        
-        {/* Main Navigation */}
-        <div className="sidebar-menu">
-          <Link to="/admin-dashboard" className={`sidebar-item ${activePage === 'home' ? 'active' : ''}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            <span>Home</span>
-          </Link>
-        </div>
-
-        <span className="sidebar-label">Tools*</span>
-        <div className="sidebar-content">
-          {/* Users */}
-          <Link to="/admin-users" className={`sidebar-item ${activePage === 'users' ? 'active' : ''}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <span>Users</span>
-          </Link>
-
-          {/* Tickets */}
-          <Link to="/admin-tickets" className={`sidebar-item ${activePage === 'tickets' ? 'active' : ''}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <span>Tickets</span>
-          </Link>
-
-          <span className="sidebar-label">Posts*</span>
-
-          {/* Interruptions */}
-          <Link to="/admin-interruptions" className={`sidebar-item ${activePage === 'interruptions' ? 'active' : ''}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg>
-            <span>Interruptions</span>
-          </Link>
-
-          <span className="sidebar-label">Archives*</span>
-
-          {/* History */}
-          <Link to="/admin-history" className={`sidebar-item ${activePage === 'history' ? 'active' : ''}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            <span>History</span>
-          </Link>
-        </div>
-
-        <div className="sidebar-footer">
-          <CreatePost />
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

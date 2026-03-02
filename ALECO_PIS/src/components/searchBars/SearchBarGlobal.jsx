@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../CSS/SearchBarGlobal.css';
 
-const SearchBarGlobal = () => {
+// 1. Accept the toggleSidebar prop from AdminLayout
+const SearchBarGlobal = ({ toggleSidebar }) => {
   const [profilePic, setProfilePic] = useState('');
   const [role, setRole] = useState('employee');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
-  // NEW: Secure feature state for global logout
+  // Secure feature state for global logout
   const [logoutAllDevices, setLogoutAllDevices] = useState(false);
   
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ const SearchBarGlobal = () => {
     return () => window.removeEventListener('storage', updateProfile);
   }, []);
 
-  // UPDATED: Async handleLogout to support the server-side global flush
+  // Async handleLogout to support the server-side global flush
   const handleLogout = async () => {
     try {
       if (logoutAllDevices) {
@@ -66,6 +67,16 @@ const SearchBarGlobal = () => {
 
   return (
     <header className="admin-top-nav">
+      
+      {/* 2. THE NEW HAMBURGER BUTTON */}
+      <button className="mobile-menu-btn" onClick={toggleSidebar} title="Open Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
       <div className="search-container">
         <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
@@ -127,7 +138,7 @@ const SearchBarGlobal = () => {
                 <h3>Confirm Logout</h3>
                 <p>Are you sure you want to sign out of the ALECO PIS?</p>
                 
-                {/* NEW: Security Checkbox UI */}
+                {/* Security Checkbox UI */}
                 <div className="security-option">
                   <label className="checkbox-container">
                     <input 

@@ -2,22 +2,25 @@ import React from 'react';
 import '../../CSS/IssueCategoryDropdown.css'; 
 
 /**
- * @param {boolean} isFilter - If true, removes 'required' and enables the default option as "All Categories"
- * @param {string} layoutMode - 'form' (default for ReportAProblem) or 'inline' (for Dashboard Filters).
+ * @param {string} value - The current selected category.
+ * @param {function} onChange - Function to update the parent state.
+ * @param {boolean} isFilter - If true, enables the "All Categories" option and removes 'required'.
+ * @param {string} layoutMode - 'form' (default for ReportAProblem) or 'inline' (for Dashboard).
  */
 const IssueCategoryDropdown = ({ value, onChange, isFilter = false, layoutMode = 'form' }) => {
     return (
-        /* DYNAMIC WRAPPER: Switches behavior based on where it's used */
+        /* DYNAMIC WRAPPER: Matches 'layout-form' or 'layout-inline' based on prop */
         <div className={`issue-dropdown-container layout-${layoutMode}`}>
             <select 
                 className="issue-select"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                // BACKWARD COMPATIBILITY: Required for reporting, optional for filtering
+                // BACKWARD COMPATIBILITY: Stays required for reporting users
                 required={!isFilter} 
             >
-                {/* If isFilter is true: Acts as a selectable "Clear" or "All" option.
-                    If isFilter is false: Acts as a disabled placeholder (Original Behavior).
+                {/* DYNAMIC PLACEHOLDER: 
+                   In Form: Disabled so users MUST choose a category.
+                   In Filter: Selectable to allow "All Categories" search.
                 */}
                 <option value="" disabled={!isFilter}>
                     {isFilter ? "All Categories" : "Select the type of problem..."}

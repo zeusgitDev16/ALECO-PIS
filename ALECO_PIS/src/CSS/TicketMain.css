@@ -1,0 +1,58 @@
+/* --- TicketMain.css --- */
+
+/* 1. Header Area */
+.ticket-dashboard-header {
+    margin-bottom: clamp(10px, 2vw, 20px); 
+}
+
+.ticket-header-title {
+    color: var(--text-header);
+    font-size: clamp(1.5rem, 4vw, 2rem); 
+    /* Inherits font settings from your global h2 */
+}
+
+.ticket-header-subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: clamp(0.85rem, 2vw, 1rem); 
+}
+
+/* 2. Main Widget Area */
+.ticket-dashboard-widget {
+    background-color: transparent;
+    padding: 0;
+}
+
+/* =========================================
+   3. THE SINGLE POOL WORKSPACE 
+   (Replaces the old Split-Pane layout)
+   ========================================= */
+.ticket-single-pool-workspace {
+    margin-top: clamp(10px, 2vw, 20px);
+    
+    /* Inheriting your strict theme variables */
+    background-color: var(--bg-card);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px var(--shadow-color-dark);
+    border: 1px solid var(--bg-body);
+    
+    /* Takes 100% width and dynamic height */
+    width: 100%;
+    height: calc(100vh - 250px);
+    min-height: 500px;
+    
+    /* Enables scrolling for the master list */
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+/* =========================================
+   4. MOBILE METAMORPHOSIS (Layout)
+   ========================================= */
+@media (max-width: 768px) {
+    .ticket-single-pool-workspace {
+        /* Adjusts height on mobile to account for the stacked filter bar */
+        height: calc(100vh - 350px);
+        min-height: 400px;
+    }
+}

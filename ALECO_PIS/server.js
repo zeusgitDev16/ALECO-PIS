@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 // 1. Initialize environment variables & Lego Bricks
 import authRoutes from './backend/routes/auth.js'; 
 import ticketRoutes from './backend/routes/tickets.js'; 
-import adminRoutes from './backend/routes/admin.js'; // <-- NEW: Imported your Admin brick
+import userRoutes from './backend/routes/user.js'; // <-- NEW: Imported your Admin brick
 
 dotenv.config();
 
@@ -23,7 +23,7 @@ app.use(express.json());
 // Every route you had before still perfectly exists at the exact same /api URL
 app.use('/api', authRoutes); 
 app.use('/api', ticketRoutes); 
-app.use('/api', adminRoutes); // <-- NEW: Plugged the Admin brick into the server
+app.use('/api', userRoutes); // <-- NEW: Plugged the Admin brick into the server
 
 // 4. Start the Office
 app.listen(PORT, () => {

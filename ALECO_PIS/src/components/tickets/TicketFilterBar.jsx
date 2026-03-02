@@ -1,19 +1,23 @@
 import React from 'react';
-import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown'; // Adjust paths
-import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';      // Adjust paths
+import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown'; 
+import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';      
 import '../../CSS/TicketDashboard.css';
 
 const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
     
-    // 1. Generic handler for standard inputs (like Search)
+    // 1. Generic handler for standard inputs (like the main Search bar)
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    // 2. Specialized handler for the complex location object
+    /**
+     * 2. Optimized Location Handler
+     * Receives the full object from AlecoScopeDropdown.
+     * Even if a field is "All", it arrives as an empty string or null,
+     * allowing for instant database filtering.
+     */
     const handleLocationChange = (locObj) => {
-        // Only update if we have a valid object (null is sent when cleared)
         if (locObj) {
             setFilters(prev => ({
                 ...prev,
@@ -23,7 +27,7 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
                 purok: locObj.purok || ""
             }));
         } else {
-            // Reset location filters if cleared
+            // Safety fallback to clear all location-related filters
             setFilters(prev => ({
                 ...prev,
                 district: "",
@@ -34,14 +38,14 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
         }
     };
 
-    // 3. Simple handler for the Category string
+    // 3. Simple handler for the Category selection
     const handleCategoryChange = (val) => {
         setFilters(prev => ({ ...prev, category: val }));
     };
 
     return (
         <div className="ticket-filter-bar">
-            {/* TABS (Open/Closed) */}
+            {/* TAB SELECTION: Open vs Closed Tickets */}
             <div className="ticket-tabs">
                 <button 
                     className={`ticket-tab-btn ${activeTab === 'Open' ? 'active' : 'inactive'}`}
@@ -57,10 +61,10 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
                 </button>
             </div>
 
-            {/* ADVANCED ANALYTICS FILTERS */}
+            {/* DASHBOARD ANALYTICS CONTROLS */}
             <div className="ticket-filters">
                 
-                {/* Text Search */}
+                {/* ID/Name Search Input */}
                 <input 
                     type="text" 
                     name="searchQuery"
@@ -70,17 +74,23 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
                     onChange={handleFilterChange}
                 />
                 
-                {/* Reusable Category Filter */}
+                {/* Issue Category: Now with "All Categories" option and 38px inline height */}
                 <IssueCategoryDropdown 
                     value={filters.category} 
                     onChange={handleCategoryChange}
-                    isFilter={true} // Enables "All Categories" mode
+                    isFilter={true} 
+                    layoutMode="inline" 
                 />
 
-                {/* Reusable Location Filter (District/Muni/Brgy/Purok) */}
+                {/* Aleco Scope: Now transformed for the Dashboard.
+                  - All 4 levels (District, Muni, Brgy, Purok) are visible.
+                  - Brgy is a fixed dropdown instead of search.
+                  - Selecting "All Districts" resets children automatically.
+                */}
                 <AlecoScopeDropdown 
                     onLocationSelect={handleLocationChange}
-                    isFilter={true} // Enables partial/all selection mode
+                    isFilter={true} 
+                    layoutMode="inline" 
                 />
 
             </div>

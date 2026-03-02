@@ -3,10 +3,12 @@ import '../../CSS/IssueCategoryDropdown.css';
 
 /**
  * @param {boolean} isFilter - If true, removes 'required' and enables the default option as "All Categories"
+ * @param {string} layoutMode - 'form' (default for ReportAProblem) or 'inline' (for Dashboard Filters).
  */
-const IssueCategoryDropdown = ({ value, onChange, isFilter = false }) => {
+const IssueCategoryDropdown = ({ value, onChange, isFilter = false, layoutMode = 'form' }) => {
     return (
-        <div className="issue-dropdown-container">
+        /* DYNAMIC WRAPPER: Switches behavior based on where it's used */
+        <div className={`issue-dropdown-container layout-${layoutMode}`}>
             <select 
                 className="issue-select"
                 value={value}
@@ -15,7 +17,7 @@ const IssueCategoryDropdown = ({ value, onChange, isFilter = false }) => {
                 required={!isFilter} 
             >
                 {/* If isFilter is true: Acts as a selectable "Clear" or "All" option.
-                   If isFilter is false: Acts as a disabled placeholder (Original Behavior).
+                    If isFilter is false: Acts as a disabled placeholder (Original Behavior).
                 */}
                 <option value="" disabled={!isFilter}>
                     {isFilter ? "All Categories" : "Select the type of problem..."}

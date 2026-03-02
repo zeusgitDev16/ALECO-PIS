@@ -1,3 +1,4 @@
+/* --- Master Container Logic --- */
 .issue-dropdown-container {
     display: flex;
     flex-direction: column;
@@ -5,9 +6,32 @@
     margin-bottom: 20px;
     width: 100%;
     text-align: left;
-    box-sizing: border-box; /* Ensures padding stays internal */
+    box-sizing: border-box;
 }
 
+/* --- NEW: INLINE DASHBOARD LAYOUT (Sleek Mode) --- */
+.issue-dropdown-container.layout-inline {
+    margin-bottom: 0;   /* Removes the large bottom gap for dashboard alignment */
+    width: auto;        /* Allows it to sit side-by-side with other filters */
+}
+
+.issue-dropdown-container.layout-inline .issue-select {
+    height: 38px;       /* Exact height match for Search ID and AlecoScope filters */
+    padding: 0 14px;    /* Centered text vertically */
+    font-size: 13px;    /* Slightly smaller for dashboard density */
+    background-color: rgba(255, 255, 255, 0.05); /* Matching glass-morphism effect */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: var(--text-main, #fff);
+    min-width: 200px;   /* Ensures the category text is readable */
+}
+
+/* --- BACKWARD COMPATIBILITY: FORM LAYOUT (ReportAProblem.jsx) --- */
+.issue-dropdown-container.layout-form {
+    margin-bottom: 20px;
+}
+
+/* Original Shared Styles */
 .required-asterisk {
     color: #d9534f;
     margin-left: 2px;
@@ -25,7 +49,7 @@
     outline: none;
     cursor: pointer;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    box-sizing: border-box; /* CRITICAL for parent-dependent width */
+    box-sizing: border-box;
 }
 
 .issue-select:focus {
@@ -36,9 +60,7 @@
 .issue-select optgroup {
     font-weight: bold;
     font-style: normal;
-    /* Use var(--bg-body) instead of a hardcoded light color to match dark mode */
     background-color: var(--bg-body, #f4f6f9); 
-    /* Ensure the title text follows the theme's main text color */
     color: var(--text-main, #111);
     padding: 4px;
 }
@@ -52,29 +74,22 @@
 
 /* --- STRICT MOBILE SIZING (480px and below) --- */
 @media (max-width: 480px) {
+    /* Ensure dashboard filters stack nicely on small screens */
+    .issue-dropdown-container.layout-inline {
+        width: 100% !important;
+        margin-bottom: 8px;
+    }
+
     .issue-dropdown-container {
-        margin-bottom: 12px; /* Matching textfield-group margin */
+        margin-bottom: 12px;
         width: 100% !important;
         max-width: 100% !important;
     }
 
-    /* Scaling label to match .textfield-label */
-    .issue-dropdown-container label {
-        font-size: 11px !important; 
-        margin-bottom: 4px;
-    }
-
     .issue-select {
         width: 100% !important;
-        min-width: 0;           /* Enforces shrink behavior */
-        padding: 8px 10px;      /* Exact match to textfield-input */
-        font-size: 13px;        /* Exact match to textfield-input */
-        border-radius: 6px;     /* Matching your established mobile radius */
-        box-sizing: border-box;
-    }
-
-    /* Scaling the internal options for better mobile readability */
-    .issue-select option, .issue-select optgroup {
+        padding: 8px 10px;
         font-size: 13px;
+        border-radius: 6px;
     }
 }

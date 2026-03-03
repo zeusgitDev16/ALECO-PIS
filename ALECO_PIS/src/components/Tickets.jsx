@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import '../CSS/TicketMain.css'; 
+import useTickets from '../utils/useTickets';
 
 // Importing the Lego Bricks
 import TicketFilterBar from './tickets/TicketFilterBar';
@@ -8,34 +9,20 @@ import TicketListPane from './tickets/TicketListPane';
 import TicketDetailPane from './tickets/TicketDetailPane';
 
 const AdminTickets = () => {
-    // --- 1. Master State ---
-    const [tickets, setTickets] = useState([]);
+    // --- 1. Custom Hook Integration (The Engine) ---
+    // We replace the old manual state and fetch logic entirely with this single line.
+    // It automatically provides the tickets, the loading state, and the comprehensive filter object.
+    const { tickets, loading: isLoading, error, filters, setFilters } = useTickets();
+
+    // --- 2. Master State (UI Only) ---
+    // We only need to track which ticket the admin clicked on.
     const [selectedTicket, setSelectedTicket] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
 
-    // --- 2. Filter & Tab State ---
-    const [activeTab, setActiveTab] = useState('Open'); 
-    const [filters, setFilters] = useState({
-        searchQuery: '',
-        municipality: '',
-        category: ''
-    });
-
-    // --- 3. Backend Fetch Logic ---
-    useEffect(() => {
-        const fetchTickets = async () => {
-            setIsLoading(true);
-            try {
-                // Placeholder for actual fetch call
-            } catch (error) {
-                console.error("Failed to fetch tickets:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchTickets();
-    }, [activeTab, filters]);
+    // --- 3. Wrapper Functions for Compatibility ---
+    // The existing TicketFilterBar expects `activeTab` and `setActiveTab` separately.
+    // We map these directly to our new filters state to keep the UI perfectly idempotent.
+    const activeTab = filters.tab;
+    const setActiveTab = (newTab) => setFilters(prev => ({ ...prev, tab: newTab }));
 
     // --- 4. Render Layout ---
     return (
@@ -45,6 +32,13 @@ const AdminTickets = () => {
                 <h2 className="header-title ticket-header-title">Support Tickets</h2>
                 <p className="header-subtitle ticket-header-subtitle">Track and resolve user reported issues.</p>
             </div>
+
+            {/* Error Banner (Optional, but good UX if the database connection fails) */}
+            {error && (
+                <div style={{ padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '10px' }}>
+                    {error}
+                </div>
+            )}
 
             {/* Content Area */}
             <div className="dashboard-widget ticket-dashboard-widget">
@@ -86,7 +80,7 @@ const AdminTickets = () => {
                 ticket={selectedTicket} 
                 onClose={() => setSelectedTicket(null)}
                 onUpdateTicket={(ticketId, newStatus) => {
-                    // Update specific ticket logic here
+                    // Update specific ticket logic here (We will tackle this next if you want!)
                 }}
             />
 

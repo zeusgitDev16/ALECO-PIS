@@ -1,94 +1,133 @@
 import React from 'react';
 import '../../CSS/TicketDashboard.css';
 
+/**
+ * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
+ * @param {Object} ticket - The selected ticket object from the aleco_tickets table.
+ * @param {Function} onUpdateTicket - Callback to trigger status updates in the backend.
+ * @param {Function} onClose - Callback to dismiss the modal.
+ */
 const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
     
-    // Idempotent guard: If no ticket is selected, render nothing.
+    // 1. Idempotent Guard: Prevents errors if the parent state is null.
     if (!ticket) return null;
 
+    // 2. Formatting Helpers
+    const formattedDate = new Date(ticket.created_at).toLocaleString('en-PH', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    const fullName = `${ticket.first_name} ${ticket.middle_name || ''} ${ticket.last_name}`.replace(/\s+/g, ' ').trim();
+
     return (
-        /* Overlay click will trigger onClose to dismiss the modal */
         <div className="ticket-modal-overlay" onClick={onClose}>
-            
-            /* Stop propagation prevents clicks inside the white box from closing the modal */
-            <div className="ticket-modal-content ticket-detail-container" onClick={(e) => e.stopPropagation()}>
+            {/* stopPropagation ensures clicking inside the modal doesn't trigger the overlay's onClose */}
+            <div className="ticket-modal-content" onClick={(e) => e.stopPropagation()}>
                 
-                {/* Close Button */}
-                <button className="ticket-modal-close-btn" onClick={onClose}>
+                {/* Close Trigger */}
+                <button className="ticket-modal-close-btn" onClick={onClose} aria-label="Close Modal">
                     &times;
                 </button>
 
-                {/* Header */}
-                <div className="detail-header" style={{ paddingRight: '30px' }}>
-                    <div>
+                {/* --- SECTION 1: HEADER --- */}
+                <div className="detail-header">
+                    <div className="header-left">
                         <h2 className="detail-title">{ticket.ticket_id}</h2>
-                        <span className={`status-tag ${ticket.status.toLowerCase()}`}>{ticket.status}</span>
+                        <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
+                            {ticket.status}
+                        </span>
                     </div>
-                    <div style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                        <div>Reported: {new Date(ticket.created_at).toLocaleString()}</div>
+                    <div className="header-right">
+                        <span className="reported-label">Reported On</span>
+                        <div className="reported-date">{formattedDate}</div>
                     </div>
                 </div>
 
-                {/* Reporter & Location Data */}
+                <hr className="detail-divider" />
+
+                {/* --- SECTION 2: REPORTER & SYSTEM INFO --- */}
                 <div className="detail-grid">
                     <div className="detail-group">
                         <label>Reporter Name</label>
-                        <p>{ticket.first_name} {ticket.middle_name || ''} {ticket.last_name}</p>
+                        <p className="detail-value">{fullName}</p>
                     </div>
                     <div className="detail-group">
                         <label>Contact Number</label>
-                        <p>{ticket.phone_number}</p>
+                        <p className="detail-value">{ticket.phone_number}</p>
                     </div>
                     <div className="detail-group">
                         <label>Account Number</label>
-                        <p>{ticket.account_number || 'N/A'}</p>
+                        <p className="detail-value">{ticket.account_number || 'Unlinked Account'}</p>
                     </div>
                     <div className="detail-group">
-                        <label>Category</label>
-                        <p>{ticket.category}</p>
+                        <label>Issue Category</label>
+                        <p className="detail-value category-highlight">{ticket.category}</p>
                     </div>
-                    <div className="detail-group" style={{ gridColumn: 'span 2' }}>
-                        <label>Exact Location</label>
-                        <p>{ticket.address}, {ticket.purok ? `${ticket.purok}, ` : ''}{ticket.barangay}, {ticket.municipality}, {ticket.district}</p>
+                    
+                    {/* Full Width Location Span */}
+                    <div className="detail-group full-width">
+                        <label>Service Location</label>
+                        <p className="detail-value location-text">
+                            📍 {ticket.address ? `${ticket.address}, ` : ''}
+                            {ticket.purok ? `Purok ${ticket.purok}, ` : ''}
+                            {ticket.barangay}, {ticket.municipality}
+                            <br />
+                            <small className="district-sub">{ticket.district}</small>
+                        </p>
                     </div>
                 </div>
 
-                {/* The Concern */}
-                <div className="detail-group">
-                    <label>User's Concern</label>
-                    <div className="concern-box">
-                        {ticket.concern}
+                {/* --- SECTION 3: CONTENT & EVIDENCE --- */}
+                <div className="detail-content-section">
+                    <div className="detail-group">
+                        <label>User's Concern</label>
+                        <div className="concern-box">
+                            {ticket.concern}
+                        </div>
                     </div>
+
+                    {ticket.image_url && (
+                        <div className="detail-group evidence-section">
+                            <label>Attached Evidence</label>
+                            <div className="image-wrapper">
+                                <img 
+                                    src={ticket.image_url} 
+                                    alt="Technical Evidence" 
+                                    className="evidence-img" 
+                                    onClick={() => window.open(ticket.image_url, '_blank')}
+                                />
+                                <span className="image-hint">Click image to expand</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Evidence Image */}
-                {ticket.image_url && (
-                    <div className="detail-group">
-                        <label>Attached Evidence</label>
-                        <img src={ticket.image_url} alt="User submission" className="evidence-img" />
-                    </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="action-buttons">
+                {/* --- SECTION 4: ADMIN ACTIONS --- */}
+                <div className="action-footer">
+                    {/* Show 'Ongoing' button only if current status is Pending */}
                     {ticket.status === 'Pending' && (
                         <button 
                             className="btn-action btn-ongoing"
                             onClick={() => {
                                 onUpdateTicket(ticket.ticket_id, 'Ongoing');
-                                onClose(); // Optionally close after action
+                                onClose(); 
                             }}
                         >
-                            Mark as Ongoing
+                            Start Resolution
                         </button>
                     )}
                     
+                    {/* Show 'Restored' button if Pending or Ongoing */}
                     {['Pending', 'Ongoing'].includes(ticket.status) && (
                         <button 
                             className="btn-action btn-restored"
                             onClick={() => {
                                 onUpdateTicket(ticket.ticket_id, 'Restored');
-                                onClose(); // Optionally close after action
+                                onClose();
                             }}
                         >
                             Mark as Restored

@@ -7,6 +7,8 @@ import dotenv from 'dotenv';
 import authRoutes from './backend/routes/auth.js'; 
 import ticketRoutes from './backend/routes/tickets.js'; 
 import userRoutes from './backend/routes/user.js'; // <-- NEW: Imported your Admin brick
+import ticketFilterRoutes from './backend/routes/ticket-routes.js';
+
 
 dotenv.config();
 
@@ -23,7 +25,8 @@ app.use(express.json());
 // Every route you had before still perfectly exists at the exact same /api URL
 app.use('/api', authRoutes); 
 app.use('/api', ticketRoutes); 
-app.use('/api', userRoutes); // <-- NEW: Plugged the Admin brick into the server
+app.use('/api', userRoutes);
+app.use('/api', ticketFilterRoutes);// <-- NEW: Plugged the Admin brick into the server
 
 // 4. Start the Office
 app.listen(PORT, () => {

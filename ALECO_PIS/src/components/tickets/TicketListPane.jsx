@@ -4,39 +4,64 @@ import '../../CSS/TicketDashboard.css';
 const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket }) => {
     
     if (isLoading) {
-        return <div className="ticket-list-container"><p style={{color: 'var(--text-secondary)', textAlign: 'center'}}>Loading tickets...</p></div>;
+        return (
+            <div className="ticket-list-status">
+                <p>Loading tickets...</p>
+            </div>
+        );
     }
 
     if (!tickets || tickets.length === 0) {
-        return <div className="ticket-list-container"><p style={{color: 'var(--text-secondary)', textAlign: 'center'}}>No tickets found.</p></div>;
+        return (
+            <div className="ticket-list-status">
+                <p>No tickets found.</p>
+            </div>
+        );
     }
 
     return (
-        <div className="ticket-list-container">
+        <div className="ticket-grid-wrapper">
             {tickets.map(ticket => (
+                /* The Container Wrapper: Highlights separation and handles selection */
                 <div 
                     key={ticket.ticket_id}
-                    className={`ticket-card-compact ${selectedTicket?.ticket_id === ticket.ticket_id ? 'selected' : ''}`}
+                    className={`ticket-card-container ${selectedTicket?.ticket_id === ticket.ticket_id ? 'selected' : ''}`}
                     onClick={() => onSelectTicket(ticket)}
                 >
-                    <div className="ticket-card-header">
-                        <span className="ticket-id">{ticket.ticket_id}</span>
-                        {/* A helper function would convert created_at to "2h ago" here */}
-                        <span className="ticket-time">
-                            {new Date(ticket.created_at).toLocaleDateString()}
+                    {/* Header: ID and Date (Left Aligned & Bolded) */}
+                    <div className="card-header-row">
+                        <span className="ticket-id-bold">{ticket.ticket_id}</span>
+                        <span className="ticket-date-label">
+                            {new Date(ticket.created_at).toLocaleDateString('en-PH', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                year: 'numeric' 
+                            })}
                         </span>
                     </div>
                     
-                    <div className="ticket-category">{ticket.category}</div>
-                    
-                    <div className="ticket-location">
-                        📍 {ticket.barangay ? `${ticket.barangay}, ` : ''}{ticket.municipality}
+                    {/* Content: Concern and Category (Occupies full width) */}
+                    <div className="card-body-content">
+                        <h4 className="concern-text-highlight">{ticket.concern}</h4>
+                        <div className="category-tag-container">
+                            <span className="category-badge-outline">{ticket.category}</span>
+                        </div>
                     </div>
 
-                    <div style={{ marginTop: '5px' }}>
-                        <span className={`status-tag ${ticket.status.toLowerCase()}`}>
-                            {ticket.status}
-                        </span>
+                    {/* Footer: Metadata with Horizontal Scroll for Small Screens */}
+                    <div className="card-footer-metadata">
+                        <div className="location-scroll-wrapper">
+                            <span className="geo-icon">📍</span>
+                            <span className="location-text-full">
+                                {ticket.purok ? `Purok ${ticket.purok}, ` : ''} 
+                                {ticket.barangay}, {ticket.municipality}, {ticket.district}
+                            </span>
+                        </div>
+                        <div className="status-badge-container">
+                            <span className={`status-pill-solid ${ticket.status.toLowerCase()}`}>
+                                {ticket.status}
+                            </span>
+                        </div>
                     </div>
                 </div>
             ))}

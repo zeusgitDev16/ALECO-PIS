@@ -68,90 +68,100 @@ const AlecoScopeDropdown = ({ label, onLocationSelect, isFilter = false, layoutM
         }
     }, [sel, onLocationSelect, isFilter]);
 
+    // ==========================================
+    // EXTRACTED UI COMPONENTS (For Clean DOM Branching)
+    // ==========================================
+    const renderDistrict = (
+        <select value={sel.dist} className="scope-select" onChange={(e) => handleSelectChange('dist', e.target.value)}>
+            <option value="">{isFilter ? "All Districts" : "District..."}</option>
+            {ALECO_SCOPE.map(d => <option key={d.district} value={d.district}>{d.district}</option>)}
+        </select>
+    );
+
+    const renderMuni = (
+        <select value={sel.muni} className="scope-select" onChange={(e) => handleSelectChange('muni', e.target.value)}>
+            <option value="">{isFilter ? "All Municipalities" : "Town/City..."}</option>
+            {availableMunis.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+        </select>
+    );
+
+    const renderBrgyDropdown = (
+        <select className="scope-select" value={sel.brgy} onChange={(e) => handleSelectChange('brgy', e.target.value)}>
+            <option value="">All Barangays</option>
+            {availableBrgys.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+        </select>
+    );
+
+    const renderBrgySearch = (
+        <div className="search-box-container">
+            {!sel.brgy || isSearching ? (
+                <input 
+                    type="text" 
+                    placeholder={isFilter ? "Filter by Barangay..." : "Type to search Barangay..."} 
+                    className="mini-search"
+                    value={searchTerm}
+                    onFocus={() => setIsSearching(true)}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            ) : (
+                <div className="selected-tag" onClick={() => setIsSearching(true)}>
+                    {sel.brgy} <span>(Change)</span>
+                </div>
+            )}
+            {isSearching && searchTerm && (
+                <div className="search-results">
+                    {filteredBrgys.length > 0 ? (
+                        filteredBrgys.slice(0, 5).map(b => (
+                            <div key={b.name} className="result-item" onClick={() => handleSelectChange('brgy', b.name)}>
+                                {b.name}
+                            </div>
+                        ))
+                    ) : (
+                        <div className="result-item no-match">No matches found</div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+
+    const renderPurok = (
+        <select className="purok-select" value={sel.purok} onChange={(e) => handleSelectChange('purok', e.target.value)}>
+            <option value="">{isFilter ? "All Puroks" : "Select Purok..."}</option>
+            {availablePuroks.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+    );
+
+    // ==========================================
+    // DOM BRANCHING LOGIC
+    // ==========================================
     return (
         <div className={`aleco-mini-scope layout-${layoutMode}`}>
             {label && <label className="aleco-mini-scope-label">{label}</label>}
 
-            <div className="mini-row">
-                {/* 1. DISTRICT */}
-                <select 
-                    value={sel.dist} 
-                    className="scope-select"
-                    onChange={(e) => handleSelectChange('dist', e.target.value)}
-                >
-                    <option value="">{isFilter ? "All Districts" : "District..."}</option>
-                    {ALECO_SCOPE.map(d => <option key={d.district} value={d.district}>{d.district}</option>)}
-                </select>
+            {isInline ? (
+                /* --- DASHBOARD MODE (Single Flex Row / 2x2 Grid on Mobile) --- */
+                <div className="mini-row">
+                    {renderDistrict}
+                    {(isInline || sel.dist) && renderMuni}
+                    {(isInline || sel.muni) && renderBrgyDropdown}
+                    {(isInline || (sel.brgy && !isSearching)) && renderPurok}
+                </div>
+            ) : (
+                /* --- FORM MODE (Original 3-Row Vertical Layout) --- */
+                <>
+                    {/* Row 1: District & Municipality */}
+                    <div className="mini-row">
+                        {renderDistrict}
+                        {(sel.dist || isFilter) && renderMuni}
+                    </div>
 
-                {/* 2. MUNICIPALITY: Fixed visibility for Inline, Dynamic for Form */}
-                {(isInline || sel.dist) && (
-                    <select 
-                        value={sel.muni} 
-                        className="scope-select"
-                        onChange={(e) => handleSelectChange('muni', e.target.value)}
-                    >
-                        <option value="">{isFilter ? "All Municipalities" : "Town/City..."}</option>
-                        {availableMunis.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-                    </select>
-                )}
+                    {/* Row 2: Searchable Barangay */}
+                    {(sel.muni || isFilter) && renderBrgySearch}
 
-                {/* 3. BARANGAY: Swap between Dropdown (Inline) and Search (Form) */}
-                {(isInline || sel.muni) && (
-                    isInline ? (
-                        <select 
-                            className="scope-select"
-                            value={sel.brgy}
-                            onChange={(e) => handleSelectChange('brgy', e.target.value)}
-                        >
-                            <option value="">All Barangays</option>
-                            {availableBrgys.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-                        </select>
-                    ) : (
-                        <div className="search-box-container">
-                            {!sel.brgy || isSearching ? (
-                                <input 
-                                    type="text" 
-                                    placeholder="Type to search Barangay..." 
-                                    className="mini-search"
-                                    value={searchTerm}
-                                    onFocus={() => setIsSearching(true)}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            ) : (
-                                <div className="selected-tag" onClick={() => setIsSearching(true)}>
-                                    {sel.brgy} <span>(Change)</span>
-                                </div>
-                            )}
-                            {isSearching && searchTerm && (
-                                <div className="search-results">
-                                    {filteredBrgys.length > 0 ? (
-                                        filteredBrgys.slice(0, 5).map(b => (
-                                            <div key={b.name} className="result-item" 
-                                                onClick={() => handleSelectChange('brgy', b.name)}>
-                                                {b.name}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="result-item no-match">No matches found</div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )
-                )}
-
-                {/* 4. PUROK: Fixed visibility for Inline, Dynamic for Form */}
-                {(isInline || (sel.brgy && !isSearching)) && (
-                    <select 
-                        className="purok-select" 
-                        value={sel.purok} 
-                        onChange={(e) => handleSelectChange('purok', e.target.value)}
-                    >
-                        <option value="">{isFilter ? "All Puroks" : "Select Purok..."}</option>
-                        {availablePuroks.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                )}
-            </div>
+                    {/* Row 3: Purok Selection */}
+                    {(sel.brgy || isFilter) && !isSearching && renderPurok}
+                </>
+            )}
         </div>
     );
 };

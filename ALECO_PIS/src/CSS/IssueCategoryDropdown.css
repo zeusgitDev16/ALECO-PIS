@@ -9,21 +9,24 @@
     box-sizing: border-box;
 }
 
-/* --- NEW: INLINE DASHBOARD LAYOUT (Sleek Mode) --- */
+/* --- NEW: INLINE DASHBOARD LAYOUT (Ultra-Compact Mode) --- */
 .issue-dropdown-container.layout-inline {
     margin-bottom: 0;   /* Removes the large bottom gap for dashboard alignment */
-    width: auto;        /* Allows it to sit side-by-side with other filters */
+    width: 100%;        /* Flexible width for 50/50 split */
+    flex: 1;            /* Allows it to share row space evenly */
 }
 
 .issue-dropdown-container.layout-inline .issue-select {
-    height: 38px;       /* Exact height match for Search ID and AlecoScope filters */
-    padding: 0 14px;    /* Centered text vertically */
-    font-size: 13px;    /* Slightly smaller for dashboard density */
-    background-color: rgba(255, 255, 255, 0.05); /* Matching glass-morphism effect */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    color: var(--text-main, #fff);
-    min-width: 200px;   /* Ensures the category text is readable */
+    height: 28px;       /* EXTREME SHRINK */
+    min-height: 28px;   /* EXTREME SHRINK */
+    padding: 0 8px;     /* Tighter padding */
+    font-size: 11px;    /* EXTREME SHRINK */
+    border-radius: 4px; /* Sharper corners */
+    background-color: var(--bg-body); 
+    border: 1px solid var(--text-secondary);
+    color: var(--text-main);
+    min-width: 120px;   /* Shrunk to allow perfect 50/50 split with search bar */
+    box-sizing: border-box;
 }
 
 /* --- BACKWARD COMPATIBILITY: FORM LAYOUT (ReportAProblem.jsx) --- */
@@ -72,21 +75,31 @@
     padding: 8px;
 }
 
-/* --- STRICT MOBILE SIZING (480px and below) --- */
-@media (max-width: 480px) {
-    /* Ensure dashboard filters stack nicely on small screens */
-    .issue-dropdown-container.layout-inline {
-        width: 100% !important;
-        margin-bottom: 8px;
-    }
-
+/* --- STRICT MOBILE SIZING (768px and below) --- */
+@media (max-width: 768px) {
     .issue-dropdown-container {
         margin-bottom: 12px;
         width: 100% !important;
         max-width: 100% !important;
     }
 
-    .issue-select {
+    /* Removes margin specifically for inline dashboard */
+    .issue-dropdown-container.layout-inline {
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Forces the select box to stretch and fill the 50/50 row constraint */
+   .issue-dropdown-container.layout-inline .issue-select {
+        width: 100% !important;
+        min-width: 0 !important; /* CRITICAL: Removes the 120px desktop limit */
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis; /* Adds "..." if the category text is too long for the tiny box */
+    }
+
+    /* Shrinks the form select for mobile screens (Kept safe from inline) */
+    .issue-dropdown-container.layout-form .issue-select {
         width: 100% !important;
         padding: 8px 10px;
         font-size: 13px;

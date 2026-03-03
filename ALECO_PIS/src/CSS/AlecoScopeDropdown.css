@@ -7,18 +7,21 @@
     flex-direction: column;
 }
 
-/* --- NEW: INLINE DASHBOARD LAYOUT (The Sleek Step) --- */
-/* This only activates when layoutMode="inline" is passed as a prop */
+/* --- NEW: INLINE DASHBOARD LAYOUT (Ultra-Compact Mode) --- */
 .aleco-mini-scope.layout-inline {
-    flex-direction: row; /* Forces everything into a single line */
-    flex-wrap: wrap;    /* Allows wrapping only if the screen gets too narrow */
+    flex-direction: row; 
+    flex-wrap: wrap;    
     align-items: center;
-    gap: 10px;
+    width: 100%;
 }
 
 .aleco-mini-scope.layout-inline .mini-row {
-    margin-bottom: 0;   /* Removes vertical spacing for dashboard */
-    width: auto;        /* Allows items to sit side-by-side */
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px; /* SHRUNK to match new dashboard density */
+    margin-bottom: 0;   
+    width: 100%;        
 }
 
 /* Shrinking the selects for the Dashboard */
@@ -26,27 +29,34 @@
 .aleco-mini-scope.layout-inline .purok-select, 
 .aleco-mini-scope.layout-inline .mini-search,
 .aleco-mini-scope.layout-inline .selected-tag {
-    height: 38px;       /* Matches the Search Bar height exactly */
-    padding: 0 12px;
-    font-size: 13px;
-    background-color: rgba(255, 255, 255, 0.05); /* Glass-morphism look */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 150px;
+    height: 28px;       /* EXTREME SHRINK */
+    min-height: 28px;   /* EXTREME SHRINK */
+    padding: 0 8px;     /* Tighter padding */
+    font-size: 11px;    /* EXTREME SHRINK */
+    border-radius: 4px; /* Sharper corners */
+    background-color: var(--bg-body); 
+    border: 1px solid var(--text-secondary); 
+    color: var(--text-main);
+    flex: 1; /* Distributes them evenly */
+    min-width: 120px; /* Prevents text from disappearing before wrap */
+    box-sizing: border-box;
 }
 
 .aleco-mini-scope.layout-inline .search-box-container {
     margin-bottom: 0;
-    width: auto;
+    flex: 1; /* Allows container to share space evenly */
+    min-width: 120px;
 }
 
 /* --- BACKWARD COMPATIBILITY: FORM LAYOUT (ReportAProblem.jsx) --- */
-/* This preserves your existing look perfectly */
 .aleco-mini-scope.layout-form {
     flex-direction: column;
 }
 
 .aleco-mini-scope.layout-form .mini-row {
+    display: flex;
     flex-direction: row;
+    gap: 8px;
     margin-bottom: 10px;
 }
 
@@ -65,9 +75,10 @@
     display: none;
 }
 
-.mini-row select, 
-.purok-select, 
-.mini-search {
+/* Form Mode Sizing (Untouched) */
+.aleco-mini-scope.layout-form select, 
+.aleco-mini-scope.layout-form .purok-select, 
+.aleco-mini-scope.layout-form .mini-search {
     flex: 1;
     padding: 12px 15px;
     font-size: 15px;
@@ -84,7 +95,6 @@
 .search-box-container {
     position: relative;
     width: 100%;
-    margin-bottom: 10px;
 }
 
 .search-results {
@@ -113,24 +123,44 @@
     color: #1cc972;
 }
 
-/* --- THE STRICT MOBILE SIZING (480px and below) --- */
-@media (max-width: 480px) {
-    /* On mobile, both layouts stack vertically for better usability */
+/* --- DASHBOARD MOBILE SIZING (768px - 2x2 Grid) --- */
+@media (max-width: 768px) {
     .aleco-mini-scope.layout-inline {
-        flex-direction: column;
-        align-items: stretch;
+        width: 100% !important;
+        display: block !important;
     }
+    
+    /* Transforms the 4 locations into a neat 2x2 square spanning the full width */
+    .aleco-mini-scope.layout-inline .mini-row {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+    
+    .aleco-mini-scope.layout-inline select, 
+    .aleco-mini-scope.layout-inline .purok-select,
+    .aleco-mini-scope.layout-inline .search-box-container {
+        width: 100% !important;
+        min-width: 0 !important; /* Critical to allow shrinking into grid */
+        margin: 0 !important;
+    }
+}
 
-    .mini-row {
+/* --- STRICT FORM MOBILE SIZING (480px and below) --- */
+@media (max-width: 480px) {
+    /* Original vertical stacking specifically preserved for ReportAProblem */
+    .aleco-mini-scope.layout-form .mini-row {
         flex-direction: column !important;
         width: 100% !important;
     }
 
-    .mini-row select, 
-    .purok-select, 
-    .mini-search { 
+    .aleco-mini-scope.layout-form select, 
+    .aleco-mini-scope.layout-form .purok-select, 
+    .aleco-mini-scope.layout-form .mini-search { 
         padding: 8px 10px !important;
         font-size: 13px !important;
+        width: 100% !important;
     }
 }
 
@@ -147,6 +177,10 @@
     font-size: 14px;
     cursor: pointer;
     transition: all 0.3s ease-in-out;
+}
+
+.aleco-mini-scope.layout-inline .selected-tag {
+    padding: 0 8px; /* Override for inline density */
 }
 
 .selected-tag:hover {

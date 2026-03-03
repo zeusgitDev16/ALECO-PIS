@@ -5,18 +5,18 @@ import '../../CSS/TicketDashboard.css';
 
 const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
     
-    // 1. Generic handler for standard inputs (like the main Search bar)
+    // 1. Generic handler for standard inputs (Search, Date Preset, Custom Dates)
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    /**
-     * 2. Optimized Location Handler
-     * Receives the full object from AlecoScopeDropdown.
-     * Even if a field is "All", it arrives as an empty string or null,
-     * allowing for instant database filtering.
-     */
+    // 2. Toggle Handler for the "New (<48h)" filter
+    const toggleUrgentNew = () => {
+        setFilters(prev => ({ ...prev, isNew: !prev.isNew }));
+    };
+
+    // 3. Location Handler (Unchanged, optimized logic)
     const handleLocationChange = (locObj) => {
         if (locObj) {
             setFilters(prev => ({
@@ -27,73 +27,140 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
                 purok: locObj.purok || ""
             }));
         } else {
-            // Safety fallback to clear all location-related filters
             setFilters(prev => ({
-                ...prev,
-                district: "",
-                municipality: "",
-                barangay: "",
-                purok: ""
+                ...prev, district: "", municipality: "", barangay: "", purok: ""
             }));
         }
     };
 
-    // 3. Simple handler for the Category selection
+    // 4. Category Handler (Unchanged)
     const handleCategoryChange = (val) => {
         setFilters(prev => ({ ...prev, category: val }));
     };
 
+    // Placeholder for Export Actions
+    const handleExport = (type) => {
+        console.log(`Triggering ${type} report generation...`);
+        // Logic to trigger PDF/CSV download will go here
+    };
+
     return (
         <div className="ticket-filter-bar">
-            {/* TAB SELECTION: Open vs Closed Tickets */}
-            <div className="ticket-tabs">
+            
+            {/* =========================================
+                TIER 1: Primary Hooks + Category
+                ========================================= */}
+            <div className="filter-tier filter-tier-1">
+                <div className="ticket-tabs">
+                    <button 
+                        className={`ticket-tab-btn ${activeTab === 'Open' ? 'active' : 'inactive'}`}
+                        onClick={() => setActiveTab('Open')}
+                    >
+                        Open 
+                    </button>
+                    <button 
+                        className={`ticket-tab-btn ${activeTab === 'Closed' ? 'active' : 'inactive'}`}
+                        onClick={() => setActiveTab('Closed')}
+                    >
+                        Closed
+                    </button>
+                </div>
+
+                {/* ⚡ The New 48-Hour Toggle */}
                 <button 
-                    className={`ticket-tab-btn ${activeTab === 'Open' ? 'active' : 'inactive'}`}
-                    onClick={() => setActiveTab('Open')}
+                    className={`urgent-toggle-btn ${filters.isNew ? 'active' : ''}`}
+                    onClick={toggleUrgentNew}
+                    title="Show tickets submitted in the last 48 hours"
                 >
-                    Open 
+                    <span className="urgent-icon">⚡</span> New (48h)
                 </button>
-                <button 
-                    className={`ticket-tab-btn ${activeTab === 'Closed' ? 'active' : 'inactive'}`}
-                    onClick={() => setActiveTab('Closed')}
-                >
-                    Closed
-                </button>
+
+                {/* Grouped Search and Category to stay side-by-side */}
+                <div className="search-category-group">
+                    <input 
+                        type="text" 
+                        name="searchQuery"
+                        placeholder="Search ID, Name..." 
+                        className="filter-input main-search"
+                        value={filters.searchQuery || ""}
+                        onChange={handleFilterChange}
+                    />
+                    <IssueCategoryDropdown 
+                        value={filters.category || ""} 
+                        onChange={handleCategoryChange}
+                        isFilter={true} 
+                        layoutMode="inline" 
+                    />
+                </div>
             </div>
 
-            {/* DASHBOARD ANALYTICS CONTROLS */}
-            <div className="ticket-filters">
-                
-                {/* ID/Name Search Input */}
-                <input 
-                    type="text" 
-                    name="searchQuery"
-                    placeholder="Search ID, Name, or Concern..." 
-                    className="filter-input"
-                    value={filters.searchQuery}
-                    onChange={handleFilterChange}
-                />
-                
-                {/* Issue Category: Now with "All Categories" option and 38px inline height */}
-                <IssueCategoryDropdown 
-                    value={filters.category} 
-                    onChange={handleCategoryChange}
-                    isFilter={true} 
-                    layoutMode="inline" 
-                />
-
-                {/* Aleco Scope: Now transformed for the Dashboard.
-                  - All 4 levels (District, Muni, Brgy, Purok) are visible.
-                  - Brgy is a fixed dropdown instead of search.
-                  - Selecting "All Districts" resets children automatically.
-                */}
+            {/* =========================================
+                TIER 2: Context / Location Filters ONLY
+                ========================================= */}
+            <div className="filter-tier filter-tier-2">
                 <AlecoScopeDropdown 
                     onLocationSelect={handleLocationChange}
                     isFilter={true} 
                     layoutMode="inline" 
                 />
-
             </div>
+
+            {/* =========================================
+                TIER 3: Analytics & Reporting Actions
+                ========================================= */}
+            <div className="filter-tier filter-tier-3">
+                
+                {/* Smart Date Filtering */}
+                <div className="date-filter-group">
+                    <span className="group-label">📅 Date:</span>
+                    <select 
+                        name="datePreset" 
+                        className="filter-select date-preset"
+                        value={filters.datePreset || ""}
+                        onChange={handleFilterChange}
+                    >
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="last7">Last 7 Days</option>
+                        <option value="thisMonth">This Month</option>
+                        <option value="lastMonth">Last Month</option>
+                        <option value="custom">Custom Range...</option>
+                    </select>
+
+                    {/* Appears ONLY if "Custom Range" is selected */}
+                    {filters.datePreset === 'custom' && (
+                        <div className="custom-date-inputs">
+                            <input 
+                                type="date" 
+                                name="startDate" 
+                                className="filter-input date-picker"
+                                value={filters.startDate || ""} 
+                                onChange={handleFilterChange} 
+                            />
+                            <span>to</span>
+                            <input 
+                                type="date" 
+                                name="endDate" 
+                                className="filter-input date-picker"
+                                value={filters.endDate || ""} 
+                                onChange={handleFilterChange} 
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Export / Report Actions */}
+                <div className="report-actions-group">
+                    <button className="action-btn weekly-btn" onClick={() => handleExport('weekly')}>
+                        📥 Weekly Report
+                    </button>
+                    <button className="action-btn monthly-btn" onClick={() => handleExport('monthly')}>
+                        📥 Monthly Report
+                    </button>
+                </div>
+                
+            </div>
+            
         </div>
     );
 };

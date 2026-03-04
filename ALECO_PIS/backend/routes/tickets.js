@@ -21,12 +21,15 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         // This fixes the time drift by using your Node.js system time
         const manilaTime = new Date().toISOString().slice(0, 19).replace('T', ' '); 
 
-        // 2. Pull data from the form fields
+        // 2. Pull data from the form fields (REMOVED 'location')
         const { 
             account_number, first_name, middle_name, last_name, 
-            phone_number, address, location, category, concern,
-            district, municipality, barangay, purok
+            phone_number, address, category, concern,
+            district, municipality, barangay, purok, is_urgent
         } = req.body;
+
+        console.log("Received Concern:", concern);
+        console.log("Received Urgent Flag:", is_urgent);
 
         // 3. IDEMPOTENCY CHECK (Anti-Spam / Double-Click Prevention)
         // We now pass manilaTime as the 4th parameter to fix the malformed packet error
@@ -57,32 +60,33 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         const image_url = req.file ? req.file.path : null;
         const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-        // 5. THE FIX: Balanced SQL Columns and Placeholders
-       const sql = `
+        // 5. THE FIX: Removed 'location' and adjusted placeholders to exactly 16 '?'
+        const sql = `
             INSERT INTO aleco_tickets 
             (ticket_id, account_number, first_name, middle_name, last_name, 
              phone_number, address, district, municipality, barangay, purok, 
-             category, concern, image_url, status, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
+             category, concern, image_url, status, created_at, is_urgent) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)
         `;
 
-        // 6. THE FIX: Execution Array now correctly has 12 items
+        // 6. THE FIX: Execution Array now perfectly matches the 16 '?' placeholders
         await pool.execute(sql, [
-            ticket_id,               // 1
-            account_number || null,  // 2
-            first_name,              // 3
-            middle_name || null,     // 4
-            last_name,               // 5
-            phone_number,            // 6
-            address,                 // 7
-            district || null,        // 8 (NEW)
-            municipality || null,    // 9 (NEW)
-            barangay || null,        // 10 (NEW)
-            purok || null,           // 11 (NEW)
-            category,                // 12
-            concern,                 // 13
-            image_url,               // 14
-            manilaTime               // 15
+            ticket_id,                       // 1
+            account_number || null,          // 2
+            first_name || null,              // 3
+            middle_name || null,             // 4
+            last_name || null,               // 5
+            phone_number || null,            // 6
+            address || null,                 // 7
+            district || null,                // 8
+            municipality || null,            // 9
+            barangay || null,                // 10
+            purok || null,                   // 11
+            category || null,                // 12
+            concern || null,                 // 13
+            image_url || null,               // 14
+            manilaTime,                      // 15
+            is_urgent == 1 ? 1 : 0           // 16
         ]);
 
         // 7. Success Response

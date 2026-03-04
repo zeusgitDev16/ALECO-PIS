@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import '../CSS/TicketMain.css'; 
 import useTickets from '../utils/useTickets';
+import UrgentTickets from './containers/UrgentTickets';
+
 
 // Importing the Lego Bricks
 import TicketFilterBar from './tickets/TicketFilterBar';
@@ -53,6 +55,11 @@ const AdminTickets = () => {
 
                 {/* THE SINGLE POOL WORKSPACE */}
                 <div style={{ marginTop: 'clamp(10px, 2vw, 20px)' }}>
+
+                    <UrgentTickets 
+                        tickets={tickets} 
+                        onSelectTicket={setSelectedTicket} 
+                    />
                     
                     {/* BRICK 2: Master List Wrapper (Takes 100% width now) */}
                     <div style={{

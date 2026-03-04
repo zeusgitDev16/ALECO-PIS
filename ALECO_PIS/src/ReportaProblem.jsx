@@ -120,6 +120,18 @@ const handleLocationUpdate = useCallback((locationObj) => {
     submissionData.append('barangay', formData.barangay || "");
     submissionData.append('purok', formData.purok || "");
 
+    // --- NEW: KEYWORD AUTO-TRIAGE SCANNER ---
+    const urgentKeywords = ['sparking', 'sunog', 'fire', 'live wire', 'pumuputok', 
+    'matutumba', 'kuryente', 'emergency', 'sumabog', 
+    'grounded', 'nakuryente', 'usok', 'umuusok', 'aksidente', 'natumba'];
+    const lowerConcern = formData.concern.toLowerCase();
+    
+    // Check if any of the urgent keywords exist in the user's concern
+    const isUrgent = urgentKeywords.some(keyword => lowerConcern.includes(keyword));
+    
+    // Append the result (1 for true, 0 for false) to match our new TINYINT column
+    submissionData.append('is_urgent', isUrgent ? 1 : 0);
+
     submissionData.append('category', formData.category);
     submissionData.append('concern', formData.concern);
 

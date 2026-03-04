@@ -27,20 +27,25 @@ const UrgentTickets = ({ tickets, onSelectTicket }) => {
                         className="ticket-card-container urgent-card"
                         onClick={() => onSelectTicket(ticket)}
                     >
+
+                        {/* 1. Centered Red Category Banner */}
+                         <div className="ticket-category-banner urgent-banner">
+                             {ticket.category}
+                        </div>
+
                         {/* Row 1: ID & Date */}
                         <div className="card-header-row">
                             <span className="ticket-id-bold text-red-glow">{ticket.ticket_id}</span>
-                            <span className="ticket-date-label">
-                                {new Date(ticket.created_at).toLocaleDateString()}
+                           <span className="ticket-date-label">
+                             {new Date(ticket.created_at).toLocaleDateString('en-PH', { 
+                                 month: 'short', day: 'numeric', year: 'numeric' 
+                          })}
                             </span>
                         </div>
 
                         {/* Row 2: Content Body */}
                         <div className="card-body-content">
                             <p className="concern-text-highlight">{ticket.concern}</p>
-                            <div>
-                                <span className="category-badge-outline urgent-badge">{ticket.category}</span>
-                            </div>
                         </div>
 
                         {/* Row 3: Metadata with Horizontal Scroll */}

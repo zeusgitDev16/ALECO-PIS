@@ -18,13 +18,13 @@
 }
 
 .urgent-alert-icon {
-    font-size: 1.2rem;
+    font-size: 1.7rem;
     animation: pulse-alert 2s infinite;
 }
 
 .urgent-title {
     margin: 0;
-    font-size: 14px;
+    font-size: 17px;
     font-weight: 800;
     text-transform: uppercase;
     color: #ef4444; /* High visibility red */
@@ -56,4 +56,15 @@
     0% { transform: scale(1); }
     50% { transform: scale(1.15); }
     100% { transform: scale(1); }
+}
+
+@media (max-width: 800px) {
+    .urgent-alert-icon{
+        font-size: 1rem;
+    }
+
+    .urgent-title{
+        font-size: 10px;
+    
+    }
 }

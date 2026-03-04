@@ -7,7 +7,7 @@
 :root {
   /* --- LIGHT MODE (Default) --- */
   --bg-body: #f8f9fa;
-  --bg-card: #e0e0e0;      /* Your specific card gray */
+  --bg-card: #f1f0f0;      /* Your specific card gray */
   --bg-glass: rgba(255, 255, 255, 0.9);
   
   --text-main: #212529;
@@ -16,6 +16,7 @@
   
   --shadow-color-light: #ffffff;
   --shadow-color-dark: #bebebe;
+
   
   --font-header: 'Anek Latin', sans-serif;
   --font-subheader: 'Roboto Slab', serif;
@@ -25,8 +26,8 @@
 /* --- DARK MODE OVERRIDES --- */
 [data-theme="dark"] {
   --bg-body: #111827;      /* Very Dark Blue/Gray */
-  --bg-card: #1f2937;      /* Dark Gray Card */
-  --bg-glass: rgba(31, 41, 55, 0.85); /* Dark Glass */
+  --bg-card: #18212f;      /* Dark Gray Card */
+  --bg-glass: rgba(25, 34, 47, 0.85); /* Dark Glass */
   
   --text-main: #f9fafb;    /* Almost White */
   --text-header: #f3f4f6;

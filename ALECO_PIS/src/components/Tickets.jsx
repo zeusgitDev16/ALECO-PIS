@@ -46,6 +46,7 @@ const AdminTickets = () => {
             <div className="dashboard-widget ticket-dashboard-widget">
                 
                 {/* BRICK 1: The Filter Engine */}
+                
                 <TicketFilterBar 
                     activeTab={activeTab} 
                     setActiveTab={setActiveTab} 
@@ -56,11 +57,16 @@ const AdminTickets = () => {
                 {/* THE SINGLE POOL WORKSPACE */}
                 <div style={{ marginTop: 'clamp(10px, 2vw, 20px)' }}>
 
-                    <UrgentTickets 
+                     <UrgentTickets 
                         tickets={tickets} 
                         onSelectTicket={setSelectedTicket} 
                     />
-                    
+
+                    <div className="separator">
+                        <p style={{}}>Regular Tickets:</p>
+                    </div>
+
+
                     {/* BRICK 2: Master List Wrapper (Takes 100% width now) */}
                     <div style={{
                         backgroundColor: 'var(--bg-card)', 
@@ -77,6 +83,7 @@ const AdminTickets = () => {
                             selectedTicket={selectedTicket} 
                             onSelectTicket={setSelectedTicket} 
                         />
+                        
                     </div>
 
                 </div>

@@ -123,7 +123,7 @@ const handleLocationUpdate = useCallback((locationObj) => {
     // --- NEW: KEYWORD AUTO-TRIAGE SCANNER ---
     const urgentKeywords = ['sparking', 'sunog', 'fire', 'live wire', 'pumuputok', 
     'matutumba', 'kuryente', 'emergency', 'sumabog', 
-    'grounded', 'nakuryente', 'usok', 'umuusok', 'aksidente', 'natumba'];
+    'grounded', 'nakuryente', 'usok', 'umuusok', 'aksidente', 'natumba', 'urgent'];
     const lowerConcern = formData.concern.toLowerCase();
     
     // Check if any of the urgent keywords exist in the user's concern

@@ -444,7 +444,7 @@
 /* --- Close Button Customization --- */
 .ticket-modal-close-btn {
     position: absolute;
-    top: 15px;
+    top: 40px;
     right: 15px;
     background: rgba(255, 255, 255, 0.1);
     border: none;
@@ -516,8 +516,8 @@
 .btn-action,
 .btn-admin-primary,
 .btn-admin-success {
-    padding: 10px 20px;
-    border-radius: 6px;
+    padding: 4px 9px;
+    border-radius: 12px;
     font-weight: 700;
     font-size: 13px;
     cursor: pointer;
@@ -531,6 +531,19 @@
 .btn-action + .btn-action,
 .admin-btn-group button + button {
     margin-left: 8px; 
+}
+
+.btn-action:hover {
+    filter: brightness(1.15); /* Makes the color 15% brighter */
+    transform: translateY(-2px); /* Lifts the button up slightly */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Adds a soft drop shadow below it */
+}
+
+/* --- Click Effect (When the button is actually pressed) --- */
+.btn-action:active {
+    transform: scale(0.95) translateY(0); /* Shrinks it by 5% and pushes it back down */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); /* Reduces the shadow so it looks pressed into the page */
+    filter: brightness(0.9); /* Slightly darkens it to simulate a real physical button press */
 }
 
 /* Ongoing Button (Blue/Yellow) */

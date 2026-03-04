@@ -48,12 +48,14 @@ const AlecoScopeDropdown = ({ label, onLocationSelect, isFilter = false, layoutM
     );
 
     // 3. Sync with Parent
+   // 3. Sync with Parent
     useEffect(() => {
         const currentKey = `${sel.dist}|${sel.muni}|${sel.brgy}|${sel.purok}`;
         if (currentKey !== lastEmittedKey.current) {
             lastEmittedKey.current = currentKey; 
 
             if (isFilter) {
+                // Filter mode can send partial data
                 onLocationSelect({
                     district: sel.dist || null,
                     municipality: sel.muni || null,
@@ -61,8 +63,15 @@ const AlecoScopeDropdown = ({ label, onLocationSelect, isFilter = false, layoutM
                     purok: sel.purok || null
                 });
             } else if (sel.dist && sel.muni && sel.brgy && sel.purok) {
-                onLocationSelect({ ...sel });
+                // FORM MODE: Map the abbreviated keys to the explicit keys the parent expects
+                onLocationSelect({ 
+                    district: sel.dist,
+                    municipality: sel.muni,
+                    barangay: sel.brgy,
+                    purok: sel.purok
+                });
             } else {
+                // If the form isn't complete yet, send null
                 onLocationSelect(null);
             }
         }

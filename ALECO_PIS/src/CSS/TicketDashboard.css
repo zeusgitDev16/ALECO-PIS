@@ -344,18 +344,56 @@
     margin-bottom: 10px;
 }
 
+/* =========================================
+   DESKTOP BANNER & CHECKBOX LOGIC
+   ========================================= */
 .ticket-category-banner {
-    /* Counters the 16px padding of the parent card to hit the edges */
+    /* 1. LAYOUT & POSITIONING */
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* 2. OVERLAP & THINNING PREVENTION */
+    min-height: 28px;              /* Prevents the banner from thinning when empty */
+    padding: 6px 12px 6px 34px;    /* Reserves a 34px safe zone on the left for the checkbox */
+    box-sizing: border-box;
+    
+    /* 3. ORIGINAL THEMING (Kept exactly as you had it) */
     margin: -16px -16px 12px -16px; 
     background-color: var(--banner-ticket);
     color: var(--accent-text);
-    padding: 6px 12px;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
-    text-align: center;
-    border-radius: 10px 10px 0 0; /* Matches top corners of the card */
+    border-radius: 10px 10px 0 0;
     letter-spacing: 0.5px;
+}
+
+/* 4. THE MISSING DESKTOP CHECKBOX CLASS */
+.ticket-bulk-checkbox {
+    display: block;
+    position: absolute;
+    left: 10px;                        /* Locks it beautifully into the left corner */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    z-index: 10;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+}
+
+/* 5. THE DESKTOP TEXT NUDGE */
+.banner-category-text {
+    flex: 1;                           
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* This 22px margin visually offsets the 34px left padding so the text stays perfectly centered to the card */
+    margin-right: 22px;                
 }
 
 .ticket-id-bold {
@@ -607,10 +645,12 @@
     .detail-grid {
         grid-template-columns: 1fr;
     }
+    
     .action-buttons {
         flex-direction: column;
     }
-  .ticket-grid-wrapper {
+    
+    .ticket-grid-wrapper {
         /* Forces exactly 2 columns that perfectly split the parent container */
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px !important;
@@ -618,12 +658,12 @@
     }
 
     /* Shrink the card internal content so it fits the tiny container */
-  .ticket-card-container {
+    .ticket-card-container {
         padding: 8px !important;
         min-height: 100px !important;
     }
     
-   .concern-text-highlight {
+    .concern-text-highlight {
         font-size: 11px !important;
         line-height: 1.2;
         /* Limits text to 2 lines for uniform card heights */
@@ -638,32 +678,61 @@
         padding: 1px 4px !important; 
     }
 
+    .ticket-id-bold { 
+        font-size: 9px !important; 
+    }
+    
+    .ticket-date-label, 
+    .location-text-full { 
+        font-size: 8px !important; 
+    }
+    
+    /* Consolidated duplicate rules into this single important override */
     .status-pill-solid { 
-    font-size: 6px; /* Standard Desktop Size */
-    padding:2px 7px; /* This controls the "box" size around the text */
-}
-
-    .ticket-id-bold { font-size: 9px !important; }
-    .ticket-date-label, .location-text-full { font-size: 8px !important; }
-    .status-pill-solid { font-size: 7px !important; padding: 2px 4px !important; }
-
-    .ticket-category-banner {
-       /* 1. SHRINKING FOR MOBILE */
-        margin: -10px -10px 8px -10px !important; 
-        font-size: 7px !important; /* Slightly larger for readability but still 'mini' */
-        padding: 2px !important;
-        
-        /* 2. THE 'NO WRAP' LOGIC */
-        white-space: nowrap !important;       /* Prevents text from stacking or rowing */
-        overflow: hidden !important;          /* Hides the text that goes past the edge */
-        text-overflow: ellipsis !important;   /* Adds the '...' at the end */
-        
-        /* 3. CENTERING */
-        text-align: center !important;
-        display: block !important;            /* Ensures truncation works correctly */
-        width: calc(100% + 20px) !important;  /* Matches the negative margin stretch */
+        font-size: 7px !important; 
+        padding: 2px 4px !important; 
     }
 
+    .ticket-category-banner {
+        /* 1. LAYOUT & POSITIONING */
+        margin: -10px -10px 8px -10px !important; 
+        width: calc(100% + 20px) !important; /* Forces banner to touch card edges */
+        position: relative !important;
+        display: flex !important;           /* Using flex for better centering */
+        align-items: center !important;
+        justify-content: center !important;
+
+        /* 2. OVERLAP PREVENTION (THE FIX) */
+        min-height: 20px !important;          /* Prevents 'thinning' if category is blank */
+        padding: 4px 6px 4px 22px !important; /* Creates the 'safe zone' for the checkbox */
+        box-sizing: border-box !important;
+    }
+
+    /* Consolidated the two conflicting checkbox rules into this locked position */
+    .ticket-bulk-checkbox {
+        position: absolute !important;
+        left: 6px !important;                 /* Safely tucked inside the 22px padding */
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 12px !important;
+        height: 12px !important;
+        z-index: 10 !important;
+        margin: 0 !important;
+        cursor: pointer !important;
+        display: block !important;
+    }
+
+    /* Required for keeping the text centered relative to the whole card, not the remaining space */
+    .banner-category-text {
+        margin-right: 16px !important;        /* Nudges the text to balance the left padding */
+        font-size: 7px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+    }
 }
 
 @media (min-width: 801px) {

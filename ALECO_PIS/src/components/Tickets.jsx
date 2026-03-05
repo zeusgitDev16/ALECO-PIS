@@ -19,6 +19,13 @@ const AdminTickets = () => {
     // --- 2. Master State (UI Only) ---
     // We only need to track which ticket the admin clicked on.
     const [selectedTicket, setSelectedTicket] = useState(null);
+    const [selectedIds, setSelectedIds] = useState([]);
+
+    const toggleTicketSelection = (id) => {
+    setSelectedIds(prev => 
+        prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+};
 
     // --- 3. Wrapper Functions for Compatibility ---
     // The existing TicketFilterBar expects `activeTab` and `setActiveTab` separately.
@@ -60,6 +67,8 @@ const AdminTickets = () => {
                      <UrgentTickets 
                         tickets={tickets} 
                         onSelectTicket={setSelectedTicket} 
+                        selectedIds={selectedIds} 
+                        onToggleSelect={toggleTicketSelection}
                     />
 
                     <div className="separator">
@@ -82,6 +91,8 @@ const AdminTickets = () => {
                             isLoading={isLoading}
                             selectedTicket={selectedTicket} 
                             onSelectTicket={setSelectedTicket} 
+                            selectedIds={selectedIds} 
+                            onToggleSelect={toggleTicketSelection}
                         />
                         
                     </div>

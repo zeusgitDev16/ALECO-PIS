@@ -102,13 +102,13 @@
 }
 
 .sidebar-item svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
 .sidebar-item span {
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -122,7 +122,7 @@
 
 /* --- LABELS --- */
 .sidebar-label {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-style: italic;
   color: var(--text-secondary);
   margin-bottom: 0.5rem;
@@ -140,6 +140,11 @@
 
 .sidebar-footer {
   margin-top: 1rem;
+  width: 100%;
+}
+
+.sidebar-footer button {
+  width: 100%;
 }
 
 /* =========================================
@@ -152,8 +157,8 @@
 
   .sidebar {
     position: fixed; /* Detach from layout, making main content 100% wide */
-    left: -260px; /* Hide off-screen by default */
-    width: 240px; /* Keep full readable width */
+    left: -220px; /* Hide off-screen by default */
+    width: 150px; /* Compact width for mobile POV */
     z-index: 1001; /* Must be higher than overlay */
   }
 
@@ -161,5 +166,47 @@
   .sidebar.open {
     left: 0; /* Slide in smoothly */
     box-shadow: 10px 0 25px rgba(0, 0, 0, 0.5); /* Stronger shadow to pop over content */
+  }
+
+  .sidebar-layout {
+    padding: 1rem; /* Reduce padding for narrower container */
+  }
+
+  /* --- MOBILE COMPACT SIZING --- */
+  .sidebar-logo {
+    width: 35px;
+    height: 35px;
+    margin-top: 2rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .sidebar-header h5 {
+    font-size: 0.9rem;
+  }
+
+  .sidebar-item {
+    padding: 0.35rem 0.75rem;
+    gap: 0.6rem;
+  }
+
+  .sidebar-item svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sidebar-item span {
+    font-size: 0.7rem;
+  }
+
+  .sidebar-label {
+    font-size: 0.6rem;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Ensure Create button is compact and text fits */
+  .sidebar-footer button {
+    font-size: 0.7rem !important;
+    padding: 6px 10px !important;
+    min-height: 32px;
   }
 }

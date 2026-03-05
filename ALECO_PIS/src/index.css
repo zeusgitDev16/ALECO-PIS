@@ -7,7 +7,7 @@
 :root {
   /* --- LIGHT MODE (Default) --- */
   --bg-body: #f8f9fa;
-  --bg-card: #f1f0f0;      /* Your specific card gray */
+  --bg-card: #f2f2f2;      /* Your specific card gray */
   --bg-glass: rgba(255, 255, 255, 0.9);
   
   --text-main: #212529;

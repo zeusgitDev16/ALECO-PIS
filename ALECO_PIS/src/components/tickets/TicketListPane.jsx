@@ -2,7 +2,7 @@ import React from 'react';
 // Make sure this path points to wherever your main CSS is stored!
 import '../../CSS/TicketDashboard.css'; 
 
-const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket }) => {
+const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, selectedIds, onToggleSelect }) => {
     
     if (isLoading) {
         return (
@@ -42,8 +42,19 @@ const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket }) 
                 >
                     {/* 1. ADD THIS NEW BANNER AT THE TOP */}
                      <div className="ticket-category-banner">
-                         {ticket.category}
-                    </div>
+    <input 
+        type="checkbox" 
+        className="ticket-bulk-checkbox"
+        checked={selectedIds?.includes(ticket.ticket_id)}
+        onChange={() => {}}
+        onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(ticket.ticket_id);
+        }}
+    />
+    {/* Wrap text in a span for isolation */}
+    <span className="banner-category-text">{ticket.category}</span>
+</div>
                     {/* Header: ID and Date */}
                     <div className="card-header-row">
                         <span className="ticket-id-bold">{ticket.ticket_id}</span>

@@ -6,7 +6,7 @@
   cursor: pointer;
   padding: 0.8em 1.2em 0.8em 1em;
   transition: all ease-in-out 0.2s;
-  font-size: 16px;
+  font-size: 0.85rem;
   width: 100%;
   box-shadow: 0 0 10px rgba(36, 180, 251, 0.6);
   overflow: hidden;
@@ -33,28 +33,29 @@
 /* Responsive: Icon only on small screens (matches Sidebar breakpoint) */
 @media (max-width: 1000px) {
   .create-post-btn {
-    width: 45px;
-    height: 45px;
-    padding: 0;
-    border-radius: 12px;
+    width: 100%;
+    height: auto;
+    padding: 0.6em;
+    border-radius: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 0 auto;
+    margin: 0;
   }
 
   .create-post-btn .btn-text {
-    display: none;
+    display: inline-block; /* Force text to show */
+    font-size: 0.7rem;    /* Compact font size */
   }
 
   .create-post-btn svg {
-    margin-right: 0;
-    width: 24px;
-    height: 24px;
+    margin-right: 6px;
+    width: 14px;
+    height: 14px;
   }
 
   .create-post-btn span {
-    width: 100%;
-    justify-content: center;
+    width: auto;
+    justify-content: flex-start;
   }
 }

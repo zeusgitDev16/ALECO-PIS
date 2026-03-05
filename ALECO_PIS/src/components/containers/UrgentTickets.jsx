@@ -2,7 +2,7 @@ import React from 'react';
 import '../../CSS/UrgentTickets.css';
 
 
-const UrgentTickets = ({ tickets, onSelectTicket }) => {
+const UrgentTickets = ({ tickets, onSelectTicket, selectedIds, onToggleSelect }) => {
     // 1. FILTER LOGIC: Safely check for 1 or true (depending on how your MySQL driver parses TINYINT)
     const urgentList = tickets.filter(ticket => ticket.is_urgent === 1 || ticket.is_urgent === true);
 
@@ -28,10 +28,20 @@ const UrgentTickets = ({ tickets, onSelectTicket }) => {
                         onClick={() => onSelectTicket(ticket)}
                     >
 
-                        {/* 1. Centered Red Category Banner */}
-                         <div className="ticket-category-banner urgent-banner">
-                             {ticket.category}
-                        </div>
+                     <div className="ticket-category-banner urgent-banner">
+    <input 
+        type="checkbox" 
+        className="ticket-bulk-checkbox"
+        checked={selectedIds?.includes(ticket.ticket_id)}
+        onChange={() => {}}
+        onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(ticket.ticket_id);
+        }}
+    />
+    {/* THE MISSING LINK: This span forces it to match the regular tickets perfectly */}
+    <span className="banner-category-text">{ticket.category}</span>
+</div>
 
                         {/* Row 1: ID & Date */}
                         <div className="card-header-row">

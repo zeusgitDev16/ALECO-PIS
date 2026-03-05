@@ -68,6 +68,9 @@ router.get('/filtered-tickets', async (req, res) => {
 
         query += ` ORDER BY created_at DESC`;
 
+        console.log("SQL EXECUTION:", query);
+        console.log("WITH PARAMS:", params);
+
         const [rows] = await db.query(query, params);
 
         res.status(200).json({

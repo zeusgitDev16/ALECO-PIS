@@ -3,7 +3,8 @@ import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown';
 import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';      
 import '../../CSS/TicketDashboard.css';
 
-const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
+
+const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets, selectedIds, setSelectedIds }) => {
     
     // 1. Generic handler for standard inputs (Search, Date Preset, Custom Dates)
     const handleFilterChange = (e) => {
@@ -42,6 +43,17 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
     const handleExport = (type) => {
         console.log(`Triggering ${type} report generation...`);
         // Logic to trigger PDF/CSV download will go here
+    };
+
+    const isAllVisibleSelected = tickets?.length > 0 && selectedIds?.length === tickets?.length;
+
+
+    const toggleSelectAll = () => {
+        if (isAllVisibleSelected) {
+            setSelectedIds([]); 
+        } else {
+            setSelectedIds(tickets.map(ticket => ticket.ticket_id)); 
+        }
     };
 
     return (
@@ -160,6 +172,33 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters }) => {
                 </div>
                 
             </div>
+
+            {/* --- NEW JSX: TIER 4 (Select All Bar) --- */}
+            {tickets?.length > 0 && (
+                <div className={`filter-tier filter-tier-select-all ${selectedIds?.length > 0 ? 'has-selection' : ''}`}>
+                    <label className="select-all-label">
+                        <input 
+                            type="checkbox" 
+                            className="select-all-checkbox"
+                            checked={isAllVisibleSelected}
+                            onChange={toggleSelectAll}
+                        />
+                        <span className="select-all-text">
+                            Select All
+                            <span className="visible-count">({tickets.length})</span>
+                        </span>
+                    </label>
+                    
+                    {selectedIds?.length > 0 && (
+                        <button 
+                            className="btn-clear-selection" 
+                            onClick={() => setSelectedIds([])}
+                        >
+                            Clear Selection ({selectedIds.length})
+                        </button>
+                    )}
+                </div>
+            )}
             
         </div>
     );

@@ -1,0 +1,269 @@
+/* =========================================
+   GROUP INCIDENT MODAL LOGIC
+   ========================================= */
+.group-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6); /* Slightly more transparent */
+    backdrop-filter: blur(12px);    /* Stronger blur for a premium glass effect */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2500; 
+    overflow: hidden; /* Critical for draggable modals */
+}
+
+.group-modal-content {
+    background: var(--bg-card);
+    width: 92%;
+    max-width: 420px; /* Tighter, more compact width */
+    border-radius: 16px; /* Softer, more modern corners */
+    position: relative;
+    padding: 24px; /* Reduced from 30px to feel tighter */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle definition line */
+    text-align: left;
+    animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- The Drag Handle (Header) --- */
+.group-modal-header-handle {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    padding-right: 30px; /* Leaves room for the close button */
+    cursor: grab;
+}
+
+.group-modal-header-handle:active {
+    cursor: grabbing !important;
+}
+
+.group-modal-header {
+    margin: 0 0 4px 0;
+    color: var(--text-main);
+    font-size: 15px; /* Scaled down for sleekness */
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.group-modal-subtitle {
+    color: var(--text-secondary);
+    font-size: 11px;
+    margin: 0;
+    line-height: 1.4;
+    opacity: 0.8;
+}
+
+/* --- The Close Button --- */
+.group-modal-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    width: 28px;  /* Smaller, perfect circle/square */
+    height: 28px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10; /* Keeps it clickable above the drag handle */
+}
+
+.group-modal-close-btn:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+    transform: rotate(90deg); /* Sleek micro-interaction */
+}
+
+/* --- Form Elements --- */
+.group-form-group {
+    margin-bottom: 14px;
+    width: 100%;
+}
+
+.group-form-group label {
+    display: block;
+    font-size: 9px; /* Micro-typography */
+    text-transform: uppercase;
+    letter-spacing: 1px; /* Wide spacing makes tiny text readable */
+    font-weight: 800;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    margin-left: 2px;
+}
+
+.group-form-input,
+.group-form-select,
+.group-form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: var(--bg-body); /* Creates a 'recessed' look against the card */
+    color: var(--text-main);
+    font-size: 12px; /* Small but highly readable */
+    font-weight: 500;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+/* Modern Glow Focus State */
+.group-form-input:focus,
+.group-form-select:focus,
+.group-form-textarea:focus {
+    border-color: var(--accent-primary);
+    background-color: rgba(255, 255, 255, 0.02);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1); /* Soft glow ring */
+}
+
+.group-form-textarea {
+    height: 70px;
+    resize: none; /* Disabling resize keeps the layout tight */
+}
+
+/* Custom Select Dropdown Arrow Styling (Optional but sleek) */
+.group-form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 10px auto;
+    padding-right: 30px;
+}
+
+/* --- Action Buttons --- */
+.group-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.group-modal-actions button {
+    padding: 8px 16px;
+    font-size: 11px;
+    border-radius: 8px;
+}
+
+/* --- Ticket Summary List (AI Scanner Prep) --- */
+.ticket-summary-section {
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.15); /* Recessed area for the list */
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summary-header label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* A tiny badge showing forethought for the AI feature */
+.future-ai-badge {
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: rgba(41, 121, 255, 0.15);
+    color: var(--accent-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(41, 121, 255, 0.3);
+}
+
+.ticket-summary-scroll {
+    max-height: 110px; /* Forces scroll if they select many tickets */
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Custom mini scrollbar */
+.ticket-summary-scroll::-webkit-scrollbar { width: 4px; }
+.ticket-summary-scroll::-webkit-scrollbar-track { background: transparent; }
+.ticket-summary-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+
+.summary-mini-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.mini-card-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mini-id {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent-primary);
+}
+
+.mini-cat {
+    font-size: 9px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.mini-card-right .mini-loc {
+    font-size: 10px;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+/* Ensure the grip lines up with the header text */
+.group-modal-header-handle {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.group-modal-header-handle .drag-grip-indicator {
+    padding-top: 4px; /* Aligns the grip dots with the text */
+}
+
+/* --- Animations --- */
+@keyframes modalScaleIn {
+    from { 
+        opacity: 0; 
+        transform: scale(0.95) translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+    }
+}

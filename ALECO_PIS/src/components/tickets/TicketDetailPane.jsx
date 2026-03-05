@@ -1,15 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../../CSS/TicketDashboard.css';
 
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
- * @param {Object} ticket - The selected ticket object from the aleco_tickets table.
- * @param {Function} onUpdateTicket - Callback to trigger status updates in the backend.
- * @param {Function} onClose - Callback to dismiss the modal.
  */
 const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
-    
-    // 1. Idempotent Guard: Prevents errors if the parent state is null.
+    // State to track which field was just copied (for the "Copied!" feedback)
+    const [copiedField, setCopiedField] = useState(null);
+
+    // 1. Idempotent Guard
     if (!ticket) return null;
 
     // 2. Formatting Helpers
@@ -23,12 +22,21 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
 
     const fullName = `${ticket.first_name} ${ticket.middle_name || ''} ${ticket.last_name}`.replace(/\s+/g, ' ').trim();
 
+    // 3. Clipboard Logic
+    const handleCopy = (text, fieldName) => {
+        if (!text) return;
+        
+        navigator.clipboard.writeText(text).then(() => {
+            setCopiedField(fieldName);
+            // Reset the "Copied!" message back to "Copy" after 2 seconds
+            setTimeout(() => setCopiedField(null), 2000);
+        }).catch(err => console.error("Failed to copy text: ", err));
+    };
+
     return (
         <div className="ticket-modal-overlay" onClick={onClose}>
-            {/* stopPropagation ensures clicking inside the modal doesn't trigger the overlay's onClose */}
             <div className="ticket-modal-content" onClick={(e) => e.stopPropagation()}>
                 
-                {/* Close Trigger */}
                 <button className="ticket-modal-close-btn" onClick={onClose} aria-label="Close Modal">
                     &times;
                 </button>
@@ -55,20 +63,44 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
                         <label>Reporter Name</label>
                         <p className="detail-value">{fullName}</p>
                     </div>
+                    
+                    {/* UPGRADED: Copyable Contact Number */}
                     <div className="detail-group">
                         <label>Contact Number</label>
-                        <p className="detail-value">{ticket.phone_number}</p>
+                        <div 
+                            className="detail-value copyable-box" 
+                            onClick={() => handleCopy(ticket.phone_number, 'phone')}
+                        >
+                            <span>{ticket.phone_number}</span>
+                            <span className={`copy-indicator ${copiedField === 'phone' ? 'success' : ''}`}>
+                                {copiedField === 'phone' ? '✓ Copied' : '📋 Copy'}
+                            </span>
+                        </div>
                     </div>
+                    
+                    {/* UPGRADED: Copyable Account Number (Only if it exists) */}
                     <div className="detail-group">
                         <label>Account Number</label>
-                        <p className="detail-value">{ticket.account_number || 'Unlinked Account'}</p>
+                        {ticket.account_number ? (
+                            <div 
+                                className="detail-value copyable-box" 
+                                onClick={() => handleCopy(ticket.account_number, 'account')}
+                            >
+                                <span>{ticket.account_number}</span>
+                                <span className={`copy-indicator ${copiedField === 'account' ? 'success' : ''}`}>
+                                    {copiedField === 'account' ? '✓ Copied' : '📋 Copy'}
+                                </span>
+                            </div>
+                        ) : (
+                            <p className="detail-value">Unlinked Account</p>
+                        )}
                     </div>
+
                     <div className="detail-group">
                         <label>Issue Category</label>
                         <p className="detail-value category-highlight">{ticket.category}</p>
                     </div>
                     
-                    {/* Full Width Location Span */}
                     <div className="detail-group full-width">
                         <label>Service Location</label>
                         <p className="detail-value location-text">
@@ -108,7 +140,6 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
 
                 {/* --- SECTION 4: ADMIN ACTIONS --- */}
                 <div className="action-footer">
-                    {/* Show 'Ongoing' button only if current status is Pending */}
                     {ticket.status === 'Pending' && (
                         <button 
                             className="btn-action btn-ongoing"
@@ -121,7 +152,6 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
                         </button>
                     )}
                     
-                    {/* Show 'Restored' button if Pending or Ongoing */}
                     {['Pending', 'Ongoing'].includes(ticket.status) && (
                         <button 
                             className="btn-action btn-restored"

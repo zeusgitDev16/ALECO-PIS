@@ -2,6 +2,7 @@ import express from 'express';
 import nodemailer from 'nodemailer';
 import pool from '../config/db.js';
 import { upload } from '../../cloudinaryConfig.js'; // <-- Adjusted path to go up two folders
+import axios from 'axios';
 
 const router = express.Router();
 
@@ -13,6 +14,38 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
+
+const sendPhilSMS = async (number, messageBody) => {
+    try {
+        let formattedNumber = number.startsWith('0') ? '63' + number.substring(1) : number;
+        
+        // Exact endpoint from your dashboard
+        const url = 'https://dashboard.philsms.com/api/v3/sms/send';
+
+        const payload = {
+            recipient: formattedNumber,
+            message: messageBody,
+            sender_id: process.env.PHILSMS_SENDER_ID || 'PhilSMS'
+        };
+
+        const response = await axios.post(url, payload, {
+            headers: { 
+                'Authorization': `Bearer ${process.env.PHILSMS_API_KEY}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.data.status === 'success') {
+            console.log(`✅ PhilSMS Success! Message sent to ${formattedNumber}`);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error(`❌ PhilSMS Error:`, error.response?.data || error.message);
+        return false;
+    }
+};
 
 // --- 1. THE MASTER TICKET SUBMISSION ROUTE ---
 router.post('/tickets/submit', upload.single('image'), async (req, res) => {
@@ -163,14 +196,34 @@ router.post('/tickets/send-copy', async (req, res) => {
         `
     };
 
-    // --- 4. ADMIN: DISPATCH TICKET ROUTE ---
+    try {
+        await transporter.sendMail(mailOptions);
+        res.json({ success: true, message: "Copy sent to your email!" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Email failed to send." });
+    }
+}); // <-- Route 3 safely closes here!
+
+
+// --- ADMIN: DISPATCH TICKET ROUTE (PHILSMS INTEGRATION) ---
 router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
     const { ticket_id } = req.params;
     const { assigned_crew, eta, is_consumer_notified, dispatch_notes } = req.body;
 
+    console.log(`\n🚀 STARTING DISPATCH for Ticket: ${ticket_id}`);
+
     try {
-        // 1. Prepare the SQL Update Statement
-        // Changes status to 'Ongoing' and injects the dispatch data
+        // --- 1. SMS PHASE ---
+        const linemanPhone = '09943917653'; 
+        const linemanMsg = `ALECO DISPATCH: Ticket ${ticket_id}. Reply 'FIXED ${ticket_id}' when done.`;
+        
+        // IMPORTANT: Must use 'await' so the DB update waits for the SMS result
+        await sendPhilSMS(linemanPhone, linemanMsg);
+        console.log("➡️ Phase 1 (SMS) Complete.");
+
+        // --- 2. DATABASE PHASE ---
+        console.log("➡️ Phase 2 (DB Update) Starting...");
+        
         const updateQuery = `
             UPDATE aleco_tickets 
             SET status = 'Ongoing', 
@@ -181,47 +234,78 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
             WHERE ticket_id = ?
         `;
 
-        // Map boolean to tinyint (1 or 0) for MySQL
-        const isNotifiedInt = is_consumer_notified ? 1 : 0;
-        const values = [assigned_crew, eta, isNotifiedInt, dispatch_notes, ticket_id];
+        const [dbResult] = await pool.execute(updateQuery, [
+            assigned_crew, 
+            eta, 
+            is_consumer_notified ? 1 : 0, 
+            dispatch_notes || '', 
+            ticket_id
+        ]);
 
-        // 2. Execute the Query
-        const [result] = await pool.execute(updateQuery, values);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Ticket not found.' });
+        if (dbResult.affectedRows > 0) {
+            console.log(`✅ DATABASE SUCCESS: Ticket ${ticket_id} is now Ongoing.`);
+            res.status(200).json({ success: true, message: 'Dispatched and Updated!' });
+        } else {
+            console.log(`⚠️ DB WARNING: No rows changed for Ticket ${ticket_id}.`);
+            res.status(404).json({ success: false, message: 'Ticket ID not found in DB.' });
         }
-
-        // 3. The Future SMS Gateway Mocks (Logged to Terminal)
-        console.log(`\n==============================================`);
-        console.log(`[DISPATCH SYSTEM] Ticket ${ticket_id} moved to ONGOING.`);
-        console.log(`Assigned To: ${assigned_crew} | ETA: ${eta}`);
-        
-        if (is_consumer_notified) {
-            console.log(`[SMS OUT] 📱 To Consumer: "ALECO Update: ${assigned_crew} has been dispatched to your area for Ticket ${ticket_id}. ETA: ${eta}."`);
-        }
-
-        console.log(`[SMS OUT] 📱 To Lineman: "ALECO DISPATCH: Ticket ${ticket_id}. Reply 'FIXED ${ticket_id}' or 'UNFIXED ${ticket_id} [Reason]' when done."`);
-        console.log(`==============================================\n`);
-
-        // 4. Send Success Response to Frontend
-        res.status(200).json({ 
-            success: true, 
-            message: 'Crew dispatched successfully.',
-            status: 'Ongoing'
-        });
 
     } catch (error) {
-        console.error('Error dispatching ticket:', error);
-        res.status(500).json({ success: false, message: 'Internal server error during dispatch.' });
+        console.error("❌ CRITICAL DISPATCH ERROR:", error.message);
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
+
+// --- 5. AUTOMATED SMS WEBHOOK (Lineman Return Trip) ---
+router.post('/tickets/sms-webhook', async (req, res) => {
+    const { message, sender_number } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ success: false, error: 'No message provided' });
+    }
+
     try {
-        await transporter.sendMail(mailOptions);
-        res.json({ success: true, message: "Copy sent to your email!" });
+        const regex = /^(FIXED|UNFIXED)\s+([A-Z0-9\-]+)(?:\s+(.*))?$/i;
+        const match = message.trim().match(regex);
+
+        if (!match) {
+            console.log(`[SMS ERROR] Unrecognized format from ${sender_number}: "${message}"`);
+            return res.status(200).send('Format not recognized. Use: FIXED [ID] [Notes]'); 
+        }
+
+        const keyword = match[1].toUpperCase();
+        const rawTicketId = match[2].toUpperCase();
+        const linemanNotes = match[3] || 'No additional remarks provided.';
+
+        const newStatus = keyword === 'FIXED' ? 'Restored' : 'Unresolved';
+
+        const updateQuery = `
+            UPDATE aleco_tickets 
+            SET status = ?, 
+                lineman_remarks = ?
+            WHERE ticket_id = ? OR ticket_id LIKE CONCAT('%', ?)
+        `;
+        
+        const [result] = await pool.execute(updateQuery, [newStatus, linemanNotes, rawTicketId, rawTicketId]);
+
+        if (result.affectedRows === 0) {
+            console.log(`[SMS ERROR] Ticket ${rawTicketId} not found in database.`);
+            return res.status(200).send('Ticket ID not found.');
+        }
+
+        console.log(`\n==============================================`);
+        console.log(`[🤖 AUTOMATION] Lineman SMS Received!`);
+        console.log(`Action: ${keyword} | Ticket: ${rawTicketId}`);
+        console.log(`Notes: ${linemanNotes}`);
+        console.log(`Database Status changed to: ${newStatus}`);
+        console.log(`==============================================\n`);
+
+        res.status(200).send('SMS Processed Successfully');
+
     } catch (error) {
-        res.status(500).json({ success: false, message: "Email failed to send." });
+        console.error('Error processing SMS webhook:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 

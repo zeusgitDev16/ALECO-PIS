@@ -1,7 +1,33 @@
 /* --- ALL USERS TABLE STYLES --- */
 
+/* OVERRIDE: Drastically reduce the container size to match Sidebar */
+.dashboard-widget {
+    padding: 20px !important; /* Was 50px, now 20px */
+}
+
+/* Force widget headers to match the main page title size */
+.dashboard-widget h2,
+.dashboard-widget h3,
+.dashboard-widget h4 {
+    font-size: 0.75rem !important; /* Reduced header size */
+}
+
+/* FIX: Force inputs, buttons, and tables to use the smaller font size */
+.dashboard-widget input,
+.dashboard-widget select,
+.dashboard-widget button,
+.dashboard-widget table,
+.dashboard-widget label,
+.dashboard-widget .form-input,
+.dashboard-widget .table-search-input {
+    font-size: 0.7rem !important;
+    padding: 6px 8px !important; /* Tighter padding for compact look */
+}
+
 .users-table-container {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 50vh; /* Adjusts the table's max height to 50% of the viewport height */
 }
 
 .users-table {
@@ -11,13 +37,15 @@
 }
 
 .users-table th {
-    padding: 12px;
+    padding: 6px 8px; /* Reduced padding */
+    font-size: 0.7rem; /* Matches sidebar text size */
     color: var(--text-secondary);
     border-bottom: 2px solid var(--text-secondary);
 }
 
 .users-table td {
-    padding: 12px;
+    padding: 6px 8px; /* Reduced padding */
+    font-size: 0.7rem; /* Matches sidebar text size */
     border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
@@ -26,9 +54,9 @@
 }
 
 .role-badge {
-    padding: 4px 8px;
+    padding: 2px 6px;
     border-radius: 4px;
-    font-size: 0.85rem;
+    font-size: 0.65rem;
     text-transform: capitalize;
 }
 
@@ -65,7 +93,7 @@
     background: transparent;
     color: var(--text-header);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.65rem;
 }
 
 .action-btn-toggle:hover {

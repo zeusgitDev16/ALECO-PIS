@@ -12,6 +12,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        console.log("1. Dispatch Modal Submitted!");
         // Bundles the new dispatch data to send to the backend
         onSubmit({ 
             assigned_crew: crew, 

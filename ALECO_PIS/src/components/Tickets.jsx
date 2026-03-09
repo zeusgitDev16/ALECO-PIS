@@ -30,6 +30,37 @@ const AdminTickets = () => {
     );
 };
 
+const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
+        try {
+            if (newStatus === 'Ongoing' && dispatchData) {
+                // Hit our new dispatch endpoint
+                const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/dispatch`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dispatchData)
+                });
+                
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    console.log("✅ Dispatch successful!", data.message);
+                    alert(`Crew dispatched for Ticket ${ticketId}!`);
+                    // Note: You can refresh the page or trigger your useTickets() hook to re-fetch here
+                    window.location.reload(); // Quick refresh to show the updated "Ongoing" status
+                } else {
+                    console.error("Failed to dispatch:", data.message);
+                    alert("Dispatch failed: " + data.message);
+                }
+            } 
+            else if (newStatus === 'Restored') {
+                // We will build the manual Restored endpoint later!
+                console.log("Manually restoring ticket...");
+            }
+        } catch (error) {
+            console.error("Network error: ", error);
+        }
+    };
+
     // --- 3. Wrapper Functions for Compatibility ---
     // The existing TicketFilterBar expects `activeTab` and `setActiveTab` separately.
     // We map these directly to our new filters state to keep the UI perfectly idempotent.
@@ -113,10 +144,7 @@ const AdminTickets = () => {
             <TicketDetailPane 
                 ticket={selectedTicket} 
                 onClose={() => setSelectedTicket(null)}
-                onUpdateTicket={(ticketId, newStatus) => {
-                    // Update specific ticket logic here (We will tackle this next if you want!)
-                }}
-
+                onUpdateTicket={handleUpdateTicket} /* <-- THE FIX: Connects to your new fetch function */
             />
 
            {selectedIds.length > 0 && (

@@ -1,0 +1,237 @@
+/* =========================================
+   DISPATCH TICKET MODAL (Micro-UI)
+   ========================================= */
+
+.dispatch-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000; /* Extremely high to sit ABOVE the TicketDetailPane */
+    overflow: hidden;
+}
+
+.dispatch-modal-content {
+    background: var(--bg-card);
+    width: 92%;
+    max-width: 420px; /* Highly compact, action-oriented width */
+    border-radius: 16px;
+    position: relative;
+    padding: 24px 28px;
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    animation: dispatchScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+}
+
+.dispatch-modal-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(128, 128, 128, 0.15);
+    border: none;
+    color: var(--text-main);
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.dispatch-modal-close-btn:hover {
+    background: #ef4444;
+    color: white;
+    transform: rotate(90deg);
+}
+
+.dispatch-modal-header-container {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dispatch-modal-header {
+    margin: 0 0 4px 0;
+    color: var(--text-main);
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.dispatch-modal-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.highlight-id {
+    color: var(--accent-primary);
+    font-weight: 800;
+}
+
+/* --- Micro-Typography Form Fields --- */
+.dispatch-form-group {
+    margin-bottom: 16px;
+}
+
+.dispatch-form-group label {
+    display: block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    margin-left: 2px;
+}
+
+.dispatch-form-input,
+.dispatch-form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: var(--bg-body); /* Creates a recessed input look */
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 500;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.dispatch-form-input:focus,
+.dispatch-form-textarea:focus {
+    border-color: var(--accent-primary);
+    background-color: rgba(41, 121, 255, 0.02);
+    box-shadow: 0 0 0 3px rgba(41, 121, 255, 0.15);
+}
+
+.dispatch-form-textarea {
+    height: 60px;
+    resize: none;
+}
+
+/* Custom Dropdown Arrow */
+select.dispatch-form-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 10px auto;
+    padding-right: 30px;
+}
+
+/* --- Premium Toggle Switch UI --- */
+.toggle-group {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 20px;
+}
+
+.toggle-label {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin: 0 !important;
+    cursor: pointer;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+.toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.toggle-title {
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.toggle-desc {
+    color: var(--text-secondary);
+    font-size: 9px;
+    font-weight: 500;
+}
+
+.toggle-switch-wrapper {
+    position: relative;
+    width: 36px;
+    height: 20px;
+}
+
+.toggle-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.toggle-switch {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #64748b; /* Sleek slate gray when off */
+    transition: .3s;
+    border-radius: 20px;
+}
+
+.toggle-switch:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+.toggle-checkbox:checked + .toggle-switch {
+    background-color: #22c55e; /* Vibrant green when on */
+}
+
+.toggle-checkbox:checked + .toggle-switch:before {
+    transform: translateX(16px);
+}
+
+/* --- Footer Actions --- */
+.dispatch-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@keyframes dispatchScaleIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media (max-width: 500px) {
+    .dispatch-modal-content {
+        width: 88%;
+        padding: 20px 16px;
+    }
+    .dispatch-modal-actions {
+        flex-direction: column;
+    }
+    .dispatch-modal-actions button {
+        width: 100%;
+    }
+}

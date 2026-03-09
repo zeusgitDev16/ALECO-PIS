@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import '../../CSS/TicketDashboard.css';
+import DispatchTicketModal from './DispatchTicketModal'; // <-- 1. Import the new Lego brick
 
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
 const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
-    // State to track which field was just copied (for the "Copied!" feedback)
     const [copiedField, setCopiedField] = useState(null);
+    const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false); // <-- 2. New state for the dispatch workflow
 
     // 1. Idempotent Guard
     if (!ticket) return null;
@@ -143,10 +144,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
                     {ticket.status === 'Pending' && (
                         <button 
                             className="btn-action btn-ongoing"
-                            onClick={() => {
-                                onUpdateTicket(ticket.ticket_id, 'Ongoing');
-                                onClose(); 
-                            }}
+                            onClick={() => setIsDispatchModalOpen(true)} /* <-- THE FIX: Opens the dispatch form instead of closing the ticket */
                         >
                             Start Resolution
                         </button>
@@ -162,9 +160,24 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
                         >
                             Mark as Restored
                         </button>
-                    )}
+                )}
                 </div>
             </div>
+
+            {/* --- NEW LOGISTICS WORKFLOW: The Dispatch Modal --- */}
+            <DispatchTicketModal 
+                isOpen={isDispatchModalOpen}
+                onClose={() => setIsDispatchModalOpen(false)}
+                ticket={ticket}
+                onSubmit={(dispatchData) => {
+                    // 1. Pass the new dispatch data AND the status up to the parent
+                    onUpdateTicket(ticket.ticket_id, 'Ongoing', dispatchData);
+                    // 2. Close both the dispatch form AND the main ticket pane
+                    setIsDispatchModalOpen(false);
+                    onClose(); 
+                }}
+            />
+
         </div>
     );
 };

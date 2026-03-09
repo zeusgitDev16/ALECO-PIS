@@ -163,6 +163,60 @@ router.post('/tickets/send-copy', async (req, res) => {
         `
     };
 
+    // --- 4. ADMIN: DISPATCH TICKET ROUTE ---
+router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
+    const { ticket_id } = req.params;
+    const { assigned_crew, eta, is_consumer_notified, dispatch_notes } = req.body;
+
+    try {
+        // 1. Prepare the SQL Update Statement
+        // Changes status to 'Ongoing' and injects the dispatch data
+        const updateQuery = `
+            UPDATE aleco_tickets 
+            SET status = 'Ongoing', 
+                assigned_crew = ?, 
+                eta = ?, 
+                is_consumer_notified = ?, 
+                dispatch_notes = ?
+            WHERE ticket_id = ?
+        `;
+
+        // Map boolean to tinyint (1 or 0) for MySQL
+        const isNotifiedInt = is_consumer_notified ? 1 : 0;
+        const values = [assigned_crew, eta, isNotifiedInt, dispatch_notes, ticket_id];
+
+        // 2. Execute the Query
+        const [result] = await pool.execute(updateQuery, values);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found.' });
+        }
+
+        // 3. The Future SMS Gateway Mocks (Logged to Terminal)
+        console.log(`\n==============================================`);
+        console.log(`[DISPATCH SYSTEM] Ticket ${ticket_id} moved to ONGOING.`);
+        console.log(`Assigned To: ${assigned_crew} | ETA: ${eta}`);
+        
+        if (is_consumer_notified) {
+            console.log(`[SMS OUT] 📱 To Consumer: "ALECO Update: ${assigned_crew} has been dispatched to your area for Ticket ${ticket_id}. ETA: ${eta}."`);
+        }
+
+        console.log(`[SMS OUT] 📱 To Lineman: "ALECO DISPATCH: Ticket ${ticket_id}. Reply 'FIXED ${ticket_id}' or 'UNFIXED ${ticket_id} [Reason]' when done."`);
+        console.log(`==============================================\n`);
+
+        // 4. Send Success Response to Frontend
+        res.status(200).json({ 
+            success: true, 
+            message: 'Crew dispatched successfully.',
+            status: 'Ongoing'
+        });
+
+    } catch (error) {
+        console.error('Error dispatching ticket:', error);
+        res.status(500).json({ success: false, message: 'Internal server error during dispatch.' });
+    }
+});
+
     try {
         await transporter.sendMail(mailOptions);
         res.json({ success: true, message: "Copy sent to your email!" });

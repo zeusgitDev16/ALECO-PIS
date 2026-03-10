@@ -17,6 +17,9 @@ import AdminTickets from './components/Tickets.jsx';
 import AdminInterruptions from './components/Interruptions.jsx';
 import AdminHistory from './components/History.jsx';
 import ProfilePage from './components/profile/ProfilePage.jsx';
+import PersonnelManagement from './components/PersonnelManagement.jsx';
+
+
 
 // --- UPDATED HELPER COMPONENT ---
 const NavigationWrapper = ({ theme, toggleTheme }) => {
@@ -58,7 +61,7 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
   // This checks if we are currently looking at the admin dashboard
 const isAdminPage = location.pathname.startsWith('/admin-') 
 
-  return (
+ return (
     <>
       <div className="fix-container-nav" style={{ position: 'sticky', top: 0, zIndex: 1100, backgroundColor: 'var(--bg-body)' }}>
         {/* LandingPage stays on every screen per your request */}
@@ -86,10 +89,18 @@ const isAdminPage = location.pathname.startsWith('/admin-')
         <Route path="/admin-tickets" element={<AdminTickets />} />
         <Route path="/admin-interruptions" element={<AdminInterruptions />} />
         <Route path="/admin-history" element={<AdminHistory />} />
-       <Route path="/admin-profile" element={ <AdminLayout activePage="profile"> <ProfilePage />
-    </AdminLayout>
-  } 
-/>
+
+        {/* PROFILE ROUTE */}
+        <Route path="/admin-profile" element={ 
+          <AdminLayout activePage="profile"> 
+            <ProfilePage /> 
+          </AdminLayout> 
+        } />
+
+        {/* PERSONNEL MANAGEMENT ROUTE */}
+        <Route path="/admin-personnel" element={
+          <PersonnelManagement />
+        } />
       </Routes>
 
       <CookieBanner />

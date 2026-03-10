@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../../CSS/DispatchTicketModal.css'; // Importing its dedicated styling
 
-const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
+const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, crews = [] }) => {
     const [crew, setCrew] = useState('');
     const [eta, setEta] = useState('');
     const [notifyConsumer, setNotifyConsumer] = useState(true);
@@ -41,18 +41,20 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
                     <div className="dispatch-form-group">
                         <label>Assigned Crew / Unit</label>
                         <select 
-                            className="dispatch-form-input" 
-                            value={crew} 
-                            onChange={e => setCrew(e.target.value)} 
-                            required
-                        >
-                            <option value="">-- Select Field Unit --</option>
-                            <option value="Team Alpha (North)">Team Alpha (North District)</option>
-                            <option value="Team Bravo (South)">Team Bravo (South District)</option>
-                            <option value="Bucket Truck 01">Bucket Truck 01</option>
-                            <option value="Bucket Truck 02">Bucket Truck 02</option>
-                            <option value="Emergency Rapid Response">Emergency Rapid Response</option>
-                        </select>
+    className="dispatch-form-input" 
+    value={crew} 
+    onChange={e => setCrew(e.target.value)} 
+    required
+>
+    <option value="">-- Select Field Unit --</option>
+    
+    {/* --- NEW DYNAMIC LOOP --- */}
+    {crews.map((c) => (
+        <option key={c.crew_name} value={c.crew_name}>
+            {c.crew_name} ({c.lead_lineman})
+        </option>
+    ))}
+</select>
                     </div>
 
                     <div className="dispatch-form-group">

@@ -281,18 +281,27 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
     }
 });
 
-
-// --- HELPER: GET ALL CREWS (For your Frontend Dropdown) ---
-// Add this below the dispatch route so your UI can "see" the linemen list
+// --- HELPER: GET ALL CREWS (For Frontend Table & Dropdown) ---
 router.get('/crews/list', async (req, res) => {
     try {
-        const [crews] = await pool.execute('SELECT crew_name, lead_lineman FROM aleco_personnel');
+        // We now select ID, phone, status, and map lead_lineman properly
+        const sql = `
+            SELECT 
+                id, 
+                crew_name, 
+                lead_lineman AS lead_lineman_name, 
+                phone_number, 
+                status 
+            FROM aleco_personnel
+            ORDER BY created_at DESC
+        `;
+        const [crews] = await pool.execute(sql);
         res.status(200).json(crews);
     } catch (error) {
+        console.error("Error fetching crews:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
 
 // --- 5. AUTOMATED SMS WEBHOOK (Lineman Return Trip) ---
 router.post('/tickets/sms-webhook', async (req, res) => {
@@ -343,6 +352,64 @@ router.post('/tickets/sms-webhook', async (req, res) => {
     } catch (error) {
         console.error('Error processing SMS webhook:', error);
         res.status(500).send('Internal Server Error');
+    }
+});
+
+// --- 6. PERSONNEL MANAGEMENT: CREATE (Add New Crew) ---
+router.post('/crews/add', async (req, res) => {
+    const { crew_name, lead_lineman, phone_number } = req.body;
+    
+    try {
+        // Validation: Ensure the phone number starts with '63' for PhilSMS compatibility
+        let formattedPhone = phone_number.trim();
+        if (formattedPhone.startsWith('0')) {
+            formattedPhone = '63' + formattedPhone.substring(1);
+        }
+
+        const sql = `INSERT INTO aleco_personnel (crew_name, lead_lineman, phone_number) VALUES (?, ?, ?)`;
+        await pool.execute(sql, [crew_name, lead_lineman, formattedPhone]);
+
+        res.status(201).json({ success: true, message: 'New crew successfully registered.' });
+    } catch (error) {
+        console.error("Error adding crew:", error);
+        res.status(500).json({ success: false, message: error.code === 'ER_DUP_ENTRY' ? "Crew name already exists." : "Server error." });
+    }
+});
+
+// --- 7. PERSONNEL MANAGEMENT: UPDATE (Edit Crew Details) ---
+router.put('/crews/update/:id', async (req, res) => {
+    const { id } = req.params;
+    const { crew_name, lead_lineman, phone_number, status } = req.body;
+
+    try {
+        let formattedPhone = phone_number.trim();
+        if (formattedPhone.startsWith('0')) {
+            formattedPhone = '63' + formattedPhone.substring(1);
+        }
+
+        const sql = `
+            UPDATE aleco_personnel 
+            SET crew_name = ?, lead_lineman = ?, phone_number = ?, status = ? 
+            WHERE id = ?
+        `;
+        await pool.execute(sql, [crew_name, lead_lineman, formattedPhone, status, id]);
+
+        res.status(200).json({ success: true, message: 'Crew information updated.' });
+    } catch (error) {
+        console.error("Error updating crew:", error);
+        res.status(500).json({ success: false, message: "Failed to update crew." });
+    }
+});
+
+// --- 8. PERSONNEL MANAGEMENT: DELETE (Remove Crew) ---
+router.delete('/crews/delete/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.execute('DELETE FROM aleco_personnel WHERE id = ?', [id]);
+        res.status(200).json({ success: true, message: 'Crew removed from system.' });
+    } catch (error) {
+        console.error("Error deleting crew:", error);
+        res.status(500).json({ success: false, message: "Cannot delete crew; they may be linked to active tickets." });
     }
 });
 

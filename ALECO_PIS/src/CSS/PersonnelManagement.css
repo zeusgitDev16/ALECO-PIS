@@ -1,0 +1,242 @@
+/* ==========================================================================
+   1. MAIN DASHBOARD LAYOUT & TYPOGRAPHY
+   ========================================================================== */
+.personnel-dashboard {
+    padding: 10px 20px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.dashboard-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+/* Page Title Hierarchy (Matches your image_87aa7b.png) */
+.header-title {
+    font-size: 1.5rem !important; 
+    font-weight: 700;
+    color: var(--text-header);
+    margin: 0 0 4px 0;
+}
+
+.header-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* ==========================================================================
+   2. TAB NAVIGATION (Compact 0.7rem System)
+   ========================================================================== */
+.tab-navigation {
+    display: flex;
+    gap: 15px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 0;
+    font-size: 0.7rem !important;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: var(--text-header);
+}
+
+.tab-btn.active {
+    color: var(--accent-primary, #7c4dff);
+    border-bottom: 2px solid var(--accent-primary, #7c4dff);
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   3. WIDGET CARD & HEADER CONTROLS
+   ========================================================================== */
+.main-content-card {
+    padding: 20px !important;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.widget-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+/* --- THE "+ ADD" BUTTON (Surgical Micro-Sizing) --- */
+.btn-add-purple {
+    font-size: 0.7rem !important;
+    padding: 6px 12px !important;
+    font-weight: 800 !important;
+    border-radius: 6px !important;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: var(--accent-primary, #7c4dff);
+    color: var(--bg-body);
+    box-shadow: 0 4px 10px rgba(124, 77, 255, 0.2);
+}
+
+.btn-add-purple:hover {
+    background-color: #1565c0; /* Dark Blue */
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(21, 101, 192, 0.4);
+}
+
+/* --- Dark Mode Hover (Darkens to Yellow) --- */
+[data-theme='dark'] .btn-add-purple:hover {
+    background-color: #f9a825; /* Darkened Yellow / Gold */
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(249, 168, 37, 0.4);
+}
+.btn-add-purple:active {
+    transform: scale(0.96);
+}
+
+[data-theme='dark'] .btn-add-purple {
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* --- THE SEARCH BAR (Theme Aware) --- */
+.table-search-input-compact {
+    padding: 6px 12px !important;
+    border-radius: 6px;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.2)); 
+    background-color: var(--bg-input, rgba(255, 255, 255, 0.9)); 
+    color: var(--text-header, #333);
+    width: 250px;
+    outline: none;
+    transition: all 0.2s ease;
+    font-size: 0.7rem !important;
+}
+
+.table-search-input-compact:focus {
+    border-color: var(--accent-primary, #7c4dff) !important;
+    box-shadow: 0 0 8px rgba(124, 77, 255, 0.2);
+    width: 280px; 
+}
+
+[data-theme='dark'] .table-search-input-compact {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   4. DATA TABLES (High Density / Lego Brick Sizing)
+   ========================================================================== */
+.users-table-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 55vh; /* Prevents whole page from scrolling */
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.users-table th {
+    padding: 6px 8px !important;
+    font-size: 0.7rem !important;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--text-secondary);
+    font-weight: 600;
+}
+
+.users-table td {
+    padding: 6px 8px !important;
+    font-size: 0.7rem !important;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
+}
+
+/* --- TABLE ROW MICRO-ELEMENTS --- */
+.user-email {
+    font-weight: 600;
+    color: var(--text-header);
+}
+
+.user-code {
+    font-family: monospace;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+/* Role / Status Badges */
+.role-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    text-transform: capitalize;
+    font-weight: 600;
+}
+
+.role-badge.active { background-color: rgba(46, 125, 50, 0.1); color: #2e7d32; }
+.role-badge.inactive { background-color: rgba(211, 47, 47, 0.1); color: #d32f2f; }
+
+.lead-badge {
+    background: rgba(124, 77, 255, 0.15);
+    color: #b392ff;
+    padding: 2px 6px !important;
+    border-radius: 4px;
+    font-size: 0.65rem !important;
+    font-weight: 800;
+}
+
+.status-dot { color: #ed6c02; font-size: 0.65rem; font-weight: 600; }
+.status-dot.active { color: #2e7d32; }
+
+/* Table Action Buttons */
+.action-btn-toggle {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+    background: transparent;
+    color: var(--text-header);
+    cursor: pointer;
+    font-size: 0.65rem;
+    transition: all 0.2s;
+}
+
+.action-btn-toggle:hover {
+    background: rgba(128, 128, 128, 0.1);
+    border-color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   5. ANIMATIONS & RESPONSIVE ALIGNMENT
+   ========================================================================== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 700px) {
+    .widget-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .search-container-mini, .table-search-input-compact {
+        width: 100%;
+    }
+    .table-search-input-compact:focus {
+        width: 100%;
+    }
+}

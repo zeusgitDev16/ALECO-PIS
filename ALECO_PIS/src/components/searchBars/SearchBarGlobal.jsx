@@ -118,7 +118,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 <span className="user-role">{role.toUpperCase()}</span>
               </div>
               <div className="dropdown-divider"></div>
-              <button className="dropdown-link" onClick={() => navigate('/profile')}>View Profile</button>
+              <button className="dropdown-link" onClick={() => navigate('/admin-profile')}>View Profile</button>
               
               <button 
                 className="dropdown-link logout-red" 

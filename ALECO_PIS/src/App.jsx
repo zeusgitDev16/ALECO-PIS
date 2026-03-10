@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
+import AdminLayout from './components/AdminLayout.jsx';
 import InterruptionList from './InterruptionList.jsx'
 import LandingPage from './components/headers/landingPage.jsx';
 import './CSS/BodyLandPage.css';
@@ -15,6 +16,7 @@ import AdminUsers from './components/Users.jsx';
 import AdminTickets from './components/Tickets.jsx';
 import AdminInterruptions from './components/Interruptions.jsx';
 import AdminHistory from './components/History.jsx';
+import ProfilePage from './components/profile/ProfilePage.jsx';
 
 // --- UPDATED HELPER COMPONENT ---
 const NavigationWrapper = ({ theme, toggleTheme }) => {
@@ -54,7 +56,7 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
   }, [location.pathname, navigate]); // Runs on every navigation change
 
   // This checks if we are currently looking at the admin dashboard
-  const isAdminPage = location.pathname.startsWith('/admin-');
+const isAdminPage = location.pathname.startsWith('/admin-') 
 
   return (
     <>
@@ -84,6 +86,10 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
         <Route path="/admin-tickets" element={<AdminTickets />} />
         <Route path="/admin-interruptions" element={<AdminInterruptions />} />
         <Route path="/admin-history" element={<AdminHistory />} />
+       <Route path="/admin-profile" element={ <AdminLayout activePage="profile"> <ProfilePage />
+    </AdminLayout>
+  } 
+/>
       </Routes>
 
       <CookieBanner />

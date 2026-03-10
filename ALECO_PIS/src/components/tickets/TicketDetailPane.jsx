@@ -5,7 +5,7 @@ import DispatchTicketModal from './DispatchTicketModal'; // <-- 1. Import the ne
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
-const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
+const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
     const [copiedField, setCopiedField] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false); // <-- 2. New state for the dispatch workflow
 
@@ -169,6 +169,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose }) => {
                 isOpen={isDispatchModalOpen}
                 onClose={() => setIsDispatchModalOpen(false)}
                 ticket={ticket}
+                crews={crews}
                 onSubmit={(dispatchData) => {
                     // 1. Pass the new dispatch data AND the status up to the parent
                     onUpdateTicket(ticket.ticket_id, 'Ongoing', dispatchData);

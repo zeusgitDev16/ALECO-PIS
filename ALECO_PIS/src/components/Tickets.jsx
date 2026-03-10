@@ -1,4 +1,4 @@
-import React, { useState, useRef} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import '../CSS/TicketMain.css'; 
 import useTickets from '../utils/useTickets';
@@ -23,6 +23,23 @@ const AdminTickets = () => {
     // We only need to track which ticket the admin clicked on.
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [availableCrews, setAvailableCrews] = useState([]);
+
+    useEffect(() => {
+        const fetchCrews = async () => {
+            try {
+                // Ensure this matches your backend route exactly
+                const response = await fetch('http://localhost:5000/api/tickets/crews/list');
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    setAvailableCrews(data);
+                }
+            } catch (error) {
+                console.error("❌ Failed to load crews from database:", error);
+            }
+        };
+        fetchCrews();
+    }, []);
 
     const toggleTicketSelection = (id) => {
     setSelectedIds(prev => 
@@ -44,7 +61,7 @@ const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
 
                 if (response.ok && data.success) {
                     console.log("✅ Dispatch successful!", data.message);
-                    alert(`Crew dispatched for Ticket ${ticketId}!`);
+                   alert(`ALECO System: Crew successfully dispatched for Ticket ${ticketId}. SMS notifications sent.`);
                     // Note: You can refresh the page or trigger your useTickets() hook to re-fetch here
                     window.location.reload(); // Quick refresh to show the updated "Ongoing" status
                 } else {
@@ -145,6 +162,7 @@ const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
                 ticket={selectedTicket} 
                 onClose={() => setSelectedTicket(null)}
                 onUpdateTicket={handleUpdateTicket} /* <-- THE FIX: Connects to your new fetch function */
+                crews={availableCrews}
             />
 
            {selectedIds.length > 0 && (

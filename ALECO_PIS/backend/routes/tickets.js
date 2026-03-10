@@ -210,19 +210,45 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
     const { ticket_id } = req.params;
     const { assigned_crew, eta, is_consumer_notified, dispatch_notes } = req.body;
 
-    console.log(`\n🚀 STARTING DISPATCH for Ticket: ${ticket_id}`);
+    console.log(`\n🚀 STARTING DYNAMIC DISPATCH for Ticket: ${ticket_id}`);
 
     try {
-        // --- 1. SMS PHASE ---
-        const linemanPhone = '09943917653'; 
-        const linemanMsg = `ALECO DISPATCH: Ticket ${ticket_id}. Reply 'FIXED ${ticket_id}' when done.`;
-        
-        // IMPORTANT: Must use 'await' so the DB update waits for the SMS result
-        await sendPhilSMS(linemanPhone, linemanMsg);
-        console.log("➡️ Phase 1 (SMS) Complete.");
+        // --- PHASE 1: DYNAMIC PHONE LOOKUP ---
+        // We join the ticket with personnel to get both numbers in one hit
+        const [contactData] = await pool.execute(`
+            SELECT t.phone_number AS consumer_phone, p.phone_number AS lineman_phone
+            FROM aleco_tickets t
+            LEFT JOIN aleco_personnel p ON p.crew_name = ?
+            WHERE t.ticket_id = ?
+        `, [assigned_crew, ticket_id]);
 
-        // --- 2. DATABASE PHASE ---
-        console.log("➡️ Phase 2 (DB Update) Starting...");
+        if (contactData.length === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found.' });
+        }
+
+        const { consumer_phone, lineman_phone } = contactData[0];
+
+        // Validation: Ensure the selected crew actually has a number in the DB
+        if (!lineman_phone) {
+            console.log(`❌ ERROR: No phone number found for crew: ${assigned_crew}`);
+            return res.status(400).json({ success: false, message: `Crew ${assigned_crew} has no registered phone number.` });
+        }
+
+        // --- PHASE 2: SMS PHASE ---
+        // 1. Notify Lineman (Using number from aleco_personnel)
+        const linemanMsg = `ALECO DISPATCH: Ticket ${ticket_id}. Reply 'FIXED ${ticket_id}' when done.`;
+        await sendPhilSMS(lineman_phone, linemanMsg);
+        console.log(`✅ SMS sent to Lineman (${assigned_crew}): ${lineman_phone}`);
+
+        // 2. Notify Consumer (If toggled & number exists)
+        if (is_consumer_notified && consumer_phone) {
+            const consumerMsg = `ALECO: Crew ${assigned_crew} dispatched for your concern. ETA: ${eta}. Ticket: ${ticket_id}`;
+            await sendPhilSMS(consumer_phone, consumerMsg);
+            console.log(`✅ SMS sent to Consumer: ${consumer_phone}`);
+        }
+
+        // --- PHASE 3: DATABASE UPDATE ---
+        console.log("➡️ Phase 3 (DB Update) Starting...");
         
         const updateQuery = `
             UPDATE aleco_tickets 
@@ -243,15 +269,26 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
         ]);
 
         if (dbResult.affectedRows > 0) {
-            console.log(`✅ DATABASE SUCCESS: Ticket ${ticket_id} is now Ongoing.`);
-            res.status(200).json({ success: true, message: 'Dispatched and Updated!' });
+            console.log(`✅ DATABASE SUCCESS: Ticket ${ticket_id} updated to Ongoing.`);
+            res.status(200).json({ success: true, message: 'Dynamic Dispatch Complete!' });
         } else {
-            console.log(`⚠️ DB WARNING: No rows changed for Ticket ${ticket_id}.`);
-            res.status(404).json({ success: false, message: 'Ticket ID not found in DB.' });
+            res.status(500).json({ success: false, message: 'Failed to update ticket status.' });
         }
 
     } catch (error) {
         console.error("❌ CRITICAL DISPATCH ERROR:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
+// --- HELPER: GET ALL CREWS (For your Frontend Dropdown) ---
+// Add this below the dispatch route so your UI can "see" the linemen list
+router.get('/crews/list', async (req, res) => {
+    try {
+        const [crews] = await pool.execute('SELECT crew_name, lead_lineman FROM aleco_personnel');
+        res.status(200).json(crews);
+    } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });

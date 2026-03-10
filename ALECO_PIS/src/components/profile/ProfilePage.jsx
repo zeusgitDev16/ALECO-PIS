@@ -1,124 +1,116 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { FaEdit, FaSave, FaLock, FaHistory, FaFacebook, FaTwitter, FaGithub } from 'react-icons/fa';
 import '../../CSS/ProfilePage.css';
-// Note: You may need to run 'npm install react-icons' if you haven't yet
-import { FaYoutube, FaInstagram, FaTiktok, FaEdit, FaLock, FaHistory, FaCheckCircle } from 'react-icons/fa';
 
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState({
     name: localStorage.getItem('userName') || 'Aezy Millete',
-    email: localStorage.getItem('userEmail') || 'admin@orohigh.com',
+    email: localStorage.getItem('userEmail') || '',
     role: (localStorage.getItem('userRole') || 'ADMIN').toLowerCase(),
     pic: localStorage.getItem('googleProfilePic') || '',
-    bio: "Passionate about the Oro High Portal project.",
-    address: "Albay, Philippines",
-    phone: "+63 912 345 6789"
+    bio: localStorage.getItem('userBio') || 'ALECO-PIS System Administrator',
+    address: localStorage.getItem('userAddress') || 'Albay, Philippines',
+    phone: localStorage.getItem('userPhone') || '+63 000 000 0000'
   });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setUserData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const toggleEdit = () => {
-    if (isEditing) {
-      // Logic to save to localStorage or Backend would go here
-      console.log("Saved:", userData);
-    }
-    setIsEditing(!isEditing);
-  };
-
   return (
-    <div className="profile-master-container">
-      <header className="profile-main-header">
+    <div className="profile-main-container">
+      <header className="profile-header-text">
         <h1>Profile</h1>
-        <p>View and manage all your profile details here.</p>
+        <p>View and manage your ALECO-PIS account details here.</p>
       </header>
 
-      <div className="profile-responsive-grid">
-        {/* LEFT SIDEBAR */}
-        <div className={`profile-glass-card sidebar-area role-border-${userData.role}`}>
-          <div className="user-identity">
-            <h2>{userData.name}</h2>
-            <span className={`role-label ${userData.role}`}>
-              {userData.role === 'admin' ? 'Premium Admin' : 'Official Employee'}
-            </span>
-          </div>
-
-          <div className="avatar-container">
-            <div className={`avatar-frame frame-${userData.role}`}>
-              <img src={userData.pic} alt="User" referrerPolicy="no-referrer" />
+      <div className="profile-grid-layout">
+        {/* LEFT COLUMN: Overview Card */}
+        <div className="profile-card sidebar-card">
+          <div className="avatar-section">
+            <div className={`avatar-ring role-${userData.role}`}>
+              <img src={userData.pic} alt="Profile" referrerPolicy="no-referrer" />
             </div>
           </div>
-
-          <div className="sidebar-nav-buttons">
-            <button className="nav-btn edit-btn" onClick={toggleEdit}>
-              <FaEdit /> {isEditing ? "Save Changes" : "Edit Profile"}
-            </button>
-            <button className="nav-btn"><FaLock /> Change Password</button>
-            <button className="nav-btn"><FaHistory /> Activity Logs</button>
+          <div className="user-intro">
+            {isEditing ? (
+              <input 
+                className="edit-input-field" 
+                value={userData.name} 
+                onChange={(e) => setUserData({...userData, name: e.target.value})} 
+              />
+            ) : <h2>{userData.name}</h2>}
+            <span className={`role-pill ${userData.role}`}>{userData.role.toUpperCase()}</span>
           </div>
+          
+          <button className="edit-profile-btn" onClick={() => setIsEditing(!isEditing)}>
+            {isEditing ? <><FaSave /> Save Profile</> : <><FaEdit /> Edit Profile</>}
+          </button>
         </div>
 
-        {/* RIGHT CONTENT AREA */}
-        <div className="profile-glass-card details-area">
-          <div className="details-top-bar">
-            <h3>Bio & Other Details</h3>
-            <div className="online-status">
-              <span className="status-pulse"></span>
-            </div>
+        {/* RIGHT COLUMN: Bio & Details */}
+        <div className="profile-card details-card">
+          <div className="details-header-row">
+            <h3>Account Details</h3>
+            <span className="online-indicator"></span>
           </div>
 
-          <div className="details-input-grid">
-            <div className="input-group">
-              <label>My Role</label>
-              <p className="static-text role-highlight">{userData.role.toUpperCase()}</p>
-            </div>
-            <div className="input-group">
-              <label>My Email</label>
-              <p className="static-text">{userData.email}</p>
-            </div>
-            
-            <div className="input-group full-span">
+          <div className="info-details-grid">
+            <div className="info-group" style={{ gridColumn: 'span 2' }}>
               <label>Bio</label>
               {isEditing ? (
-                <textarea name="bio" value={userData.bio} onChange={handleInputChange} className="edit-input" />
-              ) : <p className="static-text">{userData.bio}</p>}
+                <textarea 
+                  className="edit-input-field" 
+                  value={userData.bio} 
+                  onChange={(e) => setUserData({...userData, bio: e.target.value})} 
+                />
+              ) : <p>{userData.bio}</p>}
             </div>
-
-            <div className="input-group">
-              <label>City or Region</label>
-              {isEditing ? (
-                <input name="address" value={userData.address} onChange={handleInputChange} className="edit-input" />
-              ) : <p className="static-text">{userData.address}</p>}
+            <div className="info-group">
+              <label>My Email</label>
+              <p>{userData.email}</p>
             </div>
-
-            <div className="input-group">
+            <div className="info-group">
               <label>Phone Number</label>
               {isEditing ? (
-                <input name="phone" value={userData.phone} onChange={handleInputChange} className="edit-input" />
-              ) : <p className="static-text">{userData.phone}</p>}
+                <input 
+                  className="edit-input-field" 
+                  value={userData.phone} 
+                  onChange={(e) => setUserData({...userData, phone: e.target.value})} 
+                />
+              ) : <p>{userData.phone}</p>}
             </div>
-
-            <div className="input-group">
-              <label>Availability</label>
-              <div className="collab-badge">
-                <FaCheckCircle /> Available for Collaboration
-              </div>
+            <div className="info-group" style={{ gridColumn: 'span 2' }}>
+              <label>My Address</label>
+              {isEditing ? (
+                <input 
+                  className="edit-input-field" 
+                  value={userData.address} 
+                  onChange={(e) => setUserData({...userData, address: e.target.value})} 
+                />
+              ) : <p>{userData.address}</p>}
+            </div>
+            <div className="info-group">
+               <label><FaLock /> Security</label>
+               <button className="change-pass-btn">Change Password</button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* SOCIAL FOOTER */}
-      <footer className="profile-social-footer">
-        <h4>Social Media & Links</h4>
-        <div className="social-links-container">
-          <a href="#" className="social-pill yt"><FaYoutube /> YouTube</a>
-          <a href="#" className="social-pill ig"><FaInstagram /> Instagram</a>
-          <a href="#" className="social-pill tk"><FaTiktok /> TikTok</a>
+        {/* NEW SEPARATE CONTAINERS AT THE BOTTOM */}
+        <div className="profile-card social-media-container">
+           <h3>Connect</h3>
+           <div className="social-links-flex">
+              <FaFacebook /> <FaTwitter /> <FaGithub />
+           </div>
+           
         </div>
-      </footer>
+
+        <div className="profile-card activity-logs-container">
+           <h3><FaHistory /> Activity Logs</h3>
+           <ul className="activity-log-list">
+              <li>Profile Updated <small>Just now</small></li>
+              <li>Logged in <small>2 hours ago</small></li>
+           </ul>
+        </div>
+      </div>
     </div>
   );
 };

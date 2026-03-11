@@ -4,6 +4,7 @@ import '../../CSS/ProfilePage.css';
 
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [userData, setUserData] = useState({
     name: localStorage.getItem('userName') || 'Aezy Millete',
     email: localStorage.getItem('userEmail') || '',
@@ -25,8 +26,16 @@ const ProfilePage = () => {
         {/* LEFT COLUMN: Overview Card */}
         <div className="profile-card sidebar-card">
           <div className="avatar-section">
-            <div className={`avatar-ring role-${userData.role}`}>
-              <img src={userData.pic} alt="Profile" referrerPolicy="no-referrer" />
+            <div 
+              className={`avatar-ring role-${userData.role}`} 
+              onClick={() => setShowImageModal(true)}
+              title="Click to view full image"
+            >
+              <img 
+                src={userData.pic ? userData.pic.replace(/=s\d+(-c)?/g, '=s1024-c') : ''} 
+                alt="Profile" 
+                referrerPolicy="no-referrer" 
+              />
             </div>
           </div>
           <div className="user-intro">
@@ -98,7 +107,18 @@ const ProfilePage = () => {
         <div className="profile-card social-media-container">
            <h3>Connect</h3>
            <div className="social-links-flex">
-              <FaFacebook /> <FaTwitter /> <FaGithub />
+              <div className="social-item">
+                 <FaFacebook className="social-icon" />
+                 <span className="social-text">Facebook</span>
+              </div>
+              <div className="social-item">
+                 <FaTwitter className="social-icon" />
+                 <span className="social-text">Twitter</span>
+              </div>
+              <div className="social-item">
+                 <FaGithub className="social-icon" />
+                 <span className="social-text">GitHub</span>
+              </div>
            </div>
            
         </div>
@@ -108,10 +128,24 @@ const ProfilePage = () => {
            <ul className="activity-log-list">
               <li>Profile Updated <small>Just now</small></li>
               <li>Logged in <small>2 hours ago</small></li>
+              <li>Password Changed <small>5 days ago</small></li>
            </ul>
         </div>
       </div>
+
+      {/* FULL SCREEN IMAGE MODAL */}
+      {showImageModal && (
+        <div className="profile-image-modal" onClick={() => setShowImageModal(false)}>
+          <img 
+            // Replaces the thumbnail size param (e.g., s96-c) with high-res (s1024-c)
+            src={userData.pic ? userData.pic.replace(/=s\d+(-c)?/g, '=s1024-c') : ''} 
+            alt="Full Profile View" 
+            referrerPolicy="no-referrer"
+          />
+        </div>
+      )}
     </div>
+    
   );
 };
 

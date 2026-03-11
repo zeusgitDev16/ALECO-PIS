@@ -281,135 +281,198 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
     }
 });
 
-// --- HELPER: GET ALL CREWS (For Frontend Table & Dropdown) ---
+// ============================================================================
+// PERSONNEL MANAGEMENT ROUTES (Surgically Updated for 3-Table Architecture)
+// ============================================================================
+
+// --- 1. GET ALL CREWS (With Dynamic Member Counts & Lead Names) ---
 router.get('/crews/list', async (req, res) => {
     try {
-        // We now select ID, phone, status, and map lead_lineman properly
-        const sql = `
+        // Fetch crews and join with the linemen pool to get the Lead's real name
+        const crewSql = `
             SELECT 
-                id, 
-                crew_name, 
-                lead_lineman AS lead_lineman_name, 
-                phone_number, 
-                status 
-            FROM aleco_personnel
-            ORDER BY created_at DESC
+                c.id, 
+                c.crew_name, 
+                c.phone_number, 
+                c.status,
+                c.lead_lineman AS lead_id,
+                l.full_name AS lead_lineman_name
+            FROM aleco_personnel c
+            LEFT JOIN aleco_linemen_pool l ON c.lead_lineman = l.id
+            ORDER BY c.created_at DESC
         `;
-        const [crews] = await pool.execute(sql);
-        res.status(200).json(crews);
+        const [crews] = await pool.execute(crewSql);
+
+        // Fetch all crew members to attach to their respective crews
+        const [memberships] = await pool.execute('SELECT crew_id, lineman_id FROM aleco_crew_members');
+
+        // Map the members into an array for the React Frontend (e.g., members: [5, 8, 12])
+        const formattedCrews = crews.map(crew => {
+            const crewMembers = memberships
+                .filter(m => m.crew_id === crew.id)
+                .map(m => m.lineman_id);
+                
+            return {
+                ...crew,
+                members: crewMembers,
+                member_count: crewMembers.length
+            };
+        });
+
+        res.status(200).json(formattedCrews);
     } catch (error) {
         console.error("Error fetching crews:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// --- 5. AUTOMATED SMS WEBHOOK (Lineman Return Trip) ---
-router.post('/tickets/sms-webhook', async (req, res) => {
-    const { message, sender_number } = req.body;
-
-    if (!message) {
-        return res.status(400).json({ success: false, error: 'No message provided' });
-    }
-
-    try {
-        const regex = /^(FIXED|UNFIXED)\s+([A-Z0-9\-]+)(?:\s+(.*))?$/i;
-        const match = message.trim().match(regex);
-
-        if (!match) {
-            console.log(`[SMS ERROR] Unrecognized format from ${sender_number}: "${message}"`);
-            return res.status(200).send('Format not recognized. Use: FIXED [ID] [Notes]'); 
-        }
-
-        const keyword = match[1].toUpperCase();
-        const rawTicketId = match[2].toUpperCase();
-        const linemanNotes = match[3] || 'No additional remarks provided.';
-
-        const newStatus = keyword === 'FIXED' ? 'Restored' : 'Unresolved';
-
-        const updateQuery = `
-            UPDATE aleco_tickets 
-            SET status = ?, 
-                lineman_remarks = ?
-            WHERE ticket_id = ? OR ticket_id LIKE CONCAT('%', ?)
-        `;
-        
-        const [result] = await pool.execute(updateQuery, [newStatus, linemanNotes, rawTicketId, rawTicketId]);
-
-        if (result.affectedRows === 0) {
-            console.log(`[SMS ERROR] Ticket ${rawTicketId} not found in database.`);
-            return res.status(200).send('Ticket ID not found.');
-        }
-
-        console.log(`\n==============================================`);
-        console.log(`[🤖 AUTOMATION] Lineman SMS Received!`);
-        console.log(`Action: ${keyword} | Ticket: ${rawTicketId}`);
-        console.log(`Notes: ${linemanNotes}`);
-        console.log(`Database Status changed to: ${newStatus}`);
-        console.log(`==============================================\n`);
-
-        res.status(200).send('SMS Processed Successfully');
-
-    } catch (error) {
-        console.error('Error processing SMS webhook:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-// --- 6. PERSONNEL MANAGEMENT: CREATE (Add New Crew) ---
+// --- 2. CREATE NEW CREW (With Junction Table Insertion) ---
 router.post('/crews/add', async (req, res) => {
-    const { crew_name, lead_lineman, phone_number } = req.body;
+    const { crew_name, lead_id, phone_number, members } = req.body;
     
+    // We use a connection from the pool so we can do a transaction (rollback if it fails)
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
     try {
-        // Validation: Ensure the phone number starts with '63' for PhilSMS compatibility
         let formattedPhone = phone_number.trim();
-        if (formattedPhone.startsWith('0')) {
-            formattedPhone = '63' + formattedPhone.substring(1);
+        if (formattedPhone.startsWith('0')) formattedPhone = '63' + formattedPhone.substring(1);
+
+        // 1. Insert the main crew
+        const [crewResult] = await connection.execute(
+            `INSERT INTO aleco_personnel (crew_name, lead_lineman, phone_number) VALUES (?, ?, ?)`, 
+            [crew_name, lead_id || null, formattedPhone]
+        );
+        const newCrewId = crewResult.insertId;
+
+        // 2. Insert into the Junction Table (aleco_crew_members)
+        if (members && members.length > 0) {
+            const memberValues = members.map(linemanId => [newCrewId, linemanId]);
+            // Bulk insert syntax: INSERT INTO table (c1, c2) VALUES (?, ?), (?, ?)
+            const placeholders = members.map(() => '(?, ?)').join(', ');
+            const flatValues = memberValues.flat();
+            
+            await connection.execute(
+                `INSERT INTO aleco_crew_members (crew_id, lineman_id) VALUES ${placeholders}`,
+                flatValues
+            );
         }
 
-        const sql = `INSERT INTO aleco_personnel (crew_name, lead_lineman, phone_number) VALUES (?, ?, ?)`;
-        await pool.execute(sql, [crew_name, lead_lineman, formattedPhone]);
-
-        res.status(201).json({ success: true, message: 'New crew successfully registered.' });
+        await connection.commit(); // Save everything
+        res.status(201).json({ success: true, message: 'New crew successfully assembled.' });
     } catch (error) {
+        await connection.rollback(); // Undo if something broke
         console.error("Error adding crew:", error);
         res.status(500).json({ success: false, message: error.code === 'ER_DUP_ENTRY' ? "Crew name already exists." : "Server error." });
+    } finally {
+        connection.release();
     }
 });
 
-// --- 7. PERSONNEL MANAGEMENT: UPDATE (Edit Crew Details) ---
+// --- 3. UPDATE CREW (Wipe old members, insert new ones) ---
 router.put('/crews/update/:id', async (req, res) => {
     const { id } = req.params;
-    const { crew_name, lead_lineman, phone_number, status } = req.body;
+    const { crew_name, lead_id, phone_number, status, members } = req.body;
+
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
 
     try {
         let formattedPhone = phone_number.trim();
-        if (formattedPhone.startsWith('0')) {
-            formattedPhone = '63' + formattedPhone.substring(1);
+        if (formattedPhone.startsWith('0')) formattedPhone = '63' + formattedPhone.substring(1);
+
+        // 1. Update the main crew table
+        await connection.execute(
+            `UPDATE aleco_personnel SET crew_name = ?, lead_lineman = ?, phone_number = ?, status = ? WHERE id = ?`,
+            [crew_name, lead_id || null, formattedPhone, status || 'Available', id]
+        );
+
+        // 2. Wipe existing members for this crew
+        await connection.execute(`DELETE FROM aleco_crew_members WHERE crew_id = ?`, [id]);
+
+        // 3. Insert the newly selected members
+        if (members && members.length > 0) {
+            const memberValues = members.map(linemanId => [id, linemanId]);
+            const placeholders = members.map(() => '(?, ?)').join(', ');
+            const flatValues = memberValues.flat();
+            
+            await connection.execute(
+                `INSERT INTO aleco_crew_members (crew_id, lineman_id) VALUES ${placeholders}`,
+                flatValues
+            );
         }
 
-        const sql = `
-            UPDATE aleco_personnel 
-            SET crew_name = ?, lead_lineman = ?, phone_number = ?, status = ? 
-            WHERE id = ?
-        `;
-        await pool.execute(sql, [crew_name, lead_lineman, formattedPhone, status, id]);
-
+        await connection.commit();
         res.status(200).json({ success: true, message: 'Crew information updated.' });
     } catch (error) {
+        await connection.rollback();
         console.error("Error updating crew:", error);
         res.status(500).json({ success: false, message: "Failed to update crew." });
+    } finally {
+        connection.release();
     }
 });
 
-// --- 8. PERSONNEL MANAGEMENT: DELETE (Remove Crew) ---
+// --- 4. DELETE CREW ---
 router.delete('/crews/delete/:id', async (req, res) => {
     const { id } = req.params;
     try {
+        // Because we set ON DELETE CASCADE in SQL, deleting the crew automatically deletes their mappings in aleco_crew_members!
         await pool.execute('DELETE FROM aleco_personnel WHERE id = ?', [id]);
         res.status(200).json({ success: true, message: 'Crew removed from system.' });
     } catch (error) {
         console.error("Error deleting crew:", error);
         res.status(500).json({ success: false, message: "Cannot delete crew; they may be linked to active tickets." });
+    }
+});
+
+
+// ============================================================================
+// LINEMEN POOL ROUTES (New!)
+// ============================================================================
+
+// GET: All Linemen
+router.get('/pool/list', async (req, res) => {
+    try {
+        const [linemen] = await pool.execute('SELECT * FROM aleco_linemen_pool ORDER BY full_name ASC');
+        res.status(200).json(linemen);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// POST: Add new Lineman
+router.post('/pool/add', async (req, res) => {
+    const { full_name, designation, contact_no } = req.body;
+    try {
+        let formattedPhone = contact_no.trim();
+        if (formattedPhone.startsWith('0')) formattedPhone = '63' + formattedPhone.substring(1);
+
+        await pool.execute(
+            `INSERT INTO aleco_linemen_pool (full_name, designation, contact_no) VALUES (?, ?, ?)`,
+            [full_name, designation, formattedPhone]
+        );
+        res.status(201).json({ success: true, message: 'Lineman registered.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error." });
+    }
+});
+
+// PUT: Update Lineman
+router.put('/pool/update/:id', async (req, res) => {
+    const { id } = req.params;
+    const { full_name, designation, contact_no, status } = req.body;
+    try {
+        let formattedPhone = contact_no.trim();
+        if (formattedPhone.startsWith('0')) formattedPhone = '63' + formattedPhone.substring(1);
+
+        await pool.execute(
+            `UPDATE aleco_linemen_pool SET full_name = ?, designation = ?, contact_no = ?, status = ? WHERE id = ?`,
+            [full_name, designation, formattedPhone, status || 'Active', id]
+        );
+        res.status(200).json({ success: true, message: 'Lineman updated.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error." });
     }
 });
 

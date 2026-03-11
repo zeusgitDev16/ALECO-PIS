@@ -1,11 +1,37 @@
-import React, { useState } from 'react';
-import '../../CSS/DispatchTicketModal.css'; // Importing its dedicated styling
+import React, { useState, useEffect } from 'react';
+import '../../CSS/DispatchTicketModal.css'; 
 
-const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, crews = [] }) => {
+const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
+    // Form States
     const [crew, setCrew] = useState('');
     const [eta, setEta] = useState('');
     const [notifyConsumer, setNotifyConsumer] = useState(true);
     const [notes, setNotes] = useState('');
+    
+    // Database State
+    const [availableCrews, setAvailableCrews] = useState([]);
+    const [isLoadingCrews, setIsLoadingCrews] = useState(false);
+
+    // --- FETCH CREWS ON OPEN ---
+    useEffect(() => {
+        if (isOpen) {
+            setIsLoadingCrews(true);
+            fetch('http://localhost:5000/api/crews/list')
+                .then(res => res.json())
+                .then(data => {
+                    // Make sure it's an array, and optionally you could filter out 'Offline' crews here if needed
+                    setAvailableCrews(Array.isArray(data) ? data : []);
+                })
+                .catch(err => console.error("Failed to fetch crews:", err))
+                .finally(() => setIsLoadingCrews(false));
+        } else {
+            // Reset form when modal closes
+            setCrew('');
+            setEta('');
+            setNotes('');
+            setNotifyConsumer(true);
+        }
+    }, [isOpen]);
 
     // Idempotent Guard
     if (!isOpen || !ticket) return null;
@@ -41,20 +67,23 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, crews = [] }) 
                     <div className="dispatch-form-group">
                         <label>Assigned Crew / Unit</label>
                         <select 
-    className="dispatch-form-input" 
-    value={crew} 
-    onChange={e => setCrew(e.target.value)} 
-    required
->
-    <option value="">-- Select Field Unit --</option>
-    
-    {/* --- NEW DYNAMIC LOOP --- */}
-    {crews.map((c) => (
-        <option key={c.crew_name} value={c.crew_name}>
-            {c.crew_name} ({c.lead_lineman})
-        </option>
-    ))}
-</select>
+                            className="dispatch-form-input" 
+                            value={crew} 
+                            onChange={e => setCrew(e.target.value)} 
+                            required
+                            disabled={isLoadingCrews}
+                        >
+                            <option value="">
+                                {isLoadingCrews ? '-- Loading Units... --' : '-- Select Field Unit --'}
+                            </option>
+                            
+                            {/* --- FULLY CONNECTED DYNAMIC LOOP --- */}
+                            {availableCrews.map((c) => (
+                                <option key={c.id} value={c.crew_name}>
+                                    {c.crew_name} ({c.lead_lineman_name || 'No Lead'}) - {c.member_count} Members
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="dispatch-form-group">

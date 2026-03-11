@@ -10,12 +10,16 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
     const [leadId, setLeadId] = useState(null);
 
     // Populate or reset form based on edit/add mode
+    // Populate or reset form based on edit/add mode
     useEffect(() => {
         if (initialData) {
             setCrewName(initialData.crew_name || '');
             setPhoneNumber(initialData.phone_number || '63');
-            setMembers(initialData.members || []);
-            setLeadId(initialData.lead_id || null);
+            
+            // CONVERSION FIX: Ensure members and lead_id are always read as Numbers!
+            setMembers(initialData.members ? initialData.members.map(Number) : []);
+            setLeadId(initialData.lead_id ? Number(initialData.lead_id) : null);
+            
         } else {
             setCrewName('');
             setPhoneNumber('63');
@@ -109,7 +113,7 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
                                                 className={`lead-toggle-btn ${leadId === man.id ? 'active' : ''}`}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    setLeadId(man.id);
+                                                   setLeadId(leadId === man.id ? null : man.id);
                                                 }}
                                             >
                                                 {leadId === man.id ? '⭐ LEAD' : 'SET LEAD'}

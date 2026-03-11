@@ -26,9 +26,10 @@ const PersonnelManagement = () => {
     const fetchAllData = async () => {
         setIsLoading(true);
         try {
+            // FIXED: Removed the stray '/tickets' from the URLs
             const [crewRes, poolRes] = await Promise.all([
-                fetch('http://localhost:5000/api/tickets/crews/list'), // Fixed: Pointing back to ticket.js routes
-                fetch('http://localhost:5000/api/tickets/pool/list')   // We will build this next
+                fetch('http://localhost:5000/api/crews/list'), 
+                fetch('http://localhost:5000/api/pool/list')   
             ]);
 
             const crewData = await crewRes.json();
@@ -45,15 +46,65 @@ const PersonnelManagement = () => {
 
     // --- 4. SAVE HANDLERS ---
     const handleSaveCrew = async (crewData) => {
-        console.log("Saving Crew to DB:", crewData);
-        setIsCrewModalOpen(false);
-        fetchAllData(); 
+        setIsLoading(true);
+        const isEdit = !!crewData.id;
+        
+        // FIXED: Removed the stray '/tickets' from the URLs
+        const url = isEdit 
+            ? `http://localhost:5000/api/crews/update/${crewData.id}`
+            : `http://localhost:5000/api/crews/add`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(crewData) 
+            });
+            
+            if (res.ok) {
+                setIsCrewModalOpen(false);
+                fetchAllData(); 
+            } else {
+                const errorData = await res.json();
+                alert(`Failed to save crew: ${errorData.message}`);
+            }
+        } catch (error) { 
+            console.error("Save Crew Error:", error); 
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleSaveLineman = async (linemanData) => {
-        console.log("Saving Lineman to DB:", linemanData);
-        setIsLinemenModalOpen(false);
-        fetchAllData(); 
+        setIsLoading(true);
+        const isEdit = !!linemanData.id;
+        
+        // FIXED: Removed the stray '/tickets' from the URLs
+        const url = isEdit 
+            ? `http://localhost:5000/api/pool/update/${linemanData.id}`
+            : `http://localhost:5000/api/pool/add`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(linemanData) 
+            });
+            
+            if (res.ok) {
+                setIsLinemenModalOpen(false);
+                fetchAllData(); 
+            } else {
+                const errorData = await res.json();
+                alert(`Failed to save lineman: ${errorData.message}`);
+            }
+        } catch (error) { 
+            console.error("Save Lineman Error:", error); 
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     // --- 5. RENDER HELPERS ---
@@ -128,10 +179,10 @@ const PersonnelManagement = () => {
                             <table className="users-table">
                                 <thead>
                                     <tr>
-                                        <th>Unit Designation</th>
+                                        <th>Crew Name</th>
                                         <th>Lead Lineman</th>
-                                        <th>Composition</th>
-                                        <th>Hotline</th>
+                                        <th>Members</th>
+                                        <th>Phone Number</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -163,7 +214,7 @@ const PersonnelManagement = () => {
                                     <tr>
                                         <th>Full Name</th>
                                         <th>Designation</th>
-                                        <th>Personal Contact</th>
+                                        <th>Contact No.</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>

@@ -4,6 +4,8 @@ import '../CSS/TicketMain.css';
 import useTickets from '../utils/useTickets';
 import UrgentTickets from './containers/UrgentTickets';
 import useDraggable from '../utils/useDraggable';
+import CoverageMap from './CoverageMap';
+import MapButton from './buttons/MapButton';
 
 
 // Importing the Lego Bricks
@@ -22,6 +24,7 @@ const AdminTickets = () => {
     // --- 2. Master State (UI Only) ---
     // We only need to track which ticket the admin clicked on.
     const [selectedTicket, setSelectedTicket] = useState(null);
+    const [isMapOpen, setIsMapOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
     const [availableCrews, setAvailableCrews] = useState([]);
 
@@ -94,6 +97,8 @@ const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
                 <h2 className="header-title ticket-header-title">Support Tickets</h2>
                 <p className="header-subtitle ticket-header-subtitle">Track and resolve user reported issues.</p>
             </div>
+
+            <MapButton onClick={() => setIsMapOpen(true)} />
 
             {/* Error Banner (Optional, but good UX if the database connection fails) */}
             {error && (
@@ -224,6 +229,12 @@ const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         setSelectedIds([]); 
     }}
 />
+
+<CoverageMap 
+        isOpen={isMapOpen} 
+        onClose={() => setIsMapOpen(false)} 
+        tickets={tickets} 
+    />
 
         </AdminLayout>
     );

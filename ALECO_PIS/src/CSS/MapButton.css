@@ -1,0 +1,47 @@
+.map-trigger-btn {
+    /* Smaller, compact size */
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    
+    /* Sleek Dark/Bordered Style */
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.4);
+    
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease-in-out;
+    
+    /* Ensure it doesn't take full width */
+    width: fit-content;
+}
+
+.map-trigger-btn:hover {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+}
+
+.map-trigger-btn .icon {
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Subtle pulse for the icon to show it's a live map */
+.map-trigger-btn:hover .icon {
+    animation: bounce 0.5s infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-2px); }
+}

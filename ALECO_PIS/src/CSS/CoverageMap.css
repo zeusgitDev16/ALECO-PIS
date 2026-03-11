@@ -1,0 +1,197 @@
+/* --- 1. THEME VARIABLES (Unchanged) --- */
+:root {
+    --map-overlay-bg: rgba(10, 10, 20, 0.9);
+    --map-modal-bg: #0f172a;
+    --map-header-gradient: linear-gradient(to right, #1e293b, #0f172a);
+    --map-text-main: #f8fafc;
+    --map-text-sub: #94a3b8;
+    --map-border: rgba(255, 255, 255, 0.1);
+    --map-header-border: rgba(255, 255, 255, 0.08);
+    --map-card-bg: #1e293b;
+    --map-tile-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+[data-theme='light'] {
+    --map-overlay-bg: rgba(255, 255, 255, 0.8);
+    --map-modal-bg: #ffffff;
+    --map-header-gradient: linear-gradient(to right, #f8fafc, #f1f5f9);
+    --map-text-main: #0f172a;
+    --map-text-sub: #64748b;
+    --map-border: rgba(0, 0, 0, 0.1);
+    --map-header-border: rgba(0, 0, 0, 0.05);
+    --map-card-bg: #ffffff;
+    --map-tile-filter: none;
+}
+
+/* --- 2. THE MODAL STRUCTURE --- */
+.map-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: var(--map-overlay-bg);
+    backdrop-filter: blur(12px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 10000;
+    animation: mapEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.map-modal-content {
+    width: 92vw; height: 88vh;
+    background: var(--map-modal-bg);
+    border-radius: 20px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    border: 1px solid var(--map-border);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    transition: background 0.3s ease;
+}
+
+.map-modal-header {
+    padding: 12px 24px; /* Slightly tighter padding for a sleeker look */
+    background: var(--map-header-gradient);
+    color: var(--map-text-main);
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--map-header-border);
+}
+
+.header-titles h3 {
+    margin: 0; font-size: 1.1rem; font-weight: 700;
+    color: #38bdf8; display: flex; align-items: center; gap: 10px;
+}
+
+/* New Wrapper for Right-Side Actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+
+    /* This creates the physical space between the search box and the X */
+    gap: 12px; 
+    padding-right: 5px;
+}
+
+/* --- 3. UPDATED COMPACT SEARCH (Header Integrated) --- */
+.map-search-container {
+    position: relative;
+    /* Ensure the container itself doesn't have extra margins that cause offset */
+    margin: 0; 
+    width: 150px;
+    margin-right: 20px;
+}
+
+.map-search-container input {
+    width: 100%;
+    padding: 8px 12px; /* Thinner padding for header */
+    border-radius: 8px;
+    border: 1px solid var(--map-border);
+    background: rgba(0, 0, 0, 0.2); /* Slightly darker to stand out in header */
+    color: var(--map-text-main);
+    outline: none;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.map-search-container input:focus {
+    border-color: #38bdf8;
+    background: var(--map-modal-bg);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.search-results-list {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0; /* Align to the right edge of input */
+    width: 100%;
+    background: var(--map-modal-bg);
+    border: 1px solid var(--map-border);
+    border-radius: 8px;
+    list-style: none;
+    padding: 5px 0;
+    margin: 0;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1001;
+}
+
+.search-results-list li {
+    padding: 8px 15px;
+    color: var(--map-text-main);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+
+.search-results-list li:hover {
+    background: rgba(56, 189, 248, 0.15);
+}
+
+/* --- 4. MAP, TILES, POPUPS & BADGES (Preserved) --- */
+.map-container-wrapper { flex-grow: 1; width: 100%; position: relative; }
+.leaflet-container { background: var(--map-modal-bg) !important; }
+.leaflet-tile-pane { filter: var(--map-tile-filter); transition: filter 0.5s ease; }
+
+.leaflet-popup-content-wrapper {
+    background: var(--map-card-bg) !important;
+    color: var(--map-text-main) !important;
+    border-radius: 12px !important;
+    padding: 0 !important;
+    border: 1px solid var(--map-border);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+}
+
+.leaflet-popup-tip { background: var(--map-card-bg) !important; }
+.popup-id { color: var(--map-text-sub); }
+.popup-issue { color: var(--map-text-main); }
+.popup-loc { color: var(--map-text-sub); }
+
+.close-x {
+    background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3);
+    color: #fb7185; font-size: 18px; width: 30px; height: 30px;
+    border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 4px; 
+    flex-shrink: 0;
+}
+
+.close-x:hover { background: #e11d48; color: white; transform: rotate(90deg); }
+
+.status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+.status-badge.ongoing { background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); }
+.status-badge.pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+@keyframes mapEntrance {
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* --- Mobile Responsive Header --- */
+@media screen and (max-width: 600px) {
+    .map-modal-header {
+        flex-direction: column; /* Stacks titles and actions vertically */
+        align-items: flex-start; /* Aligns everything to the left */
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .header-actions {
+        width: 100%; /* Makes search bar area full width */
+        justify-content: space-between; /* Keeps X on the far right */
+        gap: 10px;
+    }
+
+    .map-search-container {
+        flex-grow: 1; /* Allows search bar to take available space */
+        width: auto;
+        max-width: calc(100% - 45px); /* Leaves room for the X button */
+    }
+
+    .map-subtitle {
+        margin-bottom: 5px; /* Spacing before the search bar appears below */
+    }
+    
+    .map-modal-content {
+        width: 100vw; /* Full width on mobile */
+        height: 100vh;
+        border-radius: 0; /* Remove rounded corners for full-screen feel */
+    }
+}

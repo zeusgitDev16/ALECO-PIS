@@ -29,20 +29,20 @@
 
 /* --- 2. GLOBAL & LAYOUT --- */
 .profile-main-container {
-  padding: 20px;
+  padding: 40px;
   background-color: transparent;
   min-height: calc(100vh - 70px);
   color: var(--color-text-main);
   animation: fadeIn 0.4s ease;
 }
 
-.profile-header-text h1 { font-size: 32px; color: var(--color-text-main); margin-bottom: 5px; }
-.profile-header-text p { color: var(--color-text-muted); font-size: 14px; margin-bottom: 30px; }
+.profile-header-text h1 { font-size: 2rem; color: var(--color-text-main); margin-bottom: 5px; }
+.profile-header-text p { color: var(--color-text-muted); font-size: 1rem; margin-bottom: 20px; }
 
 .profile-grid-layout {
   display: grid;
   grid-template-columns: 300px 1fr; /* Slightly narrower sidebar col */
-  gap: 20px; /* Tighter gap between cards */
+  gap: 25px;
   margin-top: 10px;
 }
 
@@ -50,14 +50,25 @@
 .profile-card {
   background-color: var(--bg-profile-card);
   border-radius: 16px;
-  padding: 30px; /* Reduced padding for a more compact look */
+  padding: 30px;
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
+  color: var(--color-text-main);
+  transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .profile-card {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* --- 4. LEFT COLUMN: OVERVIEW CARD --- */
 .avatar-ring {
-  width: 150px; /* Smaller avatar to save vertical space */
+  width: 150px;
   height: 150px;
   border-radius: 50%;
   padding: 8px;
@@ -77,15 +88,15 @@
 .avatar-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 
 .user-intro { text-align: center; }
-.user-intro h2 { color: var(--color-text-main); margin: 0 0 10px 0; }
+.user-intro h2 { font-size: 1.5rem; color: var(--color-text-main); margin: 0 0 10px 0; }
 
 .role-pill { 
   display: inline-block;
   width: fit-content; 
   margin: 10px auto;
-  padding: 4px 12px; 
+  padding: 6px 15px;
   border-radius: 20px; 
-  font-size: 12px; 
+  font-size: 0.75rem;
   font-weight: bold;
   background: rgba(128, 128, 128, 0.1);
   color: var(--color-text-muted);
@@ -94,21 +105,21 @@
 .role-pill.employee { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
 
 .edit-profile-btn {
-  width: 60%;
+  width: 200px;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 6px;
-  padding: 8px;
+  padding: 10px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: 0.3s;
   border: none;
   background: var(--accent-btn-bg);
   color: white;
-  margin: 12px auto 0;
+  margin: 15px auto 0;
 }
 .edit-profile-btn:hover { background: var(--accent-btn-hover); }
 
@@ -119,7 +130,7 @@
   align-items: center;
   margin-bottom: 20px;
 }
-.details-header-row h3 { margin: 0; font-size: 20px; }
+.details-header-row h3 { margin: 0; font-size: 1.25rem; }
 
 .online-indicator {
   width: 10px;
@@ -132,7 +143,7 @@
 .info-details-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px; /* Tighter grid for details */
+  gap: 25px;
   margin-top: 30px;
 }
 
@@ -140,26 +151,34 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px; 
+  font-size: 0.7rem;
   color: var(--color-text-muted); 
   text-transform: uppercase; 
   margin-bottom: 8px; 
 }
-.info-group p { font-size: 16px; font-weight: 500; color: var(--color-text-main); margin: 0; }
+.info-group p { font-size: 1rem; font-weight: 500; color: var(--color-text-main); margin: 0; }
 
 .edit-input-field {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--card-border);
   background-color: var(--bg-profile);
   color: var(--color-text-main);
-  font-size: 16px;
+  font-size: 1rem;
   font-family: inherit;
   margin-top: -4px;
 }
+
+[data-theme="dark"] .edit-input-field {
+  background-color: #0f172a; /* Darker blue for inputs */
+  border: 1px solid #475569;
+  color: #ffffff;
+  padding: 10px;
+  border-radius: 6px;
+}
 textarea.edit-input-field {
-  min-height: 80px;
+  min-height: 120px;
   resize: vertical;
 }
 
@@ -169,7 +188,7 @@ textarea.edit-input-field {
   color: var(--color-text-muted);
   padding: 8px 15px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 600; 
   font-size: 12px;
   cursor: pointer;
   transition: 0.3s;
@@ -182,7 +201,7 @@ textarea.edit-input-field {
 
 /* --- 6. BOTTOM ROW: SOCIALS & ACTIVITY --- */
 .social-media-container, .activity-logs-container {
-  padding: 20px 25px; /* Even more compact for bottom containers */
+  padding: 20px 25px;
 }
 .social-media-container h3, .activity-logs-container h3 {
   margin: 0 0 20px 0;
@@ -204,7 +223,7 @@ textarea.edit-input-field {
   display: flex;
   align-items: center; /* Vertically center the icon */
   width: 100%;
-  padding: 10px 0; /* Tighter item spacing */
+  padding: 10px 0;
   border-bottom: 1px solid var(--card-border); /* The line separator */
 }
 
@@ -214,13 +233,13 @@ textarea.edit-input-field {
 
 .social-text {
   margin-left: 15px;
-  font-size: 14px;
+  font-size: 0.9rem;
   font-weight: 500;
   color: var(--color-text-main);
 }
 
 .social-icon {
-  font-size: 22px; /* Adjusted size */
+  font-size: 22px;
   color: var(--color-text-muted);
   cursor: pointer;
   transition: transform 0.2s ease, color 0.2s ease;
@@ -239,9 +258,9 @@ textarea.edit-input-field {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0; /* Matching spacing for consistency */
+  padding: 10px 0;
   border-bottom: 1px solid var(--card-border);
-  font-size: 14px;
+  font-size: 0.85rem;
 }
 .activity-log-list li:last-child { border-bottom: none; }
 .activity-log-list small { color: var(--color-text-muted); }
@@ -251,19 +270,70 @@ textarea.edit-input-field {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* --- 8. RESPONSIVE ADJUSTMENTS --- */
+/* This section now ONLY handles major layout shifts. 
+   Sizing and spacing are handled fluidly by clamp() in the rules above. */
+
+/* --- Tablet & Larger Mobile Breakpoint --- */
 @media (max-width: 1024px) {
   .profile-grid-layout {
-    grid-template-columns: 1fr; /* Stack cards into a single column on smaller screens */
-    gap: 15px; 
+    grid-template-columns: 1fr; /* Stack main cards into a single column */
+  }
+}
+
+/* --- Smaller Tablet & Mobile Breakpoint --- */
+@media (max-width: 768px) {
+  .info-details-grid {
+    grid-template-columns: 1fr; /* Stack detail fields vertically */
   }
 
-  .profile-header-text h1 {
-    font-size: 24px;
+  .details-header-row {
+    flex-direction: column; /* Stack header elements */
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+/* --- Mobile Phone Breakpoint (Force Shrink) --- */
+@media (max-width: 550px) {
+  .profile-main-container {
+    padding: 10px;
+  }
+
+  .profile-header-text h1 { font-size: 1.4rem; }
+  .profile-header-text p { font-size: 0.8rem; margin-bottom: 15px; }
+
+  .profile-grid-layout {
+    gap: 15px;
+    margin-top: 5px;
   }
 
   .profile-card {
-    padding: 20px; 
+    padding: 15px;
+    border-radius: 12px;
   }
+
+  .avatar-ring {
+    width: 100px;
+    height: 100px;
+    padding: 4px;
+    margin-bottom: 10px;
+    border-width: 2px;
+  }
+
+  .user-intro h2 { font-size: 1.2rem; }
+  
+  .details-header-row h3 { font-size: 1.1rem; }
+  
+  .info-group label { font-size: 0.65rem; margin-bottom: 4px; }
+  .info-group p { font-size: 0.9rem; }
+  
+  .edit-input-field {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  .social-text { font-size: 0.85rem; margin-left: 10px; }
+  .activity-log-list li { font-size: 0.85rem; padding: 8px 0; }
 }
 
 /* --- 9. FULL SCREEN IMAGE MODAL --- */

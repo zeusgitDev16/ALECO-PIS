@@ -29,14 +29,12 @@ const MUNI_COORDS = {
     "Pio Duran": [13.0306, 123.4550], "Polangui": [13.2936, 123.4853]
 };
 
-// --- SEARCH ENGINE COMPONENT ---
-// This component stays inside MapContainer to access 'useMap', 
-// but it executes the 'flyTo' logic based on the external search state.
+// --- INVISIBLE MAP FLY HANDLER ---
 const MapFlyHandler = ({ targetCoords }) => {
     const map = useMap();
     useEffect(() => {
         if (targetCoords) {
-            map.flyTo(targetCoords, 15, { duration: 1.5 });
+            map.flyTo(targetCoords, 16, { duration: 1.5 }); // Zoomed in a bit closer to 16
         }
     }, [targetCoords, map]);
     return null;
@@ -64,9 +62,11 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
         const matched = [];
         ALECO_SCOPE.forEach(district => {
             district.municipalities.forEach(muni => {
+                // Match Municipalities
                 if (muni.name.toLowerCase().includes(val.toLowerCase())) {
                     matched.push({ name: muni.name, coords: MUNI_COORDS[muni.name], type: 'Municipality' });
                 }
+                // Match Barangays
                 muni.barangays.forEach(brgy => {
                     if (brgy.name.toLowerCase().includes(val.toLowerCase())) {
                         matched.push({ 
@@ -83,29 +83,56 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
     };
 
     const selectLocation = (coords) => {
-        setFlyTarget(coords); // Trigger the FlyHandler inside MapContainer
+        setFlyTarget(coords); 
         setSearchQuery("");
         setSearchResults([]);
     };
 
-    const getTicketPosition = (locationString) => {
-        if (!locationString) return MUNI_COORDS["Legazpi City"];
+    // --- JITTER & PLACEMENT LOGIC ---
+    // We added ticketId to the parameters so we can use it as a math seed
+    const getTicketPosition = (locationString, ticketId) => {
+        if (!locationString) return [13.1391, 123.7438]; 
+        
         const parts = locationString.split(',').map(p => p.trim().toLowerCase());
         const brgyTarget = parts[0];
 
+        // Create the Jitter (offset) so stacked pins fan out visually
+        let jitterX = 0;
+        let jitterY = 0;
+        if (ticketId) {
+            let hash = 0;
+            for (let i = 0; i < ticketId.length; i++) {
+                hash = ticketId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            // Multiplying by 0.00015 shifts the pin by roughly 10-15 meters
+            jitterX = (hash % 100) * 0.00015; 
+            jitterY = ((hash >> 2) % 100) * 0.00015;
+        }
+
+        // 1. Search for specific Barangay coordinates
         for (const district of ALECO_SCOPE) {
             for (const muni of district.municipalities) {
                 const foundBrgy = muni.barangays.find(b => 
                     brgyTarget.includes(b.name.toLowerCase()) || 
                     b.name.toLowerCase().includes(brgyTarget.replace('brgy ', ''))
                 );
-                if (foundBrgy && foundBrgy.lat && foundBrgy.lng) return [foundBrgy.lat, foundBrgy.lng];
+                
+                if (foundBrgy && foundBrgy.lat && foundBrgy.lng) {
+                    // Apply Jitter to the precise Google Coordinate
+                    return [foundBrgy.lat + jitterX, foundBrgy.lng + jitterY];
+                }
             }
         }
+
+        // 2. Fallback to Municipality Center
         for (const muniName in MUNI_COORDS) {
-            if (locationString.toLowerCase().includes(muniName.toLowerCase())) return MUNI_COORDS[muniName];
+            if (locationString.toLowerCase().includes(muniName.toLowerCase())) {
+                const basePos = MUNI_COORDS[muniName];
+                return [basePos[0] + jitterX, basePos[1] + jitterY];
+            }
         }
-        return MUNI_COORDS["Legazpi City"]; 
+        
+        return [13.1391 + jitterX, 123.7438 + jitterY]; 
     };
 
     return (
@@ -149,23 +176,29 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
                     >
                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
                         
-                        {/* Invisible logic component to handle 'flyTo' animations */}
                         <MapFlyHandler targetCoords={flyTarget} />
 
-                        {tickets.map(ticket => (
-                            <Marker key={ticket.ticket_id} position={getTicketPosition(ticket.location)}>
-                                <Popup>
-                                    <div className="map-popup">
-                                        <span className="popup-id">{ticket.ticket_id}</span>
-                                        <h4 className="popup-issue">{ticket.issue_type}</h4>
-                                        <p className="popup-loc">📍 {ticket.location}</p>
-                                        <div className="popup-footer">
-                                            <span className={`status-badge ${ticket.status?.toLowerCase().replace(/\s+/g, '-')}`}>{ticket.status}</span>
+                        {tickets.map(ticket => {
+                            // Pass both the location and the ID to the Jitter function
+                            const position = getTicketPosition(ticket.location, ticket.ticket_id);
+                            
+                            return (
+                                <Marker key={ticket.ticket_id} position={position}>
+                                    <Popup>
+                                        <div className="map-popup">
+                                            <span className="popup-id">{ticket.ticket_id}</span>
+                                            <h4 className="popup-issue">{ticket.issue_type}</h4>
+                                            <p className="popup-loc">📍 {ticket.location}</p>
+                                            <div className="popup-footer">
+                                                <span className={`status-badge ${ticket.status?.toLowerCase().replace(/\s+/g, '-')}`}>
+                                                    {ticket.status}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                </Popup>
-                            </Marker>
-                        ))}
+                                    </Popup>
+                                </Marker>
+                            );
+                        })}
                     </MapContainer>
                 </div>
             </div>

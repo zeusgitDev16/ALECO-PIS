@@ -195,3 +195,47 @@
         border-radius: 0; /* Remove rounded corners for full-screen feel */
     }
 }
+
+/* --- CUSTOM MAP PINS (GLOWING DOTS) --- */
+.custom-status-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.core-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    position: absolute;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    border: 2px solid white;
+}
+
+.pulse-ring {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    position: absolute;
+    z-index: 1;
+    opacity: 0.4;
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Colors based on Status */
+.pin-orange.core-dot { background-color: #f59e0b; }
+.pin-orange.pulse-ring { background-color: #f59e0b; }
+
+.pin-blue.core-dot { background-color: #3b82f6; }
+.pin-blue.pulse-ring { background-color: #3b82f6; }
+
+.pin-green.core-dot { background-color: #10b981; }
+.pin-green.pulse-ring { background-color: #10b981; }
+
+@keyframes ping {
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}

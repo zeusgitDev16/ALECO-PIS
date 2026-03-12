@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ALECO_SCOPE } from '../../data/alecoScope';
+import { ALECO_SCOPE } from '../../../alecoScope';
 import '../../CSS/AlecoScopeDropdown.css';
 
 const AlecoScopeDropdown = ({ label, onLocationSelect, isFilter = false, layoutMode = 'form' }) => {

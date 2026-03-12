@@ -36,8 +36,17 @@
   animation: fadeIn 0.4s ease;
 }
 
-.profile-header-text h1 { font-size: 2rem; color: var(--color-text-main); margin-bottom: 5px; }
-.profile-header-text p { color: var(--color-text-muted); font-size: 1rem; margin-bottom: 20px; }
+.profile-header-text h1 {
+  /* Fluid font size: min 1.6rem, preferred 5vw, max 2rem */
+  font-size: 2rem;
+  color: var(--color-text-main);
+  margin-bottom: 5px;
+}
+.profile-header-text p {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
 
 .profile-grid-layout {
   display: grid;
@@ -55,15 +64,6 @@
   border: 1px solid var(--card-border);
   color: var(--color-text-main);
   transition: all 0.3s ease;
-}
-
-[data-theme="dark"] .profile-card {
-  background-color: #1e293b;
-  border: 1px solid #334155;
-  color: #f8fafc;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* --- 4. LEFT COLUMN: OVERVIEW CARD --- */
@@ -88,7 +88,11 @@
 .avatar-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 
 .user-intro { text-align: center; }
-.user-intro h2 { font-size: 1.5rem; color: var(--color-text-main); margin: 0 0 10px 0; }
+.user-intro h2 {
+  font-size: 1.5rem;
+  color: var(--color-text-main);
+  margin: 0 0 10px 0;
+}
 
 .role-pill { 
   display: inline-block;
@@ -156,7 +160,12 @@
   text-transform: uppercase; 
   margin-bottom: 8px; 
 }
-.info-group p { font-size: 1rem; font-weight: 500; color: var(--color-text-main); margin: 0; }
+.info-group p {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-main);
+  margin: 0;
+}
 
 .edit-input-field {
   width: 100%;
@@ -270,10 +279,8 @@ textarea.edit-input-field {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* --- 8. RESPONSIVE ADJUSTMENTS --- */
-/* This section now ONLY handles major layout shifts. 
-   Sizing and spacing are handled fluidly by clamp() in the rules above. */
 
-/* --- Tablet & Larger Mobile Breakpoint --- */
+/* --- Tablet Breakpoint --- */
 @media (max-width: 1024px) {
   .profile-grid-layout {
     grid-template-columns: 1fr; /* Stack main cards into a single column */
@@ -291,49 +298,75 @@ textarea.edit-input-field {
     align-items: flex-start;
     gap: 10px;
   }
+
+  /* Begin scaling down text and elements for tablet portrait */
+  .profile-header-text h1 { font-size: 1.75rem; }
+  .user-intro h2 { font-size: 1.35rem; }
+  .profile-header-text p { font-size: 0.9rem; }
+  .details-header-row h3 { font-size: 1.15rem; }
+  .info-group p { font-size: 0.95rem; }
+  .social-text { font-size: 0.85rem; }
+  .activity-log-list li { font-size: 0.82rem; }
+  .avatar-ring { width: 130px; height: 130px; }
 }
 
-/* --- Mobile Phone Breakpoint (Force Shrink) --- */
+/* --- Mobile Phone Breakpoint --- */
 @media (max-width: 550px) {
   .profile-main-container {
-    padding: 10px;
+    padding: 15px; /* Tighter padding for small screens */
   }
 
   .profile-header-text h1 { font-size: 1.4rem; }
-  .profile-header-text p { font-size: 0.8rem; margin-bottom: 15px; }
+  .profile-header-text p { font-size: 0.85rem; }
 
   .profile-grid-layout {
     gap: 15px;
-    margin-top: 5px;
   }
 
   .profile-card {
-    padding: 15px;
-    border-radius: 12px;
+    padding: 15px; /* Tighter padding */
+    border-radius: 10px;
   }
 
   .avatar-ring {
-    width: 100px;
+    width: 100px; /* Smaller avatar */
     height: 100px;
-    padding: 4px;
-    margin-bottom: 10px;
+    padding: 5px;
     border-width: 2px;
   }
 
-  .user-intro h2 { font-size: 1.2rem; }
-  
-  .details-header-row h3 { font-size: 1.1rem; }
-  
-  .info-group label { font-size: 0.65rem; margin-bottom: 4px; }
-  .info-group p { font-size: 0.9rem; }
-  
-  .edit-input-field {
-    font-size: 0.9rem;
-    padding: 8px;
+  .user-intro h2 { font-size: 1.2rem; margin-bottom: 5px; }
+  .role-pill { font-size: 0.65rem; padding: 4px 12px; }
+
+  .edit-profile-btn { 
+    width: 100%; /* Full width on mobile to fit container */
+    padding: 10px; 
+    font-size: 0.8rem; 
   }
 
-  .social-text { font-size: 0.85rem; margin-left: 10px; }
-  .activity-log-list li { font-size: 0.85rem; padding: 8px 0; }
+  .details-header-row h3 { font-size: 1.1rem; }
+  .info-details-grid { gap: 20px; }
+  .info-group label { font-size: 0.65rem; }
+  .info-group p { 
+    font-size: 0.9rem; 
+    word-break: break-word; /* Prevents long emails from breaking container */
+  }
+
+  .edit-input-field { padding: 8px; font-size: 0.9rem; }
+  textarea.edit-input-field { min-height: 80px; }
+
+  .social-text { font-size: 0.8rem; }
+  
+  .activity-log-list li { 
+    font-size: 0.8rem; 
+    flex-direction: column; /* Stack date under action */
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .activity-log-list li small {
+    align-self: flex-end; /* Align date to right or keep start */
+    font-size: 0.7rem;
+  }
 }
 
 /* --- 9. FULL SCREEN IMAGE MODAL --- */

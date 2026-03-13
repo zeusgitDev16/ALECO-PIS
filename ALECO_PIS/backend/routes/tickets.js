@@ -50,22 +50,18 @@ const sendPhilSMS = async (number, messageBody) => {
 // --- 1. THE MASTER TICKET SUBMISSION ROUTE ---
 router.post('/tickets/submit', upload.single('image'), async (req, res) => {
     try {
-        // 1. Generate the Manila Timestamp as a MySQL-friendly string
-        // This fixes the time drift by using your Node.js system time
         const manilaTime = new Date().toISOString().slice(0, 19).replace('T', ' '); 
 
-        // 2. Pull data from the form fields (REMOVED 'location')
         const { 
             account_number, first_name, middle_name, last_name, 
             phone_number, address, category, concern,
-            district, municipality, barangay, purok, is_urgent
+            district, municipality, is_urgent,
+            reported_lat, reported_lng, location_accuracy, location_method // NEW GPS fields
         } = req.body;
 
-        console.log("Received Concern:", concern);
-        console.log("Received Urgent Flag:", is_urgent);
+        console.log("📍 GPS Data Received:", { reported_lat, reported_lng, location_accuracy, location_method });
 
-        // 3. IDEMPOTENCY CHECK (Anti-Spam / Double-Click Prevention)
-        // We now pass manilaTime as the 4th parameter to fix the malformed packet error
+        // IDEMPOTENCY CHECK
         const duplicateCheckSql = `
             SELECT ticket_id FROM aleco_tickets 
             WHERE phone_number = ? 
@@ -75,10 +71,7 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             LIMIT 1
         `;
         const [existingTickets] = await pool.execute(duplicateCheckSql, [
-            phone_number, 
-            category, 
-            concern, 
-            manilaTime // Correctly synced 4th parameter
+            phone_number, category, concern, manilaTime
         ]);
 
         if (existingTickets.length > 0) {
@@ -89,49 +82,51 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             });
         }
 
-        // 4. Process the Image and Generate Ticket ID
         const image_url = req.file ? req.file.path : null;
         const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-        // 5. THE FIX: Removed 'location' and adjusted placeholders to exactly 16 '?'
+        // UPDATED SQL: Now includes GPS columns (18 placeholders)
         const sql = `
             INSERT INTO aleco_tickets 
             (ticket_id, account_number, first_name, middle_name, last_name, 
-             phone_number, address, district, municipality, barangay, purok, 
-             category, concern, image_url, status, created_at, is_urgent) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)
+             phone_number, address, district, municipality, 
+             category, concern, image_url, status, created_at, is_urgent,
+             reported_lat, reported_lng, location_accuracy, location_method) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?)
         `;
 
-        // 6. THE FIX: Execution Array now perfectly matches the 16 '?' placeholders
-        await pool.execute(sql, [
-            ticket_id,                       // 1
-            account_number || null,          // 2
-            first_name || null,              // 3
-            middle_name || null,             // 4
-            last_name || null,               // 5
-            phone_number || null,            // 6
-            address || null,                 // 7
-            district || null,                // 8
-            municipality || null,            // 9
-            barangay || null,                // 10
-            purok || null,                   // 11
-            category || null,                // 12
-            concern || null,                 // 13
-            image_url || null,               // 14
-            manilaTime,                      // 15
-            is_urgent == 1 ? 1 : 0           // 16
-        ]);
+        const values = [
+            ticket_id,
+            account_number || "",
+            first_name,
+            middle_name || "",
+            last_name,
+            phone_number,
+            address,
+            district || "",
+            municipality || "",
+            category,
+            concern,
+            image_url,
+            manilaTime,
+            is_urgent ? 1 : 0,
+            reported_lat || null,
+            reported_lng || null,
+            location_accuracy || null,
+            location_method || 'manual'
+        ];
 
-        // 7. Success Response
-        res.status(201).json({ 
-            success: true, 
-            ticketId: ticket_id,
-            message: "Your report has been received by ALECO." 
-        });
+        await pool.execute(sql, values);
+
+        // SMS NOTIFICATION
+        const smsBody = `ALECO: Your report has been received. Tracking ID: ${ticket_id}. We will update you soon.`;
+        await sendPhilSMS(phone_number, smsBody);
+
+        res.json({ success: true, ticketId: ticket_id });
 
     } catch (error) {
-        console.error("Database Error:", error);
-        res.status(500).json({ success: false, message: "Server error, please try again later." });
+        console.error("Submission Error:", error);
+        res.status(500).json({ success: false, message: "Server error. Please try again." });
     }
 });
 
@@ -140,13 +135,12 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
     try {
         const { ticketId } = req.params;
 
-        // 1. ADDED BASIC VALIDATION: Prevents empty queries from hitting the DB
         if (!ticketId || ticketId.trim() === '') {
             return res.status(400).json({ success: false, message: "Please provide a valid Ticket ID." });
         }
 
-        // 2. FIXED SQL QUERY: We are now explicitly asking for the names!
-       const [rows] = await pool.execute(
+        // CLEANED: Removed barangay from SELECT
+        const [rows] = await pool.execute(
             `SELECT 
                 first_name, 
                 middle_name, 
@@ -155,22 +149,19 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
                 created_at, 
                 concern,
                 municipality,
-                barangay 
+                district
              FROM aleco_tickets 
              WHERE ticket_id = ?`,
             [ticketId]
         );
 
         if (rows.length === 0) {
-            // Made the error message a bit more user-friendly
             return res.status(404).json({ success: false, message: "Ticket ID not found. Please check your tracking number and try again." });
         }
 
         res.json({ success: true, data: rows[0] });
         
     } catch (error) {
-        // 3. SECURITY FIX: Never send `error.message` to the frontend in production! 
-        // It can expose your SQL table structures to hackers. Log it securely instead.
         console.error("Database Tracking Error:", error);
         res.status(500).json({ success: false, message: "An internal server error occurred. Please try again later." });
     }
@@ -281,6 +272,72 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
     }
 });
 
+
+// ============================================================================
+// INBOUND SMS RECEIVER (YEASTAR WEBHOOK)
+// ============================================================================
+
+router.get('/tickets/sms/receive', async (req, res) => {
+    try {
+        // Yeastar will send the data in the URL query string
+        // Example: /api/tickets/sms/receive?number=09123456789&text=FIXED ALECO-12345
+        const senderNumber = req.query.number || req.query.sender;
+        const messageText = req.query.text || req.query.content;
+
+        if (!senderNumber || !messageText) {
+            return res.status(400).send("Missing parameters");
+        }
+
+        console.log(`\n📩 INBOUND SMS RECEIVED!`);
+        console.log(`📱 From: ${senderNumber}`);
+        console.log(`💬 Message: "${messageText}"`);
+
+        // 1. Parse the message for our trigger words
+        // This Regex looks for "FIXED", "DONE", or "RESOLVED" followed by "ALECO-XXXXX"
+        const match = messageText.match(/(?:FIXED|DONE|RESOLVED)\s+(ALECO-[A-Z0-9]+)/i);
+
+        if (match) {
+            const ticketId = match[1].toUpperCase();
+            console.log(`🔍 Extracted Ticket ID: ${ticketId}`);
+
+            // 2. Update the Database Status to Resolved
+            const updateQuery = `
+                UPDATE aleco_tickets 
+                SET status = 'Resolved' 
+                WHERE ticket_id = ? AND status = 'Ongoing'
+            `;
+            const [dbResult] = await pool.execute(updateQuery, [ticketId]);
+
+            if (dbResult.affectedRows > 0) {
+                console.log(`✅ SUCCESS: Ticket ${ticketId} automatically marked as Resolved!`);
+                
+                // 3. OPTIONAL: Automatically text the consumer that the power is back!
+                const [ticketData] = await pool.execute(
+                    'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?', 
+                    [ticketId]
+                );
+                
+                if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                    const resolveMsg = `ALECO Update: Your report (${ticketId}) has been RESOLVED by our field crew. Thank you for your patience!`;
+                    await sendPhilSMS(ticketData[0].phone_number, resolveMsg);
+                    console.log(`✅ SMS sent to Consumer confirming resolution.`);
+                }
+            } else {
+                console.log(`⚠️ Ticket ${ticketId} not found or is not currently 'Ongoing'.`);
+            }
+        } else {
+            console.log(`ℹ️ SMS Ignored: Did not contain 'FIXED ALECO-XXXXX' format.`);
+        }
+
+        // 4. Always return 200 OK so Yeastar knows we received it successfully
+        res.status(200).send("OK");
+
+    } catch (error) {
+        console.error("❌ YEASTAR WEBHOOK ERROR:", error);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
 // ============================================================================
 // PERSONNEL MANAGEMENT ROUTES (Surgically Updated for 3-Table Architecture)
 // ============================================================================
@@ -288,7 +345,6 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
 // --- 1. GET ALL CREWS (With Dynamic Member Counts & Lead Names) ---
 router.get('/crews/list', async (req, res) => {
     try {
-        // Fetch crews and join with the linemen pool to get the Lead's real name
         const crewSql = `
             SELECT 
                 c.id, 
@@ -303,10 +359,8 @@ router.get('/crews/list', async (req, res) => {
         `;
         const [crews] = await pool.execute(crewSql);
 
-        // Fetch all crew members to attach to their respective crews
         const [memberships] = await pool.execute('SELECT crew_id, lineman_id FROM aleco_crew_members');
 
-        // Map the members into an array for the React Frontend (e.g., members: [5, 8, 12])
         const formattedCrews = crews.map(crew => {
             const crewMembers = memberships
                 .filter(m => m.crew_id === crew.id)
@@ -319,9 +373,10 @@ router.get('/crews/list', async (req, res) => {
             };
         });
 
+        console.log(`✅ Crews Fetched: ${formattedCrews.length} crews`);
         res.status(200).json(formattedCrews);
     } catch (error) {
-        console.error("Error fetching crews:", error);
+        console.error("❌ Error fetching crews:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });

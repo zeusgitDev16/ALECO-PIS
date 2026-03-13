@@ -1,84 +1,27 @@
+/* =========================================
+   ALECO SCOPE DROPDOWN - SIMPLIFIED 2-LEVEL SYSTEM
+   District + Municipality Only
+   ========================================= */
+
 /* --- Master Container Logic --- */
-.aleco-mini-scope {
+.aleco-scope-container {
     background: transparent;
     width: 100%;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    gap: 12px;
 }
 
-/* --- NEW: INLINE DASHBOARD LAYOUT (Ultra-Compact Mode) --- */
-.aleco-mini-scope.layout-inline {
-    flex-direction: row; 
-    flex-wrap: wrap;    
+/* --- SEARCH BOX WRAPPER --- */
+.search-box-wrapper {
+    display: flex;
+    gap: 8px;
     align-items: center;
     width: 100%;
 }
 
-.aleco-mini-scope.layout-inline .mini-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px; /* SHRUNK to match new dashboard density */
-    margin-bottom: 0;   
-    width: 100%;        
-}
-
-/* Shrinking the selects for the Dashboard */
-.aleco-mini-scope.layout-inline select, 
-.aleco-mini-scope.layout-inline .purok-select, 
-.aleco-mini-scope.layout-inline .mini-search,
-.aleco-mini-scope.layout-inline .selected-tag {
-    height: 28px;       /* EXTREME SHRINK */
-    min-height: 28px;   /* EXTREME SHRINK */
-    padding: 0 8px;     /* Tighter padding */
-    font-size: 11px;    /* EXTREME SHRINK */
-    border-radius: 4px; /* Sharper corners */
-    background-color: var(--bg-body); 
-    border: 1px solid var(--text-secondary); 
-    color: var(--text-main);
-    flex: 1; /* Distributes them evenly */
-    min-width: 120px; /* Prevents text from disappearing before wrap */
-    box-sizing: border-box;
-}
-
-.aleco-mini-scope.layout-inline .search-box-container {
-    margin-bottom: 0;
-    flex: 1; /* Allows container to share space evenly */
-    min-width: 120px;
-}
-
-/* --- BACKWARD COMPATIBILITY: FORM LAYOUT (ReportAProblem.jsx) --- */
-.aleco-mini-scope.layout-form {
-    flex-direction: column;
-}
-
-.aleco-mini-scope.layout-form .mini-row {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-/* --- Shared/Existing Styles (Labels & Interactive Logic) --- */
-.aleco-mini-scope-label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-main);
-    text-align: left;
-}
-
-/* Hide labels in the dashboard to save space */
-.aleco-mini-scope.layout-inline .aleco-mini-scope-label {
-    display: none;
-}
-
-/* Form Mode Sizing (Untouched) */
-.aleco-mini-scope.layout-form select, 
-.aleco-mini-scope.layout-form .purok-select, 
-.aleco-mini-scope.layout-form .mini-search {
+.location-search-input {
     flex: 1;
     padding: 12px 15px;
     font-size: 15px;
@@ -88,110 +31,208 @@
     border-radius: 8px;
     outline: none;
     box-sizing: border-box;
-    min-width: 0;
+    transition: border-color 0.2s ease;
 }
 
-/* --- INTERACTIVE SEARCH & SELECTION DESIGN --- */
-.search-box-container {
-    position: relative;
+.location-search-input:focus {
+    border-color: var(--accent-primary);
+}
+
+.clear-selection-btn {
+    padding: 12px 16px;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.clear-selection-btn:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+/* --- SIMPLIFIED 2-COLUMN GRID --- */
+.dropdown-grid-simple {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Perfect 50/50 split */
+    gap: 12px;
     width: 100%;
 }
 
-.search-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background-color: var(--bg-card);
+.location-select {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 15px;
+    color: var(--text-main);
+    background-color: var(--bg-body);
     border: 1px solid var(--text-secondary);
     border-radius: 8px;
-    z-index: 100;
-    margin-top: 5px;
-    box-shadow: 0 4px 12px var(--shadow-color-dark);
-}
-
-.result-item {
-    padding: 12px 15px;
-    font-size: 14px;
-    color: var(--text-main);
+    outline: none;
+    box-sizing: border-box;
     cursor: pointer;
-    border-bottom: 1px solid var(--border-color);
+    transition: border-color 0.2s ease;
 }
 
-.result-item:hover {
-    background-color: rgba(28, 201, 114, 0.1);
-    color: #1cc972;
+.location-select:focus {
+    border-color: var(--accent-primary);
 }
 
-/* --- DASHBOARD MOBILE SIZING (768px - 2x2 Grid) --- */
-@media (max-width: 768px) {
-    .aleco-mini-scope.layout-inline {
-        width: 100% !important;
-        display: block !important;
-    }
-    
-    /* Transforms the 4 locations into a neat 2x2 square spanning the full width */
-    .aleco-mini-scope.layout-inline .mini-row {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 6px !important;
-        width: 100% !important;
-    }
-    
-    .aleco-mini-scope.layout-inline select, 
-    .aleco-mini-scope.layout-inline .purok-select,
-    .aleco-mini-scope.layout-inline .search-box-container {
-        width: 100% !important;
-        min-width: 0 !important; /* Critical to allow shrinking into grid */
-        margin: 0 !important;
-    }
+.location-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-/* --- STRICT FORM MOBILE SIZING (480px and below) --- */
-@media (max-width: 480px) {
-    /* Original vertical stacking specifically preserved for ReportAProblem */
-    .aleco-mini-scope.layout-form .mini-row {
-        flex-direction: column !important;
-        width: 100% !important;
-    }
-
-    .aleco-mini-scope.layout-form select, 
-    .aleco-mini-scope.layout-form .purok-select, 
-    .aleco-mini-scope.layout-form .mini-search { 
-        padding: 8px 10px !important;
-        font-size: 13px !important;
-        width: 100% !important;
-    }
-}
-
-/* --- GREEN INTERACTIVE TAG --- */
-.selected-tag {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* --- SELECTION PREVIEW (Shows selected location) --- */
+.selection-preview {
     padding: 12px 15px;
     background-color: var(--bg-body);
-    border: 1px dashed #1cc972 !important; 
+    border: 1px dashed var(--accent-primary);
     border-radius: 8px;
     color: var(--text-main);
     font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
+    font-weight: 600;
+    text-align: center;
 }
 
-.aleco-mini-scope.layout-inline .selected-tag {
-    padding: 0 8px; /* Override for inline density */
+/* =========================================
+   INLINE LAYOUT (For TicketFilterBar.jsx)
+   ========================================= */
+
+.aleco-scope-inline {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    width: 100%;
+    align-items: center;
 }
 
-.selected-tag:hover {
-    background-color: rgba(28, 201, 114, 0.05);
-    border-style: solid !important;
-    box-shadow: 0 0 10px rgba(28, 201, 114, 0.2);
-}
-
-.selected-tag span {
+.filter-dropdown {
+    flex: 1;
+    height: 28px;
+    min-height: 28px;
+    padding: 0 8px;
     font-size: 11px;
-    font-weight: 700;
-    color: #1cc972 !important;
-    text-transform: uppercase;
+    border-radius: 4px;
+    background-color: var(--bg-body);
+    border: 1px solid var(--text-secondary);
+    color: var(--text-main);
+    min-width: 120px;
+    box-sizing: border-box;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.filter-dropdown:focus {
+    border-color: var(--accent-primary);
+}
+
+.filter-dropdown:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+
+/* Tablet and Below (768px) - Stack the 2 dropdowns */
+@media (max-width: 768px) {
+    .dropdown-grid-simple {
+        grid-template-columns: 1fr; /* Stack vertically */
+        gap: 10px;
+    }
+
+    .location-select {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .location-search-input {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .clear-selection-btn {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    /* Inline mode stays horizontal but shrinks */
+    .aleco-scope-inline {
+        gap: 6px;
+    }
+
+    .filter-dropdown {
+        min-width: 0; /* Allow shrinking */
+        width: 100%;
+        font-size: 11px;
+    }
+}
+
+/* Mobile (480px and below) - Full vertical stack */
+@media (max-width: 480px) {
+    .search-box-wrapper {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .clear-selection-btn {
+        width: 100%;
+    }
+
+    .dropdown-grid-simple {
+        gap: 8px;
+    }
+
+    .location-select,
+    .location-search-input {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    /* Inline mode also stacks on tiny screens */
+    .aleco-scope-inline {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-dropdown {
+        width: 100%;
+        height: 32px;
+        min-height: 32px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+}
+
+/* =========================================
+   THEME COMPATIBILITY
+   ========================================= */
+
+/* Ensure proper contrast in both light and dark modes */
+.location-select option,
+.filter-dropdown option {
+    background-color: var(--bg-card);
+    color: var(--text-main);
+}
+
+/* Focus states with theme-aware accent color */
+.location-select:focus,
+.location-search-input:focus,
+.filter-dropdown:focus {
+    box-shadow: 0 0 0 3px rgba(41, 121, 255, 0.15);
+}
+
+/* Dark mode specific adjustments */
+[data-theme="dark"] .location-select:focus,
+[data-theme="dark"] .location-search-input:focus,
+[data-theme="dark"] .filter-dropdown:focus {
+    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.15);
 }

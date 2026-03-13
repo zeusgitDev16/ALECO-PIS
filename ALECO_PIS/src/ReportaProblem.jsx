@@ -9,6 +9,7 @@ import UploadTheProblem from './components/buckets/UploadTheProblem';
 import TicketPopUp from './components/containers/TicketPopUp'; 
 import IssueCategoryDropdown from './components/dropdowns/IssueCategoryDropdown';
 import AlecoScopeDropdown from './components/dropdowns/AlecoScopeDropdown';
+import LocationPreviewMap from './components/LocationPreviewMap'; // NEW IMPORT
 
 const ReportaProblem = () => {
     // --- Phase State Management ---
@@ -24,6 +25,17 @@ const ReportaProblem = () => {
     // --- File/Image State ---
     const [selectedFile, setSelectedFile] = useState(null);
 
+    // --- NEW: Enhanced GPS State ---
+    const [gpsData, setGpsData] = useState({
+        lat: null,
+        lng: null,
+        accuracy: null,
+        method: 'manual', // 'manual' or 'gps'
+        isLocked: false    // NEW: Prevents accidental override
+    });
+    const [isLocating, setIsLocating] = useState(false);
+    const [locationError, setLocationError] = useState('');
+
     // --- Master State ---
     const [formData, setFormData] = useState({
         accountNumber: '',
@@ -32,13 +44,10 @@ const ReportaProblem = () => {
         lastName: '',
         phoneNumber: '',
         address: '',
-        location: '',
         category: '',
         concern: '',
         district: '',
-        municipality: '',
-        barangay: '',
-        purok: ''
+        municipality: ''
     });
 
    const handleFieldChange = useCallback((field) => (value) => {
@@ -73,101 +82,221 @@ const handleLocationUpdate = useCallback((locationObj) => {
     });
 }, []);
 
+    // --- ENHANCED: Find My Location Handler ---
+    const handleFindMyLocation = () => {
+        if (!navigator.geolocation) {
+            setLocationError('Your browser does not support location services.');
+            return;
+        }
+
+        setIsLocating(true);
+        setLocationError('');
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude, accuracy } = position.coords;
+                
+                console.log('📍 GPS Acquired:', { latitude, longitude, accuracy });
+
+                try {
+                    const response = await fetch(
+                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+                    );
+                    const data = await response.json();
+
+                    if (data.status === 'OK' && data.results[0]) {
+                        const result = data.results[0];
+                        const components = result.address_components;
+                        
+                        // --- EXTRACT ALL ADDRESS COMPONENTS ---
+                        let street = '';
+                        let barangay = '';
+                        let municipality = '';
+                        let district = '';
+
+                        components.forEach(comp => {
+                            if (comp.types.includes('route')) {
+                                street = comp.long_name;
+                            }
+                            if (comp.types.includes('sublocality') || comp.types.includes('neighborhood')) {
+                                barangay = comp.long_name;
+                            }
+                            if (comp.types.includes('locality') || comp.types.includes('administrative_area_level_2')) {
+                                municipality = comp.long_name;
+                            }
+                        });
+
+                        // --- MATCH MUNICIPALITY TO ALECO DISTRICT ---
+                        const ALECO_SCOPE = [
+                            { district: "First District (North Albay)", municipalities: ["Bacacay", "Malilipot", "Malinao", "Santo Domingo", "Tabaco City", "Tiwi"] },
+                            { district: "Second District (Central Albay)", municipalities: ["Camalig", "Daraga", "Legazpi City", "Manito", "Rapu-Rapu"] },
+                            { district: "Third District (South Albay)", municipalities: ["Guinobatan", "Jovellar", "Libon", "Ligao City", "Oas", "Pio Duran", "Polangui"] }
+                        ];
+
+                        ALECO_SCOPE.forEach(districtObj => {
+                            if (districtObj.municipalities.some(muni => 
+                                municipality.toLowerCase().includes(muni.toLowerCase())
+                            )) {
+                                district = districtObj.district;
+                            }
+                        });
+
+                        // --- BUILD SMART ADDRESS STRING ---
+                        const addressParts = [street, barangay].filter(Boolean);
+                        const fullAddress = addressParts.length > 0 
+                            ? addressParts.join(', ') 
+                            : `Near ${municipality} City Center`;
+
+                        // --- AUTO-FILL FORM (GPS-LOCKED MODE) ---
+                        setFormData(prev => ({
+                            ...prev,
+                            address: fullAddress,
+                            district: district,
+                            municipality: municipality
+                        }));
+
+                        // --- LOCK GPS DATA ---
+                        setGpsData({
+                            lat: latitude,
+                            lng: longitude,
+                            accuracy: Math.round(accuracy),
+                            method: 'gps',
+                            isLocked: true
+                        });
+
+                        console.log('✅ Auto-filled:', { fullAddress, municipality, district });
+                    }
+                } catch (error) {
+                    console.error('Reverse Geocoding Error:', error);
+                    setLocationError('Could not determine your address. Please enter manually.');
+                }
+
+                setIsLocating(false);
+            },
+            (error) => {
+                setIsLocating(false);
+                
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        setLocationError('Location access denied. Please enable location services.');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        setLocationError('Location information unavailable.');
+                        break;
+                    case error.TIMEOUT:
+                        setLocationError('Location request timed out.');
+                        break;
+                    default:
+                        setLocationError('An unknown error occurred.');
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    };
+
+    // --- NEW: Unlock GPS Lock (Allow Manual Override) ---
+    const handleUnlockGPS = () => {
+        setGpsData(prev => ({ ...prev, isLocked: false }));
+    };
+
+    // --- NEW: Clear GPS Data Completely ---
+    const handleClearGPS = () => {
+        setGpsData({ lat: null, lng: null, accuracy: null, method: 'manual', isLocked: false });
+        setFormData(prev => ({ ...prev, address: '', district: '', municipality: '' }));
+    };
+
     // --- Backend: Submit Ticket ---
     const handleSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    // 1. STRICT VALIDATION (Updated for Object compatibility)
-    const mandatoryFields = [
-        { key: 'firstName', label: 'First Name' },
-        { key: 'lastName', label: 'Last Name' },
-        { key: 'phoneNumber', label: 'Phone Number' },
-        { key: 'address', label: 'Street Address' },
-        // Instead of validating 'location' as a string, we check the new columns
-        { key: 'municipality', label: 'Municipality/City' },
-        { key: 'barangay', label: 'Barangay' },
-        { key: 'purok', label: 'Purok' },
-        { key: 'category', label: 'Issue Category' },
-        { key: 'concern', label: 'Issue Details' }
-    ];
+        // 1. STRICT VALIDATION (Updated for GPS compatibility)
+        const mandatoryFields = [
+            { key: 'firstName', label: 'First Name' },
+            { key: 'lastName', label: 'Last Name' },
+            { key: 'phoneNumber', label: 'Phone Number' },
+            { key: 'address', label: 'Street Address' },
+            { key: 'municipality', label: 'Municipality/City' },
+            { key: 'category', label: 'Issue Category' },
+            { key: 'concern', label: 'Issue Details' }
+        ];
 
-    for (const field of mandatoryFields) {
-        const val = formData[field.key];
-        
-        // Safety check: Only trim if the value is a string
-        const isInvalid = typeof val === 'string' ? val.trim() === "" : !val;
-
-        if (isInvalid) {
-            alert(`Error: The "${field.label}" is required. Please fill it out.`);
-            return; 
+        for (const field of mandatoryFields) {
+            if (!formData[field.key] || formData[field.key].trim() === '') {
+                alert(`Please fill in: ${field.label}`);
+                return;
+            }
         }
-    }
 
-    // 2. DATA PREPARATION
-    const submissionData = new FormData();
-    
-    // Explicit mapping to match your new backend columns exactly
-    submissionData.append('account_number', formData.accountNumber || "");
-    submissionData.append('first_name', formData.firstName);
-    submissionData.append('middle_name', formData.middleName || "");
-    submissionData.append('last_name', formData.lastName);
-    submissionData.append('phone_number', formData.phoneNumber);
-    submissionData.append('address', formData.address);
-
-    // NEW ANALYTICS COLUMNS
-    submissionData.append('district', formData.district || "");
-    submissionData.append('municipality', formData.municipality || "");
-    submissionData.append('barangay', formData.barangay || "");
-    submissionData.append('purok', formData.purok || "");
-
-    // --- NEW: KEYWORD AUTO-TRIAGE SCANNER ---
-    const urgentKeywords = ['sparking', 'sunog', 'fire', 'live wire', 'pumuputok', 
-    'matutumba', 'kuryente', 'emergency', 'sumabog', 
-    'grounded', 'nakuryente', 'usok', 'umuusok', 'aksidente', 'natumba', 'urgent'];
-    const lowerConcern = formData.concern.toLowerCase();
-    
-    // Check if any of the urgent keywords exist in the user's concern
-    const isUrgent = urgentKeywords.some(keyword => lowerConcern.includes(keyword));
-    
-    // Append the result (1 for true, 0 for false) to match our new TINYINT column
-    submissionData.append('is_urgent', isUrgent ? 1 : 0);
-
-    submissionData.append('category', formData.category);
-    submissionData.append('concern', formData.concern);
-
-    if (selectedFile) {
-        submissionData.append('image', selectedFile); 
-    }
-
-    // 3. BACKEND EXECUTION
-    try {
-        const response = await fetch('http://localhost:5000/api/tickets/submit', {
-            method: 'POST',
-            body: submissionData, 
-        });
+        // 2. DATA PREPARATION
+        const submissionData = new FormData();
         
-        const data = await response.json();
-        
-        if (data.success) {
-            setGeneratedId(data.ticketId);
-            setShowModal(true); 
-            
-            // RESET FORM (Matches the new structure)
-            setFormData({ 
-                accountNumber: '', firstName: '', middleName: '', 
-                lastName: '', phoneNumber: '', address: '', 
-                category: '', concern: '', district: '', 
-                municipality: '', barangay: '', purok: ''
+        // Personal Info
+        submissionData.append('account_number', formData.accountNumber || "");
+        submissionData.append('first_name', formData.firstName);
+        submissionData.append('middle_name', formData.middleName || "");
+        submissionData.append('last_name', formData.lastName);
+        submissionData.append('phone_number', formData.phoneNumber);
+        submissionData.append('address', formData.address);
+
+        // Location Data (District/Municipality for display)
+        submissionData.append('district', formData.district || "");
+        submissionData.append('municipality', formData.municipality || "");
+
+        // --- NEW: GPS COORDINATES ---
+        submissionData.append('reported_lat', gpsData.lat || null);
+        submissionData.append('reported_lng', gpsData.lng || null);
+        submissionData.append('location_accuracy', gpsData.accuracy || null);
+        submissionData.append('location_method', gpsData.method);
+
+        // Urgent Keyword Scanner
+        const urgentKeywords = ['sparking', 'sunog', 'fire', 'live wire', 'pumuputok', 
+            'matutumba', 'kuryente', 'emergency', 'sumabog', 
+            'grounded', 'nakuryente', 'usok', 'umuusok', 'aksidente', 'natumba', 'urgent'];
+        const lowerConcern = formData.concern.toLowerCase();
+        const isUrgent = urgentKeywords.some(keyword => lowerConcern.includes(keyword));
+        submissionData.append('is_urgent', isUrgent ? 1 : 0);
+
+        submissionData.append('category', formData.category);
+        submissionData.append('concern', formData.concern);
+
+        if (selectedFile) {
+            submissionData.append('image', selectedFile); 
+        }
+
+        // 3. BACKEND EXECUTION
+        try {
+            const response = await fetch('http://localhost:5000/api/tickets/submit', {
+                method: 'POST',
+                body: submissionData, 
             });
-            setSelectedFile(null); 
-        } else {
-            alert("Submission failed: " + data.message);
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setGeneratedId(data.ticketId);
+                setShowModal(true); 
+            
+                // RESET FORM
+                setFormData({ 
+                    accountNumber: '', firstName: '', middleName: '', 
+                    lastName: '', phoneNumber: '', address: '', 
+                    category: '', concern: '', district: '', 
+                    municipality: ''
+                });
+                setSelectedFile(null);
+                setGpsData({ lat: null, lng: null, accuracy: null, method: 'manual' }); // Reset GPS
+            } else {
+                alert("Submission failed: " + data.message);
+            }
+        } catch (error) {
+            console.error("Submission Error:", error);
+            alert("Connection error. Is the server running?");
         }
-    } catch (error) {
-        console.error("Submission Error:", error);
-        alert("Connection error. Is the server running?");
-    }
-};
+    };
     // --- Backend: Track Ticket Status ---
     const handleTrackTicket = async () => {
         if (!trackingId) return alert("Please enter a Ticket ID.");
@@ -230,14 +359,100 @@ const handleLocationUpdate = useCallback((locationObj) => {
                             <TextFieldProblem id="phone" label="Phone Number *" value={formData.phoneNumber} onChange={handleFieldChange('phoneNumber')} filterType="numeric" maxLength={11} />
                             
                             <h3 className="column-section-title" style={{ marginTop: '30px' }}>Location Details</h3>
-                            <TextFieldProblem id="address" label="Full Address *" value={formData.address} onChange={handleFieldChange('address')} />
-                            {/* NEW: AlecoScopeDropdown replaces the "Specific Landmark" free text field */}
-                            <h3 className="column-section-title" style={{ marginTop: '30px' }}>Specific Area: (District/muni/brgy/purok)</h3>
+
+                            {/* --- FULL ADDRESS FIELD (Auto-filled by GPS or Manual) --- */}
+                            <TextFieldProblem 
+                                id="address" 
+                                label="Full Address *" 
+                                value={formData.address} 
+                                onChange={handleFieldChange('address')}
+                                disabled={gpsData.isLocked} // Locked when GPS is active
+                            />
+
+                            {/* --- DISTRICT/MUNICIPALITY DROPDOWN --- */}
+                            <h3 className="column-section-title" style={{ marginTop: '30px' }}>
+                                Specific Area (District/Municipality)
+                            </h3>
                             <div className="dropdown-location-wrapper">
                                 <AlecoScopeDropdown  
-                                    onLocationSelect={handleLocationUpdate} 
+                                    onLocationSelect={handleLocationUpdate}
+                                    disabled={gpsData.isLocked} // Locked when GPS is active
                                 />
                             </div>
+
+                            {/* --- FIND MY LOCATION BUTTON --- */}
+                            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <button 
+                                    type="button"
+                                    onClick={handleFindMyLocation}
+                                    disabled={isLocating || gpsData.isLocked}
+                                    className="find-location-btn"
+                                >
+                                    {isLocating ? (
+                                        <>
+                                            <span className="spinner"></span>
+                                            Locating...
+                                        </>
+                                    ) : gpsData.isLocked ? (
+                                        <>
+                                            ✅ Location Locked (±{gpsData.accuracy}m accuracy)
+                                        </>
+                                    ) : (
+                                        <>
+                                            📍 Find My Location
+                                        </>
+                                    )}
+                                </button>
+
+                                {/* Error Box */}
+                                {locationError && (
+                                    <div className="location-error-box">
+                                        {locationError}
+                                    </div>
+                                )}
+
+                                {/* GPS Lock Confirmation with Override Option */}
+                                {gpsData.isLocked && (
+                                    <div className="location-success-box">
+                                        <div className="gps-lock-info">
+                                            <span className="gps-lock-icon">�</span>
+                                            <div>
+                                                <strong>Using device location</strong>
+                                                <p className="gps-lock-details">
+                                                    {formData.address}<br/>
+                                                    {formData.municipality}, {formData.district}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="gps-lock-actions">
+                                            <button 
+                                                type="button"
+                                                onClick={handleUnlockGPS}
+                                                className="location-unlock-btn"
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={handleClearGPS}
+                                                className="location-clear-btn"
+                                            >
+                                                ✖ Clear
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* --- LIVE GPS MAP PREVIEW --- */}
+                            {gpsData.method === 'gps' && gpsData.lat && gpsData.lng && (
+                                <LocationPreviewMap 
+                                    latitude={gpsData.lat}
+                                    longitude={gpsData.lng}
+                                    accuracy={gpsData.accuracy}
+                                    municipality={formData.municipality}
+                                />
+                            )}
                         </div>
                         
                         <div className="report-details-column">

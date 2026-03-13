@@ -31,11 +31,12 @@ const AdminTickets = () => {
     useEffect(() => {
         const fetchCrews = async () => {
             try {
-                // Ensure this matches your backend route exactly
-                const response = await fetch('http://localhost:5000/api/tickets/crews/list');
+                // CORRECT: Uses '/api/crews/list' (matches backend route)
+                const response = await fetch('http://localhost:5000/api/crews/list');
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     setAvailableCrews(data);
+                    console.log(`✅ Crews Loaded: ${data.length} crews`);
                 }
             } catch (error) {
                 console.error("❌ Failed to load crews from database:", error);

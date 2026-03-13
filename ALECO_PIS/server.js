@@ -28,6 +28,19 @@ app.use('/api', ticketRoutes);
 app.use('/api', userRoutes);
 app.use('/api', ticketFilterRoutes);// <-- NEW: Plugged the Admin brick into the server
 
+app.get('/api/debug/routes', (req, res) => {
+    res.json({
+        message: "All routes are mounted correctly!",
+        availableRoutes: [
+            "POST /api/tickets/submit",
+            "GET /api/tickets/track/:ticketId",
+            "GET /api/filtered-tickets",
+            "GET /api/crews/list",
+            "GET /api/pool/list"
+        ]
+    });
+});
+
 // 4. Start the Office
 app.listen(PORT, () => {
   console.log(`Server running automatically on http://localhost:${PORT}`);

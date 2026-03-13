@@ -1,23 +1,21 @@
 import express from 'express';
-import db from '../config/db.js';
-// IMPORTANT: Adjust this path and add '.js' if your project requires extensions!
+import pool from '../config/db.js';
 
 const router = express.Router();
 
-// Changed from '/tickets' to '/filtered-tickets' to protect your existing routes!
+// IDEMPOTENT FILTER ROUTE: Returns tickets based on admin dashboard filters
 router.get('/filtered-tickets', async (req, res) => {
     try {
         const { 
             tab, isNew, searchQuery, category, district, 
-            municipality, barangay, purok, datePreset, startDate, endDate
+            municipality, datePreset, startDate, endDate
         } = req.query;
 
         let query = `SELECT * FROM aleco_tickets WHERE 1=1`;
         const params = [];
 
         // --- Status Tabs ---
-       if (tab === 'Open') {
-            // Shows Pending, Ongoing, OR any ticket that accidentally has a NULL/Empty status
+        if (tab === 'Open') {
             query += ` AND (status IN ('Pending', 'Ongoing') OR status IS NULL OR status = '')`;
         } else if (tab === 'Closed') {
             query += ` AND status = 'Restored'`;
@@ -39,48 +37,32 @@ router.get('/filtered-tickets', async (req, res) => {
         if (category) { query += ` AND category = ?`; params.push(category); }
         if (district) { query += ` AND district = ?`; params.push(district); }
         if (municipality) { query += ` AND municipality = ?`; params.push(municipality); }
-        if (barangay) { query += ` AND barangay = ?`; params.push(barangay); }
-        if (purok) { query += ` AND purok = ?`; params.push(purok); }
 
-        // --- Date Logic ---
+        // --- Date Filters ---
         if (datePreset) {
-            switch (datePreset) {
-                case 'today':
-                    query += ` AND DATE(created_at) = CURDATE()`;
-                    break;
-                case 'last7':
-                    query += ` AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`;
-                    break;
-                case 'thisMonth':
-                    query += ` AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())`;
-                    break;
-                case 'lastMonth':
-                    query += ` AND MONTH(created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND YEAR(created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))`;
-                    break;
-                case 'custom':
-                    if (startDate && endDate) {
-                        query += ` AND created_at BETWEEN ? AND ?`;
-                        params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
-                    }
-                    break;
+            if (datePreset === 'today') {
+                query += ` AND DATE(created_at) = CURDATE()`;
+            } else if (datePreset === 'week') {
+                query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
+            } else if (datePreset === 'month') {
+                query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`;
             }
+        }
+
+        if (startDate && endDate) {
+            query += ` AND DATE(created_at) BETWEEN ? AND ?`;
+            params.push(startDate, endDate);
         }
 
         query += ` ORDER BY created_at DESC`;
 
-        console.log("SQL EXECUTION:", query);
-        console.log("WITH PARAMS:", params);
-
-        const [rows] = await db.query(query, params);
-
-        res.status(200).json({
-            success: true,
-            count: rows.length,
-            data: rows
-        });
+        const [rows] = await pool.execute(query, params);
+        
+        console.log(`✅ Filter Query Success: ${rows.length} tickets returned`);
+        res.json({ success: true, data: rows });
 
     } catch (error) {
-        console.error("Error fetching filtered tickets:", error);
+        console.error("❌ Filter Error:", error);
         res.status(500).json({ success: false, message: "Failed to fetch tickets." });
     }
 });

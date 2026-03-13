@@ -413,3 +413,172 @@
         width: 100% !important;
     }
 }
+
+/* =========================================
+   FIND MY LOCATION BUTTON (Compact Design)
+   ========================================= */
+.find-location-btn {
+    padding: 10px 16px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    width: 100%;
+    max-width: 280px; /* Compact width even on desktop */
+}
+
+.find-location-btn:hover:not(:disabled) {
+    background-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.find-location-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background-color: #10b981;
+}
+
+/* Spinner Animation */
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid white;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* =========================================
+   LOCATION STATUS BOXES (Compact Design)
+   ========================================= */
+.location-error-box {
+    padding: 10px 12px;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* =========================================
+   GPS LOCK SUCCESS BOX (Enhanced Design)
+   ========================================= */
+.location-success-box {
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border: 1px solid #10b981;
+    border-radius: 8px;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.gps-lock-info {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.gps-lock-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.gps-lock-details {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #065f46;
+    line-height: 1.5;
+}
+
+.gps-lock-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.location-unlock-btn,
+.location-clear-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.location-unlock-btn {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.location-unlock-btn:hover {
+    background-color: #2563eb;
+}
+
+.location-clear-btn {
+    background-color: transparent;
+    color: #065f46;
+    border: 1px solid #065f46;
+}
+
+.location-clear-btn:hover {
+    background-color: #065f46;
+    color: white;
+}
+
+/* Disabled State for Locked Fields */
+input:disabled,
+select:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* =========================================
+   RESPONSIVE SCALING (Mobile & Desktop)
+   ========================================= */
+
+/* Desktop: Keep button compact */
+@media (min-width: 1024px) {
+    .find-location-btn {
+        max-width: 300px; /* Slightly wider on desktop but still compact */
+        font-size: 14px;
+        padding: 11px 18px;
+    }
+}
+
+/* Mobile: Full width for easier tapping */
+@media (max-width: 480px) {
+    .find-location-btn {
+        max-width: 100%;
+        font-size: 12px;
+        padding: 12px 16px;
+    }
+
+    .location-success-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .location-clear-btn {
+        align-self: flex-end;
+    }
+}

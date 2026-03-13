@@ -1,56 +1,34 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ALECO_SCOPE } from '../../../alecoScope';
 import '../../CSS/AlecoScopeDropdown.css';
 
-const AlecoScopeDropdown = ({ label, onLocationSelect, isFilter = false, layoutMode = 'form' }) => {
-    const [sel, setSel] = useState({ dist: "", muni: "", brgy: "", purok: "" });
+const AlecoScopeDropdown = ({ onLocationSelect, isFilter = false, layoutMode = "stacked", disabled = false }) => {
+    // SIMPLIFIED STATE: Only district and municipality
+    const [sel, setSel] = useState({ dist: "", muni: "" });
     const [searchTerm, setSearchTerm] = useState("");
     const [isSearching, setIsSearching] = useState(false);
     const lastEmittedKey = useRef("");
 
-    // Identify if we are in Dashboard Inline mode
-    const isInline = layoutMode === 'inline';
-
-    // 1. CASCADING RESET LOGIC: Specifically for Inline/Filter mode
+    // 1. CASCADING RESET LOGIC: Simplified for 2 levels only
     const handleSelectChange = (level, value) => {
         setSel(prev => {
             if (level === 'dist') {
-                return { dist: value, muni: "", brgy: "", purok: "" };
-            }
-            if (level === 'muni') {
-                return { ...prev, muni: value, brgy: "", purok: "" };
-            }
-            if (level === 'brgy') {
-                return { ...prev, brgy: value, purok: "" };
+                return { dist: value, muni: "" };
             }
             return { ...prev, [level]: value };
         });
         
-        // Reset search states when selections change
         setSearchTerm("");
         setIsSearching(false);
     };
 
-    // 2. Memoized Data Selectors
+    // 2. Memoized Data Selectors (Simplified)
     const districtData = useMemo(() => ALECO_SCOPE.find(d => d.district === sel.dist), [sel.dist]);
     const availableMunis = useMemo(() => districtData?.municipalities || [], [districtData]);
-    const muniData = useMemo(() => availableMunis.find(m => m.name === sel.muni), [availableMunis, sel.muni]);
-    const availableBrgys = useMemo(() => muniData?.barangays || [], [muniData]);
-    const brgyData = useMemo(() => availableBrgys.find(b => b.name === sel.brgy), [availableBrgys, sel.brgy]);
-    const availablePuroks = useMemo(() => 
-        brgyData?.puroks || ["Purok 1", "Purok 2", "Purok 3", "Purok 4", "Purok 5", "Purok 6", "Purok 7"],
-        [brgyData]
-    );
-
-    const filteredBrgys = useMemo(() => 
-        availableBrgys.filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase())),
-        [availableBrgys, searchTerm]
-    );
 
     // 3. Sync with Parent
-   // 3. Sync with Parent
     useEffect(() => {
-        const currentKey = `${sel.dist}|${sel.muni}|${sel.brgy}|${sel.purok}`;
+        const currentKey = `${sel.dist}|${sel.muni}`;
         if (currentKey !== lastEmittedKey.current) {
             lastEmittedKey.current = currentKey; 
 
@@ -59,117 +37,140 @@ const AlecoScopeDropdown = ({ label, onLocationSelect, isFilter = false, layoutM
                 onLocationSelect({
                     district: sel.dist || null,
                     municipality: sel.muni || null,
-                    barangay: sel.brgy || null,
-                    purok: sel.purok || null
+                    barangay: null,
+                    purok: null
                 });
-            } else if (sel.dist && sel.muni && sel.brgy && sel.purok) {
-                // FORM MODE: Map the abbreviated keys to the explicit keys the parent expects
+            } else if (sel.dist && sel.muni) {
+                // FORM MODE: Only require district + municipality
                 onLocationSelect({ 
                     district: sel.dist,
                     municipality: sel.muni,
-                    barangay: sel.brgy,
-                    purok: sel.purok
+                    barangay: null,
+                    purok: null
                 });
             } else {
-                // If the form isn't complete yet, send null
                 onLocationSelect(null);
             }
         }
-    }, [sel, onLocationSelect, isFilter]);
+    }, [sel.dist, sel.muni, isFilter, onLocationSelect]);
 
-    // ==========================================
-    // EXTRACTED UI COMPONENTS (For Clean DOM Branching)
-    // ==========================================
-    const renderDistrict = (
-        <select value={sel.dist} className="scope-select" onChange={(e) => handleSelectChange('dist', e.target.value)}>
-            <option value="">{isFilter ? "All Districts" : "District..."}</option>
-            {ALECO_SCOPE.map(d => <option key={d.district} value={d.district}>{d.district}</option>)}
-        </select>
-    );
+    // 4. Search Logic (Simplified to municipality only)
+    const handleSearch = (e) => {
+        const term = e.target.value;
+        setSearchTerm(term);
+        
+        if (term.length < 2) {
+            setIsSearching(false);
+            return;
+        }
+        
+        setIsSearching(true);
+        const lowerTerm = term.toLowerCase();
+        
+        // Find first matching municipality
+        for (const district of ALECO_SCOPE) {
+            const matchedMuni = district.municipalities.find(m => 
+                m.name.toLowerCase().includes(lowerTerm)
+            );
+            
+            if (matchedMuni) {
+                setSel({ dist: district.district, muni: matchedMuni.name });
+                setIsSearching(false);
+                return;
+            }
+        }
+    };
 
-    const renderMuni = (
-        <select value={sel.muni} className="scope-select" onChange={(e) => handleSelectChange('muni', e.target.value)}>
-            <option value="">{isFilter ? "All Municipalities" : "Town/City..."}</option>
-            {availableMunis.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-        </select>
-    );
+    // 5. Clear Handler
+    const handleClear = () => {
+        setSel({ dist: "", muni: "" });
+        setSearchTerm("");
+        setIsSearching(false);
+    };
 
-    const renderBrgyDropdown = (
-        <select className="scope-select" value={sel.brgy} onChange={(e) => handleSelectChange('brgy', e.target.value)}>
-            <option value="">All Barangays</option>
-            {availableBrgys.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-        </select>
-    );
+    // RENDER LOGIC
+    if (layoutMode === "inline") {
+        return (
+            <div className="aleco-scope-inline">
+                <select 
+                    value={sel.dist} 
+                    onChange={(e) => handleSelectChange('dist', e.target.value)}
+                    className="filter-dropdown"
+                >
+                    <option value="">All Districts</option>
+                    {ALECO_SCOPE.map(d => (
+                        <option key={d.district} value={d.district}>{d.district}</option>
+                    ))}
+                </select>
 
-    const renderBrgySearch = (
-        <div className="search-box-container">
-            {!sel.brgy || isSearching ? (
-                <input 
-                    type="text" 
-                    placeholder={isFilter ? "Filter by Barangay..." : "Type to search Barangay..."} 
-                    className="mini-search"
-                    value={searchTerm}
-                    onFocus={() => setIsSearching(true)}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            ) : (
-                <div className="selected-tag" onClick={() => setIsSearching(true)}>
-                    {sel.brgy} <span>(Change)</span>
-                </div>
-            )}
-            {isSearching && searchTerm && (
-                <div className="search-results">
-                    {filteredBrgys.length > 0 ? (
-                        filteredBrgys.slice(0, 5).map(b => (
-                            <div key={b.name} className="result-item" onClick={() => handleSelectChange('brgy', b.name)}>
-                                {b.name}
-                            </div>
-                        ))
-                    ) : (
-                        <div className="result-item no-match">No matches found</div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
+                <select 
+                    value={sel.muni} 
+                    onChange={(e) => handleSelectChange('muni', e.target.value)}
+                    disabled={!sel.dist}
+                    className="filter-dropdown"
+                >
+                    <option value="">All Municipalities</option>
+                    {availableMunis.map(m => (
+                        <option key={m.name} value={m.name}>{m.name}</option>
+                    ))}
+                </select>
+            </div>
+        );
+    }
 
-    const renderPurok = (
-        <select className="purok-select" value={sel.purok} onChange={(e) => handleSelectChange('purok', e.target.value)}>
-            <option value="">{isFilter ? "All Puroks" : "Select Purok..."}</option>
-            {availablePuroks.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-    );
-
-    // ==========================================
-    // DOM BRANCHING LOGIC
-    // ==========================================
+    // STACKED LAYOUT (For ReportaProblem.jsx)
     return (
-        <div className={`aleco-mini-scope layout-${layoutMode}`}>
-            {label && <label className="aleco-mini-scope-label">{label}</label>}
+        <div className="aleco-scope-container">
+            <div className="search-box-wrapper">
+                <input 
+                    type="text"
+                    placeholder="🔍 Quick search municipality..."
+                    value={searchTerm}
+                    onChange={handleSearch}
+                    className="location-search-input"
+                    disabled={disabled}
+                />
+                {(sel.dist || sel.muni) && (
+                    <button 
+                        type="button"
+                        onClick={handleClear}
+                        className="clear-selection-btn"
+                    >
+                        ✖ Clear
+                    </button>
+                )}
+            </div>
 
-            {isInline ? (
-                /* --- DASHBOARD MODE (Single Flex Row / 2x2 Grid on Mobile) --- */
-                <div className="mini-row">
-                    {renderDistrict}
-                    {(isInline || sel.dist) && renderMuni}
-                    {(isInline || sel.muni) && renderBrgyDropdown}
-                    {(isInline || (sel.brgy && !isSearching)) && renderPurok}
+            <div className="dropdown-grid-simple">
+                <select 
+                    value={sel.dist} 
+                    onChange={(e) => handleSelectChange('dist', e.target.value)}
+                    className="location-select"
+                    disabled={disabled}
+                >
+                    <option value="">Select District</option>
+                    {ALECO_SCOPE.map(d => (
+                        <option key={d.district} value={d.district}>{d.district}</option>
+                    ))}
+                </select>
+
+                <select 
+                    value={sel.muni} 
+                    onChange={(e) => handleSelectChange('muni', e.target.value)}
+                    disabled={!sel.dist || disabled}
+                    className="location-select"
+                >
+                    <option value="">Select Municipality</option>
+                    {availableMunis.map(m => (
+                        <option key={m.name} value={m.name}>{m.name}</option>
+                    ))}
+                </select>
+            </div>
+
+            {sel.dist && sel.muni && (
+                <div className="selection-preview">
+                    📍 {sel.muni}, {sel.dist}
                 </div>
-            ) : (
-                /* --- FORM MODE (Original 3-Row Vertical Layout) --- */
-                <>
-                    {/* Row 1: District & Municipality */}
-                    <div className="mini-row">
-                        {renderDistrict}
-                        {(sel.dist || isFilter) && renderMuni}
-                    </div>
-
-                    {/* Row 2: Searchable Barangay */}
-                    {(sel.muni || isFilter) && renderBrgySearch}
-
-                    {/* Row 3: Purok Selection */}
-                    {(sel.brgy || isFilter) && !isSearching && renderPurok}
-                </>
             )}
         </div>
     );

@@ -25,41 +25,33 @@ const useTickets = () => {
 
     // 2. The Fetch Logic
     useEffect(() => {
-        const fetchTickets = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                // Clean up the filters object: only send parameters that actually have a value
-                const params = {};
-                Object.keys(filters).forEach(key => {
-                    if (filters[key] !== '' && filters[key] !== false) {
-                        params[key] = filters[key];
-                    }
-                });
-
-                // FIX APPLIED HERE: 
-                // Removed '/api' to prevent double prefixing from axiosConfig.js
-               const response = await axios.get('/api/filtered-tickets', { params });
-
-                if (response.data.success) {
-                    setTickets(response.data.data);
+    const fetchTickets = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const params = {};
+            Object.keys(filters).forEach(key => {
+                if (filters[key] !== '' && filters[key] !== false) {
+                    params[key] = filters[key];
                 }
-            } catch (err) {
-                console.error("Failed to fetch tickets:", err);
-                setError("Could not load tickets. Please try again.");
-            } finally {
-                setLoading(false);
+            });
+
+            // CORRECT: Uses '/api/filtered-tickets' (no double /api prefix)
+            const response = await axios.get('/api/filtered-tickets', { params });
+
+            if (response.data.success) {
+                setTickets(response.data.data);
             }
-        };
+        } catch (err) {
+            console.error("Failed to fetch tickets:", err);
+            setError("Could not load tickets. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        // Debounce the search slightly to prevent spamming the database on every keystroke
-        const delayDebounceFn = setTimeout(() => {
-            fetchTickets();
-        }, 300);
-
-        return () => clearTimeout(delayDebounceFn);
-        
-    }, [filters]); // Dependency array: Re-runs the fetch ANY time a filter changes!
+    fetchTickets();
+}, [filters]);
 
     return { tickets, loading, error, filters, setFilters };
 };

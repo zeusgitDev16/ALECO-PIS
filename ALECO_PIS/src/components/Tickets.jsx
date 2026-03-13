@@ -6,23 +6,17 @@ import UrgentTickets from './containers/UrgentTickets';
 import useDraggable from '../utils/useDraggable';
 import CoverageMap from './CoverageMap';
 import MapButton from './buttons/MapButton';
-
-
-// Importing the Lego Bricks
 import TicketFilterBar from './tickets/TicketFilterBar';
 import TicketListPane from './tickets/TicketListPane';
 import TicketDetailPane from './tickets/TicketDetailPane';
 import GroupIncidentModal from './tickets/GroupIncidentModal';
-
+import TicketLayoutPicker from './tickets/TicketLayoutPicker';
 
 const AdminTickets = () => {
-    // --- 1. Custom Hook Integration (The Engine) ---
-    // We replace the old manual state and fetch logic entirely with this single line.
-    // It automatically provides the tickets, the loading state, and the comprehensive filter object.
     const { tickets, loading: isLoading, error, filters, setFilters } = useTickets();
+    
+    const [viewMode, setViewMode] = useState('grid');
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
-    // --- 2. Master State (UI Only) ---
-    // We only need to track which ticket the admin clicked on.
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [isMapOpen, setIsMapOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
@@ -31,30 +25,27 @@ const AdminTickets = () => {
     useEffect(() => {
         const fetchCrews = async () => {
             try {
-                // CORRECT: Uses '/api/crews/list' (matches backend route)
                 const response = await fetch('http://localhost:5000/api/crews/list');
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     setAvailableCrews(data);
-                    console.log(`✅ Crews Loaded: ${data.length} crews`);
                 }
             } catch (error) {
-                console.error("❌ Failed to load crews from database:", error);
+                console.error("❌ Failed to load crews:", error);
             }
         };
         fetchCrews();
     }, []);
 
     const toggleTicketSelection = (id) => {
-    setSelectedIds(prev => 
-        prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
-};
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
 
-const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
+    const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         try {
             if (newStatus === 'Ongoing' && dispatchData) {
-                // Hit our new dispatch endpoint
                 const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/dispatch`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -64,17 +55,13 @@ const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    console.log("✅ Dispatch successful!", data.message);
-                   alert(`ALECO System: Crew successfully dispatched for Ticket ${ticketId}. SMS notifications sent.`);
-                    // Note: You can refresh the page or trigger your useTickets() hook to re-fetch here
-                    window.location.reload(); // Quick refresh to show the updated "Ongoing" status
+                    alert(`ALECO System: Crew successfully dispatched for Ticket ${ticketId}. SMS notifications sent.`);
+                    window.location.reload();
                 } else {
-                    console.error("Failed to dispatch:", data.message);
                     alert("Dispatch failed: " + data.message);
                 }
             } 
             else if (newStatus === 'Restored') {
-                // We will build the manual Restored endpoint later!
                 console.log("Manually restoring ticket...");
             }
         } catch (error) {
@@ -82,161 +69,166 @@ const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         }
     };
 
-    // --- 3. Wrapper Functions for Compatibility ---
-    // The existing TicketFilterBar expects `activeTab` and `setActiveTab` separately.
-    // We map these directly to our new filters state to keep the UI perfectly idempotent.
+    const handleLayoutChange = (newMode) => {
+        if (newMode === 'map') {
+            setIsMapOpen(true);
+        } else {
+            setViewMode(newMode);
+        }
+    };
+
     const activeTab = filters.tab;
     const setActiveTab = (newTab) => setFilters(prev => ({ ...prev, tab: newTab }));
     const barRef = useRef(null);
     const { x, y, onStart } = useDraggable(barRef);
 
-    // --- 4. Render Layout ---
     return (
         <AdminLayout activePage="tickets">
-            {/* Page Header */}
-            <div className="dashboard-header ticket-dashboard-header">
-                <h2 className="header-title ticket-header-title">Support Tickets</h2>
-                <p className="header-subtitle ticket-header-subtitle">Track and resolve user reported issues.</p>
-            </div>
-
-            <MapButton onClick={() => setIsMapOpen(true)} />
-
-            {/* Error Banner (Optional, but good UX if the database connection fails) */}
-            {error && (
-                <div style={{ padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '10px' }}>
-                    {error}
+            <div className="tickets-page-container">
+                
+                {/* HEADER */}
+                <div className="tickets-header">
+                    <div className="header-text">
+                        <h2>Support Tickets</h2>
+                        <p>Track and resolve user reported issues.</p>
+                    </div>
+                    <MapButton onClick={() => setIsMapOpen(true)} />
                 </div>
-            )}
 
-            {/* Content Area */}
-            <div className="dashboard-widget ticket-dashboard-widget">
-                
-                {/* BRICK 1: The Filter Engine */}
-                
+                {/* ERROR BANNER */}
+                {error && (
+                    <div className="error-banner">
+                        {error}
+                    </div>
+                )}
+
+                {/* FILTER BAR */}
                 <TicketFilterBar 
                     activeTab={activeTab} 
                     setActiveTab={setActiveTab} 
                     filters={filters} 
                     setFilters={setFilters} 
-
                     tickets={tickets} 
                     selectedIds={selectedIds} 
                     setSelectedIds={setSelectedIds}
-            />
+                />
 
-                {/* THE SINGLE POOL WORKSPACE */}
-                <div style={{ marginTop: 'clamp(10px, 2vw, 20px)' }}>
+                {/* LAYOUT PICKER */}
+                <TicketLayoutPicker 
+                    activeLayout={viewMode}
+                    onLayoutChange={handleLayoutChange}
+                />
 
-                     <UrgentTickets 
-                        tickets={tickets} 
-                        onSelectTicket={setSelectedTicket} 
-                        selectedIds={selectedIds} 
-                        onToggleSelect={toggleTicketSelection}
-                    />
+                {/* CONTENT AREA */}
+                <div className="tickets-content-area">
+                    
+                    {/* GRID VIEW */}
+                    {viewMode === 'grid' && (
+                        <>
+                            <UrgentTickets 
+                                tickets={tickets} 
+                                onSelectTicket={setSelectedTicket} 
+                                selectedIds={selectedIds} 
+                                onToggleSelect={toggleTicketSelection}
+                            />
 
-                    <div className="separator">
-                        <p style={{}}>Regular Tickets:</p>
-                    </div>
+                            <div className="separator">
+                                <p>Regular Tickets:</p>
+                            </div>
 
+                            <TicketListPane 
+                                tickets={tickets} 
+                                isLoading={isLoading}
+                                selectedTicket={selectedTicket} 
+                                onSelectTicket={setSelectedTicket} 
+                                selectedIds={selectedIds} 
+                                onToggleSelect={toggleTicketSelection}
+                            />
+                        </>
+                    )}
 
-                    {/* BRICK 2: Master List Wrapper (Takes 100% width now) */}
-                    <div style={{
-                        backgroundColor: 'var(--bg-card)', 
-                        borderRadius: '8px', 
-                        overflowY: 'auto',
-                        boxShadow: '0 4px 6px var(--shadow-color-dark)',
-                        border: '1px solid var(--bg-body)',
-                        height: 'calc(100vh - 250px)',
-                        minHeight: '400px'
-                    }}>
-                        <TicketListPane 
-                            tickets={tickets} 
-                            isLoading={isLoading}
-                            selectedTicket={selectedTicket} 
-                            onSelectTicket={setSelectedTicket} 
-                            selectedIds={selectedIds} 
-                            onToggleSelect={toggleTicketSelection}
-                        />
-                        
-                    </div>
+                    {/* TABLE VIEW */}
+                    {viewMode === 'table' && (
+                        <div className="placeholder-view">
+                            <h3>📊 Table View</h3>
+                            <p>Coming Soon: Compact table layout for bulk operations</p>
+                            <p className="ticket-count">Showing {tickets.length} tickets</p>
+                        </div>
+                    )}
 
+                    {/* KANBAN VIEW */}
+                    {viewMode === 'kanban' && (
+                        <div className="placeholder-view">
+                            <h3>🗂️ Kanban View</h3>
+                            <p>Coming Soon: Drag-and-drop workflow columns</p>
+                            <p className="ticket-count">Showing {tickets.length} tickets</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* BRICK 3: Modal Detail View (Renders over everything if a ticket is selected) */}
+            {/* MODALS */}
             <TicketDetailPane 
                 ticket={selectedTicket} 
                 onClose={() => setSelectedTicket(null)}
-                onUpdateTicket={handleUpdateTicket} /* <-- THE FIX: Connects to your new fetch function */
+                onUpdateTicket={handleUpdateTicket}
                 crews={availableCrews}
             />
 
-           {selectedIds.length > 0 && (
-    <div 
-        ref={barRef}
-        className="bulk-action-bar-floating"
-        onMouseDown={onStart}    
-        onTouchStart={onStart}   
-        style={{
-            transform: `translate(calc(-50% + ${x}px), ${y}px)`,
-            cursor: 'grab',
-            touchAction: 'none' 
-        }}
-    >
-        {/* WE REMOVED THE onMouseDown={e => e.stopPropagation()} FROM HERE! */}
-        <div className="bulk-bar-content">
-             
-             {/* THE NEW VISUAL DRAG INDICATOR (GRIP) */}
-             <div className="drag-grip-indicator" title="Drag to move">
-                 ⋮⋮
-             </div>
-
-             <span className="bulk-selection-count">
-                <span className="count-badge">{selectedIds.length}</span> 
-                Tickets Selected
-            </span>
-            
-            <div className="bulk-action-buttons">
-                <button 
-                    className="btn-bulk-action btn-group"
-                    onClick={() => setIsGroupModalOpen(true)}
+            {selectedIds.length > 0 && (
+                <div 
+                    ref={barRef}
+                    className="bulk-action-bar-floating"
+                    onMouseDown={onStart}    
+                    onTouchStart={onStart}   
+                    style={{
+                        transform: `translate(calc(-50% + ${x}px), ${y}px)`,
+                        cursor: 'grab',
+                        touchAction: 'none' 
+                    }}
                 >
-                    🔗 Group as Incident
-                </button>
-                <button className="btn-bulk-action btn-resolve">
-                    ✅ Resolve Selected
-                </button>
-                <button 
-                    className="btn-bulk-action btn-cancel" 
-                    onClick={() => setSelectedIds([])}
-                >
-                    ✖ Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-)}
-         <GroupIncidentModal 
-    isOpen={isGroupModalOpen}
-    onClose={() => setIsGroupModalOpen(false)}
-    
-    /* THE FIX: We map the selectedIds back to their full ticket objects */
-    selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id))}
-    
-    onSubmit={(incidentData) => {
-        console.log("Ready to send to database:", incidentData);
-        // API logic goes here!
-        setIsGroupModalOpen(false);
-        setSelectedIds([]); 
-    }}
-/>
+                    <div className="bulk-bar-content">
+                        <div className="drag-grip-indicator" title="Drag to move">⋮⋮</div>
+                        <span className="bulk-selection-count">
+                            <span className="count-badge">{selectedIds.length}</span> 
+                            Tickets Selected
+                        </span>
+                        <div className="bulk-action-buttons">
+                            <button 
+                                className="btn-bulk-action btn-group"
+                                onClick={() => setIsGroupModalOpen(true)}
+                            >
+                                🔗 Group as Incident
+                            </button>
+                            <button className="btn-bulk-action btn-resolve">
+                                ✅ Resolve Selected
+                            </button>
+                            <button 
+                                className="btn-bulk-action btn-cancel" 
+                                onClick={() => setSelectedIds([])}
+                            >
+                                ✖ Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-<CoverageMap 
-        isOpen={isMapOpen} 
-        onClose={() => setIsMapOpen(false)} 
-        tickets={tickets} 
-    />
+            <CoverageMap 
+                isOpen={isMapOpen} 
+                onClose={() => setIsMapOpen(false)} 
+                tickets={tickets}
+            />
 
+            <GroupIncidentModal 
+                isOpen={isGroupModalOpen}
+                onClose={() => setIsGroupModalOpen(false)}
+                selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id))}
+                onGroupCreated={() => {
+                    setIsGroupModalOpen(false);
+                    setSelectedIds([]);
+                }}
+            />
         </AdminLayout>
     );
 };

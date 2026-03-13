@@ -47,6 +47,37 @@ const sendPhilSMS = async (number, messageBody) => {
     }
 };
 
+// --- DISTRICT-MUNICIPALITY VALIDATION MAP ---
+const ALECO_DISTRICT_MAP = {
+    "First District (North Albay)": [
+        "Bacacay", "Malilipot", "Malinao", "Santo Domingo", "Tabaco City", "Tiwi"
+    ],
+    "Second District (Central Albay)": [
+        "Camalig", "Daraga", "Legazpi City", "Manito", "Rapu-Rapu"
+    ],
+    "Third District (South Albay)": [
+        "Guinobatan", "Jovellar", "Libon", "Ligao City", "Oas", "Pio Duran", "Polangui"
+    ]
+};
+
+// --- VALIDATION FUNCTION ---
+const validateDistrictMunicipality = (district, municipality) => {
+    if (!district || !municipality) return false;
+    
+    const validMunicipalities = ALECO_DISTRICT_MAP[district];
+    if (!validMunicipalities) {
+        console.error(`❌ Invalid district: ${district}`);
+        return false;
+    }
+    
+    const isValid = validMunicipalities.includes(municipality);
+    if (!isValid) {
+        console.error(`❌ Municipality "${municipality}" does not belong to "${district}"`);
+    }
+    
+    return isValid;
+};
+
 // --- 1. THE MASTER TICKET SUBMISSION ROUTE ---
 router.post('/tickets/submit', upload.single('image'), async (req, res) => {
     try {
@@ -56,10 +87,30 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             account_number, first_name, middle_name, last_name, 
             phone_number, address, category, concern,
             district, municipality, is_urgent,
-            reported_lat, reported_lng, location_accuracy, location_method // NEW GPS fields
+            reported_lat, reported_lng, location_accuracy, location_method,
+            location_confidence // NEW: Track GPS confidence
         } = req.body;
 
         console.log("📍 GPS Data Received:", { reported_lat, reported_lng, location_accuracy, location_method });
+        console.log("🏛️ Location Data:", { district, municipality });
+
+        // --- CRITICAL: VALIDATE DISTRICT-MUNICIPALITY RELATIONSHIP ---
+        if (district && municipality) {
+            const isValid = validateDistrictMunicipality(district, municipality);
+            if (!isValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid location: ${municipality} does not belong to ${district}. Please verify your selection.`
+                });
+            }
+            console.log(`✅ VALIDATION PASSED: ${municipality} belongs to ${district}`);
+        } else if (district || municipality) {
+            // One is filled but not the other
+            return res.status(400).json({
+                success: false,
+                message: 'Both district and municipality must be provided together.'
+            });
+        }
 
         // IDEMPOTENCY CHECK
         const duplicateCheckSql = `
@@ -85,14 +136,43 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         const image_url = req.file ? req.file.path : null;
         const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
+        // --- BACKEND URGENT VALIDATION (Double-Check Frontend) ---
+        const urgentKeywords = [
+            'sparking', 'fire', 'sunog', 'explosion', 'sumabog', 'pumuputok',
+            'electrocuted', 'nakuryente', 'live wire', 'nakabitin na wire',
+            'smoke', 'usok', 'umuusok', 'burning', 'nasusunog',
+            'fallen pole', 'natumba', 'nahulog na poste', 'leaning pole', 'nakahilig',
+            'dangling wire', 'nakabitin', 'naputol na wire', 'cutoff wire',
+            'walang kuryente', 'patay na kuryente', 'brownout', 'blackout',
+            'no power', 'power outage', 'emergency', 'aksidente'
+        ];
+
+        const lowerConcern = (concern || '').toLowerCase();
+        
+        const backendUrgentCheck = urgentKeywords.some(keyword => {
+            const regex = new RegExp(`\\b${keyword.replace(/\s+/g, '\\s+')}\\b`, 'i');
+            return regex.test(lowerConcern);
+        });
+
+        // Use backend validation as source of truth
+        const finalUrgentStatus = backendUrgentCheck ? 1 : 0;
+
+        // Log discrepancies (for debugging)
+        if (is_urgent != finalUrgentStatus) {
+            console.warn(`⚠️ URGENT MISMATCH: Frontend=${is_urgent}, Backend=${finalUrgentStatus}`);
+            console.warn(`   Concern: "${concern}"`);
+        }
+
+        console.log(`🚨 Final Urgent Status: ${finalUrgentStatus} | Concern: "${concern}"`);
+
         // UPDATED SQL: Now includes GPS columns (18 placeholders)
         const sql = `
             INSERT INTO aleco_tickets 
             (ticket_id, account_number, first_name, middle_name, last_name, 
              phone_number, address, district, municipality, 
              category, concern, image_url, status, created_at, is_urgent,
-             reported_lat, reported_lng, location_accuracy, location_method) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?)
+             reported_lat, reported_lng, location_accuracy, location_method, location_confidence) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const values = [
@@ -109,14 +189,17 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             concern,
             image_url,
             manilaTime,
-            is_urgent ? 1 : 0,
+            finalUrgentStatus, // Use backend validation
             reported_lat || null,
             reported_lng || null,
             location_accuracy || null,
-            location_method || 'manual'
+            location_method || 'manual',
+            location_confidence || 'medium' // NEW
         ];
 
         await pool.execute(sql, values);
+
+        console.log(`✅ TICKET CREATED: ${ticket_id} | ${municipality}, ${district}`);
 
         // SMS NOTIFICATION
         const smsBody = `ALECO: Your report has been received. Tracking ID: ${ticket_id}. We will update you soon.`;
@@ -125,7 +208,7 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         res.json({ success: true, ticketId: ticket_id });
 
     } catch (error) {
-        console.error("Submission Error:", error);
+        console.error("❌ SUBMISSION ERROR:", error);
         res.status(500).json({ success: false, message: "Server error. Please try again." });
     }
 });

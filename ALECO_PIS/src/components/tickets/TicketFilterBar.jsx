@@ -1,11 +1,16 @@
 import React from 'react';
+import { useEffect } from 'react';
 import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown'; 
 import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';      
 import '../../CSS/TicketDashboard.css';
 
-
 const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets, selectedIds, setSelectedIds }) => {
     
+    // DEBUG: Log filter changes
+    useEffect(() => {
+        console.log('🔍 Active Filters:', filters);
+    }, [filters]);
+
     // 1. Generic handler for standard inputs (Search, Date Preset, Custom Dates)
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -17,36 +22,38 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
         setFilters(prev => ({ ...prev, isNew: !prev.isNew }));
     };
 
-    // 3. Location Handler (Unchanged, optimized logic)
+    // 3. Location Handler (CLEANED: Only district & municipality)
     const handleLocationChange = (locObj) => {
-        if (locObj) {
+        if (locObj && (locObj.district || locObj.municipality)) {
+            console.log('📍 Location Filter Changed:', locObj);
             setFilters(prev => ({
                 ...prev,
                 district: locObj.district || "",
-                municipality: locObj.municipality || "",
-                barangay: locObj.barangay || "",
-                purok: locObj.purok || ""
+                municipality: locObj.municipality || ""
             }));
         } else {
+            // Clear location filters
+            console.log('📍 Location Filter Cleared');
             setFilters(prev => ({
-                ...prev, district: "", municipality: "", barangay: "", purok: ""
+                ...prev, 
+                district: "", 
+                municipality: ""
             }));
         }
     };
 
-    // 4. Category Handler (Unchanged)
+    // 4. Category Handler
     const handleCategoryChange = (val) => {
+        console.log('🏷️ Category Filter Changed:', val);
         setFilters(prev => ({ ...prev, category: val }));
     };
 
     // Placeholder for Export Actions
     const handleExport = (type) => {
         console.log(`Triggering ${type} report generation...`);
-        // Logic to trigger PDF/CSV download will go here
     };
 
     const isAllVisibleSelected = tickets?.length > 0 && selectedIds?.length === tickets?.length;
-
 
     const toggleSelectAll = () => {
         if (isAllVisibleSelected) {

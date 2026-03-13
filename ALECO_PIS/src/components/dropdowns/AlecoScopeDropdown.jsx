@@ -2,14 +2,33 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ALECO_SCOPE } from '../../../alecoScope';
 import '../../CSS/AlecoScopeDropdown.css';
 
-const AlecoScopeDropdown = ({ onLocationSelect, isFilter = false, layoutMode = "stacked", disabled = false }) => {
-    // SIMPLIFIED STATE: Only district and municipality
-    const [sel, setSel] = useState({ dist: "", muni: "" });
+const AlecoScopeDropdown = ({ 
+    onLocationSelect, 
+    disabled = false, 
+    isFilter = false,
+    layoutMode = 'stacked',
+    initialDistrict = '',
+    initialMunicipality = ''
+}) => {
+    const [sel, setSel] = useState({ 
+        dist: initialDistrict, 
+        muni: initialMunicipality 
+    });
     const [searchTerm, setSearchTerm] = useState("");
     const [isSearching, setIsSearching] = useState(false);
-    const lastEmittedKey = useRef("");
+    const lastEmittedKey = useRef('');
 
-    // 1. CASCADING RESET LOGIC: Simplified for 2 levels only
+    // Sync with external changes (GPS auto-fill)
+    useEffect(() => {
+        if (initialDistrict || initialMunicipality) {
+            setSel({ 
+                dist: initialDistrict, 
+                muni: initialMunicipality 
+            });
+        }
+    }, [initialDistrict, initialMunicipality]);
+
+    // 1. CASCADING RESET LOGIC
     const handleSelectChange = (level, value) => {
         setSel(prev => {
             if (level === 'dist') {
@@ -22,7 +41,7 @@ const AlecoScopeDropdown = ({ onLocationSelect, isFilter = false, layoutMode = "
         setIsSearching(false);
     };
 
-    // 2. Memoized Data Selectors (Simplified)
+    // 2. Memoized Data Selectors
     const districtData = useMemo(() => ALECO_SCOPE.find(d => d.district === sel.dist), [sel.dist]);
     const availableMunis = useMemo(() => districtData?.municipalities || [], [districtData]);
 
@@ -33,7 +52,6 @@ const AlecoScopeDropdown = ({ onLocationSelect, isFilter = false, layoutMode = "
             lastEmittedKey.current = currentKey; 
 
             if (isFilter) {
-                // Filter mode can send partial data
                 onLocationSelect({
                     district: sel.dist || null,
                     municipality: sel.muni || null,
@@ -41,7 +59,6 @@ const AlecoScopeDropdown = ({ onLocationSelect, isFilter = false, layoutMode = "
                     purok: null
                 });
             } else if (sel.dist && sel.muni) {
-                // FORM MODE: Only require district + municipality
                 onLocationSelect({ 
                     district: sel.dist,
                     municipality: sel.muni,
@@ -54,7 +71,7 @@ const AlecoScopeDropdown = ({ onLocationSelect, isFilter = false, layoutMode = "
         }
     }, [sel.dist, sel.muni, isFilter, onLocationSelect]);
 
-    // 4. Search Logic (Simplified to municipality only)
+    // 4. Search Logic
     const handleSearch = (e) => {
         const term = e.target.value;
         setSearchTerm(term);
@@ -67,7 +84,6 @@ const AlecoScopeDropdown = ({ onLocationSelect, isFilter = false, layoutMode = "
         setIsSearching(true);
         const lowerTerm = term.toLowerCase();
         
-        // Find first matching municipality
         for (const district of ALECO_SCOPE) {
             const matchedMuni = district.municipalities.find(m => 
                 m.name.toLowerCase().includes(lowerTerm)
@@ -88,7 +104,7 @@ const AlecoScopeDropdown = ({ onLocationSelect, isFilter = false, layoutMode = "
         setIsSearching(false);
     };
 
-    // RENDER LOGIC
+    // INLINE LAYOUT (For Filters)
     if (layoutMode === "inline") {
         return (
             <div className="aleco-scope-inline">

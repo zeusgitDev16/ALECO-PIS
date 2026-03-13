@@ -1,557 +1,134 @@
 /* =========================================
-   1. TICKET FILTER BAR (Ultra-Compact Three-Tier Layout)
+   TICKET LIST PANE WRAPPER (SCROLLABLE)
    ========================================= */
-
-   /* --- THEME ACCENT VARIABLES --- */
-/* Light Mode Defaults */
-:root {
-    --accent-primary: #2979ff;
-    --accent-text: #ffffff;
-    --accent-text: #111111;
-    --banner-ticket: #53c6ec4c;
-}
-
-/* Dark Mode Overrides (Swaps to Yellow with Dark Text) */
-.dark, .dark-mode, [data-theme="dark"], [data-bs-theme="dark"] {
-    --accent-primary: #FACC15; 
-     --accent-text: #ffffff;/* CRITICAL: Flips text to black for readability on yellow */
-    --accent-restore: #234222;
-     --banner-ticket: #7700ff20;
-    
-}
-
-.ticket-filter-bar {
-    display: flex;
-    flex-direction: column; 
-    gap: 8px; 
-    padding: 10px; 
+.ticket-list-pane-wrapper {
     background-color: var(--bg-card);
     border-radius: 8px;
-    box-shadow: 0 2px 4px var(--shadow-color-dark);
-    box-sizing: border-box; 
-    width: 100%;
-}
-
-.filter-tier-select-all {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 8px;
-    padding: 4px 8px; /* Extremely tight padding */
-    
-    /* THE FIX: Prevents it from overlapping or breaking out of the parent container */
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    
-    /* The "Pop": Tiny but visible */
-    background-color: var(--bg-body); 
-    border: 1px dashed var(--accent-primary); 
-    border-radius: 6px; 
-    transition: all 0.2s ease;
-}
-
-/* When selected, it locks in without increasing in size */
-.filter-tier-select-all.has-selection {
-    background-color: rgba(41, 121, 255, 0.05); /* Very subtle tint */
-    border: 1px solid var(--accent-primary);
-}
-
-.select-all-label {
-    display: flex;
-    align-items: center;
-    gap: 6px; /* Tighter gap */
-    cursor: pointer;
-    margin: 0;
-    min-width: 0; /* Prevents flex blowout on tiny screens */
-}
-
-.select-all-checkbox {
-    width: 11px; /* Micro checkbox */
-    height: 11px;
-    accent-color: var(--accent-primary);
-    cursor: pointer;
-    margin: 0;
-    flex-shrink: 0;
-}
-
-.select-all-text {
-    font-size: 8.5px; /* TRUE MICRO TYPOGRAPHY */
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    white-space: nowrap; /* Prevents text from awkwardly wrapping */
-}
-
-/* Tiny solid badge */
-/* --- THE REVAMPED GLOWING NUMBER BADGE --- */
-.visible-count {
-    /* Background Green */
-    background-color: #22c55e; /* Vibrant, eye-catching green */
-    color: #ffffff;
-    
-    /* Bigger Number */
-    font-size: 10px; /* Significantly larger than the 8.5px text next to it */
-    font-weight: 900; /* Maximum boldness */
-    padding: 3px 6px;
-    border-radius: 12px;
-    margin-left: 8px;
-    
-    /* Glowing Effect on the Number Itself */
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
-    
-    /* Initial Background Glow */
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
-    
-    /* The Pulse Animation */
-    animation: pulseGreenGlow 1.5s infinite ease-in-out;
-}
-
-/* The Animation Logic for the Pulse Effect */
-@keyframes pulseGreenGlow {
-    0% {
-        box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-        transform: scale(1);
-    }
-    50% {
-        /* Expands the glow radius and slightly enlarges the badge */
-        box-shadow: 0 0 18px rgba(34, 197, 94, 1), 0 0 8px rgba(34, 197, 94, 0.8);
-        transform: scale(1.05); 
-    }
-    100% {
-        box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-        transform: scale(1);
-    }
-}
-
-
-
-.btn-clear-selection {
-    background: transparent;
-    border: 1px solid #ef4444; 
-    color: #ef4444; 
-    font-size: 7.5px; /* Micro text */
-    font-weight: 800;
-    cursor: pointer;
-    text-transform: uppercase;
-    padding: 2px 6px; /* Tiny padding */
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    flex-shrink: 0; /* Prevents the button from being squished */
-}
-
-.btn-clear-selection:hover {
-    background: #ef4444;
-    color: #ffffff;
-}
-
-.filter-tier {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px; 
-    align-items: center;
-    width: 100%;
-}
-
-.filter-tier-1 {
-    justify-content: flex-start;
-}
-
-.filter-tier-3 {
-    justify-content: space-between; 
-    border-top: 1px solid rgba(255, 255, 255, 0.1); 
-    padding-top: 8px;
-}
-
-.ticket-tabs {
-    display: flex;
-    gap: 6px;
-    width: auto;
-}
-
-.ticket-tab-btn {
-    padding: 0 8px; 
-    border-radius: 4px; 
-    font-family: var(--font-header);
-    font-size: 11px; 
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 28px; 
-    height: 28px;
-    white-space: nowrap; 
-    box-sizing: border-box;
-}
-
-.ticket-tab-btn.active {
-   background-color: var(--accent-primary); 
-    color: var(--accent-text);
-}
-
-.ticket-tab-btn.inactive {
-    background-color: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--text-secondary);
-}
-
-.ticket-tab-btn.inactive:hover {
-    color: var(--text-main);
-    border-color: var(--text-main);
-}
-
-.search-category-group {
-        display: flex;
-        flex-direction: row !important; 
-        flex-wrap: nowrap !important; /* Forces them to stay on one line */
-        width: 100% !important;
-        min-width: 0 !important; /* CRITICAL: Destroys the desktop 250px limit */
-        gap: 6px;
-        box-sizing: border-box;
-    }
-
-/* Forces true 50/50 split and prevents overflow */
-.main-search,
-.search-category-group .issue-dropdown-container {
-    flex: 1 1 0%; 
-    width: 100%;
-    max-width: none !important; 
-    min-width: 0 !important; 
-    margin: 0 !important; 
-}
-
-.filter-input, .filter-select {
-    padding: 0 8px; 
-    border-radius: 4px; 
-    border: 1px solid var(--text-secondary);
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    font-family: var(--font-body);
-    font-size: 11px; 
-    outline: none;
-    min-height: 28px; 
-    height: 28px;
-    width: 100%;
-    box-sizing: border-box; 
-}
-
-.filter-input:focus, .filter-select:focus {
-    border-color: var(--accent-primary);
-}
-
-.urgent-toggle-btn {
-    padding: 0 8px;
-    border-radius: 4px;
-    font-weight: 600;
-    font-size: 11px;
-    min-height: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background-color: transparent;
-    color: var(--text-secondary);
-    border: 1px dashed var(--text-secondary);
-    white-space: nowrap;
-    box-sizing: border-box;
-}
-
-.urgent-toggle-btn.active {
-    background-color: rgba(255, 193, 7, 0.1);
-    border: 1px solid #ffc107;
-    color: #ffc107;
-}
-
-.urgent-icon {
-    font-size: 0.9rem;
-}
-
-.date-filter-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.group-label {
-    font-size: 11px;
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-.date-preset {
-    width: auto; 
-}
-
-.custom-date-inputs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px; 
-    color: var(--text-secondary);
-}
-
-.report-actions-group {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.action-btn {
-    padding: 0 10px;
-    border-radius: 4px;
-    min-height: 28px;
-    height: 28px;
-    font-weight: 600;
-    font-size: 11px;
-    border: none;
-    cursor: pointer;
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    border: 1px solid var(--text-secondary);
-    transition: background 0.2s;
-    white-space: nowrap;
-    box-sizing: border-box;
-}
-
-.action-btn:hover {
-   background-color: var(--accent-primary);
-    color: var(--accent-text);
-    border-color: var(--accent-primary);
-}
-
-
-/* =========================================
-   4. MOBILE METAMORPHOSIS (Elements)
-   ========================================= */
-@media (max-width: 768px) {
-    .ticket-filter-bar {
-        padding: 10px;
-    }
-    
-    .ticket-tabs {
-        width: 100%;
-    }
-
-    .ticket-tab-btn {
-        flex: 1; 
-    }
-
-    .filter-tier {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px; 
-        width: 100%;
-    }
-
-    /* 1. FORCE ROW ON MOBILE FOR SEARCH & CATEGORY */
-    .search-category-group {
-        display: flex;
-        flex-direction: row; 
-        width: 100%;
-        gap: 6px;
-    }
-    
-   .main-search,
-    .search-category-group .issue-dropdown-container {
-        flex: 1 1 0% !important; 
-        width: 50% !important; 
-        max-width: 50% !important; 
-        min-width: 0 !important; /* CRITICAL: Allows shrinking to fit the screen */
-        margin: 0 !important;
-        box-sizing: border-box;
-    }
-
-    /* 2. OTHER ELEMENTS */
-    .urgent-toggle-btn,
-    .action-btn {
-        width: 100% !important; 
-    }
-
-    /* Dates and actions stack cleanly */
-    .date-filter-group,
-    .custom-date-inputs,
-    .report-actions-group {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        width: 100%;
-        gap: 6px;
-    }
-
-    .detail-grid { grid-template-columns: 1fr; }
-    .detail-group[style*="gridColumn: 'span 2'"] { grid-column: span 1 !important; }
+    box-shadow: 0 4px 6px var(--shadow-color-dark);
+    border: 1px solid var(--bg-body);
+    padding: 12px;
+    min-height: 200px;
 }
 
 /* =========================================
-   2. MASTER LIST PANE (Grid Layout)
+   TICKET GRID WRAPPER
    ========================================= */
-/* Transforms the single column list into a responsive multi-column grid */
 .ticket-grid-wrapper {
     display: grid;
-    /* CHANGE: Lowered min to 100px so it can shrink infinitely.
-       The '1fr' ensures it takes up exactly 1/2 or 1/3 of the parent container's width.
-    */
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 12px;
-    padding: 12px;
-    
-    /* CRITICAL: This prevents the grid from expanding past the parent container */
     width: 100%;
     max-width: 100%;
-    box-sizing: border-box; 
-    overflow-x: hidden; 
+    box-sizing: border-box;
 }
 
-/* Upgrading the cards from flat borders to premium elevated UI cards */
+/* =========================================
+   TICKET CARDS
+   ========================================= */
 .ticket-card-container {
-    /* Background logic to match User Management clean look */
-    background-color: var(--bg-card); 
+    background-color: var(--bg-card);
     border-radius: 8px;
     border: 1px solid var(--text-secondary);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    
-    /* Responsive Padding: shrinks as the card shrinks */
     padding: clamp(8px, 2vw, 16px);
-    
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    
-    /* Fluid Width: Always fits the grid cell exactly */
-    width: 100%; 
-    min-width: 0; /* Forces the card to be able to shrink below its content size */
+    width: 100%;
+    min-width: 0;
     min-height: 120px;
-    
     box-sizing: border-box;
-    overflow: hidden; 
+    overflow: hidden;
 }
 
-/* Smooth hover elevation effect */
 .ticket-card-container:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
-    transform: translateY(-3px);
-    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
 }
 
 .ticket-card-container.selected {
-    border: 2px solid var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(41, 121, 255, 0.15); /* Soft glow matching your accent */
-    background-color: var(--bg-hover);
-}
-
-/* Row 1: ID & Date */
-.card-header-row {
-    display: flex;
-    flex-direction: column; /* Stacks ID and Date */
-    align-items: center;    /* CENTERS BOTH ELEMENTS */
-    gap: 2px;
-    width: 100%;
-    margin-bottom: 10px;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 /* =========================================
-   DESKTOP BANNER & CHECKBOX LOGIC
+   CATEGORY BANNER
    ========================================= */
 .ticket-category-banner {
-    /* 1. LAYOUT & POSITIONING */
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    
-    /* 2. OVERLAP & THINNING PREVENTION */
-    min-height: 28px;              /* Prevents the banner from thinning when empty */
-    padding: 6px 12px 6px 34px;    /* Reserves a 34px safe zone on the left for the checkbox */
-    box-sizing: border-box;
-    
-    /* 3. ORIGINAL THEMING (Kept exactly as you had it) */
-    margin: -16px -16px 12px -16px; 
-    background-color: var(--banner-ticket);
-    color: var(--accent-text);
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    border-radius: 10px 10px 0 0;
-    letter-spacing: 0.5px;
+    gap: 8px;
+    padding: 6px 10px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+    border-radius: 6px 6px 0 0;
+    margin: -8px -8px 8px -8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
 }
 
-/* 4. THE MISSING DESKTOP CHECKBOX CLASS */
 .ticket-bulk-checkbox {
-    display: block;
     position: absolute;
-    left: 10px;                        /* Locks it beautifully into the left corner */
-    top: 50%;
-    transform: translateY(-50%);
+    left: 8px;
+    cursor: pointer;
     width: 14px;
     height: 14px;
-    z-index: 10;
-    margin: 0;
-    cursor: pointer;
-    accent-color: var(--accent-primary);
 }
 
-/* 5. THE DESKTOP TEXT NUDGE */
 .banner-category-text {
-    flex: 1;                           
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
     text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    /* This 22px margin visually offsets the 34px left padding so the text stays perfectly centered to the card */
-    margin-right: 22px;                
+    flex: 1;
+}
+
+/* =========================================
+   CARD CONTENT
+   ========================================= */
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
 .ticket-id-bold {
-    font-weight: 800;
     font-size: 13px;
-    color: var(--accent-primary);
-    letter-spacing: 0.5px;
+    font-weight: 800;
+    color: var(--primary-color);
 }
 
 .ticket-date-label {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-secondary);
 }
 
-/* Row 2: Content Body */
 .card-body-content {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: 100%;
+    flex: 1;
+    margin-bottom: 8px;
 }
 
 .concern-text-highlight {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text-main);
-    line-height: 1.3;
-}
-
-.category-badge-outline {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    color: var(--text-secondary);
-    border: 1px solid var(--text-secondary);
-    padding: 2px 8px;
-    border-radius: 4px;
-    display: inline-block;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-/* Row 3: Metadata with Horizontal Scroll */
+/* =========================================
+   CARD FOOTER
+   ========================================= */
 .card-footer-metadata {
     display: flex;
     justify-content: space-between;
@@ -566,14 +143,14 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    overflow-x: auto; /* CRITICAL: Enables horizontal scroll */
-    white-space: nowrap; /* CRITICAL: Prevents text wrapping */
+    overflow-x: auto;
+    white-space: nowrap;
     flex: 1;
-    scrollbar-width: none; /* Hides scrollbar for clean look */
+    scrollbar-width: none;
 }
 
 .location-scroll-wrapper::-webkit-scrollbar {
-    display: none; /* Hides scrollbar on Chrome/Safari */
+    display: none;
 }
 
 .location-text-full {
@@ -582,7 +159,9 @@
     font-weight: 500;
 }
 
-/* Status Pill Solid */
+/* =========================================
+   STATUS PILLS
+   ========================================= */
 .status-pill-solid {
     padding: 4px 10px;
     border-radius: 4px;
@@ -592,682 +171,59 @@
     white-space: nowrap;
 }
 
-.status-pill-solid.pending { background-color: #fef3c7; color: #92400e; }
-.status-pill-solid.ongoing { background-color: #e0f2fe; color: #075985; }
-.status-pill-solid.restored { background-color: #dcfce7; color: #166534; }
-
-/* Status Logic for Dark Mode readability */
-[data-theme="dark"] .status-pill-solid.pending { background-color: #92400e; color: #fef3c7; }
-[data-theme="dark"] .status-pill-solid.ongoing { background-color: #075985; color: #e0f2fe; }
-[data-theme="dark"] .status-pill-solid.restored { background-color: #166534; color: #dcfce7; }
-/* =========================================
-   3. REVAMPED MODAL POPUP (Micro-UI Glassmorphism)
-   ========================================= */
-
-.ticket-modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.6); 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2500;
-    backdrop-filter: blur(12px); /* Premium glass effect */
-    overflow: hidden;
+.status-pill-solid.pending {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
 }
 
-/* --- Close Button Customization (Fixed Visibility) --- */
-/* (Removed the duplicate transparent rule that was hiding this) */
-.ticket-modal-close-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(128, 128, 128, 0.15); /* Permanent, visible pill shape */
-    border: none;
-    color: var(--text-main); /* Forces high contrast */
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    font-size: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    z-index: 50; /* Ensures it stays on top of everything */
+.status-pill-solid.ongoing {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
 }
 
-.ticket-modal-close-btn:hover {
-    background: #ef4444;
-    color: white;
-    transform: rotate(90deg) scale(1.1); 
-}
-
-.ticket-modal-content {
-    background: var(--bg-card);
-    width: 92%;
-    max-width: 600px; 
-    max-height: 85vh; 
-    border-radius: 16px; 
-    position: relative;
-    padding: 30px 35px; 
-    overflow-y: auto;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.08); 
-    text-align: left; 
-    animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Custom Scrollbar for the Modal Content */
-.ticket-modal-content::-webkit-scrollbar {
-    width: 6px;
-}
-.ticket-modal-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-.ticket-modal-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-}
-.ticket-modal-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* --- SECTION 1: HEADER --- */
-.detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    padding-right: 40px;
-}
-
-.header-left .detail-title {
-    margin: 0 0 8px 0;
-    color: var(--text-main);
-    font-size: 22px; 
-    font-weight: 900;
-    letter-spacing: 0.5px;
-}
-
-.header-right {
-    text-align: right;
-}
-
-.reported-label {
-    display: block;
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 800;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-}
-
-.reported-date {
-    font-size: 12px;
-    color: var(--text-main);
-    font-weight: 500;
-}
-
-.detail-divider {
-    border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    margin: 0 0 25px 0;
-}
-
-/* --- Typography Hierarchy (Micro-UI) --- */
-.detail-group {
-    margin-bottom: 20px;
-    width: 100%;
-}
-
-.detail-group label {
-    display: block;
-    font-size: 9px; 
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 800;
-    color: var(--text-secondary); 
-    margin-bottom: 6px;
-    margin-left: 2px;
-}
-
-.detail-value {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 500; 
-    color: var(--text-main);
-    line-height: 1.5;
-    word-break: break-word;
-    background-color: rgba(255, 255, 255, 0.02); 
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-/* --- Copy to Clipboard Interactions --- */
-.copyable-box {
-    display: flex;
-    justify-content: flex-start; /* THE FIX: Keeps them grouped together on the left */
-    align-items: center;
-    gap: 12px; /* THE FIX: Creates a perfect, fixed 12px gap between the text and the copy button */
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none; 
-    
-    /* Optional: Ensure the background hover doesn't stretch across the whole empty column */
-    width: fit-content; 
-    padding-right: 12px; /* Gives a little breathing room on the right when hovered */
-}
-
-.copyable-box:hover {
-    background-color: rgba(255, 255, 255, 0.05); /* Slightly brighter on hover */
-    border-color: var(--accent-primary); /* Uses your ALECO blue/yellow to highlight */
-    transform: translateY(-1px);
-}
-
-.copyable-box:active {
-    transform: scale(0.98); /* Satisfying "click" press effect */
-}
-
-.copy-indicator {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-secondary);
-    background: rgba(255, 255, 255, 0.05);
-    padding: 2px 8px;
-    border-radius: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: all 0.2s ease;
-}
-
-/* Brightens up the button when hovering over the parent box */
-.copyable-box:hover .copy-indicator {
-    background: var(--accent-primary);
-    color: var(--accent-text);
-}
-
-/* The state when the text is successfully copied */
-.copy-indicator.success {
-    background: #166534 !important; /* Rich Green */
-    color: #ffffff !important;
-}
-
-/* Dark mode adjustment for the success green */
-[data-theme="dark"] .copy-indicator.success,
-.dark-mode .copy-indicator.success {
-    background: #4ade80 !important;
-    color: #111111 !important;
-}
-
-.location-text {
-    line-height: 1.6;
-}
-
-.district-sub {
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
-}
-
-/* --- Layout Adjustments --- */
-.detail-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr; 
-    gap: 15px 25px; 
-    margin-bottom: 25px;
-}
-
-.full-width {
-    grid-column: 1 / -1;
-}
-
-/* --- Content & Evidence Section --- */
-.concern-box {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 400; 
-    color: var(--text-main);
-    line-height: 1.6;
-    background-color: var(--bg-body); 
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.image-wrapper {
-    position: relative;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    cursor: zoom-in;
-    background-color: #000;
-}
-
-.evidence-img {
-    display: block;
-    width: 100%;
-    max-height: 250px;
-    object-fit: cover;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.image-wrapper:hover .evidence-img {
-    transform: scale(1.02);
-    opacity: 0.8;
-}
-
-.image-hint {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 4px 8px;
-    border-radius: 6px;
-    letter-spacing: 0.5px;
-    backdrop-filter: blur(4px);
-    pointer-events: none; 
-}
-
-/* --- Action Footer & Buttons --- */
-.action-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.btn-action {
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 12px;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    color: var(--accent-text);
-    white-space: nowrap;
-}
-
-.btn-action:hover {
-    transform: translateY(-2px); 
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); 
-    filter: brightness(1.1);
-}
-
-.btn-action:active {
-    transform: scale(0.96) translateY(0); 
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); 
-    filter: brightness(0.9); 
-}
-
-.btn-ongoing {
-    background-color: var(--accent-primary);
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.4); 
-}
-
-.btn-restored {
-    background-color: #166534;
-    color: #ffffff; 
-}
-
-[data-theme="dark"] .btn-restored,
-.dark-mode .btn-restored {
-    background-color: #4ade80; 
-    color: #111111; 
+.status-pill-solid.restored {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
 }
 
 /* =========================================
-   DETAIL MODAL ULTRA-MOBILE (< 500px)
+   LOADING/EMPTY STATES
    ========================================= */
-@media (max-width: 500px) {
-    .ticket-modal-content {
-        /* CRITICAL FIX: Shrinks width and height to enforce the "Floating Box" feel */
-        width: 88% !important; 
-        max-height: 75vh !important; 
-        padding: 24px 16px !important; 
-        border-radius: 12px !important;
-    }
-
-    .ticket-modal-close-btn {
-        top: 12px !important;
-        right: 12px !important;
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 16px !important;
-    }
-
-    .detail-header {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 12px !important;
-    }
-
-    .header-right {
-        text-align: left !important; 
-    }
-
-    .header-left .detail-title {
-        font-size: 18px !important; 
-    }
-
-    .detail-grid {
-        grid-template-columns: 1fr !important;
-        gap: 16px !important; 
-        margin-bottom: 20px !important;
-    }
-
-    .detail-group {
-        margin-bottom: 0 !important; 
-    }
-
-    .detail-value, .concern-box {
-        font-size: 13px !important; 
-        padding: 10px !important;
-    }
-
-    .action-footer {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 8px !important;
-        margin-top: 20px !important;
-        padding-top: 16px !important;
-    }
-
-    .btn-action {
-        width: 100% !important; 
-        text-align: center !important;
-        padding: 12px !important; 
-    }
+.ticket-list-status {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    color: var(--text-secondary);
+    font-size: 14px;
 }
 
-/* this part is different*/
-
-/* Mobile Responsiveness */
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
 @media (max-width: 800px) {
-    .detail-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .action-buttons {
-        flex-direction: column;
-    }
-    
     .ticket-grid-wrapper {
-        /* Forces exactly 2 columns that perfectly split the parent container */
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 8px !important;
-        padding: 8px !important;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
     }
 
-    /* Shrink the card internal content so it fits the tiny container */
     .ticket-card-container {
-        padding: 8px !important;
-        min-height: 100px !important;
+        padding: 8px;
+        min-height: 100px;
     }
-    
+
     .concern-text-highlight {
-        font-size: 11px !important;
-        line-height: 1.2;
-        /* Limits text to 2 lines for uniform card heights */
-        display: -webkit-box;
+        font-size: 11px;
         -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
     }
 
-    .category-badge-outline { 
-        font-size: 8px !important; 
-        padding: 1px 4px !important; 
-    }
-
-    .ticket-id-bold { 
-        font-size: 9px !important; 
-    }
-    
-    .ticket-date-label, 
-    .location-text-full { 
-        font-size: 8px !important; 
-    }
-    
-    /* Consolidated duplicate rules into this single important override */
-    .status-pill-solid { 
-        font-size: 7px !important; 
-        padding: 2px 4px !important; 
-    }
-
-    .ticket-category-banner {
-        /* 1. LAYOUT & POSITIONING */
-        margin: -10px -10px 8px -10px !important; 
-        width: calc(100% + 20px) !important; /* Forces banner to touch card edges */
-        position: relative !important;
-        display: flex !important;           /* Using flex for better centering */
-        align-items: center !important;
-        justify-content: center !important;
-
-        /* 2. OVERLAP PREVENTION (THE FIX) */
-        min-height: 20px !important;          /* Prevents 'thinning' if category is blank */
-        padding: 4px 6px 4px 22px !important; /* Creates the 'safe zone' for the checkbox */
-        box-sizing: border-box !important;
-    }
-
-    /* Consolidated the two conflicting checkbox rules into this locked position */
-    .ticket-bulk-checkbox {
-        position: absolute !important;
-        left: 6px !important;                 /* Safely tucked inside the 22px padding */
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        width: 12px !important;
-        height: 12px !important;
-        z-index: 10 !important;
-        margin: 0 !important;
-        cursor: pointer !important;
-        display: block !important;
-    }
-
-    /* Required for keeping the text centered relative to the whole card, not the remaining space */
     .banner-category-text {
-        margin-right: 16px !important;        /* Nudges the text to balance the left padding */
-        font-size: 7px !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        display: block !important;
-        width: 100% !important;
-        text-align: center !important;
+        font-size: 7px;
     }
-
-    
 }
 
 @media (min-width: 801px) {
-   .ticket-grid-wrapper {
-        /* Clean 3-column layout on large screens */
-        grid-template-columns: repeat(3, 1fr); 
+    .ticket-grid-wrapper {
+        grid-template-columns: repeat(3, 1fr);
     }
 }
-
-/* =========================================
-   5. FLOATING BULK ACTION BAR (DRAGGABLE)
-   ========================================= */
-.bulk-action-bar-floating {
-    position: fixed;
-    bottom: 12px; /* Merged your duplicate block values */
-    left: 50%;
-    width: 435px; /* Set your default desktop width */
-    background-color: var(--bg-card);
-    border: 2px solid var(--accent-primary);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border-radius: 20px; 
-    padding: 6px 6px;
-    z-index: 2000; 
-    
-    /* Decoupled animation that no longer fights the React drag logic */
-    animation: slideUpFade 0.3s ease-out forwards;
-    
-    /* Draggable Safety Rules */
-    user-select: none; 
-    touch-action: none;
-    cursor: grab;
-    transform: translateX(-50%); /* Base state before React takes over */
-}
-
-.bulk-action-bar-floating:active {
-    cursor: grabbing !important;
-    border-style: solid;
-}
-
-.bulk-bar-content {
-    display: flex;
-    align-items: center;
-    gap: clamp(6px, 2vw, 12px);
-    /* Allow clicks to pass through the empty spaces so you can drag it */
-    pointer-events: none; 
-}
-
-/* Re-enable pointer events ONLY for the interactive bits */
-.bulk-selection-count, 
-.bulk-action-buttons {
-    pointer-events: auto; 
-}
-
-.bulk-selection-count {
-    color: var(--text-main);
-    font-size: 10px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.count-badge {
-    background-color: var(--accent-primary);
-    color: var(--accent-text);
-    padding: 2px 6px;
-    border-radius: 12px;
-    font-size: 8px;
-    font-weight: 900;
-}
-
-.drag-grip-indicator {
-    color: var(--text-secondary);
-    font-size: 16px;
-    line-height: 1;
-    letter-spacing: -2px; /* Squeezes the dots closer together */
-    padding-right: 8px;
-    opacity: 0.6;
-    display: flex;
-    align-items: center;
-    cursor: grab;
-    transition: opacity 0.2s;
-}
-
-.bulk-action-bar-floating:hover .drag-grip-indicator {
-    opacity: 1; /* Brightens up when the user hovers over the bar */
-}
-
-.bulk-action-bar-floating:active {
-    cursor: grabbing !important;
-}
-
-.bulk-action-bar-floating:active .drag-grip-indicator {
-    cursor: grabbing !important;
-}
-
-.bulk-action-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.btn-bulk-action {
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 8px;
-    border: none;
-    transition: all 0.2s ease;
-    cursor: pointer !important;
-}
-
-.btn-group {
-    background-color: var(--accent-primary);
-    color: var(--accent-text);
-    font-weight: 900;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); 
-}
-
-.btn-resolve {
-    background-color: var(--accent-primary);
-    color: var(--accent-text);
-    font-weight: 900;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
-}
-
-.btn-group:hover, .btn-resolve:hover {
-    text-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
-    filter: brightness(1.2); 
-    transform: translateY(-1px);
-}
-
-.btn-cancel {
-    background-color: transparent;
-    color: #ef4444; 
-}
-
-/* The magic fix: Using margin instead of transform for the entrance animation */
-@keyframes slideUpFade {
-    from { opacity: 0; margin-bottom: -20px; }
-    to { opacity: 1; margin-bottom: 0; }
-}
-
-/* =========================================
-   6. ULTRA-TINY ACTION BAR (< 800px)
-   ========================================= */
-@media (max-width: 800px) {
-    .bulk-action-bar-floating {
-        bottom: 12px !important;
-        width: 295px !important; 
-        padding: 6px 6px !important;
-        border-radius: 20px !important;
-    }
-
-    .bulk-bar-content {
-        display: flex !important;
-        flex-direction: row !important; 
-        align-items: center !important;
-    }
-
-    .bulk-selection-count {
-        font-size: 7px !important;
-        letter-spacing: -0.3px !important;
-        margin-bottom: 0 !important;
-    }
-
-    .count-badge {
-        font-size: 8px !important;
-        padding: 2px 6px !important;
-    }
-
-    .bulk-action-buttons {
-        display: flex !important;
-        gap: 10px !important;
-        flex-wrap: nowrap !important;  
-        width: auto !important;
-    }
-
-    .btn-bulk-action {
-        padding: 5px 10px !important;
-        border-radius: 20px !important;
-        font-weight: 700 !important;
-        font-size: 6px !important;
-        cursor: pointer !important;
-    }
-}
-

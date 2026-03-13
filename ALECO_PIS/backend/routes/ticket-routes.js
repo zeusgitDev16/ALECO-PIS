@@ -7,9 +7,12 @@ const router = express.Router();
 router.get('/filtered-tickets', async (req, res) => {
     try {
         const { 
-            tab, isNew, searchQuery, category, district, 
-            municipality, datePreset, startDate, endDate
+            tab, isNew, searchQuery, category, 
+            district, municipality, 
+            datePreset, startDate, endDate
         } = req.query;
+
+        console.log('🔍 Filter Request:', { tab, isNew, searchQuery, category, district, municipality, datePreset });
 
         let query = `SELECT * FROM aleco_tickets WHERE 1=1`;
         const params = [];
@@ -26,35 +29,60 @@ router.get('/filtered-tickets', async (req, res) => {
             query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL 48 HOUR)`;
         }
 
-        // --- Search Bar ---
-        if (searchQuery) {
-            query += ` AND (ticket_id LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR concern LIKE ?)`;
-            const searchWildcard = `%${searchQuery}%`;
-            params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard);
+        // --- Search Bar (ID, Name, Concern) ---
+        if (searchQuery && searchQuery.trim() !== '') {
+            query += ` AND (
+                ticket_id LIKE ? OR 
+                first_name LIKE ? OR 
+                last_name LIKE ? OR 
+                concern LIKE ? OR
+                address LIKE ?
+            )`;
+            const searchWildcard = `%${searchQuery.trim()}%`;
+            params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard);
         }
 
-        // --- Category & Locations ---
-        if (category) { query += ` AND category = ?`; params.push(category); }
-        if (district) { query += ` AND district = ?`; params.push(district); }
-        if (municipality) { query += ` AND municipality = ?`; params.push(municipality); }
+        // --- Category Filter ---
+        if (category && category.trim() !== '') {
+            query += ` AND category = ?`;
+            params.push(category.trim());
+        }
+
+        // --- Location Filters (District & Municipality ONLY) ---
+        if (district && district.trim() !== '') {
+            query += ` AND district = ?`;
+            params.push(district.trim());
+        }
+
+        if (municipality && municipality.trim() !== '') {
+            query += ` AND municipality = ?`;
+            params.push(municipality.trim());
+        }
 
         // --- Date Filters ---
         if (datePreset) {
             if (datePreset === 'today') {
                 query += ` AND DATE(created_at) = CURDATE()`;
-            } else if (datePreset === 'week') {
+            } else if (datePreset === 'last7') {
                 query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
-            } else if (datePreset === 'month') {
-                query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`;
+            } else if (datePreset === 'thisMonth') {
+                query += ` AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())`;
+            } else if (datePreset === 'lastMonth') {
+                query += ` AND MONTH(created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
+                           AND YEAR(created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))`;
             }
         }
 
+        // --- Custom Date Range ---
         if (startDate && endDate) {
             query += ` AND DATE(created_at) BETWEEN ? AND ?`;
             params.push(startDate, endDate);
         }
 
         query += ` ORDER BY created_at DESC`;
+
+        console.log('📊 Executing Query:', query);
+        console.log('📊 With Params:', params);
 
         const [rows] = await pool.execute(query, params);
         

@@ -477,20 +477,18 @@
    GPS LOCK SUCCESS BOX (Enhanced Design)
    ========================================= */
 .location-success-box {
-    padding: 14px 16px;
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    padding: 12px;
+    background-color: #d1fae5;
     border: 1px solid #10b981;
     border-radius: 8px;
     font-size: 13px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
 }
 
 .gps-lock-info {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: flex-start;
+    margin-bottom: 10px;
 }
 
 .gps-lock-icon {
@@ -500,54 +498,37 @@
 
 .gps-lock-details {
     margin: 4px 0 0 0;
-    font-size: 12px;
     color: #065f46;
     line-height: 1.5;
 }
 
 .gps-lock-actions {
     display: flex;
-    gap: 8px;
     justify-content: flex-end;
 }
 
-.location-unlock-btn,
 .location-clear-btn {
     padding: 6px 12px;
+    background-color: #ef4444;
+    color: white;
+    border: none;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    border: none;
-}
-
-.location-unlock-btn {
-    background-color: #3b82f6;
-    color: white;
-}
-
-.location-unlock-btn:hover {
-    background-color: #2563eb;
-}
-
-.location-clear-btn {
-    background-color: transparent;
-    color: #065f46;
-    border: 1px solid #065f46;
 }
 
 .location-clear-btn:hover {
-    background-color: #065f46;
-    color: white;
+    background-color: #dc2626;
+    transform: translateY(-1px);
 }
 
-/* Disabled State for Locked Fields */
+/* Disabled Field Styling */
 input:disabled,
 select:disabled {
-    background-color: #f3f4f6;
-    color: #6b7280;
-    cursor: not-allowed;
+    background-color: #f3f4f6 !important;
+    cursor: not-allowed !important;
     opacity: 0.7;
 }
 
@@ -581,4 +562,97 @@ select:disabled {
     .location-clear-btn {
         align-self: flex-end;
     }
+}
+
+/* GPS Location Section */
+.gps-location-section {
+    margin: 20px 0;
+}
+
+.btn-find-location {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-find-location:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.btn-find-location:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.location-error-box {
+    margin-top: 12px;
+    padding: 12px;
+    background-color: #fee2e2;
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    color: #991b1b;
+    font-size: 14px;
+}
+
+.location-success-box {
+    margin: 16px 0;
+    padding: 16px;
+    background-color: #d1fae5;
+    border: 2px solid #10b981;
+    border-radius: 8px;
+}
+
+.gps-lock-info {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.gps-lock-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.gps-lock-details {
+    margin: 4px 0;
+    color: #065f46;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.gps-accuracy {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #047857;
+    font-style: italic;
+}
+
+.location-clear-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.location-clear-btn:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
 }

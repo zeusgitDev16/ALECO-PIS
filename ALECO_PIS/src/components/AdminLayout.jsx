@@ -1,18 +1,14 @@
-import React, { useState } from 'react'; // Added useState import
+import React, { useState } from 'react';
 import AdminSidebar from './Sidebar';
 import SearchBarGlobal from './searchBars/SearchBarGlobal';
 import '../CSS/Dashboard.css';
 
 const AdminLayout = ({ children, activePage }) => {
-  // 1. State for the sliding mobile sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
-  // 2. Toggle function
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
     <div className="admin-dashboard-container">
-      {/* 3. Pass the state and toggle function down to the Sidebar */}
       <AdminSidebar 
         activePage={activePage} 
         isOpen={isSidebarOpen} 
@@ -20,10 +16,17 @@ const AdminLayout = ({ children, activePage }) => {
       />
       
       <div className="admin-main-wrapper">
-        {/* 4. Pass ONLY the toggle function down to the Search Bar / Header */}
         <SearchBarGlobal toggleSidebar={toggleSidebar} />
         
-        <div className="admin-content">
+        {/* ✅ FIXED: Make this the scrollable zone */}
+        <div className="admin-content" style={{ 
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0
+        }}>
           {children}
         </div>
       </div>

@@ -28,7 +28,7 @@ const MapCenterHandler = ({ coords }) => {
     return null;
 };
 
-const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality }) => {
+const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, district }) => {
     if (!latitude || !longitude) return null;
 
     const userPosition = [latitude, longitude];
@@ -38,7 +38,14 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality }) => 
             <div className="location-preview-header">
                 <h4>📍 Your Detected Location</h4>
                 <div className="location-metadata">
-                    <span className="municipality-badge">{municipality || 'Detecting...'}</span>
+                    <span className="municipality-badge">
+                        {municipality || 'Detecting...'}
+                    </span>
+                    {district && (
+                        <span className="district-badge">
+                            {district}
+                        </span>
+                    )}
                     <span className="accuracy-badge">±{accuracy}m accuracy</span>
                 </div>
             </div>
@@ -58,23 +65,8 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality }) => 
                     
                     <MapCenterHandler coords={userPosition} />
 
-                    {/* User's GPS Position Marker */}
                     <Marker position={userPosition} icon={getUserLocationIcon()}>
                     </Marker>
-
-                    {/* Accuracy Circle (Optional Visual) */}
-                    {accuracy && (
-                        <circle
-                            center={userPosition}
-                            radius={accuracy}
-                            pathOptions={{
-                                color: '#3b82f6',
-                                fillColor: '#3b82f6',
-                                fillOpacity: 0.1,
-                                weight: 2
-                            }}
-                        />
-                    )}
                 </MapContainer>
             </div>
 
@@ -82,6 +74,11 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality }) => 
                 <p className="location-hint">
                     ℹ️ This is your device's GPS location. Make sure it matches your actual position before submitting.
                 </p>
+                {district && municipality && (
+                    <p className="location-confirmation">
+                        ✅ Matched to: <strong>{municipality}</strong>, {district}
+                    </p>
+                )}
             </div>
         </div>
     );

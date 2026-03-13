@@ -16,7 +16,7 @@
 [data-theme="dark"] {
   /* ALECO Dark Theme (Inspired by image_7.png) */
   --bg-profile: #161a1d;
-  --bg-profile-card: #1f2327;
+  --bg-profile-card: #111827;
   --color-text-main: #e1e3e8;
   --color-text-muted: #b0b3b8;
   --color-text-badge: #aaaaaa;
@@ -109,12 +109,12 @@
 .role-pill.employee { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
 
 .edit-profile-btn {
-  width: 200px;
+  width: fit-content;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 6px;
-  padding: 10px;
+  padding: 10px 25px;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
@@ -316,56 +316,73 @@ textarea.edit-input-field {
     padding: 15px; /* Tighter padding for small screens */
   }
 
-  .profile-header-text h1 { font-size: 1.4rem; }
-  .profile-header-text p { font-size: 0.85rem; }
+  /* FLUID TYPOGRAPHY: Text shrinks smoothly as screen width reduces */
+  .profile-header-text h1 { font-size: clamp(1.1rem, 5vw, 1.3rem); }
+  .profile-header-text p { font-size: clamp(0.7rem, 3vw, 0.85rem); }
 
   .profile-grid-layout {
-    gap: 15px;
+    gap: 12px;
   }
 
   .profile-card {
-    padding: 15px; /* Tighter padding */
+    padding: 15px; /* Even tighter padding */
     border-radius: 10px;
   }
 
   .avatar-ring {
-    width: 100px; /* Smaller avatar */
-    height: 100px;
-    padding: 5px;
+    width: 75px; /* Even smaller avatar */
+    height: 75px;
+    padding: 2px;
     border-width: 2px;
   }
 
-  .user-intro h2 { font-size: 1.2rem; margin-bottom: 5px; }
-  .role-pill { font-size: 0.65rem; padding: 4px 12px; }
+  .user-intro h2 { font-size: clamp(0.8rem, 4vw, 1rem); margin-bottom: 5px; }
+  .role-pill { font-size: clamp(0.5rem, 2vw, 0.6rem); padding: 4px 8px; }
 
   .edit-profile-btn { 
-    width: 100%; /* Full width on mobile to fit container */
-    padding: 10px; 
-    font-size: 0.8rem; 
+    width: fit-content; /* Make it a compact box instead of full width */
+    min-width: 90px;   /* Ensures it doesn't get too small */
+    padding: 6px 12px; 
+    font-size: clamp(0.6rem, 2.2vw, 0.7rem); 
+    margin: 15px auto 0; /* Re-apply auto margin to center the button */
+    border-radius: 20px;
   }
 
-  .details-header-row h3 { font-size: 1.1rem; }
-  .info-details-grid { gap: 20px; }
-  .info-group label { font-size: 0.65rem; }
+  .details-header-row h3 { font-size: clamp(0.8rem, 3.8vw, 0.95rem); }
+  .info-details-grid { gap: clamp(8px, 3vw, 12px); }
+  .info-group label { font-size: clamp(0.45rem, 1.7vw, 0.55rem); }
+  .info-group {
+    text-align: left; /* Ensures all content inside aligns to the left */
+  }
   .info-group p { 
-    font-size: 0.9rem; 
+    font-size: clamp(0.68rem, 2.7vw, 0.82rem); 
     word-break: break-word; /* Prevents long emails from breaking container */
   }
 
-  .edit-input-field { padding: 8px; font-size: 0.9rem; }
+  .edit-input-field { padding: 5px; font-size: clamp(0.68rem, 2.8vw, 0.8rem); }
   textarea.edit-input-field { min-height: 80px; }
 
-  .social-text { font-size: 0.8rem; }
+  /* Apply fluid typography to all remaining text elements */
+  .social-media-container h3, .activity-logs-container h3 {
+    font-size: clamp(0.85rem, 4vw, 1rem);
+  }
+
+  .change-pass-btn {
+    font-size: clamp(0.5rem, 1.8vw, 0.65rem);
+  }
+
+  .social-text { font-size: clamp(0.65rem, 3vw, 0.75rem); }
+  .social-icon { font-size: clamp(0.9rem, 3.5vw, 1.1rem); }
   
   .activity-log-list li { 
-    font-size: 0.8rem; 
+    font-size: clamp(0.65rem, 3vw, 0.75rem); 
     flex-direction: column; /* Stack date under action */
     align-items: flex-start;
     gap: 4px;
   }
   .activity-log-list li small {
-    align-self: flex-end; /* Align date to right or keep start */
-    font-size: 0.7rem;
+    align-self: flex-start; /* Align date to left */
+    font-size: clamp(0.55rem, 2vw, 0.65rem);
   }
 }
 

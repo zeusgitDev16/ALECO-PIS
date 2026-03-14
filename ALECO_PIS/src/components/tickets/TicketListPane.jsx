@@ -68,7 +68,7 @@ const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, se
                         </div>
                         
                         <div className="card-body-content">
-                            <h4 className="concern-text-highlight">{ticket.concern}</h4>
+                            <p className="concern-text-highlight">{ticket.concern}</p>
                         </div>
 
                         <div className="card-footer-metadata">

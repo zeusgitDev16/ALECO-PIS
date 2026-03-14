@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
-import '../CSS/TicketMain.css'; 
+import '../CSS/AdminPageLayout.css';
+import '../CSS/TicketsPage.css'; // ✅ NEW ISOLATED CSS
 import useTickets from '../utils/useTickets';
 import UrgentTickets from './containers/UrgentTickets';
 import useDraggable from '../utils/useDraggable';
@@ -11,6 +12,8 @@ import TicketListPane from './tickets/TicketListPane';
 import TicketDetailPane from './tickets/TicketDetailPane';
 import GroupIncidentModal from './tickets/GroupIncidentModal';
 import TicketLayoutPicker from './tickets/TicketLayoutPicker';
+import TicketFilterLayoutWrapper from './tickets/TicketFilterLayoutWrapper';
+import TicketTableView from './tickets/TicketTableView';
 
 const AdminTickets = () => {
     const { tickets, loading: isLoading, error, filters, setFilters } = useTickets();
@@ -38,9 +41,21 @@ const AdminTickets = () => {
     }, []);
 
     const toggleTicketSelection = (id) => {
-        setSelectedIds(prev => 
+        setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
         );
+    };
+
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (filters.searchQuery) count++;
+        if (filters.category) count++;
+        if (filters.district) count++;
+        if (filters.municipality) count++;
+        if (filters.datePreset) count++;
+        if (filters.isNew) count++;
+        if (filters.isUrgent) count++;
+        return count;
     };
 
     const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
@@ -84,45 +99,45 @@ const AdminTickets = () => {
 
     return (
         <AdminLayout activePage="tickets">
-            <div className="tickets-page-container">
+            <div className="admin-page-container">
                 
-                {/* HEADER */}
-                <div className="tickets-header">
-                    <div className="header-text">
-                        <h2>Support Tickets</h2>
-                        <p>Track and resolve user reported issues.</p>
+                {/* ✅ STANDARD HEADER (LIKE PERSONNELMANAGEMENT.JSX) */}
+                <div className="dashboard-header-flex">
+                    <div className="header-text-group">
+                        <h2 className="header-title">Support Tickets</h2>
+                        <p className="header-subtitle">Track and resolve user reported issues.</p>
                     </div>
                     <MapButton onClick={() => setIsMapOpen(true)} />
                 </div>
 
-                {/* ERROR BANNER */}
                 {error && (
                     <div className="error-banner">
                         {error}
                     </div>
                 )}
 
-                {/* FILTER BAR */}
-                <TicketFilterBar 
-                    activeTab={activeTab} 
-                    setActiveTab={setActiveTab} 
-                    filters={filters} 
-                    setFilters={setFilters} 
-                    tickets={tickets} 
-                    selectedIds={selectedIds} 
-                    setSelectedIds={setSelectedIds}
-                />
+                {/* ✅ COLLAPSIBLE FILTER & LAYOUT WRAPPER */}
+                <TicketFilterLayoutWrapper activeFiltersCount={getActiveFiltersCount()}>
+                    {/* ✅ LEGO BRICK: Filter Bar */}
+                    <TicketFilterBar
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        filters={filters}
+                        setFilters={setFilters}
+                        tickets={tickets}
+                        selectedIds={selectedIds}
+                        setSelectedIds={setSelectedIds}
+                    />
 
-                {/* LAYOUT PICKER */}
-                <TicketLayoutPicker 
-                    activeLayout={viewMode}
-                    onLayoutChange={handleLayoutChange}
-                />
+                    {/* ✅ LEGO BRICK: Layout Picker */}
+                    <TicketLayoutPicker
+                        activeLayout={viewMode}
+                        onLayoutChange={handleLayoutChange}
+                    />
+                </TicketFilterLayoutWrapper>
 
-                {/* CONTENT AREA */}
-                <div className="tickets-content-area">
-                    
-                    {/* GRID VIEW */}
+                {/* ✅ LEGO BRICK: Content Widget (WITH SCROLL) */}
+                <div className="dashboard-widget main-content-card">
                     {viewMode === 'grid' && (
                         <>
                             <UrgentTickets 
@@ -133,7 +148,7 @@ const AdminTickets = () => {
                             />
 
                             <div className="separator">
-                                <p>Regular Tickets:</p>
+                                <p><span>📋</span> Regular Tickets:</p>
                             </div>
 
                             <TicketListPane 
@@ -147,16 +162,16 @@ const AdminTickets = () => {
                         </>
                     )}
 
-                    {/* TABLE VIEW */}
                     {viewMode === 'table' && (
-                        <div className="placeholder-view">
-                            <h3>📊 Table View</h3>
-                            <p>Coming Soon: Compact table layout for bulk operations</p>
-                            <p className="ticket-count">Showing {tickets.length} tickets</p>
-                        </div>
+                        <TicketTableView
+                            tickets={tickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={setSelectedTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
                     )}
 
-                    {/* KANBAN VIEW */}
                     {viewMode === 'kanban' && (
                         <div className="placeholder-view">
                             <h3>🗂️ Kanban View</h3>
@@ -167,7 +182,7 @@ const AdminTickets = () => {
                 </div>
             </div>
 
-            {/* MODALS */}
+            {/* ✅ MODALS (OUTSIDE SCROLL CONTAINER) */}
             <TicketDetailPane 
                 ticket={selectedTicket} 
                 onClose={() => setSelectedTicket(null)}
@@ -194,20 +209,21 @@ const AdminTickets = () => {
                             Tickets Selected
                         </span>
                         <div className="bulk-action-buttons">
-                            <button 
+                            <button
                                 className="btn-bulk-action btn-group"
                                 onClick={() => setIsGroupModalOpen(true)}
                             >
-                                🔗 Group as Incident
+                                Group
                             </button>
                             <button className="btn-bulk-action btn-resolve">
-                                ✅ Resolve Selected
+                                Resolve
                             </button>
-                            <button 
-                                className="btn-bulk-action btn-cancel" 
+                            <button
+                                className="btn-bulk-action btn-cancel"
                                 onClick={() => setSelectedIds([])}
+                                title="Cancel selection"
                             >
-                                ✖ Cancel
+                                ✕
                             </button>
                         </div>
                     </div>
@@ -224,7 +240,8 @@ const AdminTickets = () => {
                 isOpen={isGroupModalOpen}
                 onClose={() => setIsGroupModalOpen(false)}
                 selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id))}
-                onGroupCreated={() => {
+                onSubmit={(groupData) => {
+                    console.log('📦 Group Created:', groupData);
                     setIsGroupModalOpen(false);
                     setSelectedIds([]);
                 }}

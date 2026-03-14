@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import InviteNewUsers from './containers/InviteNewUsers';
 import AllUsers from './containers/AllUsers';
+import '../CSS/AdminPageLayout.css';
 
 // Define roles globally to avoid "magic strings"
 const USER_ROLES = {
@@ -22,17 +23,24 @@ const AdminUsers = () => {
 
   return (
     <AdminLayout activePage="users">
+      <div className="admin-page-container">
         {/* Page Header */}
-        <div className="dashboard-header">
-          <h2 className="header-title">User Management</h2>
-          <p className="header-subtitle">View and manage system users, roles, and permissions.</p>
+        <div className="dashboard-header-flex">
+          <div className="header-text-group">
+            <h2 className="header-title">User Management</h2>
+            <p className="header-subtitle">View and manage system users, roles, and permissions.</p>
+          </div>
         </div>
 
-        {/* Invitation System Container */}
-        <InviteNewUsers onUserInvited={handleUserInvited} />
+        {/* Main Content Card (Scrollable) */}
+        <div className="main-content-card">
+          {/* Invitation System Container */}
+          <InviteNewUsers onUserInvited={handleUserInvited} />
 
-        {/* Content Area */}
-        <AllUsers users={usersList} />
+          {/* Content Area */}
+          <AllUsers users={usersList} />
+        </div>
+      </div>
     </AdminLayout>
   );
 };

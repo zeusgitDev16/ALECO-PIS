@@ -9,8 +9,9 @@ const useTickets = () => {
 
     // 1. The Master Filter State (CLEANED: Removed barangay & purok)
     const [filters, setFilters] = useState({
-        tab: 'Open', 
+        tab: 'Open',
         isNew: false,
+        isUrgent: false,
         searchQuery: '',
         category: '',
         district: '',

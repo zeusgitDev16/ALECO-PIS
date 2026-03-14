@@ -1,7 +1,7 @@
 /* ==========================================================================
    1. MAIN DASHBOARD LAYOUT & TYPOGRAPHY
    ========================================================================== */
-.personnel-dashboard {
+.admin-page-container {
     padding: 10px 20px;
     animation: fadeIn 0.3s ease-in-out;
 }

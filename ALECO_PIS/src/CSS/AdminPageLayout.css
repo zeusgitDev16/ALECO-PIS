@@ -1,0 +1,131 @@
+/* ==========================================================================
+   ALECO ADMIN PAGE LAYOUT - STRICT DESIGN SYSTEM
+   Universal layout for all admin pages following "Lego Brick" methodology
+   ========================================================================== */
+
+/* --- PAGE CONTAINER (EVERY PAGE USES THIS) --- */
+.admin-page-container {
+    padding: 10px 20px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* --- HEADER SECTION (STANDARD PATTERN) --- */
+.dashboard-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+.header-text-group {
+    flex: 1;
+}
+
+.header-title {
+    font-size: 1.5rem !important; 
+    font-weight: 700;
+    color: var(--text-header);
+    margin: 0 0 4px 0;
+}
+
+.header-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* --- MAIN CONTENT CARD (SCROLLABLE WIDGET) --- */
+.main-content-card {
+    padding: 20px !important;
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 65vh;
+}
+
+/* Custom Scrollbar (Theme-Aware) */
+.main-content-card::-webkit-scrollbar {
+    width: 8px;
+}
+
+.main-content-card::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main-content-card::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.2);
+    border-radius: 10px;
+}
+
+.main-content-card::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.3);
+}
+
+[data-theme="dark"] .main-content-card::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .main-content-card::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* --- PLACEHOLDER CONTENT (FOR EMPTY STATES) --- */
+.placeholder-content {
+    padding: 40px 20px;
+    text-align: center;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius-lg);
+    background-color: rgba(128, 128, 128, 0.02);
+}
+
+.placeholder-content h3 {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.placeholder-content p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* --- WIDGET TEXT (BODY CONTENT) --- */
+.widget-text {
+    font-size: 0.7rem !important;
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- RESPONSIVE BREAKPOINTS --- */
+@media (max-width: 700px) {
+    .dashboard-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .main-content-card {
+        max-height: 70vh;
+    }
+}
+
+@media (max-width: 350px) {
+    .admin-page-container {
+        padding: 8px 12px;
+    }
+    
+    .main-content-card {
+        padding: 12px !important;
+    }
+}
+

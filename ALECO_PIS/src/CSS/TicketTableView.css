@@ -1,0 +1,379 @@
+/* =========================================
+   TICKET TABLE VIEW - HIGH-DENSITY LAYOUT
+   ========================================= */
+
+/* Container */
+.ticket-table-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 300px);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    position: relative;
+}
+
+/* Empty State */
+.ticket-table-empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Table */
+.ticket-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    background: var(--bg-card);
+    min-width: 1240px; /* Prevent column squishing */
+}
+
+/* =========================================
+   HEADER - STICKY & SORTABLE
+   ========================================= */
+.ticket-table-header {
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ticket-table-header tr {
+    background: var(--bg-card);
+}
+
+.ticket-table-header th {
+    background: var(--bg-card);
+    position: relative;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    user-select: none;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.ticket-table-header th.sortable {
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.ticket-table-header th.sortable:hover {
+    background: var(--bg-body);
+}
+
+/* Dark theme - ensure solid background */
+[data-theme="dark"] .ticket-table-header {
+    background: #18212f;
+}
+
+[data-theme="dark"] .ticket-table-header tr {
+    background: #18212f;
+}
+
+[data-theme="dark"] .ticket-table-header th {
+    background: #18212f;
+}
+
+/* Light theme - ensure solid background */
+[data-theme="light"] .ticket-table-header {
+    background: #f2f2f2;
+}
+
+[data-theme="light"] .ticket-table-header tr {
+    background: #f2f2f2;
+}
+
+[data-theme="light"] .ticket-table-header th {
+    background: #f2f2f2;
+}
+
+/* =========================================
+   COLUMN WIDTHS
+   ========================================= */
+.col-checkbox {
+    width: 35px;
+    text-align: center;
+    cursor: default;
+    padding: 6px 8px !important;
+}
+
+.col-id {
+    width: 115px;
+    padding: 6px 10px !important;
+}
+
+.col-name {
+    width: 140px;
+    padding: 6px 10px !important;
+}
+
+.col-phone {
+    width: 105px;
+    padding: 6px 10px !important;
+}
+
+.col-category {
+    width: 110px;
+    padding: 6px 10px !important;
+}
+
+.col-concern {
+    width: 240px;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 6px 10px !important;
+}
+
+.col-location {
+    width: 170px;
+    padding: 6px 10px !important;
+}
+
+.col-status {
+    width: 95px;
+    padding: 6px 10px !important;
+}
+
+.col-date {
+    width: 105px;
+    padding: 6px 10px !important;
+}
+
+/* =========================================
+   BODY - ZEBRA STRIPING & HOVER
+   ========================================= */
+.ticket-table-body tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s ease;
+}
+
+.ticket-table-body tr.even {
+    background: var(--bg-card);
+}
+
+.ticket-table-body tr.odd {
+    background: var(--bg-body);
+}
+
+.ticket-table-body tr:hover {
+    background: var(--bg-hover);
+    cursor: pointer;
+}
+
+.ticket-table-body tr.selected {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid var(--primary-color);
+}
+
+[data-theme="light"] .ticket-table-body tr.selected {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.ticket-table-body td {
+    padding: 6px 10px;
+    color: var(--text-main);
+    vertical-align: middle;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+/* =========================================
+   STATUS BADGES
+   ========================================= */
+.status-badge {
+    padding: 2px 7px;
+    border-radius: 8px;
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+    display: inline-block;
+    line-height: 1.2;
+}
+
+.status-badge.pending {
+    background: rgba(251, 191, 36, 0.2);
+    color: #f59e0b;
+}
+
+.status-badge.ongoing {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+
+.status-badge.resolved {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+[data-theme="light"] .status-badge.pending {
+    background: rgba(251, 191, 36, 0.3);
+    color: #d97706;
+}
+
+[data-theme="light"] .status-badge.ongoing {
+    background: rgba(59, 130, 246, 0.3);
+    color: #2563eb;
+}
+
+[data-theme="light"] .status-badge.resolved {
+    background: rgba(34, 197, 94, 0.3);
+    color: #16a34a;
+}
+
+/* =========================================
+   URGENT TICKET HIGHLIGHTING (OPTION 4)
+   ========================================= */
+.ticket-table-body tr.urgent {
+    border-left: 4px solid #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+[data-theme="light"] .ticket-table-body tr.urgent {
+    background: rgba(239, 68, 68, 0.12);
+}
+
+/* Checkbox wrapper for urgent tickets */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+/* Urgent icon in checkbox column */
+.urgent-icon {
+    font-size: 12px;
+    display: inline-block;
+    line-height: 1;
+}
+
+/* Urgent dot before status badge */
+.urgent-dot {
+    font-size: 8px;
+    margin-right: 4px;
+    display: inline-block;
+}
+
+/* Bold ticket ID for urgent tickets */
+.ticket-table-body tr.urgent .col-id strong {
+    font-weight: 700;
+    color: #ef4444;
+}
+
+[data-theme="light"] .ticket-table-body tr.urgent .col-id strong {
+    color: #dc2626;
+}
+
+/* =========================================
+   CHECKBOX STYLING
+   ========================================= */
+.col-checkbox input[type="checkbox"] {
+    cursor: pointer;
+    width: 12px;
+    height: 12px;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.ticket-table-header .col-checkbox input[type="checkbox"] {
+    width: 12px;
+    height: 12px;
+}
+
+/* =========================================
+   TEXT ALIGNMENT & TRUNCATION
+   ========================================= */
+/* Center-align checkbox column */
+.ticket-table-header .col-checkbox,
+.ticket-table-body .col-checkbox {
+    text-align: center;
+}
+
+/* Left-align all text columns */
+.ticket-table-header .col-id,
+.ticket-table-body .col-id,
+.ticket-table-header .col-name,
+.ticket-table-body .col-name,
+.ticket-table-header .col-phone,
+.ticket-table-body .col-phone,
+.ticket-table-header .col-category,
+.ticket-table-body .col-category,
+.ticket-table-header .col-concern,
+.ticket-table-body .col-concern,
+.ticket-table-header .col-location,
+.ticket-table-body .col-location,
+.ticket-table-header .col-status,
+.ticket-table-body .col-status,
+.ticket-table-header .col-date,
+.ticket-table-body .col-date {
+    text-align: left;
+}
+
+/* Ensure concern text truncates properly */
+.ticket-table-body .col-concern {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Ensure location text truncates if too long */
+.ticket-table-body .col-location {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* =========================================
+   RESPONSIVE BEHAVIOR
+   ========================================= */
+@media (max-width: 1366px) {
+    .ticket-table-container {
+        max-height: calc(100vh - 280px);
+    }
+}
+
+@media (max-width: 1024px) {
+    .col-phone {
+        display: none;
+    }
+
+    .ticket-table {
+        min-width: 970px;
+    }
+}
+
+/* =========================================
+   SCROLLBAR STYLING
+   ========================================= */
+.ticket-table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.ticket-table-container::-webkit-scrollbar-track {
+    background: var(--bg-body);
+    border-radius: 4px;
+}
+
+.ticket-table-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.ticket-table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+

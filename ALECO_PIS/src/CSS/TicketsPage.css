@@ -1,0 +1,222 @@
+/* ==========================================================================
+   TICKETS PAGE LAYOUT - TWO-LEVEL SCROLL ARCHITECTURE
+   ========================================================================== */
+
+/* =========================================
+   PAGE CONTAINER (LEVEL 1 SCROLL - ENTIRE PAGE)
+   ========================================= */
+.admin-page-container {
+    padding: 10px 20px;
+    animation: fadeIn 0.3s ease-in-out;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Custom Scrollbar for Page Container - Neutral Gray */
+.admin-page-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-page-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-page-container::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 10px;
+}
+
+.admin-page-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+}
+
+/* =========================================
+   HEADER (FIXED - DOES NOT SCROLL)
+   ========================================= */
+.admin-page-container .dashboard-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.admin-page-container .header-title {
+    font-size: 1.5rem !important;
+    font-weight: 700;
+    color: var(--text-header);
+    margin: 0 0 4px 0;
+}
+
+.admin-page-container .header-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* =========================================
+   ERROR BANNER
+   ========================================= */
+.admin-page-container .error-banner {
+    padding: 8px 12px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+/* =========================================
+   FILTER BAR & LAYOUT PICKER (SCROLLS WITH PAGE)
+   ========================================= */
+.admin-page-container .ticket-filter-bar {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.admin-page-container .layout-picker-container {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+/* =========================================
+   MAIN CONTENT CARD (LEVEL 2 SCROLL - INTERNAL LIST SCROLL)
+   ========================================= */
+.admin-page-container .main-content-card {
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 400px;
+    max-height: 60vh;
+}
+
+/* Custom Scrollbar for Content Card - Neutral Gray */
+.admin-page-container .main-content-card::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-page-container .main-content-card::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-page-container .main-content-card::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 10px;
+}
+
+.admin-page-container .main-content-card::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+}
+
+/* =========================================
+   SEPARATOR (BETWEEN URGENT & REGULAR)
+   ========================================= */
+.admin-page-container .separator {
+    margin: 16px 0;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.admin-page-container .separator p {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* =========================================
+   PLACEHOLDER VIEWS
+   ========================================= */
+.admin-page-container .placeholder-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    color: var(--text-secondary);
+}
+
+.admin-page-container .placeholder-view h3 {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+}
+
+.admin-page-container .placeholder-view p {
+    font-size: 0.85rem;
+}
+
+.admin-page-container .ticket-count {
+    margin-top: 12px;
+    font-weight: 600;
+    color: var(--accent-primary);
+}
+
+/* =========================================
+   ANIMATIONS
+   ========================================= */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   RESPONSIVE - MOBILE & TABLET
+   ========================================= */
+@media (max-width: 800px) {
+    .admin-page-container {
+        padding: 6px 10px;
+        height: calc(100vh - 60px);
+        gap: 6px;
+    }
+
+    .admin-page-container .dashboard-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        margin-bottom: 0;
+    }
+
+    .admin-page-container .header-title {
+        font-size: 1.1rem !important;
+    }
+
+    .admin-page-container .header-subtitle {
+        font-size: 0.7rem;
+    }
+
+    .admin-page-container .main-content-card {
+        padding: 10px;
+        min-height: 300px;
+        max-height: 50vh;
+    }
+}
+
+@media (max-width: 500px) {
+    .admin-page-container {
+        padding: 4px 8px;
+        gap: 4px;
+    }
+
+    .admin-page-container .header-title {
+        font-size: 1rem !important;
+    }
+
+    .admin-page-container .header-subtitle {
+        font-size: 0.65rem;
+    }
+
+    .admin-page-container .main-content-card {
+        padding: 8px;
+        min-height: 250px;
+        max-height: 45vh;
+    }
+}

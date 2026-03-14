@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import AddCrew from './personnels/AddCrew';
 import AddLinemen from './personnels/AddLinemen';
+import '../CSS/AdminPageLayout.css';
 import '../CSS/PersonnelManagement.css';
 
 const PersonnelManagement = () => {
@@ -118,7 +119,7 @@ const PersonnelManagement = () => {
 
     return (
         <AdminLayout activePage="personnel">
-            <div className="personnel-dashboard">
+            <div className="admin-page-container">
                 
                 {/* --- HEADER & TABS --- */}
                 <div className="dashboard-header-flex">

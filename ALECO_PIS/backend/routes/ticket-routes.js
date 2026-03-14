@@ -6,13 +6,13 @@ const router = express.Router();
 // IDEMPOTENT FILTER ROUTE: Returns tickets based on admin dashboard filters
 router.get('/filtered-tickets', async (req, res) => {
     try {
-        const { 
-            tab, isNew, searchQuery, category, 
-            district, municipality, 
+        const {
+            tab, isNew, isUrgent, searchQuery, category,
+            district, municipality,
             datePreset, startDate, endDate
         } = req.query;
 
-        console.log('🔍 Filter Request:', { tab, isNew, searchQuery, category, district, municipality, datePreset });
+        console.log('🔍 Filter Request:', { tab, isNew, isUrgent, searchQuery, category, district, municipality, datePreset });
 
         let query = `SELECT * FROM aleco_tickets WHERE 1=1`;
         const params = [];
@@ -27,6 +27,11 @@ router.get('/filtered-tickets', async (req, res) => {
         // --- 48 Hour Toggle ---
         if (isNew === 'true') {
             query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL 48 HOUR)`;
+        }
+
+        // --- Urgent Filter ---
+        if (isUrgent === 'true') {
+            query += ` AND is_urgent = 1`;
         }
 
         // --- Search Bar (ID, Name, Concern) ---

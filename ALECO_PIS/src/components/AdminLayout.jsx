@@ -18,15 +18,8 @@ const AdminLayout = ({ children, activePage }) => {
       <div className="admin-main-wrapper">
         <SearchBarGlobal toggleSidebar={toggleSidebar} />
         
-        {/* ✅ FIXED: Make this the scrollable zone */}
-        <div className="admin-content" style={{ 
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0
-        }}>
+        {/* ✅ NO SCROLL HERE - Just a container */}
+        <div className="admin-content">
           {children}
         </div>
       </div>

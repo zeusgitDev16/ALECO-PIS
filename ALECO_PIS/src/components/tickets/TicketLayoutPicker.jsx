@@ -11,7 +11,6 @@ const TicketLayoutPicker = ({ activeLayout, onLayoutChange }) => {
 
     return (
         <div className="layout-picker-container">
-            <span className="picker-label">View Mode:</span>
             <div className="layout-buttons">
                 {layouts.map(layout => (
                     <button

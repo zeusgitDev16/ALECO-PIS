@@ -22,6 +22,11 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
         setFilters(prev => ({ ...prev, isNew: !prev.isNew }));
     };
 
+    // 3. Toggle Handler for the "Urgent" filter
+    const toggleUrgent = () => {
+        setFilters(prev => ({ ...prev, isUrgent: !prev.isUrgent }));
+    };
+
     // 3. Location Handler (CLEANED: Only district & municipality)
     const handleLocationChange = (locObj) => {
         if (locObj && (locObj.district || locObj.municipality)) {
@@ -86,12 +91,21 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
                 </div>
 
                 {/* ⚡ The New 48-Hour Toggle */}
-                <button 
+                <button
                     className={`urgent-toggle-btn ${filters.isNew ? 'active' : ''}`}
                     onClick={toggleUrgentNew}
                     title="Show tickets submitted in the last 48 hours"
                 >
                     <span className="urgent-icon">⚡</span> New (48h)
+                </button>
+
+                {/* 🚨 The Urgent Filter Toggle */}
+                <button
+                    className={`urgent-toggle-btn ${filters.isUrgent ? 'active' : ''}`}
+                    onClick={toggleUrgent}
+                    title="Show only urgent tickets"
+                >
+                    <span className="urgent-icon">🚨</span> Urgent
                 </button>
 
                 {/* Grouped Search and Category to stay side-by-side */}
@@ -131,14 +145,13 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
                 
                 {/* Smart Date Filtering */}
                 <div className="date-filter-group">
-                    <span className="group-label">📅 Date:</span>
-                    <select 
-                        name="datePreset" 
-                        className="filter-select date-preset"
+                    <select
+                        name="datePreset"
+                        className="date-preset-select"
                         value={filters.datePreset || ""}
                         onChange={handleFilterChange}
                     >
-                        <option value="">All Time</option>
+                        <option value="">📅 All Time</option>
                         <option value="today">Today</option>
                         <option value="last7">Last 7 Days</option>
                         <option value="thisMonth">This Month</option>
@@ -148,33 +161,33 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
 
                     {/* Appears ONLY if "Custom Range" is selected */}
                     {filters.datePreset === 'custom' && (
-                        <div className="custom-date-inputs">
-                            <input 
-                                type="date" 
-                                name="startDate" 
-                                className="filter-input date-picker"
-                                value={filters.startDate || ""} 
-                                onChange={handleFilterChange} 
+                        <>
+                            <input
+                                type="date"
+                                name="startDate"
+                                className="date-input"
+                                value={filters.startDate || ""}
+                                onChange={handleFilterChange}
                             />
-                            <span>to</span>
-                            <input 
-                                type="date" 
-                                name="endDate" 
-                                className="filter-input date-picker"
-                                value={filters.endDate || ""} 
-                                onChange={handleFilterChange} 
+                            <span className="date-range-separator">to</span>
+                            <input
+                                type="date"
+                                name="endDate"
+                                className="date-input"
+                                value={filters.endDate || ""}
+                                onChange={handleFilterChange}
                             />
-                        </div>
+                        </>
                     )}
                 </div>
 
                 {/* Export / Report Actions */}
                 <div className="report-actions-group">
-                    <button className="action-btn weekly-btn" onClick={() => handleExport('weekly')}>
-                        📥 Weekly Report
+                    <button className="btn-report" onClick={() => handleExport('weekly')}>
+                        📥 Weekly
                     </button>
-                    <button className="action-btn monthly-btn" onClick={() => handleExport('monthly')}>
-                        📥 Monthly Report
+                    <button className="btn-report" onClick={() => handleExport('monthly')}>
+                        📥 Monthly
                     </button>
                 </div>
                 

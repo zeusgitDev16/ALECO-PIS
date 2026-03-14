@@ -21,6 +21,28 @@
   --font-header: 'Anek Latin', sans-serif;
   --font-subheader: 'Roboto Slab', serif;
   --font-body: 'Mulish', sans-serif;
+
+  /* Spacing Scale */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 20px;
+  --spacing-xl: 30px;
+
+  /* Border System */
+  --border-color: rgba(0, 0, 0, 0.1);
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+
+  /* Accent Colors */
+  --accent-primary: #7c4dff;
+  --accent-success: #2e7d32;
+  --accent-danger: #d32f2f;
+  --accent-warning: #ed6c02;
+
+  /* Input Backgrounds */
+  --bg-input: rgba(255, 255, 255, 0.9);
 }
 
 /* --- DARK MODE OVERRIDES --- */
@@ -36,6 +58,10 @@
   /* In dark mode, shadows act differently (usually simpler or darker) */
   --shadow-color-light: #374151; /* Lighter gray for highlight */
   --shadow-color-dark: #000000;  /* Pure black for shadow */
+
+  /* Dark Mode Overrides */
+  --border-color: rgba(255, 255, 255, 0.1);
+  --bg-input: rgba(0, 0, 0, 0.3);
 }
 
 /* 2. APPLY VARIABLES GLOBALLY */

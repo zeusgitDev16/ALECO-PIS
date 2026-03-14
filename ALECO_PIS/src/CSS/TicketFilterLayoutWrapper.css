@@ -1,0 +1,123 @@
+/* =========================================
+   FILTER LAYOUT WRAPPER - COLLAPSIBLE SYSTEM
+   ========================================= */
+
+.filter-layout-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 8px;
+}
+
+/* =========================================
+   TOGGLE BUTTON
+   ========================================= */
+.filter-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.filter-toggle-btn:hover {
+    background: var(--bg-body);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.toggle-icon {
+    font-size: 10px;
+    line-height: 1;
+}
+
+.toggle-text {
+    font-size: 0.7rem;
+}
+
+.filter-count-badge {
+    background: var(--primary-color);
+    color: #ffffff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 800;
+}
+
+[data-theme="light"] .filter-count-badge {
+    color: #1e3a8a;
+}
+
+/* =========================================
+   COLLAPSIBLE CONTENT
+   ========================================= */
+.filter-layout-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.filter-layout-content.expanded {
+    max-height: 1000px;
+    opacity: 1;
+}
+
+.filter-layout-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 800px) {
+    .filter-toggle-btn {
+        padding: 5px 12px;
+        font-size: 0.65rem;
+    }
+
+    .toggle-icon {
+        font-size: 9px;
+    }
+
+    .toggle-text {
+        font-size: 0.65rem;
+    }
+
+    .filter-count-badge {
+        font-size: 0.6rem;
+        padding: 1px 6px;
+    }
+}
+
+@media (max-width: 500px) {
+    .filter-toggle-btn {
+        padding: 4px 10px;
+        font-size: 0.6rem;
+    }
+
+    .toggle-icon {
+        font-size: 8px;
+    }
+
+    .toggle-text {
+        font-size: 0.6rem;
+    }
+
+    .filter-count-badge {
+        font-size: 0.55rem;
+        padding: 1px 5px;
+    }
+}
+

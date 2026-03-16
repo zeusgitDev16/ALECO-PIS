@@ -57,20 +57,19 @@ router.post('/invite', async (req, res) => {
 
     // 3. They are brand new.
     console.log("--- [DEBUG] Email is new. Creating fresh invite... ---");
-    
-    // THE FIX: Ensure exactly 5 columns match exactly 5 placeholders
-   const insertQuery = `
-      INSERT INTO access_codes (email, role_assigned, code, status, created_at) 
+
+    // FIXED: Exactly 4 placeholders match exactly 4 values
+    const insertQuery = `
+      INSERT INTO access_codes (email, role_assigned, code, status, created_at)
       VALUES (?, ?, ?, 'pending', ?)
     `;
-    
-    // THE FIX: Added "pending" into the array so it has 5 items to match the 5 '?' above
+
+    // FIXED: Removed duplicate "pending" from array - it's already in the SQL
     await pool.execute(insertQuery, [
-        cleanEmail, 
-        role, 
-        code, 
-        "pending", // The missing 4th value
-        manilaTime  // The 5th value
+        cleanEmail,  // 1st placeholder
+        role,        // 2nd placeholder
+        code,        // 3rd placeholder
+        manilaTime   // 4th placeholder (status is hardcoded as 'pending')
     ]);
     
     return res.status(200).json({ message: "New invitation saved!", action: "code_generated" });

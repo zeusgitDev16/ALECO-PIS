@@ -38,8 +38,14 @@
     position: sticky;
     top: 0;
     background: var(--bg-card);
-    z-index: 100;
+    z-index: 10;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Hide sticky header when modal is open to prevent z-index issues */
+body.modal-open .ticket-table-header {
+    position: relative;
+    z-index: 1;
 }
 
 .ticket-table-header tr {
@@ -218,6 +224,11 @@
     color: #22c55e;
 }
 
+.status-badge.unresolved {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
 [data-theme="light"] .status-badge.pending {
     background: rgba(251, 191, 36, 0.3);
     color: #d97706;
@@ -231,6 +242,11 @@
 [data-theme="light"] .status-badge.resolved {
     background: rgba(34, 197, 94, 0.3);
     color: #16a34a;
+}
+
+[data-theme="light"] .status-badge.unresolved {
+    background: rgba(239, 68, 68, 0.3);
+    color: #dc2626;
 }
 
 /* =========================================

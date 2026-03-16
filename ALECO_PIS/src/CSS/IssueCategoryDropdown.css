@@ -12,11 +12,14 @@
 /* --- NEW: INLINE DASHBOARD LAYOUT (Ultra-Compact Mode) --- */
 .issue-dropdown-container.layout-inline {
     margin-bottom: 0;   /* Removes the large bottom gap for dashboard alignment */
-    width: 100%;        /* Flexible width for 50/50 split */
-    flex: 1;            /* Allows it to share row space evenly */
+    width: 100%;        /* Flexible width for equal split */
+    flex: 1;            /* Allows it to share row space evenly with search */
+    display: flex;
+    align-items: stretch;
 }
 
 .issue-dropdown-container.layout-inline .issue-select {
+    width: 100%;        /* Takes full width of container */
     height: 28px;
     min-height: 28px;
     padding: 0 8px;
@@ -26,7 +29,6 @@
     background-color: var(--bg-body);
     border: 1.5px solid var(--border-color);
     color: var(--text-main);
-    min-width: 120px;
     box-sizing: border-box;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -39,7 +41,9 @@
 
 .issue-dropdown-container.layout-inline .issue-select:focus {
     border-color: var(--primary-color);
+    background-color: var(--bg-card);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    outline: none;
 }
 
 /* --- BACKWARD COMPATIBILITY: FORM LAYOUT (ReportAProblem.jsx) --- */
@@ -102,10 +106,11 @@
         width: 100% !important;
     }
 
-    /* Forces the select box to stretch and fill the 50/50 row constraint */
+    /* Forces the select box to stretch and fill the full width */
    .issue-dropdown-container.layout-inline .issue-select {
         width: 100% !important;
         min-width: 0 !important; /* CRITICAL: Removes the 120px desktop limit */
+        max-width: 100% !important;
         box-sizing: border-box;
         overflow: hidden;
         text-overflow: ellipsis; /* Adds "..." if the category text is too long for the tiny box */
@@ -117,5 +122,17 @@
         padding: 8px 10px;
         font-size: 13px;
         border-radius: 6px;
+    }
+
+    /* Ensure dropdown options are properly positioned and visible */
+    .issue-select {
+        position: relative;
+    }
+
+    .issue-select optgroup,
+    .issue-select option {
+        max-width: 100vw;
+        white-space: normal;
+        word-wrap: break-word;
     }
 }

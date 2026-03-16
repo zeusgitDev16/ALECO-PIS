@@ -7,19 +7,19 @@ const router = express.Router();
 router.get('/filtered-tickets', async (req, res) => {
     try {
         const {
-            tab, isNew, isUrgent, searchQuery, category,
+            tab, isNew, isUrgent, status, searchQuery, category,
             district, municipality,
             datePreset, startDate, endDate
         } = req.query;
 
-        console.log('🔍 Filter Request:', { tab, isNew, isUrgent, searchQuery, category, district, municipality, datePreset });
+        console.log('🔍 Filter Request:', { tab, isNew, isUrgent, status, searchQuery, category, district, municipality, datePreset });
 
         let query = `SELECT * FROM aleco_tickets WHERE 1=1`;
         const params = [];
 
         // --- Status Tabs ---
         if (tab === 'Open') {
-            query += ` AND (status IN ('Pending', 'Ongoing') OR status IS NULL OR status = '')`;
+            query += ` AND (status IN ('Pending', 'Ongoing', 'Unresolved') OR status IS NULL OR status = '')`;
         } else if (tab === 'Closed') {
             query += ` AND status = 'Restored'`;
         }
@@ -32,6 +32,12 @@ router.get('/filtered-tickets', async (req, res) => {
         // --- Urgent Filter ---
         if (isUrgent === 'true') {
             query += ` AND is_urgent = 1`;
+        }
+
+        // --- Status Filter ---
+        if (status && status.trim() !== '') {
+            query += ` AND status = ?`;
+            params.push(status.trim());
         }
 
         // --- Search Bar (ID, Name, Concern) ---

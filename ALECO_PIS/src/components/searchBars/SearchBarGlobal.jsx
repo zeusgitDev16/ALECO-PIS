@@ -32,10 +32,24 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       }
     };
 
-    updateProfile(); 
+    updateProfile();
     window.addEventListener('storage', updateProfile);
     return () => window.removeEventListener('storage', updateProfile);
   }, []);
+
+  // Add/remove class to body when logout modal is shown/hidden to fix z-index stacking
+  useEffect(() => {
+    if (showLogoutConfirm) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [showLogoutConfirm]);
 
   // Async handleLogout to support the server-side global flush
   const handleLogout = async () => {

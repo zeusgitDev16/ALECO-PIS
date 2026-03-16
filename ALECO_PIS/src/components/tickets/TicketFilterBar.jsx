@@ -53,6 +53,13 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
         setFilters(prev => ({ ...prev, category: val }));
     };
 
+    // 5. Status Handler
+    const handleStatusChange = (e) => {
+        const { value } = e.target;
+        console.log('📊 Status Filter Changed:', value);
+        setFilters(prev => ({ ...prev, status: value }));
+    };
+
     // Placeholder for Export Actions
     const handleExport = (type) => {
         console.log(`Triggering ${type} report generation...`);
@@ -107,6 +114,21 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
                 >
                     <span className="urgent-icon">🚨</span> Urgent
                 </button>
+
+                {/* 📊 Status Filter Dropdown */}
+                <select
+                    name="status"
+                    className="status-filter-select"
+                    value={filters.status || ""}
+                    onChange={handleStatusChange}
+                    title="Filter by ticket status"
+                >
+                    <option value="">📊 All Status</option>
+                    <option value="Pending">⏳ Pending</option>
+                    <option value="Ongoing">🔧 Ongoing</option>
+                    <option value="Resolved">✅ Resolved</option>
+                    <option value="Unresolved">❌ Unresolved</option>
+                </select>
 
                 {/* Grouped Search and Category to stay side-by-side */}
                 <div className="search-category-group">

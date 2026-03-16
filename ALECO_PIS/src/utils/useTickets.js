@@ -12,6 +12,7 @@ const useTickets = () => {
         tab: 'Open',
         isNew: false,
         isUrgent: false,
+        status: '',
         searchQuery: '',
         category: '',
         district: '',

@@ -383,27 +383,27 @@ router.get('/tickets/sms/receive', async (req, res) => {
             const ticketId = match[1].toUpperCase();
             console.log(`🔍 Extracted Ticket ID: ${ticketId}`);
 
-            // 2. Update the Database Status to Resolved
+            // 2. Update the Database Status to Restored
             const updateQuery = `
-                UPDATE aleco_tickets 
-                SET status = 'Resolved' 
+                UPDATE aleco_tickets
+                SET status = 'Restored'
                 WHERE ticket_id = ? AND status = 'Ongoing'
             `;
             const [dbResult] = await pool.execute(updateQuery, [ticketId]);
 
             if (dbResult.affectedRows > 0) {
-                console.log(`✅ SUCCESS: Ticket ${ticketId} automatically marked as Resolved!`);
-                
+                console.log(`✅ SUCCESS: Ticket ${ticketId} automatically marked as Restored!`);
+
                 // 3. OPTIONAL: Automatically text the consumer that the power is back!
                 const [ticketData] = await pool.execute(
-                    'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?', 
+                    'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
                     [ticketId]
                 );
-                
+
                 if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
-                    const resolveMsg = `ALECO Update: Your report (${ticketId}) has been RESOLVED by our field crew. Thank you for your patience!`;
+                    const resolveMsg = `ALECO Update: Your report (${ticketId}) has been RESTORED by our field crew. Thank you for your patience!`;
                     await sendPhilSMS(ticketData[0].phone_number, resolveMsg);
-                    console.log(`✅ SMS sent to Consumer confirming resolution.`);
+                    console.log(`✅ SMS sent to Consumer confirming restoration.`);
                 }
             } else {
                 console.log(`⚠️ Ticket ${ticketId} not found or is not currently 'Ongoing'.`);
@@ -418,6 +418,182 @@ router.get('/tickets/sms/receive', async (req, res) => {
     } catch (error) {
         console.error("❌ YEASTAR WEBHOOK ERROR:", error);
         res.status(500).send("Internal Server Error");
+    }
+});
+
+// ============================================================================
+// DUPLICATE DETECTION ROUTE (Check for similar tickets before creation)
+// ============================================================================
+router.post('/check-duplicates', async (req, res) => {
+    try {
+        const { phone_number, concern, category } = req.body;
+
+        console.log(`🔍 Checking for duplicates: ${phone_number} | ${concern}`);
+
+        // Search for tickets from the same phone number in the last 24 hours
+        const duplicateQuery = `
+            SELECT ticket_id, concern, category, status, created_at
+            FROM aleco_tickets
+            WHERE phone_number = ?
+            AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            AND status IN ('Pending', 'Ongoing', 'Unresolved')
+            ORDER BY created_at DESC
+            LIMIT 5
+        `;
+
+        const [potentialDuplicates] = await pool.execute(duplicateQuery, [phone_number]);
+
+        if (potentialDuplicates.length === 0) {
+            return res.status(200).json({
+                success: true,
+                hasDuplicates: false,
+                message: 'No duplicates found'
+            });
+        }
+
+        // Calculate similarity scores for each potential duplicate
+        const duplicatesWithScores = potentialDuplicates.map(ticket => {
+            const concernSimilarity = calculateSimilarity(concern.toLowerCase(), ticket.concern.toLowerCase());
+            const categorySimilarity = category === ticket.category ? 1 : 0;
+
+            // Calculate time proximity (more recent = higher score)
+            const hoursSinceCreation = (Date.now() - new Date(ticket.created_at).getTime()) / (1000 * 60 * 60);
+            const timeProximity = Math.max(0, 1 - (hoursSinceCreation / 24));
+
+            // Weighted score: 50% concern, 30% category, 20% time
+            const overallScore = (concernSimilarity * 0.5) + (categorySimilarity * 0.3) + (timeProximity * 0.2);
+
+            return {
+                ...ticket,
+                similarityScore: Math.round(overallScore * 100),
+                concernSimilarity: Math.round(concernSimilarity * 100),
+                categorySimilarity: Math.round(categorySimilarity * 100),
+                timeProximity: Math.round(timeProximity * 100)
+            };
+        });
+
+        // Filter duplicates with score > 60%
+        const likelyDuplicates = duplicatesWithScores.filter(d => d.similarityScore > 60);
+
+        if (likelyDuplicates.length > 0) {
+            console.log(`⚠️ Found ${likelyDuplicates.length} likely duplicates`);
+            return res.status(200).json({
+                success: true,
+                hasDuplicates: true,
+                duplicates: likelyDuplicates,
+                message: `Found ${likelyDuplicates.length} similar ticket(s) from this number in the last 24 hours`
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            hasDuplicates: false,
+            message: 'No significant duplicates found'
+        });
+
+    } catch (error) {
+        console.error("❌ DUPLICATE CHECK ERROR:", error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+});
+
+// Helper function: Calculate text similarity using Levenshtein distance
+function calculateSimilarity(str1, str2) {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+
+    if (longer.length === 0) return 1.0;
+
+    const editDistance = levenshteinDistance(longer, shorter);
+    return (longer.length - editDistance) / longer.length;
+}
+
+function levenshteinDistance(str1, str2) {
+    const matrix = [];
+
+    for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+            if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+
+    return matrix[str2.length][str1.length];
+}
+
+// ============================================================================
+// MANUAL STATUS UPDATE ROUTE (For Resolved/Unresolved)
+// ============================================================================
+router.put('/:ticketId/status', async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { status } = req.body;
+
+        console.log(`📊 Manual Status Update Request: ${ticketId} → ${status}`);
+
+        // Validate status - Match the actual database enum
+        const validStatuses = ['Pending', 'Ongoing', 'Restored', 'Unresolved'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+            });
+        }
+
+        // Update the database
+        const updateQuery = `
+            UPDATE aleco_tickets
+            SET status = ?
+            WHERE ticket_id = ?
+        `;
+        const [dbResult] = await pool.execute(updateQuery, [status, ticketId]);
+
+        if (dbResult.affectedRows > 0) {
+            console.log(`✅ SUCCESS: Ticket ${ticketId} updated to ${status}`);
+
+            // Optional: Send SMS notification to consumer
+            const [ticketData] = await pool.execute(
+                'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
+                [ticketId]
+            );
+
+            if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                let smsMessage = '';
+                if (status === 'Restored') {
+                    smsMessage = `ALECO Update: Your report (${ticketId}) has been RESTORED. Thank you for your patience!`;
+                } else if (status === 'Unresolved') {
+                    smsMessage = `ALECO Update: Your report (${ticketId}) could not be resolved at this time. We will contact you shortly.`;
+                }
+
+                if (smsMessage) {
+                    await sendPhilSMS(ticketData[0].phone_number, smsMessage);
+                    console.log(`✅ SMS sent to Consumer confirming ${status} status.`);
+                }
+            }
+
+            res.status(200).json({ success: true, message: `Ticket ${ticketId} marked as ${status}` });
+        } else {
+            res.status(404).json({ success: false, message: `Ticket ${ticketId} not found` });
+        }
+
+    } catch (error) {
+        console.error("❌ STATUS UPDATE ERROR:", error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 });
 

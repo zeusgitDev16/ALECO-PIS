@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import '../../CSS/TicketDashboard.css';
+import React, { useState, useEffect } from 'react';
+import '../../CSS/TicketDetailPane.css';
 import DispatchTicketModal from './DispatchTicketModal'; // <-- 1. Import the new Lego brick
 
 /**
@@ -8,6 +8,15 @@ import DispatchTicketModal from './DispatchTicketModal'; // <-- 1. Import the ne
 const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
     const [copiedField, setCopiedField] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false); // <-- 2. New state for the dispatch workflow
+
+    // Add/remove modal-open class to body to prevent sticky header overlap
+    useEffect(() => {
+        document.body.classList.add('modal-open');
+
+        return () => {
+            document.body.classList.remove('modal-open');
+        };
+    }, []);
 
     // 1. Idempotent Guard
     if (!ticket) return null;
@@ -142,25 +151,37 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
                 {/* --- SECTION 4: ADMIN ACTIONS --- */}
                 <div className="action-footer">
                     {ticket.status === 'Pending' && (
-                        <button 
+                        <button
                             className="btn-action btn-ongoing"
-                            onClick={() => setIsDispatchModalOpen(true)} /* <-- THE FIX: Opens the dispatch form instead of closing the ticket */
+                            onClick={() => setIsDispatchModalOpen(true)}
                         >
                             Start Resolution
                         </button>
                     )}
-                    
-                    {['Pending', 'Ongoing'].includes(ticket.status) && (
-                        <button 
-                            className="btn-action btn-restored"
+
+                    {['Pending', 'Ongoing', 'Unresolved'].includes(ticket.status) && (
+                        <button
+                            className="btn-action btn-resolved"
                             onClick={() => {
-                                onUpdateTicket(ticket.ticket_id, 'Restored');
+                                onUpdateTicket(ticket.ticket_id, 'Resolved');
                                 onClose();
                             }}
                         >
-                            Mark as Restored
+                            Mark as Resolved
                         </button>
-                )}
+                    )}
+
+                    {ticket.status === 'Ongoing' && (
+                        <button
+                            className="btn-action btn-unresolved"
+                            onClick={() => {
+                                onUpdateTicket(ticket.ticket_id, 'Unresolved');
+                                onClose();
+                            }}
+                        >
+                            Mark as Unresolved
+                        </button>
+                    )}
                 </div>
             </div>
 

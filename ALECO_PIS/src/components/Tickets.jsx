@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketsPage.css'; // ✅ NEW ISOLATED CSS
+import '../CSS/TicketMain.css'; // ✅ BULK ACTION BAR STYLES
 import useTickets from '../utils/useTickets';
 import UrgentTickets from './containers/UrgentTickets';
 import useDraggable from '../utils/useDraggable';
@@ -14,6 +15,7 @@ import GroupIncidentModal from './tickets/GroupIncidentModal';
 import TicketLayoutPicker from './tickets/TicketLayoutPicker';
 import TicketFilterLayoutWrapper from './tickets/TicketFilterLayoutWrapper';
 import TicketTableView from './tickets/TicketTableView';
+import TicketKanbanView from './tickets/TicketKanbanView';
 
 const AdminTickets = () => {
     const { tickets, loading: isLoading, error, filters, setFilters } = useTickets();
@@ -40,10 +42,19 @@ const AdminTickets = () => {
         fetchCrews();
     }, []);
 
+    // Debug: Log when selectedIds changes
+    useEffect(() => {
+        console.log('🎯 Selected IDs changed:', selectedIds);
+        console.log('🎯 Bulk bar should show:', selectedIds.length > 0);
+    }, [selectedIds]);
+
     const toggleTicketSelection = (id) => {
-        setSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-        );
+        console.log('🔘 Checkbox clicked for ticket:', id);
+        setSelectedIds(prev => {
+            const newSelection = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
+            console.log('📋 Selected IDs updated:', newSelection);
+            return newSelection;
+        });
     };
 
     const getActiveFiltersCount = () => {
@@ -55,6 +66,7 @@ const AdminTickets = () => {
         if (filters.datePreset) count++;
         if (filters.isNew) count++;
         if (filters.isUrgent) count++;
+        if (filters.status) count++;
         return count;
     };
 
@@ -66,7 +78,7 @@ const AdminTickets = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dispatchData)
                 });
-                
+
                 const data = await response.json();
 
                 if (response.ok && data.success) {
@@ -75,9 +87,22 @@ const AdminTickets = () => {
                 } else {
                     alert("Dispatch failed: " + data.message);
                 }
-            } 
-            else if (newStatus === 'Restored') {
-                console.log("Manually restoring ticket...");
+            }
+            else if (newStatus === 'Restored' || newStatus === 'Unresolved') {
+                const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    alert(`ALECO System: Ticket ${ticketId} marked as ${newStatus}.`);
+                    window.location.reload();
+                } else {
+                    alert("Status update failed: " + data.message);
+                }
             }
         } catch (error) {
             console.error("Network error: ", error);
@@ -89,6 +114,40 @@ const AdminTickets = () => {
             setIsMapOpen(true);
         } else {
             setViewMode(newMode);
+        }
+    };
+
+    const handleBulkResolve = async () => {
+        if (selectedIds.length === 0) {
+            alert('No tickets selected');
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Are you sure you want to mark ${selectedIds.length} ticket(s) as Restored?`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('http://localhost:5000/api/tickets/bulk/restore', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticketIds: selectedIds })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                alert(`✅ ${data.message}`);
+                setSelectedIds([]);
+                window.location.reload();
+            } else {
+                alert(`❌ Failed: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('❌ Error bulk restoring tickets:', error);
+            alert('Failed to restore tickets. Please try again.');
         }
     };
 
@@ -173,11 +232,14 @@ const AdminTickets = () => {
                     )}
 
                     {viewMode === 'kanban' && (
-                        <div className="placeholder-view">
-                            <h3>🗂️ Kanban View</h3>
-                            <p>Coming Soon: Drag-and-drop workflow columns</p>
-                            <p className="ticket-count">Showing {tickets.length} tickets</p>
-                        </div>
+                        <TicketKanbanView
+                            tickets={tickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={setSelectedTicket}
+                            onUpdateTicket={handleUpdateTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
                     )}
                 </div>
             </div>
@@ -215,8 +277,11 @@ const AdminTickets = () => {
                             >
                                 Group
                             </button>
-                            <button className="btn-bulk-action btn-resolve">
-                                Resolve
+                            <button
+                                className="btn-bulk-action btn-resolve"
+                                onClick={handleBulkResolve}
+                            >
+                                Restore
                             </button>
                             <button
                                 className="btn-bulk-action btn-cancel"
@@ -236,14 +301,32 @@ const AdminTickets = () => {
                 tickets={tickets}
             />
 
-            <GroupIncidentModal 
+            <GroupIncidentModal
                 isOpen={isGroupModalOpen}
                 onClose={() => setIsGroupModalOpen(false)}
                 selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id))}
-                onSubmit={(groupData) => {
-                    console.log('📦 Group Created:', groupData);
-                    setIsGroupModalOpen(false);
-                    setSelectedIds([]);
+                onSubmit={async (groupData) => {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/tickets/group/create', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(groupData)
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.success) {
+                            alert(`✅ Success! ${data.message}\n\nMain Ticket ID: ${data.mainTicketId}`);
+                            setIsGroupModalOpen(false);
+                            setSelectedIds([]);
+                            window.location.reload(); // Refresh to show updated tickets
+                        } else {
+                            alert(`❌ Failed to create group: ${data.message}`);
+                        }
+                    } catch (error) {
+                        console.error('❌ Error creating ticket group:', error);
+                        alert('Failed to create ticket group. Please try again.');
+                    }
                 }}
             />
         </AdminLayout>

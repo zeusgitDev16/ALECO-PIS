@@ -354,9 +354,68 @@ const ReportaProblem = () => {
             }
         }
 
-        // 2. DATA PREPARATION
+        // 2. DUPLICATE DETECTION CHECK
+        try {
+            console.log('🔍 Checking for duplicate tickets...');
+
+            const duplicateCheckResponse = await fetch('http://localhost:5000/api/check-duplicates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone_number: formData.phoneNumber,
+                    concern: formData.concern,
+                    category: formData.category
+                })
+            });
+
+            const duplicateResult = await duplicateCheckResponse.json();
+            console.log('📊 Duplicate Check Result:', duplicateResult);
+
+            if (duplicateResult.success && duplicateResult.hasDuplicates) {
+                const duplicates = duplicateResult.duplicates;
+
+                // Format duplicate information for user-friendly display
+                const duplicateList = duplicates.map((d, index) =>
+                    `\n${index + 1}. Ticket ID: ${d.ticket_id}\n` +
+                    `   Status: ${d.status}\n` +
+                    `   Similarity: ${d.similarityScore}% match\n` +
+                    `   Concern: "${d.concern}"\n` +
+                    `   Reported: ${new Date(d.created_at).toLocaleString('en-PH', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}`
+                ).join('\n');
+
+                const userConfirmation = window.confirm(
+                    `⚠️ POTENTIAL DUPLICATE DETECTED!\n\n` +
+                    `We found ${duplicates.length} similar ticket(s) from your number in the last 24 hours:\n` +
+                    duplicateList +
+                    `\n\n` +
+                    `📌 Your existing ticket is already being processed.\n\n` +
+                    `Do you still want to submit a NEW ticket?\n\n` +
+                    `(Click "Cancel" to avoid duplicate submission)`
+                );
+
+                if (!userConfirmation) {
+                    console.log('❌ User cancelled submission due to duplicate warning');
+                    return; // Stop submission
+                }
+
+                console.log('✅ User confirmed submission despite duplicate warning');
+            } else {
+                console.log('✅ No duplicates found - proceeding with submission');
+            }
+        } catch (duplicateCheckError) {
+            console.error('⚠️ Duplicate check failed:', duplicateCheckError);
+            // Continue with submission even if duplicate check fails (failsafe)
+            console.log('⚠️ Proceeding with submission despite duplicate check failure');
+        }
+
+        // 3. DATA PREPARATION
         const submissionData = new FormData();
-        
+
         // Personal Info
         submissionData.append('account_number', formData.accountNumber || "");
         submissionData.append('first_name', formData.firstName);
@@ -413,14 +472,14 @@ const ReportaProblem = () => {
         submissionData.append('concern', formData.concern);
 
         if (selectedFile) {
-            submissionData.append('image', selectedFile); 
+            submissionData.append('image', selectedFile);
         }
 
-        // 3. BACKEND EXECUTION
+        // 4. BACKEND EXECUTION
         try {
             const response = await fetch('http://localhost:5000/api/tickets/submit', {
                 method: 'POST',
-                body: submissionData, 
+                body: submissionData,
             });
             
             const data = await response.json();

@@ -60,10 +60,10 @@ const TicketKanbanView = ({ tickets, selectedTicket, onSelectTicket, onUpdateTic
 
         // Validate status transition
         const validTransitions = {
-            'pending': ['ongoing', 'unresolved'],
-            'ongoing': ['resolved', 'unresolved'],
-            'resolved': [], // Cannot move from resolved
-            'unresolved': ['pending', 'ongoing']
+            pending: ['ongoing', 'unresolved'],
+            ongoing: ['restored', 'unresolved'],
+            restored: [], // Cannot move from restored
+            unresolved: ['pending', 'ongoing']
         };
 
         const currentStatus = ticket.status.toLowerCase();
@@ -130,14 +130,14 @@ const TicketKanbanView = ({ tickets, selectedTicket, onSelectTicket, onUpdateTic
                         onToggleSelect={onToggleSelect}
                     />
 
-                    {/* Resolved Column */}
+                    {/* Restored Column */}
                     <KanbanColumn
-                        columnId="resolved"
-                        title={columnConfig.resolved.title}
-                        icon={columnConfig.resolved.icon}
-                        color={columnConfig.resolved.color}
-                        tickets={groupedTickets.resolved}
-                        urgentCount={columnStats.resolved.urgent}
+                        columnId="restored"
+                        title={columnConfig.restored.title}
+                        icon={columnConfig.restored.icon}
+                        color={columnConfig.restored.color}
+                        tickets={groupedTickets.restored}
+                        urgentCount={columnStats.restored.urgent}
                         onCardClick={onSelectTicket}
                         selectedTicket={selectedTicket}
                         selectedIds={selectedIds}

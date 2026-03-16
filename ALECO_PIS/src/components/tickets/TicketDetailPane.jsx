@@ -163,11 +163,11 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
                         <button
                             className="btn-action btn-resolved"
                             onClick={() => {
-                                onUpdateTicket(ticket.ticket_id, 'Resolved');
+                                onUpdateTicket(ticket.ticket_id, 'Restored');
                                 onClose();
                             }}
                         >
-                            Mark as Resolved
+                            Mark as Restored
                         </button>
                     )}
 

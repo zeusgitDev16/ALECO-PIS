@@ -15,7 +15,7 @@ export const groupTicketsByStatus = (tickets) => {
     return {
         pending: safeTickets.filter(t => t.status === 'Pending'),
         ongoing: safeTickets.filter(t => t.status === 'Ongoing'),
-        resolved: safeTickets.filter(t => t.status === 'Resolved'),
+        restored: safeTickets.filter(t => t.status === 'Restored'),
         unresolved: safeTickets.filter(t => t.status === 'Unresolved')
     };
 };
@@ -37,9 +37,9 @@ export const getColumnStats = (tickets) => {
             count: grouped.ongoing.length,
             urgent: grouped.ongoing.filter(t => t.is_urgent === 1 || t.is_urgent === true).length
         },
-        resolved: {
-            count: grouped.resolved.length,
-            urgent: 0 // Resolved tickets are no longer urgent
+        restored: {
+            count: grouped.restored.length,
+            urgent: 0 // Restored tickets are no longer urgent
         },
         unresolved: {
             count: grouped.unresolved.length,
@@ -70,13 +70,13 @@ export const getColumnConfig = () => {
             icon: '⚡',
             description: 'Currently being processed'
         },
-        resolved: {
-            id: 'resolved',
-            title: 'Resolved',
-            status: 'Resolved',
+        restored: {
+            id: 'restored',
+            title: 'Restored',
+            status: 'Restored',
             color: '#10b981', // Green
             icon: '✓',
-            description: 'Closed/Fixed'
+            description: 'Power restored / closed'
         },
         unresolved: {
             id: 'unresolved',

@@ -27,3 +27,7 @@ dist-ssr
 # Aiven Secrets
 ALECO_PIS/mysql-aiven-url.txt
 mysql-aiven-url.txt
+
+# Security: Ignore Aiven SSL Certificates
+*.pem
+ca.pem

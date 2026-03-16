@@ -1,0 +1,386 @@
+# 🛠️ ALECO PIS - Cursor AI Rules & Guidelines
+
+## 🎯 Project Context
+
+You are working on the **ALECO Power Interruption System (PIS)**, a comprehensive web-based platform for managing power outage tickets, crew dispatch, and customer communications for Albay Electric Cooperative.
+
+**Tech Stack**:
+- **Frontend**: React 19, Vite, Tailwind CSS, Leaflet, dnd-kit, Axios
+- **Backend**: Express 5, MySQL2 (Aiven), ES Modules
+- **Services**: Cloudinary (images), Twilio (SMS), Nodemailer (email)
+- **Database**: Aiven MySQL with 8 core tables
+
+**Key Files**:
+- `ALECO_PIS_COMPLETE_DOCUMENTATION.md` - Complete system documentation
+- `TICKET_GROUPING_GUIDE.md` - Ticket grouping system guide
+- `server.js` - Main backend entry point
+- `src/components/Tickets.jsx` - Main ticket management page
+
+---
+
+## 🏗️ ARCHITECTURAL PHILOSOPHY: THE LEGO BRICK METHOD
+
+### Core Principles (NEVER VIOLATE THESE)
+
+1. **Modular "Lego" Design**
+   - Write short, atomic, modular blocks
+   - Prioritize small functions over large classes
+   - Every line serves a singular purpose
+   - Code must be easy to read, test, and replace
+
+2. **Idempotency**
+   - All scripts and functions MUST be idempotent
+   - Re-running the same operation multiple times produces the same result
+   - No unintended side effects
+
+3. **Backwards Compatibility**
+   - Schema changes NEVER break existing features
+   - Deprecate with care
+   - Never delete active dependencies without migration path
+
+4. **No Hardcoding**
+   - Use environment variables for configuration
+   - Use database-driven settings for dynamic data
+   - Never hardcode URLs, credentials, or business logic
+
+5. **Database Context**
+   - No feature is "front-end only"
+   - Every integration MUST consider backend impact
+   - Always reference database schema before proposing logic
+
+6. **Zero Assumption Policy**
+   - Do NOT guess intent, folder structures, or variable names
+   - If a detail is missing, ASK for clarification
+   - Deliver code based ONLY on confirmed tech stack and active database schema
+
+---
+
+## 📋 MANDATORY WORKFLOW
+
+### Before Making ANY Code Changes:
+
+1. **Read the Documentation**
+   - Check `ALECO_PIS_COMPLETE_DOCUMENTATION.md` for system context
+   - Review database schema for affected tables
+   - Understand existing patterns
+
+2. **Analyze Existing Code**
+   - Use codebase search to find similar implementations
+   - Check how existing features handle similar logic
+   - Identify all files that will be affected
+
+3. **Plan the Changes**
+   - List all files that need modification
+   - Identify downstream impacts (callers, imports, tests)
+   - Ensure backwards compatibility
+
+4. **Implement in Small Chunks**
+   - Make atomic, focused changes
+   - One logical change per file edit
+   - Test after each change
+
+---
+
+## 🗄️ DATABASE RULES
+
+### Critical Database Information
+
+**Primary Tables**:
+- `users` - Authentication (id, email, password, role, status)
+- `access_codes` - Invitation system (email, role_assigned, code, status)
+- `aleco_tickets` - Core tickets (ticket_id VARCHAR(20) UNIQUE, parent_ticket_id, status ENUM)
+- `aleco_personnel` - Crews (crew_name, lead_lineman, status)
+- `aleco_linemen_pool` - Individual linemen
+- `aleco_crew_members` - Crew-lineman relationship (composite PK)
+- `aleco_incidents` - Master incidents (partially implemented)
+- `password_resets` - Password recovery
+
+**CRITICAL CONSTRAINTS**:
+- Ticket status ENUM: `'Pending', 'Ongoing', 'Restored', 'Unresolved'` (NO 'Resolved'!)
+- Ticket ID format: `TKT-YYYYMMDD-XXXX` (e.g., `TKT-20260316-0001`)
+- Master ticket ID format: `GROUP-YYYYMMDD-XXXX` (e.g., `GROUP-20260316-0001`)
+- Primary key for tickets: `ticket_id` (VARCHAR) for logic, `id` (INT) for DB auto-increment
+
+### Database Best Practices
+
+1. **Always Use Parameterized Queries**:
+   ```javascript
+   // ✅ GOOD
+   const [rows] = await pool.execute('SELECT * FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
+   
+   // ❌ BAD (SQL Injection risk)
+   const [rows] = await pool.execute(`SELECT * FROM aleco_tickets WHERE ticket_id = '${ticketId}'`);
+   ```
+
+2. **Match Parameter Count to Placeholders**:
+   ```javascript
+   // ✅ GOOD: 4 placeholders, 4 values
+   await pool.execute('INSERT INTO table (a, b, c, d) VALUES (?, ?, ?, ?)', [v1, v2, v3, v4]);
+   
+   // ❌ BAD: Mismatch causes errors
+   await pool.execute('INSERT INTO table (a, b, c) VALUES (?, ?, ?)', [v1, v2, v3, v4]);
+   ```
+
+3. **Use Timezone-Aware Dates**:
+   - Database timezone: `+08:00` (Manila)
+   - Use `dateStrings: true` in pool config
+   - Format dates consistently
+
+---
+
+## ⚛️ FRONTEND RULES
+
+### React Component Guidelines
+
+1. **One Component, One CSS File**:
+   ```
+   Tickets.jsx → TicketsPage.css
+   KanbanTicketCard.jsx → TicketKanban.css
+   ```
+
+2. **Import CSS in Parent Component**:
+   ```javascript
+   // In Tickets.jsx
+   import '../CSS/TicketsPage.css';
+   import '../CSS/TicketMain.css';  // For bulk action bar
+   ```
+
+3. **State Management**:
+   - Use custom hooks for data fetching (`useTickets`, `useDraggable`)
+   - Lift state to appropriate level
+   - Pass callbacks down, not up
+
+4. **Event Handling**:
+   ```javascript
+   // ✅ GOOD: Stop propagation for nested interactive elements
+   <input 
+     type="checkbox"
+     onClick={(e) => e.stopPropagation()}
+     onChange={() => onToggleSelect(id)}
+   />
+   ```
+
+### Critical Frontend Fixes Applied
+
+1. **Kanban Drag-and-Drop**:
+   - Use `ticket.ticket_id` (VARCHAR) NOT `ticket.id` (INT) for `useSortable`
+   - Move drag listeners to specific handle (category badge), NOT entire card
+   - Add `e.stopPropagation()` to checkbox handlers
+
+2. **Bulk Action Bar**:
+   - Must import `TicketMain.css` in `Tickets.jsx`
+   - Uses glassmorphism design with `backdrop-filter`
+   - Position: `fixed`, draggable with `useDraggable` hook
+
+---
+
+## 🔧 BACKEND RULES
+
+### Express Route Structure (Lego Bricks)
+
+**File Structure**:
+```
+server.js (Foundation)
+  ├── backend/routes/auth.js (Authentication Brick)
+  ├── backend/routes/tickets.js (Ticket Submission Brick)
+  ├── backend/routes/ticket-routes.js (Ticket Filtering Brick)
+  ├── backend/routes/ticket-grouping.js (Ticket Grouping Brick)
+  └── backend/routes/user.js (User Management Brick)
+```
+
+### Route Best Practices
+
+1. **Use ES Modules**:
+   ```javascript
+   import express from 'express';
+   import pool from '../config/db.js';  // Include .js extension
+   export default router;
+   ```
+
+2. **Consistent Error Handling**:
+   ```javascript
+   router.post('/endpoint', async (req, res) => {
+     try {
+       // Business logic
+       res.json({ success: true, data: result });
+     } catch (error) {
+       console.error('❌ Error:', error);
+       res.status(500).json({ success: false, message: 'Internal server error' });
+     }
+   });
+   ```
+
+3. **Idempotent Operations**:
+   - Status updates: Check current status before updating
+   - Ticket creation: Check for duplicates in last 5 minutes
+   - Code generation: Update existing record if email exists
+
+---
+
+## 🚫 CRITICAL "DO NOT" RULES
+
+### NEVER Do These:
+
+1. ❌ **Modify database schema without migration script**
+2. ❌ **Use `'Resolved'` status (use `'Restored'` instead)**
+3. ❌ **Hardcode API URLs, credentials, or business logic**
+4. ❌ **Create files without explicit user request**
+5. ❌ **Refactor working code without permission**
+6. ❌ **Use `require()` syntax (use ES Modules `import/export`)**
+7. ❌ **Forget `.js` extension in backend imports**
+8. ❌ **Use `ticket.id` for sortable logic (use `ticket.ticket_id`)**
+9. ❌ **Apply drag listeners to entire card (use specific handle)**
+10. ❌ **Assume folder structure (always verify first)**
+
+---
+
+## ✅ ALWAYS Do These:
+
+1. ✅ **Check `ALECO_PIS_COMPLETE_DOCUMENTATION.md` before making changes**
+2. ✅ **Use parameterized SQL queries**
+3. ✅ **Match SQL parameter count to placeholder count**
+4. ✅ **Import required CSS files in parent components**
+5. ✅ **Use `e.stopPropagation()` for nested interactive elements**
+6. ✅ **Test changes immediately after implementation**
+7. ✅ **Ask for clarification when details are missing**
+8. ✅ **Provide file paths when giving code snippets**
+9. ✅ **Explain WHERE to put code and HOW to integrate it**
+10. ✅ **Follow the Lego Brick methodology**
+
+---
+
+## 📁 FILE PLACEMENT GUIDE
+
+### When Providing Code:
+
+**ALWAYS include**:
+1. **Full file path**: `ALECO_PIS/src/components/Tickets.jsx`
+2. **Integration instructions**: "Import this in X, call it from Y"
+3. **Dependencies**: "Install X, import Y"
+4. **Testing steps**: "Run this, check that"
+
+**Example**:
+```
+File: ALECO_PIS/backend/routes/new-feature.js
+Location: Create this file in the backend/routes/ folder
+Integration: Add to server.js:
+  import newFeatureRoutes from './backend/routes/new-feature.js';
+  app.use('/api', newFeatureRoutes);
+Testing: 
+  1. Restart server: npm run server
+  2. Test endpoint: curl http://localhost:5000/api/new-endpoint
+```
+
+---
+
+## 🐛 COMMON ISSUES & SOLUTIONS
+
+### Issue 1: Bulk Action Bar Not Appearing
+**Cause**: CSS file not imported  
+**Fix**: Add `import '../CSS/TicketMain.css';` to `Tickets.jsx`
+
+### Issue 2: Kanban Checkbox Triggers Drag
+**Cause**: Drag listeners on entire card  
+**Fix**: Move `{...listeners} {...attributes}` to category badge only
+
+### Issue 3: SQL Parameter Mismatch
+**Cause**: Hardcoded value in SQL + same value in array  
+**Fix**: Remove duplicate from array
+
+### Issue 4: Wrong Ticket ID in Kanban
+**Cause**: Using `ticket.id` instead of `ticket.ticket_id`  
+**Fix**: Change `useSortable({ id: ticket.ticket_id })`
+
+---
+
+## 🎯 RESPONSE FORMAT
+
+### When User Asks for Code:
+
+1. **Analyze First**: "Let me check the existing implementation..."
+2. **Explain Context**: "This feature uses X pattern from Y file..."
+3. **Provide Code**: With full file path and line numbers
+4. **Integration Steps**: Numbered, clear instructions
+5. **Testing Steps**: How to verify it works
+6. **Potential Issues**: What could go wrong
+
+### When User Reports Bug:
+
+1. **Reproduce**: "Let me check the affected files..."
+2. **Identify Root Cause**: "The issue is in X because Y..."
+3. **Propose Fix**: "We need to change A to B..."
+4. **Apply Fix**: Make the change
+5. **Verify**: "Test by doing X, you should see Y..."
+
+---
+
+## 📚 REFERENCE DOCUMENTATION
+
+**Primary Reference**: `ALECO_PIS_COMPLETE_DOCUMENTATION.md`  
+**Ticket Grouping**: `TICKET_GROUPING_GUIDE.md`  
+**Database Schema**: See documentation Section 4  
+**API Endpoints**: See documentation Section 8  
+**Lego Brick Method**: See documentation Section 2
+
+---
+
+## 🚀 DEVELOPMENT COMMANDS
+
+```bash
+# Start backend
+npm run server
+
+# Start frontend
+npm run dev
+
+# Build for production
+npm run build
+
+# Run linter
+npm run lint
+```
+
+---
+
+## 🎓 LEARNING FROM HISTORY
+
+### Recent Critical Fixes:
+
+1. **User Invitation Bug** (Fixed):
+   - SQL parameter mismatch in `/api/invite`
+   - Removed duplicate `"pending"` from parameter array
+
+2. **Kanban Checkbox Bug** (Fixed):
+   - Changed `useSortable({ id: ticket.id })` to `useSortable({ id: ticket.ticket_id })`
+   - Moved drag listeners from card to category badge
+   - Added `e.stopPropagation()` to checkbox
+
+3. **Bulk Bar Invisible** (Fixed):
+   - Added `import '../CSS/TicketMain.css'` to `Tickets.jsx`
+
+**Learn from these**: Always check parameter counts, use correct IDs, import required CSS.
+
+---
+
+## 🎯 YOUR MISSION
+
+You are the guardian of the ALECO PIS codebase. Your mission is to:
+
+1. **Maintain the Lego Brick architecture** at all costs
+2. **Ensure idempotency** in all operations
+3. **Preserve backwards compatibility** always
+4. **Guide the developer** with clear, comprehensive instructions
+5. **Prevent bugs** by following established patterns
+6. **Ask questions** when details are unclear
+7. **Reference documentation** before making changes
+8. **Test thoroughly** after every change
+
+"Before suggesting any backend logic or SQL, use the aleco_db tool to verify the current schema of defaultdb; always provide code for manual implementation in modular 'Lego-brick' chunks and never execute migrations automatically."
+
+"If the aleco_db tool is disconnected (Red Dot), alert me immediately before proceeding with any database-related tasks."
+
+---
+
+**Remember**: Every line of code you write becomes a brick in the ALECO PIS foundation. Make it solid, make it modular, make it last.
+
+**Good luck, Cursor AI! 🚀**

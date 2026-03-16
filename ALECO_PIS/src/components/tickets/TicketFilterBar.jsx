@@ -126,7 +126,7 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
                     <option value="">📊 All Status</option>
                     <option value="Pending">⏳ Pending</option>
                     <option value="Ongoing">🔧 Ongoing</option>
-                    <option value="Resolved">✅ Resolved</option>
+                    <option value="Restored">✅ Restored</option>
                     <option value="Unresolved">❌ Unresolved</option>
                 </select>
 

@@ -16,7 +16,9 @@ export const groupTicketsByStatus = (tickets) => {
         pending: safeTickets.filter(t => t.status === 'Pending'),
         ongoing: safeTickets.filter(t => t.status === 'Ongoing'),
         restored: safeTickets.filter(t => t.status === 'Restored'),
-        unresolved: safeTickets.filter(t => t.status === 'Unresolved')
+        unresolved: safeTickets.filter(t => t.status === 'Unresolved'),
+        nofaultfound: safeTickets.filter(t => t.status === 'NoFaultFound'),
+        accessdenied: safeTickets.filter(t => t.status === 'AccessDenied')
     };
 };
 
@@ -39,12 +41,14 @@ export const getColumnStats = (tickets) => {
         },
         restored: {
             count: grouped.restored.length,
-            urgent: 0 // Restored tickets are no longer urgent
+            urgent: 0
         },
         unresolved: {
             count: grouped.unresolved.length,
             urgent: grouped.unresolved.filter(t => t.is_urgent === 1 || t.is_urgent === true).length
-        }
+        },
+        nofaultfound: { count: grouped.nofaultfound.length, urgent: 0 },
+        accessdenied: { count: grouped.accessdenied.length, urgent: 0 }
     };
 };
 
@@ -85,6 +89,22 @@ export const getColumnConfig = () => {
             color: '#ef4444', // Red
             icon: '✗',
             description: 'Processed but failed'
+        },
+        nofaultfound: {
+            id: 'nofaultfound',
+            title: 'No Fault Found',
+            status: 'NoFaultFound',
+            color: '#8b5cf6', // Purple
+            icon: '○',
+            description: 'Crew checked, no issue at site'
+        },
+        accessdenied: {
+            id: 'accessdenied',
+            title: 'Access Denied',
+            status: 'AccessDenied',
+            color: '#f97316', // Orange
+            icon: '🚫',
+            description: 'Consumer not home / cannot access'
         }
     };
 };

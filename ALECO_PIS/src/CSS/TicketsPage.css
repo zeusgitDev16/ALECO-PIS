@@ -89,6 +89,7 @@
    ========================================= */
 .admin-page-container .main-content-card {
     padding: 16px;
+    padding-bottom: 28px;
     background: var(--bg-card);
     border-radius: 8px;
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));

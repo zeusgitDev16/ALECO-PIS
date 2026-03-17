@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../CSS/DispatchTicketModal.css'; 
 
-const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
+const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride, subtitleOverride }) => {
     // Form States
     const [crew, setCrew] = useState('');
     const [eta, setEta] = useState('');
@@ -12,14 +12,13 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
     const [availableCrews, setAvailableCrews] = useState([]);
     const [isLoadingCrews, setIsLoadingCrews] = useState(false);
 
-    // --- FETCH CREWS ON OPEN ---
+    // --- FETCH CREWS ON OPEN (availableOnly for dispatch) ---
     useEffect(() => {
         if (isOpen) {
             setIsLoadingCrews(true);
-            fetch('http://localhost:5000/api/crews/list')
+            fetch('http://localhost:5000/api/crews/list?availableOnly=true')
                 .then(res => res.json())
                 .then(data => {
-                    // Make sure it's an array, and optionally you could filter out 'Offline' crews here if needed
                     setAvailableCrews(Array.isArray(data) ? data : []);
                 })
                 .catch(err => console.error("Failed to fetch crews:", err))
@@ -57,9 +56,9 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
                 </button>
 
                 <div className="dispatch-modal-header-container">
-                    <h2 className="dispatch-modal-header">🚚 Dispatch Crew</h2>
+                    <h2 className="dispatch-modal-header">{titleOverride || '🚚 Dispatch Crew'}</h2>
                     <p className="dispatch-modal-subtitle">
-                        Assign field unit for Ticket <span className="highlight-id">{ticket.ticket_id}</span>
+                        {subtitleOverride || <>Assign field unit for Ticket <span className="highlight-id">{ticket.ticket_id}</span></>}
                     </p>
                 </div>
 
@@ -74,10 +73,10 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
                             disabled={isLoadingCrews}
                         >
                             <option value="">
-                                {isLoadingCrews ? '-- Loading Units... --' : '-- Select Field Unit --'}
+                                {isLoadingCrews ? '-- Loading Units... --' : availableCrews.length === 0 ? '-- No available crews --' : '-- Select Field Unit --'}
                             </option>
                             
-                            {/* --- FULLY CONNECTED DYNAMIC LOOP --- */}
+                            {/* --- CREWS (filtered: Available only, lead Active) --- */}
                             {availableCrews.map((c) => (
                                 <option key={c.id} value={c.crew_name}>
                                     {c.crew_name} ({c.lead_lineman_name || 'No Lead'}) - {c.member_count} Members

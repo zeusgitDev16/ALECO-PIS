@@ -61,12 +61,14 @@ const TicketKanbanView = ({ tickets, selectedTicket, onSelectTicket, onUpdateTic
         // Validate status transition
         const validTransitions = {
             pending: ['ongoing', 'unresolved'],
-            ongoing: ['restored', 'unresolved'],
-            restored: [], // Cannot move from restored
-            unresolved: ['pending', 'ongoing']
+            ongoing: ['restored', 'unresolved', 'nofaultfound', 'accessdenied'],
+            restored: [],
+            unresolved: ['pending', 'ongoing'],
+            nofaultfound: [],
+            accessdenied: []
         };
 
-        const currentStatus = ticket.status.toLowerCase();
+        const currentStatus = (ticket.status || '').toLowerCase().replace(/\s/g, '');
         const targetStatus = newStatus.toLowerCase();
 
         if (!validTransitions[currentStatus]?.includes(targetStatus)) {
@@ -74,8 +76,23 @@ const TicketKanbanView = ({ tickets, selectedTicket, onSelectTicket, onUpdateTic
             return;
         }
 
-        // Capitalize status for backend
-        const capitalizedStatus = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        // P0: Block Pending→Ongoing drag - dispatch requires crew/ETA via detail pane
+        if (currentStatus === 'pending' && targetStatus === 'ongoing') {
+            alert('Use "Start Resolution" in the ticket detail pane to dispatch a crew.');
+            if (onSelectTicket) onSelectTicket(ticket);
+            return;
+        }
+
+        // Map column ID to backend status (proper casing)
+        const statusMap = {
+            pending: 'Pending',
+            ongoing: 'Ongoing',
+            restored: 'Restored',
+            unresolved: 'Unresolved',
+            nofaultfound: 'NoFaultFound',
+            accessdenied: 'AccessDenied'
+        };
+        const capitalizedStatus = statusMap[targetStatus] || newStatus;
 
         console.log(`🔄 Moving ticket ${ticketId} from ${ticket.status} to ${capitalizedStatus}`);
 
@@ -152,6 +169,34 @@ const TicketKanbanView = ({ tickets, selectedTicket, onSelectTicket, onUpdateTic
                         color={columnConfig.unresolved.color}
                         tickets={groupedTickets.unresolved}
                         urgentCount={columnStats.unresolved.urgent}
+                        onCardClick={onSelectTicket}
+                        selectedTicket={selectedTicket}
+                        selectedIds={selectedIds}
+                        onToggleSelect={onToggleSelect}
+                    />
+
+                    {/* No Fault Found Column */}
+                    <KanbanColumn
+                        columnId="nofaultfound"
+                        title={columnConfig.nofaultfound.title}
+                        icon={columnConfig.nofaultfound.icon}
+                        color={columnConfig.nofaultfound.color}
+                        tickets={groupedTickets.nofaultfound}
+                        urgentCount={columnStats.nofaultfound.urgent}
+                        onCardClick={onSelectTicket}
+                        selectedTicket={selectedTicket}
+                        selectedIds={selectedIds}
+                        onToggleSelect={onToggleSelect}
+                    />
+
+                    {/* Access Denied Column */}
+                    <KanbanColumn
+                        columnId="accessdenied"
+                        title={columnConfig.accessdenied.title}
+                        icon={columnConfig.accessdenied.icon}
+                        color={columnConfig.accessdenied.color}
+                        tickets={groupedTickets.accessdenied}
+                        urgentCount={columnStats.accessdenied.urgent}
                         onCardClick={onSelectTicket}
                         selectedTicket={selectedTicket}
                         selectedIds={selectedIds}

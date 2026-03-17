@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import pool from '../config/db.js';
 import { upload } from '../../cloudinaryConfig.js'; // <-- Adjusted path to go up two folders
 import axios from 'axios';
+import { sendPhilSMS } from '../utils/sms.js';
 
 const router = express.Router();
 
@@ -14,38 +15,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
-
-const sendPhilSMS = async (number, messageBody) => {
-    try {
-        let formattedNumber = number.startsWith('0') ? '63' + number.substring(1) : number;
-        
-        // Exact endpoint from your dashboard
-        const url = 'https://dashboard.philsms.com/api/v3/sms/send';
-
-        const payload = {
-            recipient: formattedNumber,
-            message: messageBody,
-            sender_id: process.env.PHILSMS_SENDER_ID || 'PhilSMS'
-        };
-
-        const response = await axios.post(url, payload, {
-            headers: { 
-                'Authorization': `Bearer ${process.env.PHILSMS_API_KEY}`,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (response.data.status === 'success') {
-            console.log(`✅ PhilSMS Success! Message sent to ${formattedNumber}`);
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error(`❌ PhilSMS Error:`, error.response?.data || error.message);
-        return false;
-    }
-};
 
 // --- DISTRICT-MUNICIPALITY VALIDATION MAP ---
 const ALECO_DISTRICT_MAP = {
@@ -222,7 +191,7 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
             return res.status(400).json({ success: false, message: "Please provide a valid Ticket ID." });
         }
 
-        // CLEANED: Removed barangay from SELECT
+        // Returns consumer-relevant fields including crew/ETA when Ongoing, lineman_remarks, hold_reason
         const [rows] = await pool.execute(
             `SELECT 
                 first_name, 
@@ -232,7 +201,13 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
                 created_at, 
                 concern,
                 municipality,
-                district
+                district,
+                assigned_crew,
+                eta,
+                dispatch_notes,
+                lineman_remarks,
+                hold_reason,
+                hold_since
              FROM aleco_tickets 
              WHERE ticket_id = ?`,
             [ticketId]
@@ -330,7 +305,8 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
                 assigned_crew = ?, 
                 eta = ?, 
                 is_consumer_notified = ?, 
-                dispatch_notes = ?
+                dispatch_notes = ?,
+                dispatched_at = NOW()
             WHERE ticket_id = ?
         `;
 
@@ -355,6 +331,45 @@ router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
     }
 });
 
+// --- ADMIN: PUT TICKET ON HOLD (Dispatcher-initiated) ---
+router.put('/tickets/:ticket_id/hold', async (req, res) => {
+    const { ticket_id } = req.params;
+    const { hold_reason, notify_consumer } = req.body;
+
+    if (!hold_reason || !hold_reason.trim()) {
+        return res.status(400).json({ success: false, message: 'Hold reason is required.' });
+    }
+
+    try {
+        const [dbResult] = await pool.execute(
+            `UPDATE aleco_tickets SET hold_reason = ?, hold_since = NOW() WHERE ticket_id = ? AND status = 'Ongoing'`,
+            [hold_reason.trim(), ticket_id]
+        );
+
+        if (dbResult.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found or not Ongoing.' });
+        }
+
+        if (notify_consumer) {
+            const [ticketData] = await pool.execute(
+                'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
+                [ticket_id]
+            );
+            if (ticketData.length > 0 && ticketData[0].phone_number) {
+                const msg = `ALECO Update: Your report (${ticket_id}) is temporarily on hold. ${hold_reason.trim()}. We will update you when work resumes.`;
+                await sendPhilSMS(ticketData[0].phone_number, msg);
+                    console.log(`✅ SMS sent to Consumer (Hold).`);
+            }
+        }
+
+        console.log(`✅ Ticket ${ticket_id} put on hold by dispatcher.`);
+        res.status(200).json({ success: true, message: 'Ticket put on hold.' });
+    } catch (error) {
+        console.error("❌ HOLD ERROR:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 
 // ============================================================================
 // INBOUND SMS RECEIVER (YEASTAR WEBHOOK)
@@ -375,41 +390,189 @@ router.get('/tickets/sms/receive', async (req, res) => {
         console.log(`📱 From: ${senderNumber}`);
         console.log(`💬 Message: "${messageText}"`);
 
-        // 1. Parse the message for our trigger words
-        // This Regex looks for "FIXED", "DONE", or "RESOLVED" followed by "ALECO-XXXXX"
-        const match = messageText.match(/(?:FIXED|DONE|RESOLVED)\s+(ALECO-[A-Z0-9]+)/i);
+        // 1. Parse for UNRESOLVED first (lineman reports could not fix)
+        const unresolvedMatch = messageText.match(/(?:UNRESOLVED|FAILED|COULD NOT)\s+(ALECO-[A-Z0-9]+)/i);
+        // 1b. Parse for NFF (No Fault Found)
+        const nffMatch = messageText.match(/(?:NFF|NO FAULT|NO FAULT FOUND)\s+(ALECO-[A-Z0-9]+)(?:\s*\|\s*(.*))?/i);
+        // 1c. Parse for ACCESS DENIED (consumer not home)
+        const accessDeniedMatch = messageText.match(/(?:ACCESS DENIED|NO ACCESS|NOT HOME)\s+(ALECO-[A-Z0-9]+)(?:\s*\|\s*(.*))?/i);
+        // 1d. Parse for HOLD (P2 - lineman reports waiting for materials/clearance/etc)
+        const holdMatch = messageText.match(/(?:HOLD|ON HOLD|WAITING)\s+(ALECO-[A-Z0-9]+)(?:\s*\|\s*(.*))?/i);
+        // 1e. Parse for ENROUTE (P3 - lineman reports en route, optional ETA update)
+        const enrouteMatch = messageText.match(/(?:ENROUTE|EN ROUTE|ON THE WAY)\s+(ALECO-[A-Z0-9]+)(?:\s*\|\s*(.*))?/i);
+        // 1f. Parse for ARRIVED (P3 - lineman reports arrived at site)
+        const arrivedMatch = messageText.match(/(?:ARRIVED|ON SITE|HERE)\s+(ALECO-[A-Z0-9]+)/i);
 
-        if (match) {
-            const ticketId = match[1].toUpperCase();
-            console.log(`🔍 Extracted Ticket ID: ${ticketId}`);
+        if (unresolvedMatch) {
+            const ticketId = unresolvedMatch[1].toUpperCase();
+            console.log(`🔍 Extracted Ticket ID (Unresolved): ${ticketId}`);
 
-            // 2. Update the Database Status to Restored
-            const updateQuery = `
-                UPDATE aleco_tickets
-                SET status = 'Restored'
-                WHERE ticket_id = ? AND status = 'Ongoing'
-            `;
-            const [dbResult] = await pool.execute(updateQuery, [ticketId]);
+            const [dbResult] = await pool.execute(
+                `UPDATE aleco_tickets SET status = 'Unresolved', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`,
+                [ticketId]
+            );
 
             if (dbResult.affectedRows > 0) {
-                console.log(`✅ SUCCESS: Ticket ${ticketId} automatically marked as Restored!`);
+                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as Unresolved.`);
 
-                // 3. OPTIONAL: Automatically text the consumer that the power is back!
                 const [ticketData] = await pool.execute(
                     'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
                     [ticketId]
                 );
 
                 if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
-                    const resolveMsg = `ALECO Update: Your report (${ticketId}) has been RESTORED by our field crew. Thank you for your patience!`;
-                    await sendPhilSMS(ticketData[0].phone_number, resolveMsg);
-                    console.log(`✅ SMS sent to Consumer confirming restoration.`);
+                    const msg = `ALECO Update: Your report (${ticketId}) could not be resolved at this time. We will contact you shortly.`;
+                    await sendPhilSMS(ticketData[0].phone_number, msg);
+                    console.log(`✅ SMS sent to Consumer (Unresolved).`);
                 }
             } else {
                 console.log(`⚠️ Ticket ${ticketId} not found or is not currently 'Ongoing'.`);
             }
+        } else if (nffMatch) {
+            const ticketId = nffMatch[1].toUpperCase();
+            const remarks = nffMatch[2] ? nffMatch[2].trim() : null;
+            console.log(`🔍 Extracted Ticket ID (No Fault Found): ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
+
+            const updateQuery = remarks
+                ? `UPDATE aleco_tickets SET status = 'NoFaultFound', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
+                : `UPDATE aleco_tickets SET status = 'NoFaultFound', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
+            const updateParams = remarks ? [remarks, ticketId] : [ticketId];
+            const [dbResult] = await pool.execute(updateQuery, updateParams);
+
+            if (dbResult.affectedRows > 0) {
+                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as NoFaultFound.`);
+                const [ticketData] = await pool.execute(
+                    'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
+                    [ticketId]
+                );
+                if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                    const msg = `ALECO Update: Our crew checked your report (${ticketId}). No fault was found at the site. If the issue persists, please report again.`;
+                    await sendPhilSMS(ticketData[0].phone_number, msg);
+                }
+            }
+        } else if (accessDeniedMatch) {
+            const ticketId = accessDeniedMatch[1].toUpperCase();
+            const remarks = accessDeniedMatch[2] ? accessDeniedMatch[2].trim() : null;
+            console.log(`🔍 Extracted Ticket ID (Access Denied): ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
+
+            const updateQuery = remarks
+                ? `UPDATE aleco_tickets SET status = 'AccessDenied', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
+                : `UPDATE aleco_tickets SET status = 'AccessDenied', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
+            const updateParams = remarks ? [remarks, ticketId] : [ticketId];
+            const [dbResult] = await pool.execute(updateQuery, updateParams);
+
+            if (dbResult.affectedRows > 0) {
+                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as AccessDenied.`);
+                const [ticketData] = await pool.execute(
+                    'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
+                    [ticketId]
+                );
+                if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                    const msg = `ALECO Update: Our crew could not access the site for your report (${ticketId}). Please ensure someone is home for the next visit, or contact us to reschedule.`;
+                    await sendPhilSMS(ticketData[0].phone_number, msg);
+                }
+            }
+        } else if (holdMatch) {
+            const ticketId = holdMatch[1].toUpperCase();
+            const reason = holdMatch[2] ? holdMatch[2].trim() : 'Awaiting materials or clearance';
+            console.log(`🔍 Extracted Ticket ID (Hold): ${ticketId} | Reason: ${reason}`);
+
+            const [dbResult] = await pool.execute(
+                `UPDATE aleco_tickets SET hold_reason = ?, hold_since = NOW() WHERE ticket_id = ? AND status = 'Ongoing'`,
+                [reason, ticketId]
+            );
+
+            if (dbResult.affectedRows > 0) {
+                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as On Hold.`);
+                const [ticketData] = await pool.execute(
+                    'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
+                    [ticketId]
+                );
+                if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                    const msg = `ALECO Update: Your report (${ticketId}) is temporarily on hold. ${reason}. We will update you when work resumes.`;
+                    await sendPhilSMS(ticketData[0].phone_number, msg);
+                }
+            }
+        } else if (enrouteMatch) {
+            const ticketId = enrouteMatch[1].toUpperCase();
+            const etaUpdate = enrouteMatch[2] ? enrouteMatch[2].trim() : null;
+            console.log(`🔍 Extracted Ticket ID (En Route): ${ticketId}${etaUpdate ? ` | ETA: ${etaUpdate}` : ''}`);
+
+            const updateQuery = etaUpdate
+                ? `UPDATE aleco_tickets SET eta = ? WHERE ticket_id = ? AND status = 'Ongoing'`
+                : `UPDATE aleco_tickets SET updated_at = NOW() WHERE ticket_id = ? AND status = 'Ongoing'`;
+            const updateParams = etaUpdate ? [etaUpdate, ticketId] : [ticketId];
+            const [dbResult] = await pool.execute(updateQuery, updateParams);
+
+            if (dbResult.affectedRows > 0) {
+                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as En Route.`);
+                if (etaUpdate) {
+                    const [ticketData] = await pool.execute(
+                        'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
+                        [ticketId]
+                    );
+                    if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                        const msg = `ALECO Update: Crew is en route for your report (${ticketId}). Updated ETA: ${etaUpdate}.`;
+                        await sendPhilSMS(ticketData[0].phone_number, msg);
+                    }
+                }
+            }
+        } else if (arrivedMatch) {
+            const ticketId = arrivedMatch[1].toUpperCase();
+            console.log(`🔍 Extracted Ticket ID (Arrived): ${ticketId}`);
+
+            const [dbResult] = await pool.execute(
+                `UPDATE aleco_tickets SET updated_at = NOW() WHERE ticket_id = ? AND status = 'Ongoing'`,
+                [ticketId]
+            );
+
+            if (dbResult.affectedRows > 0) {
+                console.log(`✅ SUCCESS: Ticket ${ticketId} - Crew arrived.`);
+                const [ticketData] = await pool.execute(
+                    'SELECT phone_number, is_consumer_notified, assigned_crew FROM aleco_tickets WHERE ticket_id = ?',
+                    [ticketId]
+                );
+                if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                    const crew = ticketData[0].assigned_crew || 'Our crew';
+                    const msg = `ALECO Update: ${crew} has arrived at your location for report (${ticketId}). Work is in progress.`;
+                    await sendPhilSMS(ticketData[0].phone_number, msg);
+                }
+            }
         } else {
-            console.log(`ℹ️ SMS Ignored: Did not contain 'FIXED ALECO-XXXXX' format.`);
+            // 2. Parse for FIXED/DONE/RESOLVED (lineman reports power restored)
+            const match = messageText.match(/(?:FIXED|DONE|RESOLVED)\s+(ALECO-[A-Z0-9]+)(?:\s*\|\s*(.*))?/i);
+
+            if (match) {
+                const ticketId = match[1].toUpperCase();
+                const remarks = match[2] ? match[2].trim() : null;
+                console.log(`🔍 Extracted Ticket ID: ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
+
+                // Update status and optionally lineman_remarks; clear hold when restored
+                const updateQuery = remarks
+                    ? `UPDATE aleco_tickets SET status = 'Restored', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
+                    : `UPDATE aleco_tickets SET status = 'Restored', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
+                const updateParams = remarks ? [remarks, ticketId] : [ticketId];
+                const [dbResult] = await pool.execute(updateQuery, updateParams);
+
+                if (dbResult.affectedRows > 0) {
+                    console.log(`✅ SUCCESS: Ticket ${ticketId} automatically marked as Restored!`);
+
+                    const [ticketData] = await pool.execute(
+                        'SELECT phone_number, is_consumer_notified FROM aleco_tickets WHERE ticket_id = ?',
+                        [ticketId]
+                    );
+
+                    if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                        const resolveMsg = `ALECO Update: Your report (${ticketId}) has been RESTORED by our field crew. Thank you for your patience!`;
+                        await sendPhilSMS(ticketData[0].phone_number, resolveMsg);
+                        console.log(`✅ SMS sent to Consumer confirming restoration.`);
+                    }
+                } else {
+                    console.log(`⚠️ Ticket ${ticketId} not found or is not currently 'Ongoing'.`);
+                }
+            } else {
+                console.log(`ℹ️ SMS Ignored: Did not contain FIXED/UNRESOLVED/NFF/ACCESS DENIED/HOLD/ENROUTE/ARRIVED + ALECO-XXXXX format.`);
+            }
         }
 
         // 4. Always return 200 OK so Yeastar knows we received it successfully
@@ -547,7 +710,7 @@ router.put('/:ticketId/status', async (req, res) => {
         console.log(`📊 Manual Status Update Request: ${ticketId} → ${status}`);
 
         // Validate status - Match the actual database enum
-        const validStatuses = ['Pending', 'Ongoing', 'Restored', 'Unresolved'];
+        const validStatuses = ['Pending', 'Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -572,12 +735,16 @@ router.put('/:ticketId/status', async (req, res) => {
                 [ticketId]
             );
 
-            if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
+                if (ticketData.length > 0 && ticketData[0].is_consumer_notified === 1 && ticketData[0].phone_number) {
                 let smsMessage = '';
                 if (status === 'Restored') {
                     smsMessage = `ALECO Update: Your report (${ticketId}) has been RESTORED. Thank you for your patience!`;
                 } else if (status === 'Unresolved') {
                     smsMessage = `ALECO Update: Your report (${ticketId}) could not be resolved at this time. We will contact you shortly.`;
+                } else if (status === 'NoFaultFound') {
+                    smsMessage = `ALECO Update: Our crew checked your report (${ticketId}). No fault was found at the site. If the issue persists, please report again.`;
+                } else if (status === 'AccessDenied') {
+                    smsMessage = `ALECO Update: Our crew could not access the site for your report (${ticketId}). Please ensure someone is home for the next visit, or contact us to reschedule.`;
                 }
 
                 if (smsMessage) {
@@ -604,6 +771,8 @@ router.put('/:ticketId/status', async (req, res) => {
 // --- 1. GET ALL CREWS (With Dynamic Member Counts & Lead Names) ---
 router.get('/crews/list', async (req, res) => {
     try {
+        const availableOnly = req.query.availableOnly === 'true';
+
         const crewSql = `
             SELECT 
                 c.id, 
@@ -611,12 +780,26 @@ router.get('/crews/list', async (req, res) => {
                 c.phone_number, 
                 c.status,
                 c.lead_lineman AS lead_id,
-                l.full_name AS lead_lineman_name
+                l.full_name AS lead_lineman_name,
+                l.status AS lead_status,
+                l.leave_start AS lead_leave_start,
+                l.leave_end AS lead_leave_end
             FROM aleco_personnel c
             LEFT JOIN aleco_linemen_pool l ON c.lead_lineman = l.id
             ORDER BY c.created_at DESC
         `;
-        const [crews] = await pool.execute(crewSql);
+        let [crews] = await pool.execute(crewSql);
+
+        if (availableOnly) {
+            crews = crews.filter(c => {
+                const crewStatus = (c.status || 'Available').toLowerCase();
+                const leadStatus = (c.lead_status || 'Active').toLowerCase();
+                const isAvailable = crewStatus === 'available';
+                const leadActive = leadStatus === 'active';
+                const hasPhone = c.phone_number && c.phone_number.trim() !== '';
+                return isAvailable && leadActive && hasPhone;
+            });
+        }
 
         const [memberships] = await pool.execute('SELECT crew_id, lineman_id FROM aleco_crew_members');
 
@@ -643,7 +826,39 @@ router.get('/crews/list', async (req, res) => {
 // --- 2. CREATE NEW CREW (With Junction Table Insertion) ---
 router.post('/crews/add', async (req, res) => {
     const { crew_name, lead_id, phone_number, members } = req.body;
-    
+
+    // P1 Conflict validation: Orphaned crew - must have at least one member
+    if (!members || members.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Crew must have at least one member. Cannot create an orphaned crew.'
+        });
+    }
+
+    // P1 Conflict validation: Inactive linemen in crew
+    const memberIds = members.map(Number);
+    const placeholders = memberIds.map(() => '?').join(', ');
+    const [linemenStatus] = await pool.execute(
+        `SELECT id, full_name, status FROM aleco_linemen_pool WHERE id IN (${placeholders})`,
+        memberIds
+    );
+    const inactiveMembers = linemenStatus.filter(l => (l.status || 'Active').toLowerCase() !== 'active');
+    if (inactiveMembers.length > 0) {
+        const names = inactiveMembers.map(l => l.full_name).join(', ');
+        return res.status(400).json({
+            success: false,
+            message: `Cannot add inactive linemen to crew: ${names}. Please remove them or reactivate them first.`
+        });
+    }
+
+    // P1 Conflict validation: Lead must be in members when members exist
+    if (lead_id && !members.includes(Number(lead_id))) {
+        return res.status(400).json({
+            success: false,
+            message: 'Lead lineman must be one of the selected crew members.'
+        });
+    }
+
     // We use a connection from the pool so we can do a transaction (rollback if it fails)
     const connection = await pool.getConnection();
     await connection.beginTransaction();
@@ -651,6 +866,7 @@ router.post('/crews/add', async (req, res) => {
     try {
         let formattedPhone = phone_number.trim();
         if (formattedPhone.startsWith('0')) formattedPhone = '63' + formattedPhone.substring(1);
+        else if (formattedPhone.startsWith('9') && formattedPhone.length === 10) formattedPhone = '63' + formattedPhone;
 
         // 1. Insert the main crew
         const [crewResult] = await connection.execute(
@@ -688,12 +904,46 @@ router.put('/crews/update/:id', async (req, res) => {
     const { id } = req.params;
     const { crew_name, lead_id, phone_number, status, members } = req.body;
 
+    // P1 Conflict validation: Orphaned crew - must have at least one member
+    const memberList = Array.isArray(members) ? members : [];
+    if (memberList.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Crew must have at least one member. Cannot save an orphaned crew.'
+        });
+    }
+
+    // P1 Conflict validation: Inactive linemen in crew
+    const memberIds = memberList.map(Number);
+    const placeholders = memberIds.map(() => '?').join(', ');
+    const [linemenStatus] = await pool.execute(
+        `SELECT id, full_name, status FROM aleco_linemen_pool WHERE id IN (${placeholders})`,
+        memberIds
+    );
+    const inactiveMembers = linemenStatus.filter(l => (l.status || 'Active').toLowerCase() !== 'active');
+    if (inactiveMembers.length > 0) {
+        const names = inactiveMembers.map(l => l.full_name).join(', ');
+        return res.status(400).json({
+            success: false,
+            message: `Cannot add inactive linemen to crew: ${names}. Please remove them or reactivate them first.`
+        });
+    }
+
+    // P1 Conflict validation: Lead must be in members
+    if (lead_id && !memberList.includes(Number(lead_id))) {
+        return res.status(400).json({
+            success: false,
+            message: 'Lead lineman must be one of the selected crew members.'
+        });
+    }
+
     const connection = await pool.getConnection();
     await connection.beginTransaction();
 
     try {
         let formattedPhone = phone_number.trim();
         if (formattedPhone.startsWith('0')) formattedPhone = '63' + formattedPhone.substring(1);
+        else if (formattedPhone.startsWith('9') && formattedPhone.length === 10) formattedPhone = '63' + formattedPhone;
 
         // 1. Update the main crew table
         await connection.execute(
@@ -705,8 +955,8 @@ router.put('/crews/update/:id', async (req, res) => {
         await connection.execute(`DELETE FROM aleco_crew_members WHERE crew_id = ?`, [id]);
 
         // 3. Insert the newly selected members
-        if (members && members.length > 0) {
-            const memberValues = members.map(linemanId => [id, linemanId]);
+        if (memberList.length > 0) {
+            const memberValues = memberList.map(linemanId => [id, linemanId]);
             const placeholders = members.map(() => '(?, ?)').join(', ');
             const flatValues = memberValues.flat();
             
@@ -757,14 +1007,16 @@ router.get('/pool/list', async (req, res) => {
 
 // POST: Add new Lineman
 router.post('/pool/add', async (req, res) => {
-    const { full_name, designation, contact_no } = req.body;
+    const { full_name, designation, contact_no, status, leave_start, leave_end, leave_reason } = req.body;
     try {
         let formattedPhone = contact_no.trim();
         if (formattedPhone.startsWith('0')) formattedPhone = '63' + formattedPhone.substring(1);
+        else if (formattedPhone.startsWith('9') && formattedPhone.length === 10) formattedPhone = '63' + formattedPhone;
 
+        const finalStatus = status || 'Active';
         await pool.execute(
-            `INSERT INTO aleco_linemen_pool (full_name, designation, contact_no) VALUES (?, ?, ?)`,
-            [full_name, designation, formattedPhone]
+            `INSERT INTO aleco_linemen_pool (full_name, designation, contact_no, status, leave_start, leave_end, leave_reason) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [full_name, designation, formattedPhone, finalStatus, leave_start || null, leave_end || null, leave_reason || null]
         );
         res.status(201).json({ success: true, message: 'Lineman registered.' });
     } catch (error) {
@@ -775,14 +1027,16 @@ router.post('/pool/add', async (req, res) => {
 // PUT: Update Lineman
 router.put('/pool/update/:id', async (req, res) => {
     const { id } = req.params;
-    const { full_name, designation, contact_no, status } = req.body;
+    const { full_name, designation, contact_no, status, leave_start, leave_end, leave_reason } = req.body;
     try {
         let formattedPhone = contact_no.trim();
         if (formattedPhone.startsWith('0')) formattedPhone = '63' + formattedPhone.substring(1);
+        else if (formattedPhone.startsWith('9') && formattedPhone.length === 10) formattedPhone = '63' + formattedPhone;
 
+        const finalStatus = status || 'Active';
         await pool.execute(
-            `UPDATE aleco_linemen_pool SET full_name = ?, designation = ?, contact_no = ?, status = ? WHERE id = ?`,
-            [full_name, designation, formattedPhone, status || 'Active', id]
+            `UPDATE aleco_linemen_pool SET full_name = ?, designation = ?, contact_no = ?, status = ?, leave_start = ?, leave_end = ?, leave_reason = ? WHERE id = ?`,
+            [full_name, designation, formattedPhone, finalStatus, leave_start || null, leave_end || null, leave_reason || null, id]
         );
         res.status(200).json({ success: true, message: 'Lineman updated.' });
     } catch (error) {

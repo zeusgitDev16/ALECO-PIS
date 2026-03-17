@@ -5,6 +5,10 @@
 /* =========================================
    TICKET GRID WRAPPER - COMPACT FOR HIGH DENSITY
    ========================================= */
+.ticket-list-pane-wrapper {
+    padding-bottom: 24px;
+}
+
 .ticket-grid-wrapper {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

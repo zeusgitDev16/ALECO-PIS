@@ -178,17 +178,80 @@
     color: var(--text-secondary);
 }
 
-/* Role / Status Badges */
-.role-badge {
-    padding: 2px 6px;
+/* Phone Number Display - Enhanced */
+.phone-display {
+    display: inline-block;
+    font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    color: var(--text-main);
+    padding: 5px 12px;
+    background: rgba(59, 130, 246, 0.08);
+    border-left: 3px solid rgba(59, 130, 246, 0.5);
     border-radius: 4px;
-    font-size: 0.65rem;
-    text-transform: capitalize;
-    font-weight: 600;
 }
 
-.role-badge.active { background-color: rgba(46, 125, 50, 0.1); color: #2e7d32; }
-.role-badge.inactive { background-color: rgba(211, 47, 47, 0.1); color: #d32f2f; }
+/* Status Badges - Refined Design */
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
+}
+
+.status-badge.status-active,
+.status-badge.status-available {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.08));
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-badge.status-inactive {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.2), rgba(107, 114, 128, 0.08));
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.status-badge.status-leave {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.08));
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-badge.status-deployed {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.08));
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-badge.status-offline {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.08));
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Fallback for unknown status */
+.status-badge:not([class*="status-"]) {
+    background: rgba(128, 128, 128, 0.15);
+    color: var(--text-secondary);
+    border: 1px solid rgba(128, 128, 128, 0.25);
+}
+
+/* Legacy role-badge support (if used elsewhere) */
+.role-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.role-badge.active { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.role-badge.inactive { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 
 .lead-badge {
     background: rgba(124, 77, 255, 0.15);

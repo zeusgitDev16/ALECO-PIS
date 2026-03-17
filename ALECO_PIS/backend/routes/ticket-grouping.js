@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/db.js';
+import { sendPhilSMS } from '../utils/sms.js';
 
 const router = express.Router();
 
@@ -157,6 +158,77 @@ router.get('/tickets/groups', async (req, res) => {
 
     } catch (error) {
         console.error("❌ Error fetching ticket groups:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * DISPATCH WHOLE GROUP
+ * Dispatches same crew/ETA/notes to all child tickets in the group
+ * PUT /api/tickets/group/:mainTicketId/dispatch
+ */
+router.put('/tickets/group/:mainTicketId/dispatch', async (req, res) => {
+    const { mainTicketId } = req.params;
+    const { assigned_crew, eta, is_consumer_notified, dispatch_notes } = req.body;
+
+    if (!assigned_crew || !eta) {
+        return res.status(400).json({
+            success: false,
+            message: 'assigned_crew and eta are required'
+        });
+    }
+
+    try {
+        const [members] = await pool.execute(
+            `SELECT ticket_id, phone_number FROM aleco_tickets WHERE parent_ticket_id = ? AND status IN ('Pending', 'Unresolved')`,
+            [mainTicketId]
+        );
+
+        if (members.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No Pending or Unresolved tickets in this group'
+            });
+        }
+
+        const [contactData] = await pool.execute(
+            `SELECT phone_number FROM aleco_personnel WHERE crew_name = ?`,
+            [assigned_crew]
+        );
+
+        if (contactData.length === 0 || !contactData[0].phone_number) {
+            return res.status(400).json({
+                success: false,
+                message: `Crew ${assigned_crew} has no registered phone number.`
+            });
+        }
+
+        const linemanPhone = contactData[0].phone_number;
+        const ticketIds = members.map(m => m.ticket_id);
+
+        for (const member of members) {
+            const linemanMsg = `ALECO DISPATCH: Ticket ${member.ticket_id}. Reply 'FIXED ${member.ticket_id}' when done.`;
+            await sendPhilSMS(linemanPhone, linemanMsg);
+
+            if (is_consumer_notified && member.phone_number) {
+                const consumerMsg = `ALECO: Crew ${assigned_crew} dispatched for your concern. ETA: ${eta}. Ticket: ${member.ticket_id}`;
+                await sendPhilSMS(member.phone_number, consumerMsg);
+            }
+
+            await pool.execute(
+                `UPDATE aleco_tickets SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, dispatched_at = NOW() WHERE ticket_id = ?`,
+                [assigned_crew, eta, is_consumer_notified ? 1 : 0, dispatch_notes || '', member.ticket_id]
+            );
+        }
+
+        console.log(`✅ GROUP DISPATCH: ${mainTicketId} - ${members.length} tickets dispatched to ${assigned_crew}`);
+        res.json({
+            success: true,
+            message: `${members.length} tickets dispatched to ${assigned_crew}`,
+            dispatchedCount: members.length
+        });
+    } catch (error) {
+        console.error('❌ Group dispatch error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });

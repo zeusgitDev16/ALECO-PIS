@@ -682,37 +682,69 @@ const ReportaProblem = () => {
     <div className="status-results-container">
     <div className="status-stepper">
         <div className="line"></div>
-        {/* STEP 1 */}
-        <div className={`step active`}>
+        {/* STEP 1: Pending */}
+        <div className="step active">
             <div className="circle yellow-glow active">1</div>
             <span>Pending</span>
         </div>
         
-        {/* STEP 2 */}
-        <div className={`step ${['Ongoing', 'Restored'].includes(ticketData.status) ? 'active' : ''}`}>
-            <div className={`circle blue-glow ${['Ongoing', 'Restored'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
-            <span>Ongoing</span>
+        {/* STEP 2: Ongoing or Unresolved */}
+        <div className={`step ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
+            <div className={`circle ${ticketData.status === 'Unresolved' ? 'red-glow' : 'blue-glow'} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
+            <span>{ticketData.status === 'Unresolved' ? 'Unresolved' : 'Ongoing'}</span>
         </div>
         
-        {/* STEP 3 */}
-        <div className={`step ${ticketData.status === 'Restored' ? 'active' : ''}`}>
-            <div className={`circle green-glow ${ticketData.status === 'Restored' ? 'active' : ''}`}>3</div>
-            <span>Restored</span>
+        {/* STEP 3: Closed (Restored, NoFaultFound, AccessDenied) */}
+        <div className={`step ${['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
+            <div className={`circle green-glow ${['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>3</div>
+            <span>Closed</span>
         </div>
     </div>
 
     <div className="status-details-card">
         <p>
             <strong>Current Status:</strong> 
-            <span className={`status-tag ${ticketData.status.toLowerCase()}`}>{ticketData.status}</span>
+            <span className={`status-tag ${(ticketData.status || '').toLowerCase()}`}>{ticketData.status}</span>
         </p>
         
-        {/* NEW: Displays the full name cleanly, ignoring the middle name if it is blank */}
+        {ticketData.status === 'Ongoing' && (ticketData.assigned_crew || ticketData.eta || ticketData.hold_reason) && (
+            <div className="crew-eta-info">
+                {ticketData.assigned_crew && <p><strong>Crew dispatched:</strong> {ticketData.assigned_crew}</p>}
+                {ticketData.eta && <p><strong>ETA:</strong> {ticketData.eta}</p>}
+                {ticketData.hold_reason && (
+                    <p className="hold-info"><strong>On Hold:</strong> {ticketData.hold_reason}. We will update you when work resumes.</p>
+                )}
+            </div>
+        )}
+        
+        {ticketData.status === 'Restored' && (
+            <p className="restored-message">Power restored. Thank you for your patience!</p>
+        )}
+        
+        {ticketData.status === 'NoFaultFound' && (
+            <p className="nff-message">Our crew checked your report. No fault was found at the site. If the issue persists, please report again.</p>
+        )}
+        
+        {ticketData.status === 'AccessDenied' && (
+            <p className="access-denied-message">Our crew could not access the site. Please ensure someone is home for the next visit, or contact us to reschedule.</p>
+        )}
+        
+        {ticketData.status === 'Unresolved' && (
+            <p className="unresolved-message">We could not resolve at this time. We will contact you shortly. You may report again if the issue persists.</p>
+        )}
+        
+        {['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) && ticketData.lineman_remarks && (
+            <div className="lineman-remarks-preview">
+                <label>Field Notes:</label>
+                <p>{ticketData.lineman_remarks}</p>
+            </div>
+        )}
+        
         <p>
     <strong>Reported By:</strong> {
         [ticketData.first_name, ticketData.middle_name, ticketData.last_name]
-        .filter(Boolean) // This automatically removes any NULL or blank middle names
-        .join(' ') || "Name not provided" // Fallback if all 3 are NULL
+        .filter(Boolean)
+        .join(' ') || "Name not provided"
     }
 </p>
         
@@ -724,6 +756,12 @@ const ReportaProblem = () => {
             <label>Your Concern:</label>
             <p>{ticketData.concern}</p>
         </div>
+        
+        {(ticketData.status === 'Unresolved' || ticketData.status === 'NoFaultFound' || ticketData.status === 'AccessDenied') && (
+            <button type="button" className="btn-report-again" onClick={() => { setIsFlipped(false); setTicketData(null); setTrackingId(''); }}>
+                Report Again
+            </button>
+        )}
     </div>
 </div>
                         )}

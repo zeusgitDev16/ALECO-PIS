@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import '../../CSS/TicketDetailPane.css';
-import DispatchTicketModal from './DispatchTicketModal'; // <-- 1. Import the new Lego brick
+import DispatchTicketModal from './DispatchTicketModal';
+import HoldTicketModal from './HoldTicketModal';
 
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
-const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
+const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, onClose, crews }) => {
     const [copiedField, setCopiedField] = useState(null);
-    const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false); // <-- 2. New state for the dispatch workflow
+    const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
+    const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
+    const [isGroupDispatchOpen, setIsGroupDispatchOpen] = useState(false);
+
+    const isGroupMaster = ticket?.ticket_id?.startsWith('GROUP-');
+    const isGroupChild = !!ticket?.parent_ticket_id;
+    const mainTicketId = isGroupMaster ? ticket.ticket_id : ticket?.parent_ticket_id;
 
     // Add/remove modal-open class to body to prevent sticky header overlap
     useEffect(() => {
@@ -65,6 +72,24 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
                     </div>
                 </div>
 
+                {/* Resolution stepper: 1) Dispatch → 2) In Progress → 3) Resolved */}
+                <div className="resolution-stepper">
+                    <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
+                        <span className="stepper-num">1</span>
+                        <span className="stepper-label">Dispatch</span>
+                    </div>
+                    <div className="stepper-connector" />
+                    <div className={`stepper-step ${ticket.status === 'Ongoing' ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
+                        <span className="stepper-num">2</span>
+                        <span className="stepper-label">In Progress</span>
+                    </div>
+                    <div className="stepper-connector" />
+                    <div className={`stepper-step ${['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'active' : ''}`}>
+                        <span className="stepper-num">3</span>
+                        <span className="stepper-label">Resolved</span>
+                    </div>
+                </div>
+
                 <hr className="detail-divider" />
 
                 {/* --- SECTION 2: REPORTER & SYSTEM INFO --- */}
@@ -116,9 +141,10 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
                         <p className="detail-value location-text">
                             📍 {ticket.address ? `${ticket.address}, ` : ''}
                             {ticket.purok ? `Purok ${ticket.purok}, ` : ''}
-                            {ticket.barangay}, {ticket.municipality}
+                            {ticket.barangay ? `${ticket.barangay}, ` : ''}
+                            {ticket.municipality || '—'}
                             <br />
-                            <small className="district-sub">{ticket.district}</small>
+                            <small className="district-sub">{ticket.district || ''}</small>
                         </p>
                     </div>
                 </div>
@@ -146,17 +172,69 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
                             </div>
                         </div>
                     )}
+
+                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes) && ['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
+                        <div className="detail-group dispatch-info-section">
+                            <label>Dispatch Info</label>
+                            <div className="dispatch-info-box">
+                                {ticket.assigned_crew && <p><strong>Crew:</strong> {ticket.assigned_crew}</p>}
+                                {ticket.eta && <p><strong>ETA:</strong> {ticket.eta}</p>}
+                                {ticket.dispatch_notes && <p><strong>Notes:</strong> {ticket.dispatch_notes}</p>}
+                                {ticket.hold_reason && (
+                                    <p className="hold-info"><strong>On Hold:</strong> {ticket.hold_reason}{ticket.hold_since ? ` (since ${new Date(ticket.hold_since).toLocaleString('en-PH')})` : ''}</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {ticket.lineman_remarks && (
+                        <div className="detail-group lineman-remarks-section">
+                            <label>Field Technician Remarks</label>
+                            <div className="lineman-remarks-box">
+                                {ticket.lineman_remarks}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* --- SECTION 4: ADMIN ACTIONS --- */}
                 <div className="action-footer">
                     {ticket.status === 'Pending' && (
-                        <button
-                            className="btn-action btn-ongoing"
-                            onClick={() => setIsDispatchModalOpen(true)}
-                        >
-                            Start Resolution
-                        </button>
+                        <>
+                            <button
+                                className="btn-action btn-ongoing"
+                                onClick={() => setIsDispatchModalOpen(true)}
+                            >
+                                Start Resolution
+                            </button>
+                            {(isGroupMaster || isGroupChild) && onDispatchGroup && (
+                                <button
+                                    className="btn-action btn-ongoing"
+                                    onClick={() => setIsGroupDispatchOpen(true)}
+                                >
+                                    Dispatch All
+                                </button>
+                            )}
+                        </>
+                    )}
+
+                    {ticket.status === 'Unresolved' && (
+                        <>
+                            <button
+                                className="btn-action btn-ongoing"
+                                onClick={() => setIsDispatchModalOpen(true)}
+                            >
+                                Re-dispatch
+                            </button>
+                            {(isGroupMaster || isGroupChild) && onDispatchGroup && (
+                                <button
+                                    className="btn-action btn-ongoing"
+                                    onClick={() => setIsGroupDispatchOpen(true)}
+                                >
+                                    Dispatch All
+                                </button>
+                            )}
+                        </>
                     )}
 
                     {['Pending', 'Ongoing', 'Unresolved'].includes(ticket.status) && (
@@ -172,34 +250,83 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onClose, crews }) => {
                     )}
 
                     {ticket.status === 'Ongoing' && (
-                        <button
-                            className="btn-action btn-unresolved"
-                            onClick={() => {
-                                onUpdateTicket(ticket.ticket_id, 'Unresolved');
-                                onClose();
-                            }}
-                        >
-                            Mark as Unresolved
-                        </button>
+                        <>
+                            <button
+                                className="btn-action btn-hold"
+                                onClick={() => setIsHoldModalOpen(true)}
+                            >
+                                Put on Hold
+                            </button>
+                            <button
+                                className="btn-action btn-unresolved"
+                                onClick={() => {
+                                    onUpdateTicket(ticket.ticket_id, 'Unresolved');
+                                    onClose();
+                                }}
+                            >
+                                Mark as Unresolved
+                            </button>
+                            <button
+                                className="btn-action btn-nff"
+                                onClick={() => {
+                                    onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
+                                    onClose();
+                                }}
+                            >
+                                No Fault Found
+                            </button>
+                            <button
+                                className="btn-action btn-access-denied"
+                                onClick={() => {
+                                    onUpdateTicket(ticket.ticket_id, 'AccessDenied');
+                                    onClose();
+                                }}
+                            >
+                                Access Denied
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
 
-            {/* --- NEW LOGISTICS WORKFLOW: The Dispatch Modal --- */}
             <DispatchTicketModal 
                 isOpen={isDispatchModalOpen}
                 onClose={() => setIsDispatchModalOpen(false)}
                 ticket={ticket}
                 crews={crews}
                 onSubmit={(dispatchData) => {
-                    // 1. Pass the new dispatch data AND the status up to the parent
                     onUpdateTicket(ticket.ticket_id, 'Ongoing', dispatchData);
-                    // 2. Close both the dispatch form AND the main ticket pane
                     setIsDispatchModalOpen(false);
                     onClose(); 
                 }}
             />
 
+            <HoldTicketModal
+                isOpen={isHoldModalOpen}
+                onClose={() => setIsHoldModalOpen(false)}
+                ticket={ticket}
+                onSubmit={(holdData) => {
+                    onPutHold(ticket.ticket_id, holdData);
+                    setIsHoldModalOpen(false);
+                    onClose();
+                }}
+            />
+
+            {mainTicketId && (
+                <DispatchTicketModal
+                    isOpen={isGroupDispatchOpen}
+                    onClose={() => setIsGroupDispatchOpen(false)}
+                    ticket={ticket}
+                    crews={crews}
+                    titleOverride="🚚 Dispatch Whole Group"
+                    subtitleOverride={`Assign same crew to all tickets in group ${mainTicketId}`}
+                    onSubmit={(dispatchData) => {
+                        onDispatchGroup(mainTicketId, dispatchData);
+                        setIsGroupDispatchOpen(false);
+                        onClose();
+                    }}
+                />
+            )}
         </div>
     );
 };

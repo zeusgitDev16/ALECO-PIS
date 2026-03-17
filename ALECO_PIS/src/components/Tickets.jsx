@@ -18,7 +18,7 @@ import TicketTableView from './tickets/TicketTableView';
 import TicketKanbanView from './tickets/TicketKanbanView';
 
 const AdminTickets = () => {
-    const { tickets, loading: isLoading, error, filters, setFilters } = useTickets();
+    const { tickets, loading: isLoading, error, filters, setFilters, refetch } = useTickets();
     
     const [viewMode, setViewMode] = useState('grid');
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -70,6 +70,46 @@ const AdminTickets = () => {
         return count;
     };
 
+    const handleDispatchGroup = async (mainTicketId, dispatchData) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/tickets/group/${mainTicketId}/dispatch`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dispatchData)
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                alert(`ALECO System: ${data.message}`);
+                refetch();
+            } else {
+                alert('Group dispatch failed: ' + (data.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Group dispatch error:', error);
+            alert('Failed to dispatch group. Please try again.');
+        }
+    };
+
+    const handlePutHold = async (ticketId, holdData) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/hold`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(holdData)
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                alert(`ALECO System: Ticket ${ticketId} put on hold.`);
+                refetch();
+            } else {
+                alert('Hold failed: ' + (data.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Hold error:', error);
+            alert('Failed to put ticket on hold. Please try again.');
+        }
+    };
+
     const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         try {
             if (newStatus === 'Ongoing' && dispatchData) {
@@ -83,12 +123,12 @@ const AdminTickets = () => {
 
                 if (response.ok && data.success) {
                     alert(`ALECO System: Crew successfully dispatched for Ticket ${ticketId}. SMS notifications sent.`);
-                    window.location.reload();
+                    refetch();
                 } else {
                     alert("Dispatch failed: " + data.message);
                 }
             }
-            else if (newStatus === 'Restored' || newStatus === 'Unresolved') {
+            else if (['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(newStatus)) {
                 const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -99,7 +139,7 @@ const AdminTickets = () => {
 
                 if (response.ok && data.success) {
                     alert(`ALECO System: Ticket ${ticketId} marked as ${newStatus}.`);
-                    window.location.reload();
+                    refetch();
                 } else {
                     alert("Status update failed: " + data.message);
                 }
@@ -249,6 +289,8 @@ const AdminTickets = () => {
                 ticket={selectedTicket} 
                 onClose={() => setSelectedTicket(null)}
                 onUpdateTicket={handleUpdateTicket}
+                onPutHold={handlePutHold}
+                onDispatchGroup={handleDispatchGroup}
                 crews={availableCrews}
             />
 
@@ -319,7 +361,7 @@ const AdminTickets = () => {
                             alert(`✅ Success! ${data.message}\n\nMain Ticket ID: ${data.mainTicketId}`);
                             setIsGroupModalOpen(false);
                             setSelectedIds([]);
-                            window.location.reload(); // Refresh to show updated tickets
+                            refetch();
                         } else {
                             alert(`❌ Failed to create group: ${data.message}`);
                         }

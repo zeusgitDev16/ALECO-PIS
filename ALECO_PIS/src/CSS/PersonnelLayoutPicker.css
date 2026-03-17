@@ -1,0 +1,138 @@
+/* =========================================
+   PERSONNEL LAYOUT PICKER - Same design as TicketLayoutPicker
+   Scoped to personnel management page
+   ========================================= */
+.personnel-management-container .personnel-layout-picker.layout-picker-container,
+.main-content-card .personnel-layout-picker.layout-picker-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    margin-bottom: 8px;
+}
+
+.personnel-layout-picker .layout-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.personnel-layout-picker .layout-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--bg-body);
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.personnel-layout-picker .layout-btn:hover:not(:disabled):not(.active) {
+    background: var(--bg-card);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.personnel-layout-picker .layout-btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    font-weight: 800;
+}
+
+[data-theme="light"] .personnel-layout-picker .layout-btn.active {
+    color: #1e3a8a;
+}
+
+[data-theme="dark"] .personnel-layout-picker .layout-btn.active {
+    color: #ffffff;
+}
+
+.personnel-layout-picker .layout-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--bg-body);
+    color: var(--text-secondary);
+}
+
+.personnel-layout-picker .layout-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.personnel-layout-picker .layout-label {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS - Same as TicketLayoutPicker
+   ========================================= */
+@media (max-width: 800px) {
+    .personnel-management-container .personnel-layout-picker.layout-picker-container,
+    .main-content-card .personnel-layout-picker.layout-picker-container {
+        padding: 4px 8px;
+        gap: 6px;
+        border: 1px solid var(--border-color);
+    }
+
+    .personnel-layout-picker .layout-buttons {
+        flex: 1;
+        justify-content: space-between;
+        gap: 3px;
+    }
+
+    .personnel-layout-picker .layout-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 3px 6px;
+        font-size: 0.6rem;
+        height: 24px;
+    }
+
+    .personnel-layout-picker .layout-icon {
+        font-size: 11px;
+    }
+
+    .personnel-layout-picker .layout-label {
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 500px) {
+    .personnel-management-container .personnel-layout-picker.layout-picker-container,
+    .main-content-card .personnel-layout-picker.layout-picker-container {
+        padding: 3px 6px;
+        gap: 4px;
+    }
+
+    .personnel-layout-picker .layout-buttons {
+        gap: 2px;
+    }
+
+    .personnel-layout-picker .layout-btn {
+        padding: 2px 4px;
+        font-size: 0.55rem;
+        height: 22px;
+    }
+
+    .personnel-layout-picker .layout-icon {
+        font-size: 10px;
+    }
+
+    .personnel-layout-picker .layout-label {
+        font-size: 0.55rem;
+    }
+}

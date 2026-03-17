@@ -2,12 +2,21 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import AddCrew from './personnels/AddCrew';
 import AddLinemen from './personnels/AddLinemen';
+import PersonnelLayoutPicker from './personnels/PersonnelLayoutPicker';
+import CrewGrid from './personnels/CrewGrid';
+import CrewTableView from './personnels/CrewTableView';
+import CrewKanbanView from './personnels/CrewKanbanView';
+import LinemanGrid from './personnels/LinemanGrid';
+import LinemanTableView from './personnels/LinemanTableView';
+import LinemanKanbanView from './personnels/LinemanKanbanView';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/PersonnelManagement.css';
+import '../CSS/PersonnelLayoutPicker.css';
 
 const PersonnelManagement = () => {
     // --- 1. VIEW & DATA STATE ---
     const [activeTab, setActiveTab] = useState('crews'); // 'crews' or 'pool'
+    const [viewMode, setViewMode] = useState('table'); // 'grid' | 'table' | 'kanban'
     const [crews, setCrews] = useState([]);
     const [linemenPool, setLinemenPool] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -119,7 +128,7 @@ const PersonnelManagement = () => {
 
     return (
         <AdminLayout activePage="personnel">
-            <div className="admin-page-container">
+            <div className="admin-page-container personnel-management-container">
                 
                 {/* --- HEADER & TABS --- */}
                 <div className="dashboard-header-flex">
@@ -172,76 +181,63 @@ const PersonnelManagement = () => {
                         </div>
                     </div>
 
-                    {/* --- DYNAMIC TABLES --- */}
-                    <div className="users-table-container">
-                        {isLoading ? (
-                            <p style={{fontSize: '0.7rem', color: '#888'}}>Loading database records...</p>
-                        ) : activeTab === 'crews' ? (
-                            <table className="users-table">
-                                <thead>
-                                    <tr>
-                                        <th>Crew Name</th>
-                                        <th>Lead Lineman</th>
-                                        <th>Members</th>
-                                        <th>Phone Number</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredCrews.map(crew => (
-                                        <tr key={crew.id}>
-                                            <td className="user-email">{crew.crew_name}</td>
-                                            <td><span className="lead-badge">{crew.lead_lineman_name || 'Unassigned'}</span></td>
-                                            <td>{crew.members?.length || 0} Members</td>
-                                            <td className="user-code">{crew.phone_number}</td>
-                                            <td><span className={`role-badge ${crew.status?.toLowerCase() || 'active'}`}>{crew.status || 'Active'}</span></td>
-                                            <td>
-                                                <button className="action-btn-toggle" onClick={() => {
-                                                    setEditingCrew(crew); 
-                                                    setIsCrewModalOpen(true);
-                                                }}>Edit</button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filteredCrews.length === 0 && (
-                                        <tr><td colSpan="6" style={{textAlign: 'center', padding: '15px'}}>No crews found.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        ) : (
-                            <table className="users-table">
-                                <thead>
-                                    <tr>
-                                        <th>Full Name</th>
-                                        <th>Designation</th>
-                                        <th>Contact No.</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredPool.map(man => (
-                                        <tr key={man.id}>
-                                            <td className="user-email">{man.full_name}</td>
-                                            <td>{man.designation}</td>
-                                            <td className="user-code">{man.contact_no}</td>
-                                            <td><span className="status-dot active">● Active</span></td>
-                                            <td>
-                                                <button className="action-btn-toggle" onClick={() => {
-                                                    setEditingLineman(man);
-                                                    setIsLinemenModalOpen(true);
-                                                }}>Edit</button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filteredPool.length === 0 && (
-                                        <tr><td colSpan="5" style={{textAlign: 'center', padding: '15px'}}>No personnel found in the database.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                    {/* --- LAYOUT PICKER (Lego Brick) --- */}
+                    <PersonnelLayoutPicker
+                        activeLayout={viewMode}
+                        onLayoutChange={setViewMode}
+                    />
+
+                    {/* --- DYNAMIC VIEWS (Lego Bricks) --- */}
+                    {activeTab === 'crews' && (
+                        <>
+                            {viewMode === 'grid' && (
+                                <CrewGrid
+                                    crews={filteredCrews}
+                                    isLoading={isLoading}
+                                    onEditCrew={(crew) => { setEditingCrew(crew); setIsCrewModalOpen(true); }}
+                                />
+                            )}
+                            {viewMode === 'table' && (
+                                <CrewTableView
+                                    crews={filteredCrews}
+                                    isLoading={isLoading}
+                                    onEditCrew={(crew) => { setEditingCrew(crew); setIsCrewModalOpen(true); }}
+                                />
+                            )}
+                            {viewMode === 'kanban' && (
+                                <CrewKanbanView
+                                    crews={filteredCrews}
+                                    isLoading={isLoading}
+                                    onEditCrew={(crew) => { setEditingCrew(crew); setIsCrewModalOpen(true); }}
+                                />
+                            )}
+                        </>
+                    )}
+                    {activeTab === 'pool' && (
+                        <>
+                            {viewMode === 'grid' && (
+                                <LinemanGrid
+                                    linemen={filteredPool}
+                                    isLoading={isLoading}
+                                    onEditLineman={(man) => { setEditingLineman(man); setIsLinemenModalOpen(true); }}
+                                />
+                            )}
+                            {viewMode === 'table' && (
+                                <LinemanTableView
+                                    linemen={filteredPool}
+                                    isLoading={isLoading}
+                                    onEditLineman={(man) => { setEditingLineman(man); setIsLinemenModalOpen(true); }}
+                                />
+                            )}
+                            {viewMode === 'kanban' && (
+                                <LinemanKanbanView
+                                    linemen={filteredPool}
+                                    isLoading={isLoading}
+                                    onEditLineman={(man) => { setEditingLineman(man); setIsLinemenModalOpen(true); }}
+                                />
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
 

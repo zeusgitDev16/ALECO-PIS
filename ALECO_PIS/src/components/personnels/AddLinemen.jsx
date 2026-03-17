@@ -1,22 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { toDisplayFormat } from '../../utils/phoneUtils';
 import '../../CSS/AddLinemen.css'; 
 
 const AddLinemen = ({ isOpen, onClose, onSave, initialData = null }) => {
-    // Real functional state
     const [fullName, setFullName] = useState('');
     const [designation, setDesignation] = useState('Lineman');
-    const [contactNo, setContactNo] = useState('63');
+    const [contactNo, setContactNo] = useState('');
+    const [status, setStatus] = useState('Active');
+    const [leaveStart, setLeaveStart] = useState('');
+    const [leaveEnd, setLeaveEnd] = useState('');
+    const [leaveReason, setLeaveReason] = useState('');
 
-    // Populate or reset form based on edit/add mode
     useEffect(() => {
         if (initialData) {
             setFullName(initialData.full_name || '');
             setDesignation(initialData.designation || 'Lineman');
-            setContactNo(initialData.contact_no || '63');
+            setContactNo(toDisplayFormat(initialData.contact_no) || '');
+            setStatus(initialData.status || 'Active');
+            setLeaveStart(initialData.leave_start ? initialData.leave_start.slice(0, 10) : '');
+            setLeaveEnd(initialData.leave_end ? initialData.leave_end.slice(0, 10) : '');
+            setLeaveReason(initialData.leave_reason || '');
         } else {
             setFullName('');
             setDesignation('Lineman');
-            setContactNo('63');
+            setContactNo('');
+            setStatus('Active');
+            setLeaveStart('');
+            setLeaveEnd('');
+            setLeaveReason('');
         }
     }, [initialData, isOpen]);
 
@@ -29,7 +40,11 @@ const AddLinemen = ({ isOpen, onClose, onSave, initialData = null }) => {
             id: initialData?.id || null,
             full_name: fullName,
             designation: designation,
-            contact_no: contactNo
+            contact_no: contactNo,
+            status,
+            leave_start: status === 'Leave' ? leaveStart || null : null,
+            leave_end: status === 'Leave' ? leaveEnd || null : null,
+            leave_reason: status === 'Leave' ? leaveReason || null : null
         });
     };
 
@@ -81,14 +96,61 @@ const AddLinemen = ({ isOpen, onClose, onSave, initialData = null }) => {
                     <div className="dispatch-form-group">
                         <label>Personal Contact No.</label>
                         <input 
-                            type="text" 
+                            type="tel" 
                             className="dispatch-form-input" 
-                            placeholder="63..." 
+                            placeholder="e.g. 09943917653" 
                             value={contactNo} 
                             onChange={e => setContactNo(e.target.value)} 
                             required 
                         />
+                        <small className="form-hint">Enter 09XXXXXXXXX format (no +63 needed)</small>
                     </div>
+
+                    <div className="dispatch-form-group">
+                        <label>Status</label>
+                        <select 
+                            className="dispatch-form-input" 
+                            value={status} 
+                            onChange={e => setStatus(e.target.value)}
+                        >
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Leave">Leave of Absence</option>
+                        </select>
+                    </div>
+
+                    {status === 'Leave' && (
+                        <>
+                            <div className="dispatch-form-group">
+                                <label>Leave Start Date</label>
+                                <input 
+                                    type="date" 
+                                    className="dispatch-form-input" 
+                                    value={leaveStart} 
+                                    onChange={e => setLeaveStart(e.target.value)} 
+                                />
+                            </div>
+                            <div className="dispatch-form-group">
+                                <label>Leave End Date</label>
+                                <input 
+                                    type="date" 
+                                    className="dispatch-form-input" 
+                                    value={leaveEnd} 
+                                    onChange={e => setLeaveEnd(e.target.value)} 
+                                />
+                            </div>
+                            <div className="dispatch-form-group">
+                                <label>Leave Reason</label>
+                                <input 
+                                    type="text" 
+                                    className="dispatch-form-input" 
+                                    placeholder="e.g. Sick leave, Vacation" 
+                                    value={leaveReason} 
+                                    onChange={e => setLeaveReason(e.target.value)} 
+                                />
+                            </div>
+                        </>
+                    )}
 
                     <div className="dispatch-modal-actions">
                         <button type="button" className="btn-action btn-cancel" onClick={onClose}>

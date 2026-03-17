@@ -21,7 +21,7 @@ router.get('/filtered-tickets', async (req, res) => {
         if (tab === 'Open') {
             query += ` AND (status IN ('Pending', 'Ongoing', 'Unresolved') OR status IS NULL OR status = '')`;
         } else if (tab === 'Closed') {
-            query += ` AND status = 'Restored'`;
+            query += ` AND status IN ('Restored', 'NoFaultFound', 'AccessDenied')`;
         }
 
         // --- 48 Hour Toggle ---

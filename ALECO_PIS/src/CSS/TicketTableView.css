@@ -12,6 +12,7 @@
     border: 1px solid var(--border-color);
     background: var(--bg-card);
     position: relative;
+    padding-bottom: 24px;
 }
 
 /* Empty State */
@@ -227,6 +228,16 @@ body.modal-open .ticket-table-header {
 .status-badge.unresolved {
     background: rgba(239, 68, 68, 0.2);
     color: #ef4444;
+}
+
+.status-badge.nofaultfound {
+    background: rgba(139, 92, 246, 0.2);
+    color: #8b5cf6;
+}
+
+.status-badge.accessdenied {
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
 }
 
 [data-theme="light"] .status-badge.pending {

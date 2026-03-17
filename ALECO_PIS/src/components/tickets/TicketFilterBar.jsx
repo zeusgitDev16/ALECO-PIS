@@ -128,6 +128,8 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
                     <option value="Ongoing">🔧 Ongoing</option>
                     <option value="Restored">✅ Restored</option>
                     <option value="Unresolved">❌ Unresolved</option>
+                    <option value="NoFaultFound">○ No Fault Found</option>
+                    <option value="AccessDenied">🚫 Access Denied</option>
                 </select>
 
                 {/* Grouped Search and Category to stay side-by-side */}

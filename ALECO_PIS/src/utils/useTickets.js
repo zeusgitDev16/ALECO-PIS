@@ -22,43 +22,41 @@ const useTickets = () => {
         endDate: ''
     });
 
-    // 2. The Fetch Logic
-    useEffect(() => {
-        const fetchTickets = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                // Build clean params object (only non-empty values)
-                const params = {};
-                Object.keys(filters).forEach(key => {
-                    const value = filters[key];
-                    if (value !== '' && value !== false) {
-                        params[key] = value;
-                    }
-                });
-
-                console.log('🔍 Sending Filter Params:', params);
-
-                const response = await axios.get('/api/filtered-tickets', { params });
-
-                if (response.data.success) {
-                    console.log(`✅ Received ${response.data.data.length} tickets`);
-                    setTickets(response.data.data);
-                } else {
-                    setError("No tickets found matching your filters.");
+    // 2. The Fetch Logic (shared for initial load and refetch)
+    const fetchTickets = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const params = {};
+            Object.keys(filters).forEach(key => {
+                const value = filters[key];
+                if (value !== '' && value !== false) {
+                    params[key] = value;
                 }
-            } catch (err) {
-                console.error("❌ Failed to fetch tickets:", err);
-                setError("Could not load tickets. Please try again.");
-            } finally {
-                setLoading(false);
-            }
-        };
+            });
 
+            const response = await axios.get('/api/filtered-tickets', { params });
+
+            if (response.data.success) {
+                setTickets(response.data.data);
+            } else {
+                setError("No tickets found matching your filters.");
+            }
+        } catch (err) {
+            console.error("❌ Failed to fetch tickets:", err);
+            setError("Could not load tickets. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchTickets();
     }, [filters]);
 
-    return { tickets, loading, error, filters, setFilters };
+    const refetch = () => fetchTickets();
+
+    return { tickets, loading, error, filters, setFilters, refetch };
 };
 
 export default useTickets;

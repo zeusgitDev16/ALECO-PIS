@@ -72,6 +72,13 @@
     margin-bottom: 16px;
 }
 
+.dispatch-form-group .form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
 .dispatch-form-group label {
     display: block;
     font-size: 9px;
@@ -142,10 +149,43 @@
     background: rgba(124, 77, 255, 0.1);
 }
 
+.personnel-card.inactive-lineman {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: rgba(107, 114, 128, 0.1);
+}
+
+.personnel-card.inactive-lineman:hover {
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.personnel-inactive-badge {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    background: rgba(107, 114, 128, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 2px;
+    align-self: flex-start;
+}
+
+.personnel-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .personnel-name {
     font-size: 11px;
     font-weight: 600;
     color: var(--text-main);
+}
+
+.personnel-contact {
+    font-size: 9px;
+    color: var(--text-secondary);
 }
 
 .lead-toggle-btn {

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-// We will create/update the CSS file in the next step, using the dispatch-modal class names.
+import { toDisplayFormat } from '../../utils/phoneUtils';
 import '../../CSS/AddCrew.css';
+
+// Display phone in 09 format for personnel cards
+const formatContact = (contact) => toDisplayFormat(contact) || contact || '';
 
 const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null }) => {
     // Real functional state
     const [crewName, setCrewName] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('63');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [members, setMembers] = useState([]);
     const [leadId, setLeadId] = useState(null);
 
@@ -14,7 +17,7 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
     useEffect(() => {
         if (initialData) {
             setCrewName(initialData.crew_name || '');
-            setPhoneNumber(initialData.phone_number || '63');
+            setPhoneNumber(toDisplayFormat(initialData.phone_number) || '');
             
             // CONVERSION FIX: Ensure members and lead_id are always read as Numbers!
             setMembers(initialData.members ? initialData.members.map(Number) : []);
@@ -22,7 +25,7 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
             
         } else {
             setCrewName('');
-            setPhoneNumber('63');
+            setPhoneNumber('');
             setMembers([]);
             setLeadId(null);
         }
@@ -42,6 +45,10 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (members.length === 0) {
+            alert('Crew must have at least one member. Please select personnel from the pool.');
+            return;
+        }
         onSave({
             id: initialData?.id || null,
             crew_name: crewName,
@@ -84,13 +91,14 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
                     <div className="dispatch-form-group">
                         <label>Dispatch Hotline</label>
                         <input 
-                            type="text" 
+                            type="tel" 
                             className="dispatch-form-input" 
-                            placeholder="63..." 
+                            placeholder="e.g. 09943917653" 
                             value={phoneNumber} 
                             onChange={e => setPhoneNumber(e.target.value)} 
                             required 
                         />
+                        <small className="form-hint">Enter 09XXXXXXXXX format (no +63 needed)</small>
                     </div>
 
                     <div className="dispatch-form-group">
@@ -100,13 +108,22 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
                             {linemenPool.length === 0 ? (
                                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>No personnel available.</p>
                             ) : (
-                                linemenPool.map(man => (
+                                linemenPool.map(man => {
+                                    const isInactive = ['inactive', 'leave'].includes((man.status || 'Active').toLowerCase());
+                                    return (
                                     <div 
                                         key={man.id} 
-                                        className={`personnel-card ${members.includes(man.id) ? 'selected' : ''}`}
-                                        onClick={() => handleToggleMember(man.id)}
+                                        className={`personnel-card ${members.includes(man.id) ? 'selected' : ''} ${isInactive ? 'inactive-lineman' : ''}`}
+                                        onClick={() => !isInactive && handleToggleMember(man.id)}
+                                        title={isInactive ? 'Inactive linemen cannot be added to crews' : ''}
                                     >
-                                        <span className="personnel-name">{man.full_name}</span>
+                                        <div className="personnel-info">
+                                            <span className="personnel-name">{man.full_name}</span>
+                                            {man.contact_no && (
+                                                <span className="personnel-contact">{formatContact(man.contact_no)}</span>
+                                            )}
+                                            {isInactive && <span className="personnel-inactive-badge">Inactive</span>}
+                                        </div>
                                         {members.includes(man.id) && (
                                             <button 
                                                 type="button"
@@ -120,7 +137,7 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
                                             </button>
                                         )}
                                     </div>
-                                ))
+                                ); })
                             )}
                         </div>
                     </div>

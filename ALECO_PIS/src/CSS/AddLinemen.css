@@ -72,6 +72,13 @@
     margin-bottom: 16px;
 }
 
+.dispatch-form-group .form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
 .dispatch-form-group label {
     display: block;
     font-size: 9px;

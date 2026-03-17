@@ -1,0 +1,106 @@
+/* ==========================================================================
+   PERSONNEL GRID - Card view for Crews & Linemen
+   ========================================================================== */
+.personnel-grid-wrapper {
+    padding-bottom: 24px;
+}
+
+.personnel-loading,
+.personnel-empty {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 24px;
+}
+
+.personnel-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    width: 100%;
+}
+
+.personnel-card {
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 100px;
+}
+
+.personnel-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: var(--accent-primary, #7c4dff);
+}
+
+.personnel-card-banner {
+    padding: 4px 8px;
+    background: rgba(124, 77, 255, 0.1);
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+.personnel-card-banner-text {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--accent-primary, #7c4dff);
+}
+
+.personnel-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.personnel-card-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-header);
+}
+
+.personnel-card-lead {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+.personnel-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.personnel-card-meta {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+.personnel-card-phone {
+    font-size: 0.65rem;
+}
+
+.personnel-card-action {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-header);
+    cursor: pointer;
+    font-size: 0.65rem;
+    transition: all 0.2s;
+    align-self: flex-start;
+}
+
+.personnel-card-action:hover {
+    background: rgba(124, 77, 255, 0.1);
+    border-color: var(--accent-primary);
+}

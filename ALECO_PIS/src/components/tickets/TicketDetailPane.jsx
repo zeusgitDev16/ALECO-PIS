@@ -6,7 +6,7 @@ import HoldTicketModal from './HoldTicketModal';
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
-const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, onClose, crews }) => {
+const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, onUngroup, onClose, crews }) => {
     const [copiedField, setCopiedField] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
     const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
@@ -235,6 +235,15 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                 </button>
                             )}
                         </>
+                    )}
+
+                    {(isGroupMaster || isGroupChild) && mainTicketId && onUngroup && (
+                        <button
+                            className="btn-action btn-ungroup"
+                            onClick={() => onUngroup(mainTicketId)}
+                        >
+                            Ungroup
+                        </button>
                     )}
 
                     {['Pending', 'Ongoing', 'Unresolved'].includes(ticket.status) && (

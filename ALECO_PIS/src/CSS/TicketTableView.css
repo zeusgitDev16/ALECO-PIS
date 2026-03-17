@@ -15,6 +15,21 @@
     padding-bottom: 24px;
 }
 
+/* Group badge (Part of GROUP-XXX) */
+.group-badge {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    background: rgba(41, 121, 255, 0.15);
+    color: var(--accent-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    white-space: nowrap;
+}
+
 /* Empty State */
 .ticket-table-empty {
     padding: 60px 20px;

@@ -60,6 +60,11 @@ const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, se
 
                         <div className="card-header-row">
                             <span className="ticket-id-bold">{ticket.ticket_id}</span>
+                            {ticket.parent_ticket_id && (
+                                <span className="group-badge" title={`Part of group ${ticket.parent_ticket_id}`}>
+                                    Part of {ticket.parent_ticket_id}
+                                </span>
+                            )}
                             <span className="ticket-date-label">
                                 {new Date(ticket.created_at).toLocaleDateString('en-PH', { 
                                     month: 'short', day: 'numeric', year: 'numeric' 

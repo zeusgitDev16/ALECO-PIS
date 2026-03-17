@@ -4,6 +4,20 @@
  * Fully responsive from 320px to 4K screens
  */
 
+/* Group badge (Part of GROUP-XXX) */
+.group-badge {
+    font-size: 7px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    background: rgba(41, 121, 255, 0.15);
+    color: var(--accent-primary);
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-left: 4px;
+    white-space: nowrap;
+}
+
 /* ============================================================================
    KANBAN CONTAINER
    ============================================================================ */

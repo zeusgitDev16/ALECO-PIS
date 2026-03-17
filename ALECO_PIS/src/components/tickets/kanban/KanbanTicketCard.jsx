@@ -76,6 +76,11 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
                     )}
                     {isUrgent && <span className="urgent-indicator">🚨</span>}
                     <span className={isUrgent ? 'urgent-text' : ''}>{ticket.ticket_id}</span>
+                    {ticket.parent_ticket_id && (
+                        <span className="group-badge" title={`Part of group ${ticket.parent_ticket_id}`}>
+                            Part of {ticket.parent_ticket_id}
+                        </span>
+                    )}
                 </div>
                 <div className="kanban-card-category" {...listeners} style={{ cursor: 'grab' }}>
                     {ticket.category}
@@ -116,6 +121,7 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
         prevProps.ticket.ticket_id === nextProps.ticket.ticket_id &&
         prevProps.ticket.status === nextProps.ticket.status &&
         prevProps.ticket.is_urgent === nextProps.ticket.is_urgent &&
+        prevProps.ticket.parent_ticket_id === nextProps.ticket.parent_ticket_id &&
         prevProps.isSelected === nextProps.isSelected &&
         prevProps.isChecked === nextProps.isChecked
     );

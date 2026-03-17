@@ -21,7 +21,7 @@ router.post('/tickets/group/create', async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const { title, category, remarks, ticketIds } = req.body;
+        const { title, category, remarks, ticketIds, group_type, visit_order } = req.body;
 
         // Validation
         if (!ticketIds || ticketIds.length < 2) {
@@ -37,6 +37,20 @@ router.post('/tickets/group/create', async (req, res) => {
                 message: 'Category is required'
             });
         }
+
+        // Validate no ticket is already in a group
+        const [alreadyGrouped] = await connection.execute(
+            `SELECT ticket_id FROM aleco_tickets WHERE ticket_id IN (${ticketIds.map(() => '?').join(', ')}) AND parent_ticket_id IS NOT NULL`,
+            ticketIds
+        );
+        if (alreadyGrouped.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Ticket(s) already in a group: ${alreadyGrouped.map(r => r.ticket_id).join(', ')}. Ungroup first.`
+            });
+        }
+
+        const effectiveGroupType = group_type === 'routing_batch' ? 'routing_batch' : 'similar_incident';
 
         // Generate Main Ticket ID (Format: GROUP-YYYYMMDD-XXXX)
         const date = new Date();
@@ -74,12 +88,12 @@ router.post('/tickets/group/create', async (req, res) => {
 
         const ticket = firstTicket[0];
 
-        // Insert master ticket
+        // Insert master ticket (with group_type)
         await connection.execute(
             `INSERT INTO aleco_tickets
              (ticket_id, first_name, last_name, phone_number, address, category, concern,
-              district, municipality, status, created_at, remarks, is_urgent)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, 0)`,
+              district, municipality, status, created_at, remarks, is_urgent, group_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, 0, ?)`,
             [
                 mainTicketId,
                 'GROUP',
@@ -91,18 +105,26 @@ router.post('/tickets/group/create', async (req, res) => {
                 ticket.district,
                 ticket.municipality,
                 createdAt,
-                remarks || `Grouped ${ticketIds.length} tickets`
+                remarks || `Grouped ${ticketIds.length} tickets`,
+                effectiveGroupType
             ]
         );
 
-        // Update all child tickets to link to this master ticket
-        const ticketPlaceholders = ticketIds.map(() => '?').join(', ');
-        await connection.execute(
-            `UPDATE aleco_tickets
-             SET parent_ticket_id = ?
-             WHERE ticket_id IN (${ticketPlaceholders})`,
-            [mainTicketId, ...ticketIds]
-        );
+        // Build visit_order map: ticketId -> order (1, 2, 3...)
+        const orderMap = {};
+        const orderedIds = Array.isArray(visit_order) && visit_order.length === ticketIds.length
+            ? visit_order
+            : ticketIds;
+        orderedIds.forEach((id, idx) => { orderMap[id] = idx + 1; });
+
+        // Update all child tickets: parent_ticket_id and visit_order (for routing_batch)
+        for (const tid of ticketIds) {
+            const vo = effectiveGroupType === 'routing_batch' ? (orderMap[tid] || null) : null;
+            await connection.execute(
+                `UPDATE aleco_tickets SET parent_ticket_id = ?, visit_order = ? WHERE ticket_id = ?`,
+                [mainTicketId, vo, tid]
+            );
+        }
 
         await connection.commit();
 
@@ -163,6 +185,57 @@ router.get('/tickets/groups', async (req, res) => {
 });
 
 /**
+ * UNGROUP
+ * Dissolves a group: clears parent_ticket_id and visit_order for all children, deletes GROUP master
+ * PUT /api/tickets/group/:mainTicketId/ungroup
+ */
+router.put('/tickets/group/:mainTicketId/ungroup', async (req, res) => {
+    const { mainTicketId } = req.params;
+
+    if (!mainTicketId || !mainTicketId.startsWith('GROUP-')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid group ID'
+        });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        // Clear parent_ticket_id and visit_order for all children
+        const [result] = await connection.execute(
+            `UPDATE aleco_tickets SET parent_ticket_id = NULL, visit_order = NULL WHERE parent_ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        // Delete the GROUP master record
+        await connection.execute(
+            `DELETE FROM aleco_tickets WHERE ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        await connection.commit();
+
+        const affected = result.affectedRows || 0;
+        console.log(`✅ UNGROUP: ${mainTicketId} - ${affected} tickets ungrouped`);
+
+        res.json({
+            success: true,
+            message: `Group dissolved. ${affected} tickets ungrouped.`,
+            ungroupedCount: affected
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('❌ Ungroup error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+/**
  * DISPATCH WHOLE GROUP
  * Dispatches same crew/ETA/notes to all child tickets in the group
  * PUT /api/tickets/group/:mainTicketId/dispatch
@@ -179,8 +252,14 @@ router.put('/tickets/group/:mainTicketId/dispatch', async (req, res) => {
     }
 
     try {
+        const [masterRows] = await pool.execute(
+            `SELECT group_type FROM aleco_tickets WHERE ticket_id = ?`,
+            [mainTicketId]
+        );
+        const groupType = masterRows[0]?.group_type || 'similar_incident';
+
         const [members] = await pool.execute(
-            `SELECT ticket_id, phone_number FROM aleco_tickets WHERE parent_ticket_id = ? AND status IN ('Pending', 'Unresolved')`,
+            `SELECT ticket_id, phone_number, visit_order FROM aleco_tickets WHERE parent_ticket_id = ? AND status IN ('Pending', 'Unresolved')`,
             [mainTicketId]
         );
 
@@ -204,11 +283,23 @@ router.put('/tickets/group/:mainTicketId/dispatch', async (req, res) => {
         }
 
         const linemanPhone = contactData[0].phone_number;
-        const ticketIds = members.map(m => m.ticket_id);
 
-        for (const member of members) {
-            const linemanMsg = `ALECO DISPATCH: Ticket ${member.ticket_id}. Reply 'FIXED ${member.ticket_id}' when done.`;
+        // Sort by visit_order for routing groups
+        const sortedMembers = groupType === 'routing_batch'
+            ? [...members].sort((a, b) => (a.visit_order || 999) - (b.visit_order || 999))
+            : members;
+
+        if (groupType === 'routing_batch') {
+            const visitOrderList = sortedMembers.map((m, i) => `${i + 1}) ${m.ticket_id}`).join(' ');
+            const linemanMsg = `ALECO DISPATCH: Visit in order: ${visitOrderList}. Reply 'FIXED ${sortedMembers[0].ticket_id}' when done.`;
             await sendPhilSMS(linemanPhone, linemanMsg);
+        }
+
+        for (const member of sortedMembers) {
+            if (groupType !== 'routing_batch') {
+                const linemanMsg = `ALECO DISPATCH: Ticket ${member.ticket_id}. Reply 'FIXED ${member.ticket_id}' when done.`;
+                await sendPhilSMS(linemanPhone, linemanMsg);
+            }
 
             if (is_consumer_notified && member.phone_number) {
                 const consumerMsg = `ALECO: Crew ${assigned_crew} dispatched for your concern. ETA: ${eta}. Ticket: ${member.ticket_id}`;

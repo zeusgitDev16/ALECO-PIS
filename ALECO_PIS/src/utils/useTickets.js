@@ -19,7 +19,8 @@ const useTickets = () => {
         municipality: '',
         datePreset: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        groupFilter: 'all' // 'all' | 'grouped' | 'ungrouped'
     });
 
     // 2. The Fetch Logic (shared for initial load and refetch)

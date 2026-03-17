@@ -9,12 +9,13 @@ router.get('/filtered-tickets', async (req, res) => {
         const {
             tab, isNew, isUrgent, status, searchQuery, category,
             district, municipality,
-            datePreset, startDate, endDate
+            datePreset, startDate, endDate, groupFilter
         } = req.query;
 
         console.log('🔍 Filter Request:', { tab, isNew, isUrgent, status, searchQuery, category, district, municipality, datePreset });
 
-        let query = `SELECT * FROM aleco_tickets WHERE 1=1`;
+        // Exclude GROUP masters (virtual containers); only show real tickets
+        let query = `SELECT * FROM aleco_tickets WHERE 1=1 AND ticket_id NOT LIKE 'GROUP-%'`;
         const params = [];
 
         // --- Status Tabs ---
@@ -88,6 +89,13 @@ router.get('/filtered-tickets', async (req, res) => {
         if (startDate && endDate) {
             query += ` AND DATE(created_at) BETWEEN ? AND ?`;
             params.push(startDate, endDate);
+        }
+
+        // --- Group Filter ---
+        if (groupFilter === 'grouped') {
+            query += ` AND parent_ticket_id IS NOT NULL`;
+        } else if (groupFilter === 'ungrouped') {
+            query += ` AND (parent_ticket_id IS NULL OR parent_ticket_id = '')`;
         }
 
         query += ` ORDER BY created_at DESC`;

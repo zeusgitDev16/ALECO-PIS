@@ -132,6 +132,19 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
                     <option value="AccessDenied">🚫 Access Denied</option>
                 </select>
 
+                {/* 🔗 Group Filter */}
+                <select
+                    name="groupFilter"
+                    className="status-filter-select"
+                    value={filters.groupFilter || "all"}
+                    onChange={handleFilterChange}
+                    title="Filter by group status"
+                >
+                    <option value="all">🔗 All Tickets</option>
+                    <option value="grouped">🔗 Grouped Only</option>
+                    <option value="ungrouped">🔗 Ungrouped Only</option>
+                </select>
+
                 {/* Grouped Search and Category to stay side-by-side */}
                 <div className="search-category-group">
                     <input 

@@ -154,6 +154,11 @@ const TicketTableView = ({
                                 </td>
                                 <td className="col-id">
                                     {isUrgent ? <strong>{ticket.ticket_id}</strong> : ticket.ticket_id}
+                                    {ticket.parent_ticket_id && (
+                                        <span className="group-badge" title={`Part of group ${ticket.parent_ticket_id}`}>
+                                            Part of {ticket.parent_ticket_id}
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="col-name">{fullName || 'N/A'}</td>
                                 <td className="col-phone">{ticket.phone_number || 'N/A'}</td>

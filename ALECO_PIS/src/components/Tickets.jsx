@@ -67,6 +67,7 @@ const AdminTickets = () => {
         if (filters.isNew) count++;
         if (filters.isUrgent) count++;
         if (filters.status) count++;
+        if (filters.groupFilter && filters.groupFilter !== 'all') count++;
         return count;
     };
 
@@ -87,6 +88,27 @@ const AdminTickets = () => {
         } catch (error) {
             console.error('Group dispatch error:', error);
             alert('Failed to dispatch group. Please try again.');
+        }
+    };
+
+    const handleUngroup = async (mainTicketId) => {
+        if (!confirm('Dissolve this group? All tickets will become standalone.')) return;
+        try {
+            const response = await fetch(`http://localhost:5000/api/tickets/group/${mainTicketId}/ungroup`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                alert(`ALECO System: ${data.message}`);
+                setSelectedTicket(null);
+                refetch();
+            } else {
+                alert('Ungroup failed: ' + (data.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Ungroup error:', error);
+            alert('Failed to ungroup. Please try again.');
         }
     };
 
@@ -129,7 +151,7 @@ const AdminTickets = () => {
                 }
             }
             else if (['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(newStatus)) {
-                const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/status`, {
+                const response = await fetch(`http://localhost:5000/api/${ticketId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: newStatus })
@@ -181,7 +203,7 @@ const AdminTickets = () => {
             if (response.ok && data.success) {
                 alert(`✅ ${data.message}`);
                 setSelectedIds([]);
-                window.location.reload();
+                refetch();
             } else {
                 alert(`❌ Failed: ${data.message}`);
             }
@@ -291,6 +313,7 @@ const AdminTickets = () => {
                 onUpdateTicket={handleUpdateTicket}
                 onPutHold={handlePutHold}
                 onDispatchGroup={handleDispatchGroup}
+                onUngroup={handleUngroup}
                 crews={availableCrews}
             />
 

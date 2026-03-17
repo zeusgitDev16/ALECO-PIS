@@ -18,6 +18,21 @@
     white-space: nowrap;
 }
 
+.group-badge-parent {
+    background: rgba(124, 58, 237, 0.2);
+    color: var(--accent-primary);
+}
+
+/* Parent/group ticket card highlighting */
+.kanban-ticket-card.kanban-card-group {
+    border-left: 3px solid var(--accent-primary, #7c3aed);
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(124, 58, 237, 0.06) 100%);
+}
+
+.kanban-ticket-card.kanban-card-group:hover {
+    border-left-color: var(--accent-primary);
+}
+
 /* ============================================================================
    KANBAN CONTAINER
    ============================================================================ */
@@ -386,10 +401,64 @@ body.modal-open .kanban-column-header {
     white-space: nowrap;
 }
 
+.kanban-card-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
 .kanban-card-time {
     flex-shrink: 0;
     font-weight: 600;
     white-space: nowrap;
+}
+
+/* Status badge for Kanban cards - compact variant */
+.kanban-ticket-card .status-badge {
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 0.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.kanban-ticket-card .status-badge.pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.kanban-ticket-card .status-badge.ongoing {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.kanban-ticket-card .status-badge.restored {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.kanban-ticket-card .status-badge.unresolved {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.kanban-ticket-card .status-badge.nofaultfound {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.kanban-ticket-card .status-badge.accessdenied {
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+    border: 1px solid rgba(249, 115, 22, 0.3);
 }
 
 .kanban-card-crew {

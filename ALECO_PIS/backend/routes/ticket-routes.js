@@ -12,93 +12,102 @@ router.get('/filtered-tickets', async (req, res) => {
             datePreset, startDate, endDate, groupFilter
         } = req.query;
 
-        console.log('🔍 Filter Request:', { tab, isNew, isUrgent, status, searchQuery, category, district, municipality, datePreset });
+        console.log('🔍 Filter Request:', { tab, isNew, isUrgent, status, searchQuery, category, district, municipality, datePreset, groupFilter });
 
-        // Exclude GROUP masters (virtual containers); only show real tickets
-        let query = `SELECT * FROM aleco_tickets WHERE 1=1 AND ticket_id NOT LIKE 'GROUP-%'`;
+        // Base: show parent tickets (GROUP-*) + ungrouped; exclude children. Include child_count for GROUP masters.
+        let query = `SELECT t.*, 
+            (SELECT COUNT(*) FROM aleco_tickets c WHERE c.parent_ticket_id = t.ticket_id) as child_count 
+            FROM aleco_tickets t WHERE 1=1`;
         const params = [];
+
+        // --- Group Filter (base visibility) ---
+        if (groupFilter === 'grouped') {
+            query += ` AND t.ticket_id LIKE 'GROUP-%'`;
+        } else if (groupFilter === 'ungrouped') {
+            query += ` AND (t.parent_ticket_id IS NULL OR t.parent_ticket_id = '') AND t.ticket_id NOT LIKE 'GROUP-%'`;
+        } else {
+            // all: GROUP masters + ungrouped tickets (exclude children)
+            query += ` AND (t.parent_ticket_id IS NULL OR t.parent_ticket_id = '' OR t.ticket_id LIKE 'GROUP-%')`;
+        }
 
         // --- Status Tabs ---
         if (tab === 'Open') {
-            query += ` AND (status IN ('Pending', 'Ongoing', 'Unresolved') OR status IS NULL OR status = '')`;
+            query += ` AND (t.status IN ('Pending', 'Ongoing', 'Unresolved') OR t.status IS NULL OR t.status = '')`;
         } else if (tab === 'Closed') {
-            query += ` AND status IN ('Restored', 'NoFaultFound', 'AccessDenied')`;
+            query += ` AND t.status IN ('Restored', 'NoFaultFound', 'AccessDenied')`;
         }
 
         // --- 48 Hour Toggle ---
         if (isNew === 'true') {
-            query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL 48 HOUR)`;
+            query += ` AND t.created_at >= DATE_SUB(NOW(), INTERVAL 48 HOUR)`;
         }
 
         // --- Urgent Filter ---
         if (isUrgent === 'true') {
-            query += ` AND is_urgent = 1`;
+            query += ` AND t.is_urgent = 1`;
         }
 
         // --- Status Filter ---
         if (status && status.trim() !== '') {
-            query += ` AND status = ?`;
+            query += ` AND t.status = ?`;
             params.push(status.trim());
         }
 
         // --- Search Bar (ID, Name, Concern) ---
+        // When search matches a child ticket, show the parent group instead (children are hidden from list)
         if (searchQuery && searchQuery.trim() !== '') {
-            query += ` AND (
-                ticket_id LIKE ? OR 
-                first_name LIKE ? OR 
-                last_name LIKE ? OR 
-                concern LIKE ? OR
-                address LIKE ?
-            )`;
             const searchWildcard = `%${searchQuery.trim()}%`;
-            params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard);
+            query += ` AND (
+                (t.ticket_id LIKE ? OR t.first_name LIKE ? OR t.last_name LIKE ? OR t.concern LIKE ? OR t.address LIKE ?)
+                OR
+                (t.ticket_id LIKE 'GROUP-%' AND EXISTS (
+                    SELECT 1 FROM aleco_tickets c 
+                    WHERE c.parent_ticket_id = t.ticket_id 
+                    AND (c.ticket_id LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ? OR c.concern LIKE ? OR c.address LIKE ?)
+                ))
+            )`;
+            params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard,
+                searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard);
         }
 
         // --- Category Filter ---
         if (category && category.trim() !== '') {
-            query += ` AND category = ?`;
+            query += ` AND t.category = ?`;
             params.push(category.trim());
         }
 
         // --- Location Filters (District & Municipality ONLY) ---
         if (district && district.trim() !== '') {
-            query += ` AND district = ?`;
+            query += ` AND t.district = ?`;
             params.push(district.trim());
         }
 
         if (municipality && municipality.trim() !== '') {
-            query += ` AND municipality = ?`;
+            query += ` AND t.municipality = ?`;
             params.push(municipality.trim());
         }
 
         // --- Date Filters ---
         if (datePreset) {
             if (datePreset === 'today') {
-                query += ` AND DATE(created_at) = CURDATE()`;
+                query += ` AND DATE(t.created_at) = CURDATE()`;
             } else if (datePreset === 'last7') {
-                query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
+                query += ` AND t.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
             } else if (datePreset === 'thisMonth') {
-                query += ` AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())`;
+                query += ` AND MONTH(t.created_at) = MONTH(CURDATE()) AND YEAR(t.created_at) = YEAR(CURDATE())`;
             } else if (datePreset === 'lastMonth') {
-                query += ` AND MONTH(created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
-                           AND YEAR(created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))`;
+                query += ` AND MONTH(t.created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
+                           AND YEAR(t.created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))`;
             }
         }
 
         // --- Custom Date Range ---
         if (startDate && endDate) {
-            query += ` AND DATE(created_at) BETWEEN ? AND ?`;
+            query += ` AND DATE(t.created_at) BETWEEN ? AND ?`;
             params.push(startDate, endDate);
         }
 
-        // --- Group Filter ---
-        if (groupFilter === 'grouped') {
-            query += ` AND parent_ticket_id IS NOT NULL`;
-        } else if (groupFilter === 'ungrouped') {
-            query += ` AND (parent_ticket_id IS NULL OR parent_ticket_id = '')`;
-        }
-
-        query += ` ORDER BY created_at DESC`;
+        query += ` ORDER BY t.created_at DESC`;
 
         console.log('📊 Executing Query:', query);
         console.log('📊 With Params:', params);

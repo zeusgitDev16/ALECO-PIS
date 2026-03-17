@@ -127,7 +127,8 @@ const TicketTableView = ({
                 </thead>
                 <tbody className="ticket-table-body">
                     {sortedTickets.map((ticket, index) => {
-                        const fullName = `${ticket.first_name || ''} ${ticket.last_name || ''}`.trim();
+                        const isGroupMaster = ticket.ticket_id?.startsWith('GROUP-');
+                        const fullName = isGroupMaster ? 'Group' : `${ticket.first_name || ''} ${ticket.last_name || ''}`.trim();
                         const location = ticket.municipality
                             ? `${ticket.municipality}, ${ticket.district || 'Albay'}`
                             : ticket.address || 'N/A';
@@ -138,7 +139,7 @@ const TicketTableView = ({
                         return (
                             <tr
                                 key={ticket.ticket_id}
-                                className={`ticket-table-row ${isSelected ? 'selected' : ''} ${isUrgent ? 'urgent' : ''} ${index % 2 === 0 ? 'even' : 'odd'}`}
+                                className={`ticket-table-row ${isGroupMaster ? 'ticket-row-group' : ''} ${isSelected ? 'selected' : ''} ${isUrgent ? 'urgent' : ''} ${index % 2 === 0 ? 'even' : 'odd'}`}
                                 onClick={() => onSelectTicket(ticket)}
                             >
                                 <td className="col-checkbox">
@@ -154,27 +155,34 @@ const TicketTableView = ({
                                 </td>
                                 <td className="col-id">
                                     {isUrgent ? <strong>{ticket.ticket_id}</strong> : ticket.ticket_id}
-                                    {ticket.parent_ticket_id && (
+                                    {isGroupMaster && (ticket.child_count ?? 0) > 0 && (
+                                        <span className="group-badge group-badge-parent" title={`${ticket.child_count} tickets in group`}>
+                                            {ticket.child_count} ticket{(ticket.child_count ?? 0) !== 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                    {!isGroupMaster && ticket.parent_ticket_id && (
                                         <span className="group-badge" title={`Part of group ${ticket.parent_ticket_id}`}>
                                             Part of {ticket.parent_ticket_id}
                                         </span>
                                     )}
                                 </td>
                                 <td className="col-name">{fullName || 'N/A'}</td>
-                                <td className="col-phone">{ticket.phone_number || 'N/A'}</td>
+                                <td className="col-phone">{!isGroupMaster ? (ticket.phone_number || 'N/A') : '—'}</td>
                                 <td className="col-category">{ticket.category || 'N/A'}</td>
-                                <td className="col-concern" title={ticket.concern}>
-                                    {ticket.concern && ticket.concern.length > 40
-                                        ? `${ticket.concern.substring(0, 40)}...`
-                                        : ticket.concern || 'N/A'}
+                                <td className="col-concern" title={isGroupMaster ? ticket.address : ticket.concern}>
+                                    {(isGroupMaster ? ticket.address : ticket.concern) && (isGroupMaster ? ticket.address : ticket.concern).length > 40
+                                        ? `${(isGroupMaster ? ticket.address : ticket.concern).substring(0, 40)}...`
+                                        : (isGroupMaster ? ticket.address : ticket.concern) || 'N/A'}
                                 </td>
                                 <td className="col-location" title={location}>
                                     {location}
                                 </td>
                                 <td className="col-status">
-                                    {isUrgent && <span className="urgent-dot">🔴</span>}
-                                    <span className={`status-badge ${(ticket.status || 'pending').toLowerCase()}`}>
-                                        {ticket.status || 'Pending'}
+                                    <span className="status-cell">
+                                        {isUrgent && <span className="urgent-dot">🔴</span>}
+                                        <span className={`status-badge ${(ticket.status || 'pending').toLowerCase().replace(/\s/g, '')}`}>
+                                            {ticket.status || 'Pending'}
+                                        </span>
                                     </span>
                                 </td>
                                 <td className="col-date">

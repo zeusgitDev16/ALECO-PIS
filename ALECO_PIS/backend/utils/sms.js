@@ -1,13 +1,20 @@
 import axios from 'axios';
+import { normalizePhoneForSMS } from './phoneUtils.js';
 
 export const sendPhilSMS = async (number, messageBody) => {
+    const formattedNumber = normalizePhoneForSMS(number);
+    if (!formattedNumber) {
+        console.error(`❌ PhilSMS: Invalid phone number "${number}" - skipping send`);
+        return false;
+    }
+
     try {
-        let formattedNumber = number.startsWith('0') ? '63' + number.substring(1) : number;
-        const url = 'https://dashboard.philsms.com/api/v3/sms/send';
+        const url = 'https://app.philsms.com/api/v3/sms/send';
         const payload = {
             recipient: formattedNumber,
             message: messageBody,
-            sender_id: process.env.PHILSMS_SENDER_ID || 'PhilSMS'
+            sender_id: process.env.PHILSMS_SENDER_ID || 'PhilSMS',
+            type: 'plain'
         };
         const response = await axios.post(url, payload, {
             headers: {
@@ -20,9 +27,14 @@ export const sendPhilSMS = async (number, messageBody) => {
             console.log(`✅ PhilSMS Success! Message sent to ${formattedNumber}`);
             return true;
         }
+        console.warn(`⚠️ PhilSMS: Unexpected response`, response.data);
         return false;
     } catch (error) {
-        console.error(`❌ PhilSMS Error:`, error.response?.data || error.message);
+        console.error(`❌ PhilSMS Error:`, {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
         return false;
     }
 };

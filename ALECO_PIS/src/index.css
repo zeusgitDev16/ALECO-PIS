@@ -47,6 +47,7 @@
 
 /* --- DARK MODE OVERRIDES --- */
 [data-theme="dark"] {
+  color-scheme: dark;      /* Native form controls (select dropdowns, etc.) use dark styling */
   --bg-body: #111827;      /* Very Dark Blue/Gray */
   --bg-card: #18212f;      /* Dark Gray Card */
   --bg-glass: rgba(25, 34, 47, 0.85); /* Dark Glass */

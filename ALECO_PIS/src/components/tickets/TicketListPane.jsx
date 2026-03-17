@@ -38,10 +38,12 @@ const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, se
     return (
         <div className="ticket-list-pane-wrapper">
             <div className="ticket-grid-wrapper">
-                {normalTickets.map(ticket => (
+                {normalTickets.map(ticket => {
+                    const isGroupMaster = ticket.ticket_id?.startsWith('GROUP-');
+                    return (
                     <div 
                         key={ticket.ticket_id}
-                        className={`ticket-card-container ${selectedTicket?.ticket_id === ticket.ticket_id ? 'selected' : ''}`}
+                        className={`ticket-card-container ${isGroupMaster ? 'ticket-card-group' : ''} ${selectedTicket?.ticket_id === ticket.ticket_id ? 'selected' : ''}`}
                         onClick={() => onSelectTicket(ticket)}
                     >
                         <div className="ticket-category-banner">
@@ -60,7 +62,12 @@ const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, se
 
                         <div className="card-header-row">
                             <span className="ticket-id-bold">{ticket.ticket_id}</span>
-                            {ticket.parent_ticket_id && (
+                            {isGroupMaster && (ticket.child_count ?? 0) > 0 && (
+                                <span className="group-badge group-badge-parent" title={`${ticket.child_count} tickets in group`}>
+                                    {ticket.child_count} ticket{(ticket.child_count ?? 0) !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                            {!isGroupMaster && ticket.parent_ticket_id && (
                                 <span className="group-badge" title={`Part of group ${ticket.parent_ticket_id}`}>
                                     Part of {ticket.parent_ticket_id}
                                 </span>
@@ -73,7 +80,9 @@ const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, se
                         </div>
                         
                         <div className="card-body-content">
-                            <p className="concern-text-highlight">{ticket.concern}</p>
+                            <p className="concern-text-highlight">
+                                {isGroupMaster ? (ticket.address || ticket.concern) : ticket.concern}
+                            </p>
                         </div>
 
                         <div className="card-footer-metadata">
@@ -83,18 +92,19 @@ const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, se
                                     <circle cx="12" cy="10" r="3"></circle>
                                 </svg>
                                 <span className="location-text-full">
-                                    {ticket.municipality 
-                                        ? `${ticket.municipality}, ${ticket.district || 'Albay'}` 
-                                        : ticket.address || 'Location not specified'}
+                                    {isGroupMaster
+                                        ? (ticket.municipality ? `${ticket.municipality}, ${ticket.district || 'Albay'}` : ticket.address || '—')
+                                        : (ticket.municipality ? `${ticket.municipality}, ${ticket.district || 'Albay'}` : ticket.address || 'Location not specified')}
                                 </span>
                             </div>
                             
-                            <span className={`status-pill-solid ${ticket.status ? ticket.status.toLowerCase() : 'pending'}`}>
+                            <span className={`status-pill-solid ${ticket.status ? ticket.status.toLowerCase().replace(/\s/g, '') : 'pending'}`}>
                                 {ticket.status || 'Pending'}
                             </span>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

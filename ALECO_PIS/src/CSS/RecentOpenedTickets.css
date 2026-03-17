@@ -1,0 +1,135 @@
+/**
+ * RecentOpenedTickets.css
+ * Lego brick: Recent opened tickets section
+ */
+
+.recent-opened-tickets-wrapper {
+    margin-bottom: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.recent-opened-tickets-wrapper.recent-opened-collapsed .recent-opened-header {
+    margin-bottom: 0;
+}
+
+.recent-opened-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    cursor: pointer;
+    user-select: none;
+}
+
+.recent-opened-header:hover {
+    opacity: 0.9;
+}
+
+.recent-opened-collapse-btn {
+    margin-left: 8px;
+    padding: 4px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.recent-opened-collapse-btn:hover {
+    background: var(--bg-hover, rgba(255,255,255,0.05));
+}
+
+.recent-opened-icon {
+    font-size: 1.2rem;
+}
+
+.recent-opened-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.recent-opened-time-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.recent-opened-time-range label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.recent-opened-time-range select {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.recent-opened-grid {
+    margin-top: 8px;
+}
+
+.recent-opened-card {
+    border-left: 2px solid var(--accent-primary, #7c3aed);
+}
+
+.recent-opened-table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.recent-opened-table {
+    font-size: 10px;
+    min-width: 800px;
+}
+
+.recent-opened-table thead th {
+    padding: 8px 10px;
+    background: var(--bg-body);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.recent-opened-table tbody tr {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.recent-opened-table tbody tr:hover {
+    background: var(--bg-hover);
+}
+
+.recent-opened-kanban-strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 8px 0;
+    min-height: 140px;
+}
+
+.recent-opened-kanban-strip::-webkit-scrollbar {
+    height: 6px;
+}
+
+.recent-opened-kanban-card-wrap {
+    flex-shrink: 0;
+}
+
+.recent-opened-kanban-card-wrap .kanban-ticket-card {
+    min-width: 220px;
+    max-width: 220px;
+}

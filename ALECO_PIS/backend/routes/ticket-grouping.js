@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { sendPhilSMS } from '../utils/sms.js';
+import { insertTicketLog } from '../utils/ticketLogHelper.js';
 
 const router = express.Router();
 
@@ -185,6 +186,52 @@ router.get('/tickets/groups', async (req, res) => {
 });
 
 /**
+ * GET SINGLE TICKET GROUP
+ * Returns the group master with its children (for detail pane when viewing a parent)
+ * GET /api/tickets/group/:mainTicketId
+ */
+router.get('/tickets/group/:mainTicketId', async (req, res) => {
+    const { mainTicketId } = req.params;
+
+    if (!mainTicketId || !mainTicketId.startsWith('GROUP-')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid group ID'
+        });
+    }
+
+    try {
+        const [masterRows] = await pool.execute(
+            `SELECT * FROM aleco_tickets WHERE ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        if (masterRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Group not found'
+            });
+        }
+
+        const [children] = await pool.execute(
+            `SELECT * FROM aleco_tickets WHERE parent_ticket_id = ? ORDER BY visit_order ASC, ticket_id ASC`,
+            [mainTicketId]
+        );
+
+        const data = {
+            ...masterRows[0],
+            children
+        };
+
+        res.json({ success: true, data });
+
+    } catch (error) {
+        console.error("❌ Error fetching ticket group:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
  * UNGROUP
  * Dissolves a group: clears parent_ticket_id and visit_order for all children, deletes GROUP master
  * PUT /api/tickets/group/:mainTicketId/ungroup
@@ -289,20 +336,26 @@ router.put('/tickets/group/:mainTicketId/dispatch', async (req, res) => {
             ? [...members].sort((a, b) => (a.visit_order || 999) - (b.visit_order || 999))
             : members;
 
-        if (groupType === 'routing_batch') {
-            const visitOrderList = sortedMembers.map((m, i) => `${i + 1}) ${m.ticket_id}`).join(' ');
-            const linemanMsg = `ALECO DISPATCH: Visit in order: ${visitOrderList}. Reply 'FIXED ${sortedMembers[0].ticket_id}' when done.`;
-            await sendPhilSMS(linemanPhone, linemanMsg);
-        }
+        // Single SMS to lineman for the whole group
+        const ticketList = sortedMembers.map(m => m.ticket_id).join(', ');
+        const linemanMsg = `Hi crew ${assigned_crew}, your assigned ticket is ${mainTicketId}
+
+keywords to reply (per ticket):
+{ticket_id} fixed | unfixed | nofault | nores
+Tickets: ${ticketList}
+
+or bulk: all fixed | all unfixed | all nofault | all nores
+
+keep safe!`;
+        await sendPhilSMS(linemanPhone, linemanMsg);
 
         for (const member of sortedMembers) {
-            if (groupType !== 'routing_batch') {
-                const linemanMsg = `ALECO DISPATCH: Ticket ${member.ticket_id}. Reply 'FIXED ${member.ticket_id}' when done.`;
-                await sendPhilSMS(linemanPhone, linemanMsg);
-            }
-
             if (is_consumer_notified && member.phone_number) {
-                const consumerMsg = `ALECO: Crew ${assigned_crew} dispatched for your concern. ETA: ${eta}. Ticket: ${member.ticket_id}`;
+                const consumerMsg = `Greetings! This is from ALECO! Your ticket ${member.ticket_id} is currently grouped. Master ticket id is ${mainTicketId} and is now being processed. Please be in touch or visit our website to track your ticket and for follow ups.
+
+You can enter these tickets to track:
+${member.ticket_id}
+${mainTicketId}`;
                 await sendPhilSMS(member.phone_number, consumerMsg);
             }
 
@@ -310,6 +363,18 @@ router.put('/tickets/group/:mainTicketId/dispatch', async (req, res) => {
                 `UPDATE aleco_tickets SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, dispatched_at = NOW() WHERE ticket_id = ?`,
                 [assigned_crew, eta, is_consumer_notified ? 1 : 0, dispatch_notes || '', member.ticket_id]
             );
+            const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+            const actorName = req.body.actor_name || req.headers['x-user-name'];
+            await insertTicketLog(pool, {
+                ticket_id: member.ticket_id,
+                action: 'group_dispatch',
+                from_status: 'Pending',
+                to_status: 'Ongoing',
+                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                actor_email: actorEmail || null,
+                actor_name: actorName || 'System',
+                metadata: { assigned_crew, eta, dispatch_notes: dispatch_notes || null, main_ticket_id: mainTicketId }
+            });
         }
 
         console.log(`✅ GROUP DISPATCH: ${mainTicketId} - ${members.length} tickets dispatched to ${assigned_crew}`);
@@ -336,15 +401,22 @@ router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
         await connection.beginTransaction();
 
         const { mainTicketId } = req.params;
-        const { status } = req.body; // 'Ongoing', 'Restored', or 'Unresolved'
+        const { status } = req.body;
 
         // Match the actual enum values in the database
-        if (!['Pending', 'Ongoing', 'Restored', 'Unresolved'].includes(status)) {
+        if (!['Pending', 'Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid status. Must be Pending, Ongoing, Restored, or Unresolved'
+                message: 'Invalid status. Must be Pending, Ongoing, Restored, Unresolved, NoFaultFound, or AccessDenied'
             });
         }
+
+        // Get current statuses before update
+        const [statusRows] = await connection.execute(
+            `SELECT ticket_id, status FROM aleco_tickets WHERE ticket_id = ? OR parent_ticket_id = ?`,
+            [mainTicketId, mainTicketId]
+        );
+        const statusMap = Object.fromEntries(statusRows.map(r => [r.ticket_id, r.status]));
 
         // Update the master ticket status
         await connection.execute(
@@ -359,6 +431,7 @@ router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
         );
 
         // Update all child tickets to the same status
+        const allTicketIds = [mainTicketId, ...members.map(m => m.ticket_id)];
         if (members.length > 0) {
             const ticketIds = members.map(m => m.ticket_id);
             const placeholders = ticketIds.map(() => '?').join(', ');
@@ -370,6 +443,22 @@ router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
         }
 
         await connection.commit();
+
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+        for (const tid of allTicketIds) {
+            const fromStatus = statusMap[tid] || null;
+            await insertTicketLog(pool, {
+                ticket_id: tid,
+                action: 'status_change',
+                from_status: fromStatus,
+                to_status: status,
+                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                actor_email: actorEmail || null,
+                actor_name: actorName || 'System',
+                metadata: { group_update: true, main_ticket_id: mainTicketId }
+            });
+        }
 
         console.log(`✅ GROUP STATUS UPDATED: ${mainTicketId} → ${status} (${members.length} tickets)`);
 
@@ -409,6 +498,12 @@ router.put('/tickets/bulk/restore', async (req, res) => {
 
         const placeholders = ticketIds.map(() => '?').join(', ');
 
+        const [statusRows] = await connection.execute(
+            `SELECT ticket_id, status FROM aleco_tickets WHERE ticket_id IN (${placeholders})`,
+            ticketIds
+        );
+        const statusMap = Object.fromEntries(statusRows.map(r => [r.ticket_id, r.status]));
+
         // Use 'Restored' instead of 'Resolved' to match the enum
         await connection.execute(
             `UPDATE aleco_tickets SET status = 'Restored' WHERE ticket_id IN (${placeholders})`,
@@ -416,6 +511,21 @@ router.put('/tickets/bulk/restore', async (req, res) => {
         );
 
         await connection.commit();
+
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+        for (const tid of ticketIds) {
+            await insertTicketLog(pool, {
+                ticket_id: tid,
+                action: 'bulk_restore',
+                from_status: statusMap[tid] || null,
+                to_status: 'Restored',
+                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                actor_email: actorEmail || null,
+                actor_name: actorName || 'System',
+                metadata: { bulk: true }
+            });
+        }
 
         console.log(`✅ BULK RESTORE: ${ticketIds.length} tickets marked as Restored`);
 

@@ -30,6 +30,21 @@
     white-space: nowrap;
 }
 
+.group-badge-parent {
+    background: rgba(124, 58, 237, 0.2);
+    color: var(--accent-primary);
+}
+
+/* Parent/group ticket row highlighting */
+.ticket-table-row.ticket-row-group {
+    border-left: 3px solid var(--accent-primary, #7c3aed);
+    background: linear-gradient(90deg, rgba(124, 58, 237, 0.06) 0%, transparent 100%);
+}
+
+.ticket-table-row.ticket-row-group:hover {
+    background: linear-gradient(90deg, rgba(124, 58, 237, 0.1) 0%, var(--bg-body) 100%);
+}
+
 /* Empty State */
 .ticket-table-empty {
     padding: 60px 20px;
@@ -44,7 +59,7 @@
     border-collapse: collapse;
     font-size: 10px;
     background: var(--bg-card);
-    min-width: 1240px; /* Prevent column squishing */
+    min-width: 1260px; /* Prevent column squishing */
 }
 
 /* =========================================
@@ -164,7 +179,7 @@ body.modal-open .ticket-table-header {
 }
 
 .col-status {
-    width: 95px;
+    width: 115px;
     padding: 6px 10px !important;
 }
 
@@ -212,67 +227,107 @@ body.modal-open .ticket-table-header {
 }
 
 /* =========================================
-   STATUS BADGES
+   STATUS BADGES - Polished design for all statuses
    ========================================= */
 .status-badge {
-    padding: 2px 7px;
-    border-radius: 8px;
-    font-size: 8px;
-    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.4px;
     white-space: nowrap;
     display: inline-block;
     line-height: 1.2;
+    border: 1px solid transparent;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
+/* Pending - Amber, waiting */
 .status-badge.pending {
-    background: rgba(251, 191, 36, 0.2);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.25) 0%, rgba(245, 158, 11, 0.15) 100%);
     color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.35);
 }
 
+/* Ongoing - Blue, in progress */
 .status-badge.ongoing {
-    background: rgba(59, 130, 246, 0.2);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%);
     color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.35);
 }
 
-.status-badge.resolved {
-    background: rgba(34, 197, 94, 0.2);
+/* Restored - Green, success */
+.status-badge.restored {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(22, 163, 74, 0.15) 100%);
     color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.35);
 }
 
+/* Unresolved - Red, failed */
 .status-badge.unresolved {
-    background: rgba(239, 68, 68, 0.2);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.15) 100%);
     color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.35);
 }
 
+/* No Fault Found - Purple, informational */
 .status-badge.nofaultfound {
-    background: rgba(139, 92, 246, 0.2);
-    color: #8b5cf6;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(124, 58, 237, 0.15) 100%);
+    color: #a78bfa;
+    border-color: rgba(139, 92, 246, 0.35);
 }
 
+/* Access Denied - Orange, blocked */
 .status-badge.accessdenied {
-    background: rgba(249, 115, 22, 0.2);
-    color: #f97316;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(234, 88, 12, 0.15) 100%);
+    color: #fb923c;
+    border-color: rgba(249, 115, 22, 0.35);
 }
 
+/* Legacy resolved (if used) */
+.status-badge.resolved {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(22, 163, 74, 0.15) 100%);
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+/* Light theme overrides */
 [data-theme="light"] .status-badge.pending {
-    background: rgba(251, 191, 36, 0.3);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.35) 0%, rgba(245, 158, 11, 0.2) 100%);
     color: #d97706;
+    border-color: rgba(217, 119, 6, 0.4);
 }
 
 [data-theme="light"] .status-badge.ongoing {
-    background: rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35) 0%, rgba(37, 99, 235, 0.2) 100%);
     color: #2563eb;
+    border-color: rgba(37, 99, 235, 0.4);
 }
 
+[data-theme="light"] .status-badge.restored,
 [data-theme="light"] .status-badge.resolved {
-    background: rgba(34, 197, 94, 0.3);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.35) 0%, rgba(22, 163, 74, 0.2) 100%);
     color: #16a34a;
+    border-color: rgba(22, 163, 74, 0.4);
 }
 
 [data-theme="light"] .status-badge.unresolved {
-    background: rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.35) 0%, rgba(220, 38, 38, 0.2) 100%);
     color: #dc2626;
+    border-color: rgba(220, 38, 38, 0.4);
+}
+
+[data-theme="light"] .status-badge.nofaultfound {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.35) 0%, rgba(124, 58, 237, 0.2) 100%);
+    color: #7c3aed;
+    border-color: rgba(124, 58, 237, 0.4);
+}
+
+[data-theme="light"] .status-badge.accessdenied {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.35) 0%, rgba(234, 88, 12, 0.2) 100%);
+    color: #ea580c;
+    border-color: rgba(234, 88, 12, 0.4);
 }
 
 /* =========================================
@@ -302,10 +357,17 @@ body.modal-open .ticket-table-header {
     line-height: 1;
 }
 
+/* Status cell wrapper */
+.status-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* Urgent dot before status badge */
 .urgent-dot {
     font-size: 8px;
-    margin-right: 4px;
+    flex-shrink: 0;
     display: inline-block;
 }
 

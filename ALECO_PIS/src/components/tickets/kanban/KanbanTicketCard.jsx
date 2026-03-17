@@ -46,15 +46,16 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
     }
 
     const isUrgent = ticket.is_urgent === 1 || ticket.is_urgent === true;
-    const concernShort = ticket.concern && ticket.concern.length > 50
-        ? `${ticket.concern.substring(0, 50)}...`
-        : ticket.concern || 'No description';
+    const isGroupMaster = ticket.ticket_id?.startsWith('GROUP-');
+    const concernShort = (isGroupMaster ? ticket.address : ticket.concern) && (isGroupMaster ? ticket.address : ticket.concern).length > 50
+        ? `${(isGroupMaster ? ticket.address : ticket.concern).substring(0, 50)}...`
+        : (isGroupMaster ? ticket.address : ticket.concern) || 'No description';
 
     return (
         <div
             ref={setNodeRef}
             style={style}
-            className={`kanban-ticket-card ${isUrgent ? 'urgent' : ''} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+            className={`kanban-ticket-card ${isGroupMaster ? 'kanban-card-group' : ''} ${isUrgent ? 'urgent' : ''} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
             onClick={() => onClick && onClick(ticket)}
             {...attributes}
         >
@@ -76,7 +77,12 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
                     )}
                     {isUrgent && <span className="urgent-indicator">🚨</span>}
                     <span className={isUrgent ? 'urgent-text' : ''}>{ticket.ticket_id}</span>
-                    {ticket.parent_ticket_id && (
+                    {isGroupMaster && (ticket.child_count ?? 0) > 0 && (
+                        <span className="group-badge group-badge-parent" title={`${ticket.child_count} tickets in group`}>
+                            {ticket.child_count} ticket{(ticket.child_count ?? 0) !== 1 ? 's' : ''}
+                        </span>
+                    )}
+                    {!isGroupMaster && ticket.parent_ticket_id && (
                         <span className="group-badge" title={`Part of group ${ticket.parent_ticket_id}`}>
                             Part of {ticket.parent_ticket_id}
                         </span>
@@ -89,13 +95,13 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
 
             {/* Body: Name + Concern */}
             <div className="kanban-card-body">
-                <div className="kanban-card-name">{fullName || 'N/A'}</div>
+                <div className="kanban-card-name">{isGroupMaster ? 'Group' : (fullName || 'N/A')}</div>
                 <div className="kanban-card-concern" title={ticket.concern}>
                     {concernShort}
                 </div>
             </div>
 
-            {/* Footer: Location + Time */}
+            {/* Footer: Location + Time + Status */}
             <div className="kanban-card-footer">
                 <div className="kanban-card-location" title={location}>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -104,7 +110,12 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
                     </svg>
                     <span>{location.length > 20 ? `${location.substring(0, 20)}...` : location}</span>
                 </div>
-                <div className="kanban-card-time">⏰ {timeAgo}</div>
+                <div className="kanban-card-footer-right">
+                    <span className={`status-badge ${(ticket.status || 'pending').toLowerCase().replace(/\s/g, '')}`}>
+                        {ticket.status || 'Pending'}
+                    </span>
+                    <span className="kanban-card-time">⏰ {timeAgo}</span>
+                </div>
             </div>
 
             {/* Optional: Crew Info (for Ongoing status) */}
@@ -122,6 +133,7 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
         prevProps.ticket.status === nextProps.ticket.status &&
         prevProps.ticket.is_urgent === nextProps.ticket.is_urgent &&
         prevProps.ticket.parent_ticket_id === nextProps.ticket.parent_ticket_id &&
+        prevProps.ticket.child_count === nextProps.ticket.child_count &&
         prevProps.isSelected === nextProps.isSelected &&
         prevProps.isChecked === nextProps.isChecked
     );

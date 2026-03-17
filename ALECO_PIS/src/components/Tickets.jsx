@@ -4,7 +4,9 @@ import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketsPage.css'; // ✅ NEW ISOLATED CSS
 import '../CSS/TicketMain.css'; // ✅ BULK ACTION BAR STYLES
 import useTickets from '../utils/useTickets';
+import { useRecentOpenedTickets } from '../utils/useRecentOpenedTickets';
 import UrgentTickets from './containers/UrgentTickets';
+import RecentOpenedTickets from './containers/RecentOpenedTickets';
 import useDraggable from '../utils/useDraggable';
 import CoverageMap from './CoverageMap';
 import MapButton from './buttons/MapButton';
@@ -26,6 +28,12 @@ const AdminTickets = () => {
     const [isMapOpen, setIsMapOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
     const [availableCrews, setAvailableCrews] = useState([]);
+    const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedTickets();
+
+    const handleSelectTicket = (ticket) => {
+        setSelectedTicket(ticket);
+        if (ticket?.ticket_id) addOpened(ticket.ticket_id);
+    };
 
     useEffect(() => {
         const fetchCrews = async () => {
@@ -73,10 +81,11 @@ const AdminTickets = () => {
 
     const handleDispatchGroup = async (mainTicketId, dispatchData) => {
         try {
+            const body = { ...dispatchData, ...getActor() };
             const response = await fetch(`http://localhost:5000/api/tickets/group/${mainTicketId}/dispatch`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dispatchData)
+                body: JSON.stringify(body)
             });
             const data = await response.json();
             if (response.ok && data.success) {
@@ -112,12 +121,18 @@ const AdminTickets = () => {
         }
     };
 
+    const getActor = () => ({
+        actor_email: localStorage.getItem('userEmail') || null,
+        actor_name: localStorage.getItem('userName') || null
+    });
+
     const handlePutHold = async (ticketId, holdData) => {
         try {
+            const body = { ...holdData, ...getActor() };
             const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/hold`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(holdData)
+                body: JSON.stringify(body)
             });
             const data = await response.json();
             if (response.ok && data.success) {
@@ -135,10 +150,11 @@ const AdminTickets = () => {
     const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         try {
             if (newStatus === 'Ongoing' && dispatchData) {
+                const body = { ...dispatchData, ...getActor() };
                 const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/dispatch`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dispatchData)
+                    body: JSON.stringify(body)
                 });
 
                 const data = await response.json();
@@ -151,16 +167,21 @@ const AdminTickets = () => {
                 }
             }
             else if (['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(newStatus)) {
-                const response = await fetch(`http://localhost:5000/api/${ticketId}/status`, {
+                const isGroupMaster = ticketId?.startsWith('GROUP-');
+                const url = isGroupMaster
+                    ? `http://localhost:5000/api/tickets/group/${ticketId}/status`
+                    : `http://localhost:5000/api/${ticketId}/status`; // legacy single-ticket route
+
+                const response = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
+                    body: JSON.stringify({ status: newStatus, ...getActor() })
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert(`ALECO System: Ticket ${ticketId} marked as ${newStatus}.`);
+                    alert(`ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} marked as ${newStatus}.`);
                     refetch();
                 } else {
                     alert("Status update failed: " + data.message);
@@ -192,29 +213,46 @@ const AdminTickets = () => {
         if (!confirmed) return;
 
         try {
-            const response = await fetch('http://localhost:5000/api/tickets/bulk/restore', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ticketIds: selectedIds })
-            });
+            const groupMasters = selectedIds.filter(id => id?.startsWith('GROUP-'));
+            const regularTickets = selectedIds.filter(id => !id?.startsWith('GROUP-'));
 
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                alert(`✅ ${data.message}`);
-                setSelectedIds([]);
-                refetch();
-            } else {
-                alert(`❌ Failed: ${data.message}`);
+            for (const mainTicketId of groupMasters) {
+                const response = await fetch(`http://localhost:5000/api/tickets/group/${mainTicketId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Restored', ...getActor() })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    alert(`Failed to restore group ${mainTicketId}: ${data.message}`);
+                    return;
+                }
             }
+
+            if (regularTickets.length > 0) {
+                const response = await fetch('http://localhost:5000/api/tickets/bulk/restore', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticketIds: regularTickets, ...getActor() })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    alert(`❌ Failed: ${data.message}`);
+                    return;
+                }
+            }
+
+            alert(`✅ ${groupMasters.length + regularTickets.length} ticket(s) marked as Restored.`);
+            setSelectedIds([]);
+            refetch();
         } catch (error) {
             console.error('❌ Error bulk restoring tickets:', error);
             alert('Failed to restore tickets. Please try again.');
         }
     };
 
-    const activeTab = filters.tab;
-    const setActiveTab = (newTab) => setFilters(prev => ({ ...prev, tab: newTab }));
     const barRef = useRef(null);
     const { x, y, onStart } = useDraggable(barRef);
 
@@ -241,8 +279,6 @@ const AdminTickets = () => {
                 <TicketFilterLayoutWrapper activeFiltersCount={getActiveFiltersCount()}>
                     {/* ✅ LEGO BRICK: Filter Bar */}
                     <TicketFilterBar
-                        activeTab={activeTab}
-                        setActiveTab={setActiveTab}
                         filters={filters}
                         setFilters={setFilters}
                         tickets={tickets}
@@ -263,7 +299,7 @@ const AdminTickets = () => {
                         <>
                             <UrgentTickets 
                                 tickets={tickets} 
-                                onSelectTicket={setSelectedTicket} 
+                                onSelectTicket={handleSelectTicket} 
                                 selectedIds={selectedIds} 
                                 onToggleSelect={toggleTicketSelection}
                             />
@@ -276,32 +312,76 @@ const AdminTickets = () => {
                                 tickets={tickets} 
                                 isLoading={isLoading}
                                 selectedTicket={selectedTicket} 
-                                onSelectTicket={setSelectedTicket} 
+                                onSelectTicket={handleSelectTicket} 
                                 selectedIds={selectedIds} 
                                 onToggleSelect={toggleTicketSelection}
+                            />
+
+                            <RecentOpenedTickets
+                                layout="grid"
+                                tickets={tickets}
+                                recentIds={recentIds}
+                                timeRange={timeRange}
+                                onTimeRangeChange={setTimeRange}
+                                selectedTicket={selectedTicket}
+                                onSelectTicket={handleSelectTicket}
+                                selectedIds={selectedIds}
+                                onToggleSelect={toggleTicketSelection}
+                                isCollapsed={isCollapsed}
+                                onToggleCollapse={() => setIsCollapsed(v => !v)}
                             />
                         </>
                     )}
 
                     {viewMode === 'table' && (
-                        <TicketTableView
-                            tickets={tickets}
-                            selectedTicket={selectedTicket}
-                            onSelectTicket={setSelectedTicket}
-                            selectedIds={selectedIds}
-                            onToggleSelect={toggleTicketSelection}
-                        />
+                        <>
+                            <TicketTableView
+                                tickets={tickets}
+                                selectedTicket={selectedTicket}
+                                onSelectTicket={handleSelectTicket}
+                                selectedIds={selectedIds}
+                                onToggleSelect={toggleTicketSelection}
+                            />
+                            <RecentOpenedTickets
+                                layout="table"
+                                tickets={tickets}
+                                recentIds={recentIds}
+                                timeRange={timeRange}
+                                onTimeRangeChange={setTimeRange}
+                                selectedTicket={selectedTicket}
+                                onSelectTicket={handleSelectTicket}
+                                selectedIds={selectedIds}
+                                onToggleSelect={toggleTicketSelection}
+                                isCollapsed={isCollapsed}
+                                onToggleCollapse={() => setIsCollapsed(v => !v)}
+                            />
+                        </>
                     )}
 
                     {viewMode === 'kanban' && (
-                        <TicketKanbanView
-                            tickets={tickets}
-                            selectedTicket={selectedTicket}
-                            onSelectTicket={setSelectedTicket}
-                            onUpdateTicket={handleUpdateTicket}
-                            selectedIds={selectedIds}
-                            onToggleSelect={toggleTicketSelection}
-                        />
+                        <>
+                            <TicketKanbanView
+                                tickets={tickets}
+                                selectedTicket={selectedTicket}
+                                onSelectTicket={handleSelectTicket}
+                                onUpdateTicket={handleUpdateTicket}
+                                selectedIds={selectedIds}
+                                onToggleSelect={toggleTicketSelection}
+                            />
+                            <RecentOpenedTickets
+                                layout="kanban"
+                                tickets={tickets}
+                                recentIds={recentIds}
+                                timeRange={timeRange}
+                                onTimeRangeChange={setTimeRange}
+                                selectedTicket={selectedTicket}
+                                onSelectTicket={handleSelectTicket}
+                                selectedIds={selectedIds}
+                                onToggleSelect={toggleTicketSelection}
+                                isCollapsed={isCollapsed}
+                                onToggleCollapse={() => setIsCollapsed(v => !v)}
+                            />
+                        </>
                     )}
                 </div>
             </div>
@@ -369,7 +449,7 @@ const AdminTickets = () => {
             <GroupIncidentModal
                 isOpen={isGroupModalOpen}
                 onClose={() => setIsGroupModalOpen(false)}
-                selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id))}
+                selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id) && !t.ticket_id?.startsWith('GROUP-'))}
                 onSubmit={async (groupData) => {
                     try {
                         const response = await fetch('http://localhost:5000/api/tickets/group/create', {

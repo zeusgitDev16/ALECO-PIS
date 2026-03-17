@@ -4,7 +4,7 @@ import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown';
 import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';      
 import '../../CSS/TicketDashboard.css';
 
-const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets, selectedIds, setSelectedIds }) => {
+const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelectedIds }) => {
     
     // DEBUG: Log filter changes
     useEffect(() => {
@@ -82,21 +82,6 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
                 TIER 1: Primary Hooks + Category
                 ========================================= */}
             <div className="filter-tier filter-tier-1">
-                <div className="ticket-tabs">
-                    <button 
-                        className={`ticket-tab-btn ${activeTab === 'Open' ? 'active' : 'inactive'}`}
-                        onClick={() => setActiveTab('Open')}
-                    >
-                        Open 
-                    </button>
-                    <button 
-                        className={`ticket-tab-btn ${activeTab === 'Closed' ? 'active' : 'inactive'}`}
-                        onClick={() => setActiveTab('Closed')}
-                    >
-                        Closed
-                    </button>
-                </div>
-
                 {/* ⚡ The New 48-Hour Toggle */}
                 <button
                     className={`urgent-toggle-btn ${filters.isNew ? 'active' : ''}`}
@@ -132,25 +117,25 @@ const TicketFilterBar = ({ activeTab, setActiveTab, filters, setFilters, tickets
                     <option value="AccessDenied">🚫 Access Denied</option>
                 </select>
 
-                {/* 🔗 Group Filter */}
+                {/* 🔗 Group Filter: All | Groups only | Filter out groups */}
                 <select
                     name="groupFilter"
-                    className="status-filter-select"
+                    className="status-filter-select group-filter-select"
                     value={filters.groupFilter || "all"}
                     onChange={handleFilterChange}
-                    title="Filter by group status"
+                    title="Filter by group: show all, only groups, or hide groups"
                 >
-                    <option value="all">🔗 All Tickets</option>
-                    <option value="grouped">🔗 Grouped Only</option>
-                    <option value="ungrouped">🔗 Ungrouped Only</option>
+                    <option value="all">🔗 All</option>
+                    <option value="grouped">📦 Groups Only</option>
+                    <option value="ungrouped">📋 Filter Out Groups</option>
                 </select>
 
-                {/* Grouped Search and Category to stay side-by-side */}
+                {/* Search: matches child ticket → shows parent group */}
                 <div className="search-category-group">
                     <input 
                         type="text" 
                         name="searchQuery"
-                        placeholder="Search ID, Name..." 
+                        placeholder="Search ID, name... (child ticket shows its group)" 
                         className="filter-input main-search"
                         value={filters.searchQuery || ""}
                         onChange={handleFilterChange}

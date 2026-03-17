@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../../CSS/TicketDetailPane.css';
 import DispatchTicketModal from './DispatchTicketModal';
 import HoldTicketModal from './HoldTicketModal';
+import TicketHistoryLogs from './TicketHistoryLogs';
 
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
@@ -11,10 +12,25 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
     const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
     const [isGroupDispatchOpen, setIsGroupDispatchOpen] = useState(false);
+    const [groupData, setGroupData] = useState(null);
+    const [isFlipped, setIsFlipped] = useState(false);
 
     const isGroupMaster = ticket?.ticket_id?.startsWith('GROUP-');
     const isGroupChild = !!ticket?.parent_ticket_id;
     const mainTicketId = isGroupMaster ? ticket.ticket_id : ticket?.parent_ticket_id;
+    const children = groupData?.children || [];
+
+    // Fetch group with children when viewing a GROUP master
+    useEffect(() => {
+        if (ticket?.ticket_id?.startsWith('GROUP-')) {
+            fetch(`http://localhost:5000/api/tickets/group/${ticket.ticket_id}`)
+                .then(res => res.json())
+                .then(data => data.success ? setGroupData(data.data) : setGroupData(null))
+                .catch(() => setGroupData(null));
+        } else {
+            setGroupData(null);
+        }
+    }, [ticket?.ticket_id]);
 
     // Add/remove modal-open class to body to prevent sticky header overlap
     useEffect(() => {
@@ -58,6 +74,9 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                     &times;
                 </button>
 
+                <div className="ticket-detail-flip-container">
+                    <div className={`ticket-detail-flip-inner ${isFlipped ? 'flipped' : ''}`}>
+                        <div className="ticket-detail-front">
                 {/* --- SECTION 1: HEADER --- */}
                 <div className="detail-header">
                     <div className="header-left">
@@ -65,6 +84,11 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
                             {ticket.status}
                         </span>
+                        {isGroupMaster && (
+                            <span className="group-badge-detail">
+                                {ticket.child_count ?? children.length ?? 0} ticket{(ticket.child_count ?? children.length ?? 0) !== 1 ? 's' : ''}
+                            </span>
+                        )}
                     </div>
                     <div className="header-right">
                         <span className="reported-label">Reported On</span>
@@ -94,42 +118,44 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
 
                 {/* --- SECTION 2: REPORTER & SYSTEM INFO --- */}
                 <div className="detail-grid">
-                    <div className="detail-group">
-                        <label>Reporter Name</label>
-                        <p className="detail-value">{fullName}</p>
-                    </div>
-                    
-                    {/* UPGRADED: Copyable Contact Number */}
-                    <div className="detail-group">
-                        <label>Contact Number</label>
-                        <div 
-                            className="detail-value copyable-box" 
-                            onClick={() => handleCopy(ticket.phone_number, 'phone')}
-                        >
-                            <span>{ticket.phone_number}</span>
-                            <span className={`copy-indicator ${copiedField === 'phone' ? 'success' : ''}`}>
-                                {copiedField === 'phone' ? '✓ Copied' : '📋 Copy'}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    {/* UPGRADED: Copyable Account Number (Only if it exists) */}
-                    <div className="detail-group">
-                        <label>Account Number</label>
-                        {ticket.account_number ? (
-                            <div 
-                                className="detail-value copyable-box" 
-                                onClick={() => handleCopy(ticket.account_number, 'account')}
-                            >
-                                <span>{ticket.account_number}</span>
-                                <span className={`copy-indicator ${copiedField === 'account' ? 'success' : ''}`}>
-                                    {copiedField === 'account' ? '✓ Copied' : '📋 Copy'}
-                                </span>
+                    {!isGroupMaster && (
+                        <>
+                            <div className="detail-group">
+                                <label>Reporter Name</label>
+                                <p className="detail-value">{fullName}</p>
                             </div>
-                        ) : (
-                            <p className="detail-value">Unlinked Account</p>
-                        )}
-                    </div>
+                            {/* UPGRADED: Copyable Contact Number */}
+                            <div className="detail-group">
+                                <label>Contact Number</label>
+                                <div 
+                                    className="detail-value copyable-box" 
+                                    onClick={() => handleCopy(ticket.phone_number, 'phone')}
+                                >
+                                    <span>{ticket.phone_number}</span>
+                                    <span className={`copy-indicator ${copiedField === 'phone' ? 'success' : ''}`}>
+                                        {copiedField === 'phone' ? '✓ Copied' : '📋 Copy'}
+                                    </span>
+                                </div>
+                            </div>
+                            {/* UPGRADED: Copyable Account Number (Only if it exists) */}
+                            <div className="detail-group">
+                                <label>Account Number</label>
+                                {ticket.account_number ? (
+                                    <div 
+                                        className="detail-value copyable-box" 
+                                        onClick={() => handleCopy(ticket.account_number, 'account')}
+                                    >
+                                        <span>{ticket.account_number}</span>
+                                        <span className={`copy-indicator ${copiedField === 'account' ? 'success' : ''}`}>
+                                            {copiedField === 'account' ? '✓ Copied' : '📋 Copy'}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <p className="detail-value">Unlinked Account</p>
+                                )}
+                            </div>
+                        </>
+                    )}
 
                     <div className="detail-group">
                         <label>Issue Category</label>
@@ -151,12 +177,34 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
 
                 {/* --- SECTION 3: CONTENT & EVIDENCE --- */}
                 <div className="detail-content-section">
+                    {isGroupMaster && (
+                        <div className="detail-group full-width">
+                            <label>Group Title</label>
+                            <p className="detail-value">{ticket.address}</p>
+                        </div>
+                    )}
                     <div className="detail-group">
-                        <label>User's Concern</label>
+                        <label>{isGroupMaster ? 'Summary / Remarks' : "User's Concern"}</label>
                         <div className="concern-box">
                             {ticket.concern}
                         </div>
                     </div>
+
+                    {isGroupMaster && children.length > 0 && (
+                        <div className="detail-group full-width group-children-section">
+                            <label>Child Tickets ({children.length})</label>
+                            <ul className="group-children-list">
+                                {children.map((c) => (
+                                    <li key={c.ticket_id} className="group-child-item">
+                                        <span className="child-id">{c.ticket_id}</span>
+                                        <span className="child-category">{c.category}</span>
+                                        <span className="child-location">{c.municipality || c.address || '—'}</span>
+                                        <span className={`child-status status-tag ${c.status?.toLowerCase()}`}>{c.status}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
 
                     {ticket.image_url && (
                         <div className="detail-group evidence-section">
@@ -201,38 +249,64 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 <div className="action-footer">
                     {ticket.status === 'Pending' && (
                         <>
-                            <button
-                                className="btn-action btn-ongoing"
-                                onClick={() => setIsDispatchModalOpen(true)}
-                            >
-                                Start Resolution
-                            </button>
-                            {(isGroupMaster || isGroupChild) && onDispatchGroup && (
-                                <button
-                                    className="btn-action btn-ongoing"
-                                    onClick={() => setIsGroupDispatchOpen(true)}
-                                >
-                                    Dispatch All
-                                </button>
+                            {isGroupMaster ? (
+                                onDispatchGroup && (
+                                    <button
+                                        className="btn-action btn-ongoing"
+                                        onClick={() => setIsGroupDispatchOpen(true)}
+                                    >
+                                        Start Resolution (Dispatch All)
+                                    </button>
+                                )
+                            ) : (
+                                <>
+                                    <button
+                                        className="btn-action btn-ongoing"
+                                        onClick={() => setIsDispatchModalOpen(true)}
+                                    >
+                                        Start Resolution
+                                    </button>
+                                    {isGroupChild && onDispatchGroup && (
+                                        <button
+                                            className="btn-action btn-ongoing"
+                                            onClick={() => setIsGroupDispatchOpen(true)}
+                                        >
+                                            Dispatch All
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </>
                     )}
 
                     {ticket.status === 'Unresolved' && (
                         <>
-                            <button
-                                className="btn-action btn-ongoing"
-                                onClick={() => setIsDispatchModalOpen(true)}
-                            >
-                                Re-dispatch
-                            </button>
-                            {(isGroupMaster || isGroupChild) && onDispatchGroup && (
-                                <button
-                                    className="btn-action btn-ongoing"
-                                    onClick={() => setIsGroupDispatchOpen(true)}
-                                >
-                                    Dispatch All
-                                </button>
+                            {isGroupMaster ? (
+                                onDispatchGroup && (
+                                    <button
+                                        className="btn-action btn-ongoing"
+                                        onClick={() => setIsGroupDispatchOpen(true)}
+                                    >
+                                        Re-dispatch (Dispatch All)
+                                    </button>
+                                )
+                            ) : (
+                                <>
+                                    <button
+                                        className="btn-action btn-ongoing"
+                                        onClick={() => setIsDispatchModalOpen(true)}
+                                    >
+                                        Re-dispatch
+                                    </button>
+                                    {isGroupChild && onDispatchGroup && (
+                                        <button
+                                            className="btn-action btn-ongoing"
+                                            onClick={() => setIsGroupDispatchOpen(true)}
+                                        >
+                                            Dispatch All
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </>
                     )}
@@ -260,12 +334,14 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
 
                     {ticket.status === 'Ongoing' && (
                         <>
-                            <button
-                                className="btn-action btn-hold"
-                                onClick={() => setIsHoldModalOpen(true)}
-                            >
-                                Put on Hold
-                            </button>
+                            {!isGroupMaster && (
+                                <button
+                                    className="btn-action btn-hold"
+                                    onClick={() => setIsHoldModalOpen(true)}
+                                >
+                                    Put on Hold
+                                </button>
+                            )}
                             <button
                                 className="btn-action btn-unresolved"
                                 onClick={() => {
@@ -295,6 +371,20 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                             </button>
                         </>
                     )}
+                </div>
+                        </div>
+
+                        <div className="ticket-detail-back">
+                            <div className="ticket-history-header">
+                                <h3 className="ticket-history-title">Ticket History</h3>
+                                <p className="ticket-history-subtitle">{ticket.ticket_id} — All actions by dispatchers and field crew</p>
+                            </div>
+                            <TicketHistoryLogs ticketId={ticket.ticket_id} isVisible={isFlipped} />
+                        </div>
+                    </div>
+                    <button type="button" className="flip-toggle-btn" onClick={() => setIsFlipped(v => !v)}>
+                        {isFlipped ? 'View Details' : 'View History'}
+                    </button>
                 </div>
             </div>
 
@@ -327,6 +417,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                     onClose={() => setIsGroupDispatchOpen(false)}
                     ticket={ticket}
                     crews={crews}
+                    groupMainTicketId={mainTicketId}
                     titleOverride="🚚 Dispatch Whole Group"
                     subtitleOverride={`Assign same crew to all tickets in group ${mainTicketId}`}
                     onSubmit={(dispatchData) => {

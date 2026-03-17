@@ -60,7 +60,7 @@ const UrgentTickets = ({ tickets, onSelectTicket, selectedIds, onToggleSelect })
                                 </span>
                             </div>
                             
-                            <span className={`status-pill-solid ${ticket.status ? ticket.status.toLowerCase() : 'pending'}`}>
+                            <span className={`status-pill-solid ${ticket.status ? ticket.status.toLowerCase().replace(/\s/g, '') : 'pending'}`}>
                                 {ticket.status || 'Pending'}
                             </span>
                         </div>

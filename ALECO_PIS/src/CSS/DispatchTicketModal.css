@@ -129,6 +129,17 @@ select.dispatch-form-input {
     padding-right: 30px;
 }
 
+/* Dark mode: native select dropdown uses dark background via color-scheme */
+[data-theme="dark"] .dispatch-modal-content {
+    color-scheme: dark;
+}
+
+/* Dark mode: option elements (where supported, e.g. Firefox) */
+[data-theme="dark"] select.dispatch-form-input option {
+    background: #1f2937;
+    color: #e5e7eb;
+}
+
 /* --- Premium Toggle Switch UI --- */
 .toggle-group {
     background: rgba(255, 255, 255, 0.02);
@@ -204,8 +215,102 @@ select.dispatch-form-input {
     background-color: #22c55e; /* Vibrant green when on */
 }
 
+.toggle-checkbox:not(:checked) + .toggle-switch {
+    background-color: #64748b; /* Grey when off */
+}
+
 .toggle-checkbox:checked + .toggle-switch:before {
     transform: translateX(16px);
+}
+
+/* When Notify Consumer is OFF: all status indicators grey */
+.toggle-group.notify-off .status-dot.status-ok {
+    background: #94a3b8;
+}
+
+.toggle-group:not(.notify-off) .status-dot.status-ok {
+    background: #22c55e;
+}
+
+/* --- Notify Consumer: per-ticket breakdown (group dispatch) --- */
+.notify-consumer-ticket-list {
+    margin: 10px 0 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Scrollbar styling for ticket list */
+.notify-consumer-ticket-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notify-consumer-ticket-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.notify-consumer-ticket-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.notify-consumer-ticket-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.notify-consumer-ticket-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.notify-consumer-ticket-item.has-phone {
+    border-left: 3px solid #22c55e;
+}
+
+.toggle-group.notify-off .notify-consumer-ticket-item.has-phone {
+    border-left: 3px solid #94a3b8;
+}
+
+.notify-consumer-ticket-item.no-phone {
+    border-left: 3px solid #94a3b8;
+    opacity: 0.85;
+}
+
+.notify-ticket-id {
+    font-weight: 700;
+    color: var(--accent-primary);
+    font-family: monospace;
+}
+
+.notify-ticket-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 10px;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.status-dot.status-missing {
+    background: #94a3b8;
 }
 
 /* --- Footer Actions --- */

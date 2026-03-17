@@ -49,6 +49,21 @@
     background: rgba(124, 77, 255, 0.05);
 }
 
+/* Parent/group ticket card highlighting */
+.ticket-card-container.ticket-card-group {
+    border-left: 3px solid var(--accent-primary, #7c3aed);
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(124, 58, 237, 0.06) 100%);
+}
+
+.ticket-card-container.ticket-card-group:hover {
+    border-left-color: var(--accent-primary);
+}
+
+.group-badge-parent {
+    background: rgba(124, 58, 237, 0.2);
+    color: var(--accent-primary);
+}
+
 /* =========================================
    SEPARATOR (BETWEEN URGENT & REGULAR)
    ========================================================================== */
@@ -219,6 +234,24 @@
     background: rgba(76, 175, 80, 0.15);
     color: #4caf50;
     border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-pill-solid.unresolved {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-pill-solid.nofaultfound {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.status-pill-solid.accessdenied {
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+    border: 1px solid rgba(249, 115, 22, 0.3);
 }
 
 /* =========================================

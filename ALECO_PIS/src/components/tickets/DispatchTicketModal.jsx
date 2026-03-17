@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import '../../CSS/DispatchTicketModal.css'; 
+import '../../CSS/DispatchTicketModal.css';
 
-const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride, subtitleOverride }) => {
+const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride, subtitleOverride, groupMainTicketId }) => {
     // Form States
     const [crew, setCrew] = useState('');
     const [eta, setEta] = useState('');
@@ -11,6 +11,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
     // Database State
     const [availableCrews, setAvailableCrews] = useState([]);
     const [isLoadingCrews, setIsLoadingCrews] = useState(false);
+    const [groupMembers, setGroupMembers] = useState([]);
 
     // --- FETCH CREWS ON OPEN (availableOnly for dispatch) ---
     useEffect(() => {
@@ -29,8 +30,24 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
             setEta('');
             setNotes('');
             setNotifyConsumer(true);
+            setGroupMembers([]);
         }
     }, [isOpen]);
+
+    // --- FETCH GROUP MEMBERS when group dispatch (for Notify Consumer phone list) ---
+    useEffect(() => {
+        if (isOpen && groupMainTicketId) {
+            fetch(`http://localhost:5000/api/tickets/group/${groupMainTicketId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const children = data?.success && data?.data?.children ? data.data.children : [];
+                    setGroupMembers(children);
+                })
+                .catch(() => setGroupMembers([]));
+        } else {
+            setGroupMembers([]);
+        }
+    }, [isOpen, groupMainTicketId]);
 
     // Idempotent Guard
     if (!isOpen || !ticket) return null;
@@ -108,12 +125,16 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
                     </div>
 
                     {/* Custom UI Toggle Switch for Consumer Notification */}
-                    <div className="dispatch-form-group toggle-group">
+                    <div className={`dispatch-form-group toggle-group ${!notifyConsumer ? 'notify-off' : ''}`}>
                         <label className="toggle-label">
                             <div className="toggle-text">
                                 <span className="toggle-title">Notify Consumer</span>
                                 <span className="toggle-desc">
-                                    Send SMS update with ETA to {ticket.phone_number || 'the consumer'}
+                                    {groupMembers.length > 0 ? (
+                                        <>When ON, consumers with phone numbers will receive SMS when dispatched</>
+                                    ) : (
+                                        <>Send SMS update with ETA to {ticket.phone_number || 'the consumer'}</>
+                                    )}
                                 </span>
                             </div>
                             <div className="toggle-switch-wrapper">
@@ -126,6 +147,25 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
                                 <div className="toggle-switch"></div>
                             </div>
                         </label>
+                        {groupMembers.length > 0 && (
+                            <ul className="notify-consumer-ticket-list">
+                                {groupMembers.map((m) => {
+                                    const hasPhone = !!(m.phone_number && String(m.phone_number).trim());
+                                    return (
+                                        <li key={m.ticket_id} className={`notify-consumer-ticket-item ${hasPhone ? 'has-phone' : 'no-phone'}`}>
+                                            <span className="notify-ticket-id">{m.ticket_id}</span>
+                                            <span className="notify-ticket-status">
+                                                {hasPhone ? (
+                                                    <><span className="status-dot status-ok" /> Will receive SMS</>
+                                                ) : (
+                                                    <><span className="status-dot status-missing" /> No phone number</>
+                                                )}
+                                            </span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
                     </div>
 
                     <div className="dispatch-modal-actions">

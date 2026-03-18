@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../../utils/api';
 import '../../CSS/TicketDetailPane.css';
 import DispatchTicketModal from './DispatchTicketModal';
 import HoldTicketModal from './HoldTicketModal';
+import EditTicketModal from './EditTicketModal';
+import ConfirmModal from './ConfirmModal';
 import TicketHistoryLogs from './TicketHistoryLogs';
 
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
-const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, onUngroup, onClose, crews }) => {
+const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
     const [copiedField, setCopiedField] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
     const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
     const [isGroupDispatchOpen, setIsGroupDispatchOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
+    const [isRevertConfirmOpen, setIsRevertConfirmOpen] = useState(false);
     const [groupData, setGroupData] = useState(null);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -23,7 +30,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
     // Fetch group with children when viewing a GROUP master
     useEffect(() => {
         if (ticket?.ticket_id?.startsWith('GROUP-')) {
-            fetch(`http://localhost:5000/api/tickets/group/${ticket.ticket_id}`)
+            fetch(apiUrl(`/api/tickets/group/${ticket.ticket_id}`))
                 .then(res => res.json())
                 .then(data => data.success ? setGroupData(data.data) : setGroupData(null))
                 .catch(() => setGroupData(null));
@@ -247,6 +254,28 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
 
                 {/* --- SECTION 4: ADMIN ACTIONS --- */}
                 <div className="action-footer">
+                    {!isGroupMaster && !isGroupChild && (
+                        <>
+                            <button
+                                type="button"
+                                className="btn-action btn-edit"
+                                onClick={() => setIsEditModalOpen(true)}
+                                title="Edit Ticket"
+                            >
+                                Edit Ticket
+                            </button>
+                            {onDeleteTicket && (
+                                <button
+                                    type="button"
+                                    className="btn-action btn-delete"
+                                    onClick={() => setIsDeleteConfirmOpen(true)}
+                                    title="Delete Ticket"
+                                >
+                                    Delete Ticket
+                                </button>
+                            )}
+                        </>
+                    )}
                     {ticket.status === 'Pending' && (
                         <>
                             {isGroupMaster ? (
@@ -254,6 +283,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                     <button
                                         className="btn-action btn-ongoing"
                                         onClick={() => setIsGroupDispatchOpen(true)}
+                                        title="Start Resolution (Dispatch All)"
                                     >
                                         Start Resolution (Dispatch All)
                                     </button>
@@ -263,6 +293,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                     <button
                                         className="btn-action btn-ongoing"
                                         onClick={() => setIsDispatchModalOpen(true)}
+                                        title="Start Resolution"
                                     >
                                         Start Resolution
                                     </button>
@@ -270,6 +301,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                         <button
                                             className="btn-action btn-ongoing"
                                             onClick={() => setIsGroupDispatchOpen(true)}
+                                            title="Dispatch All"
                                         >
                                             Dispatch All
                                         </button>
@@ -286,6 +318,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                     <button
                                         className="btn-action btn-ongoing"
                                         onClick={() => setIsGroupDispatchOpen(true)}
+                                        title="Re-dispatch (Dispatch All)"
                                     >
                                         Re-dispatch (Dispatch All)
                                     </button>
@@ -295,6 +328,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                     <button
                                         className="btn-action btn-ongoing"
                                         onClick={() => setIsDispatchModalOpen(true)}
+                                        title="Re-dispatch"
                                     >
                                         Re-dispatch
                                     </button>
@@ -302,6 +336,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                         <button
                                             className="btn-action btn-ongoing"
                                             onClick={() => setIsGroupDispatchOpen(true)}
+                                            title="Dispatch All"
                                         >
                                             Dispatch All
                                         </button>
@@ -315,6 +350,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         <button
                             className="btn-action btn-ungroup"
                             onClick={() => onUngroup(mainTicketId)}
+                            title="Ungroup"
                         >
                             Ungroup
                         </button>
@@ -323,12 +359,20 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                     {['Pending', 'Ongoing', 'Unresolved'].includes(ticket.status) && (
                         <button
                             className="btn-action btn-resolved"
-                            onClick={() => {
-                                onUpdateTicket(ticket.ticket_id, 'Restored');
-                                onClose();
-                            }}
+                            onClick={() => setIsRestoreConfirmOpen(true)}
+                            title="Mark as Restored"
                         >
                             Mark as Restored
+                        </button>
+                    )}
+
+                    {['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
+                        <button
+                            className="btn-action btn-revert-pending"
+                            onClick={() => setIsRevertConfirmOpen(true)}
+                            title="Revert to Pending"
+                        >
+                            Revert to Pending
                         </button>
                     )}
 
@@ -338,6 +382,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                 <button
                                     className="btn-action btn-hold"
                                     onClick={() => setIsHoldModalOpen(true)}
+                                    title="Put on Hold"
                                 >
                                     Put on Hold
                                 </button>
@@ -348,6 +393,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                     onUpdateTicket(ticket.ticket_id, 'Unresolved');
                                     onClose();
                                 }}
+                                title="Mark as Unresolved"
                             >
                                 Mark as Unresolved
                             </button>
@@ -357,6 +403,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                     onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
                                     onClose();
                                 }}
+                                title="No Fault Found"
                             >
                                 No Fault Found
                             </button>
@@ -366,6 +413,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                     onUpdateTicket(ticket.ticket_id, 'AccessDenied');
                                     onClose();
                                 }}
+                                title="Access Denied"
                             >
                                 Access Denied
                             </button>
@@ -382,7 +430,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                             <TicketHistoryLogs ticketId={ticket.ticket_id} isVisible={isFlipped} />
                         </div>
                     </div>
-                    <button type="button" className="flip-toggle-btn" onClick={() => setIsFlipped(v => !v)}>
+                    <button type="button" className="flip-toggle-btn" onClick={() => setIsFlipped(v => !v)} title={isFlipped ? 'View Details' : 'View History'}>
                         {isFlipped ? 'View Details' : 'View History'}
                     </button>
                 </div>
@@ -409,6 +457,58 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                     setIsHoldModalOpen(false);
                     onClose();
                 }}
+            />
+
+            <EditTicketModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                ticket={ticket}
+                onSuccess={() => {
+                    onRefetch?.();
+                }}
+            />
+
+            <ConfirmModal
+                isOpen={isDeleteConfirmOpen}
+                onClose={() => setIsDeleteConfirmOpen(false)}
+                onConfirm={() => {
+                    onDeleteTicket?.(ticket.ticket_id);
+                }}
+                title="Delete Ticket"
+                message={`Delete ticket ${ticket.ticket_id}? This cannot be undone.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                variant="danger"
+            />
+
+            <ConfirmModal
+                isOpen={isRestoreConfirmOpen}
+                onClose={() => setIsRestoreConfirmOpen(false)}
+                onConfirm={() => {
+                    onUpdateTicket(ticket.ticket_id, 'Restored');
+                    setIsRestoreConfirmOpen(false);
+                    onClose();
+                }}
+                title="Mark as Restored"
+                message={`Mark ticket ${ticket.ticket_id} as Restored? This will close the ticket. Only confirm if resolution has been completed.`}
+                confirmLabel="Mark Restored"
+                cancelLabel="Cancel"
+                variant="success"
+            />
+
+            <ConfirmModal
+                isOpen={isRevertConfirmOpen}
+                onClose={() => setIsRevertConfirmOpen(false)}
+                onConfirm={() => {
+                    onUpdateTicket(ticket.ticket_id, 'Pending');
+                    setIsRevertConfirmOpen(false);
+                    onClose();
+                }}
+                title="Revert to Pending"
+                message={`Revert ticket ${ticket.ticket_id} to Pending? The ticket will be reopened and you can start resolution again. Use this if the ticket was closed by mistake or needs further action.`}
+                confirmLabel="Revert to Pending"
+                cancelLabel="Cancel"
+                variant="default"
             />
 
             {mainTicketId && (

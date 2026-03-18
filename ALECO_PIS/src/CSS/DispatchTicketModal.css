@@ -11,7 +11,9 @@
     align-items: center;
     justify-content: center;
     z-index: 3000; /* Extremely high to sit ABOVE the TicketDetailPane */
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
 }
 
 .dispatch-modal-content {
@@ -323,6 +325,35 @@ select.dispatch-form-input {
     border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.dispatch-modal-actions .btn-action {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.dispatch-modal-actions .btn-cancel {
+    background: rgba(128, 128, 128, 0.2);
+    color: var(--text-secondary);
+}
+
+.dispatch-modal-actions .btn-ongoing {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.dispatch-modal-actions .btn-delete {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.dispatch-modal-actions .btn-resolved {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
 @keyframes dispatchScaleIn {
     from { opacity: 0; transform: scale(0.95) translateY(10px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
@@ -338,5 +369,146 @@ select.dispatch-form-input {
     }
     .dispatch-modal-actions button {
         width: 100%;
+    }
+}
+
+/* =========================================
+   EDIT TICKET MODAL - Dedicated styling
+   ========================================= */
+
+.edit-ticket-modal {
+    display: flex;
+    flex-direction: column;
+    width: 94%;
+    max-width: 540px;
+    max-height: 88vh;
+    padding: 0;
+    overflow: hidden;
+}
+
+.edit-ticket-header {
+    flex-shrink: 0;
+    padding: 24px 52px 16px 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(124, 58, 237, 0.05) 100%);
+}
+
+.edit-ticket-title {
+    margin: 0 0 4px 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.edit-ticket-subtitle {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.edit-ticket-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.edit-ticket-form-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 28px;
+}
+
+.edit-ticket-form-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.edit-ticket-form-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.edit-ticket-form-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.edit-ticket-form-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.edit-ticket-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+}
+
+.edit-ticket-grid .edit-ticket-full-width {
+    grid-column: 1 / -1;
+}
+
+.edit-ticket-grid .dispatch-form-group {
+    margin-bottom: 0;
+}
+
+.edit-ticket-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.edit-ticket-actions {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 28px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-card);
+}
+
+.edit-ticket-actions .btn-action {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.edit-ticket-actions .btn-cancel {
+    background: rgba(128, 128, 128, 0.2);
+    color: var(--text-secondary);
+}
+
+.edit-ticket-actions .btn-cancel:hover {
+    background: rgba(128, 128, 128, 0.3);
+}
+
+.edit-ticket-actions .btn-ongoing {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.edit-ticket-actions .btn-ongoing:hover {
+    background: rgba(34, 197, 94, 0.3);
+}
+
+@media (max-width: 600px) {
+    .edit-ticket-modal {
+        max-width: 96%;
+        max-height: 92vh;
+    }
+
+    .edit-ticket-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .edit-ticket-header,
+    .edit-ticket-form-body,
+    .edit-ticket-actions {
+        padding-left: 20px;
+        padding-right: 20px;
     }
 }

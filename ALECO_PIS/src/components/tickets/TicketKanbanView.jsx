@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import KanbanColumn from './kanban/KanbanColumn';
 import KanbanTicketCard from './kanban/KanbanTicketCard';
@@ -72,13 +73,13 @@ const TicketKanbanView = ({ tickets, selectedTicket, onSelectTicket, onUpdateTic
         const targetStatus = newStatus.toLowerCase();
 
         if (!validTransitions[currentStatus]?.includes(targetStatus)) {
-            alert(`Cannot move ticket from ${ticket.status} to ${newStatus}`);
+            toast.warning(`Cannot move ticket from ${ticket.status} to ${newStatus}`);
             return;
         }
 
         // P0: Block Pending→Ongoing drag - dispatch requires crew/ETA via detail pane
         if (currentStatus === 'pending' && targetStatus === 'ongoing') {
-            alert('Use "Start Resolution" in the ticket detail pane to dispatch a crew.');
+            toast.info('Use "Start Resolution" in the ticket detail pane to dispatch a crew.');
             if (onSelectTicket) onSelectTicket(ticket);
             return;
         }

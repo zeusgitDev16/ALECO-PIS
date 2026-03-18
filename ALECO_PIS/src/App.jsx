@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { apiUrl } from './utils/api';
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
 import AdminLayout from './components/AdminLayout.jsx';
@@ -36,7 +37,7 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
       if (!email) return;
 
       try {
-        const response = await fetch('http://localhost:5000/api/verify-session', {
+        const response = await fetch(apiUrl('/api/verify-session'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, tokenVersion: currentTokenVersion })

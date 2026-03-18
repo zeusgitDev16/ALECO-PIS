@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../../utils/api';
 import '../../CSS/AllUsers.css';
 
 const USER_ROLES = {
@@ -57,7 +58,7 @@ const AllUsers = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/toggle-status', {
+      const response = await fetch(apiUrl('/api/users/toggle-status'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

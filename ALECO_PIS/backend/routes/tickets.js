@@ -98,11 +98,11 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             WHERE phone_number = ? 
               AND category = ? 
               AND concern = ? 
-              AND created_at >= ? - INTERVAL 5 MINUTE
+              AND created_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
             LIMIT 1
         `;
         const [existingTickets] = await pool.execute(duplicateCheckSql, [
-            normalizedPhone, category, concern, manilaTime
+            normalizedPhone, category, concern
         ]);
 
         if (existingTickets.length > 0) {
@@ -229,6 +229,118 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
     } catch (error) {
         console.error("Database Tracking Error:", error);
         res.status(500).json({ success: false, message: "An internal server error occurred. Please try again later." });
+    }
+});
+
+// --- 2b. EDIT TICKET ROUTE (Dispatcher) ---
+router.put('/tickets/:ticketId', async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const body = req.body;
+
+        if (!ticketId || ticketId.startsWith('GROUP-')) {
+            return res.status(400).json({ success: false, message: 'Cannot edit GROUP master. Edit child tickets individually.' });
+        }
+
+        const [existing] = await pool.execute('SELECT * FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
+        if (existing.length === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found.' });
+        }
+
+        if (existing[0].parent_ticket_id) {
+            return res.status(400).json({ success: false, message: 'Cannot edit a ticket that is part of a group. Ungroup first.' });
+        }
+
+        const allowed = ['first_name', 'middle_name', 'last_name', 'phone_number', 'account_number', 'address', 'district', 'municipality', 'category', 'concern'];
+        const updates = {};
+        for (const key of allowed) {
+            if (body[key] !== undefined) updates[key] = body[key];
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ success: false, message: 'No valid fields to update.' });
+        }
+
+        if (updates.district && updates.municipality) {
+            const isValid = validateDistrictMunicipality(updates.district, updates.municipality);
+            if (!isValid) {
+                return res.status(400).json({ success: false, message: `Invalid location: ${updates.municipality} does not belong to ${updates.district}.` });
+            }
+        } else if (updates.district || updates.municipality) {
+            return res.status(400).json({ success: false, message: 'Both district and municipality must be provided together.' });
+        }
+
+        if (updates.phone_number) {
+            const normalized = normalizePhoneForDB(updates.phone_number);
+            if (!normalized) {
+                return res.status(400).json({ success: false, message: 'Invalid phone number. Use 09XXXXXXXXX format.' });
+            }
+            updates.phone_number = normalized;
+        }
+
+        const setClause = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+        const values = [...Object.values(updates), ticketId];
+        await pool.execute(`UPDATE aleco_tickets SET ${setClause} WHERE ticket_id = ?`, values);
+
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+        await insertTicketLog(pool, {
+            ticket_id: ticketId,
+            action: 'ticket_edit',
+            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+            actor_email: actorEmail || null,
+            actor_name: actorName || 'System',
+            metadata: { updated_fields: Object.keys(updates) }
+        });
+
+        console.log(`✅ TICKET EDITED: ${ticketId}`);
+        res.json({ success: true, message: `Ticket ${ticketId} updated.` });
+    } catch (error) {
+        console.error('❌ TICKET EDIT ERROR:', error);
+        res.status(500).json({ success: false, message: error.message || 'Failed to update ticket.' });
+    }
+});
+
+// --- 2c. SOFT DELETE TICKET ROUTE ---
+router.delete('/tickets/:ticketId', async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+
+        if (!ticketId || ticketId.startsWith('GROUP-')) {
+            return res.status(400).json({ success: false, message: 'Cannot delete GROUP master. Ungroup first.' });
+        }
+
+        const [existing] = await pool.execute('SELECT ticket_id, parent_ticket_id, deleted_at FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
+        if (existing.length === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found.' });
+        }
+
+        if (existing[0].parent_ticket_id) {
+            return res.status(400).json({ success: false, message: 'Cannot delete a ticket that is part of a group. Ungroup first.' });
+        }
+
+        if (existing[0].deleted_at) {
+            return res.status(400).json({ success: false, message: 'Ticket is already deleted.' });
+        }
+
+        await pool.execute('UPDATE aleco_tickets SET deleted_at = NOW() WHERE ticket_id = ?', [ticketId]);
+
+        const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
+        const actorName = req.body?.actor_name || req.headers['x-user-name'];
+        await insertTicketLog(pool, {
+            ticket_id: ticketId,
+            action: 'ticket_deleted',
+            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+            actor_email: actorEmail || null,
+            actor_name: actorName || 'System',
+            metadata: null
+        });
+
+        console.log(`✅ TICKET SOFT DELETED: ${ticketId}`);
+        res.json({ success: true, message: `Ticket ${ticketId} deleted.` });
+    } catch (error) {
+        console.error('❌ TICKET DELETE ERROR:', error);
+        res.status(500).json({ success: false, message: error.message || 'Failed to delete ticket.' });
     }
 });
 
@@ -378,6 +490,17 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
 
         if (dbResult.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'Ticket not found or not Ongoing.' });
+        }
+
+        // Send SMS to consumer when notify_consumer is true
+        if (notify_consumer) {
+            const [ticketRows] = await pool.execute('SELECT phone_number FROM aleco_tickets WHERE ticket_id = ?', [ticket_id]);
+            const consumer_phone = ticketRows[0]?.phone_number;
+            if (consumer_phone) {
+                const holdMsg = `ALECO: Your ticket ${ticket_id} has been put on hold. Reason: ${hold_reason.trim()}. We will resume work soon. Thank you for your patience.`;
+                await sendPhilSMS(consumer_phone, holdMsg);
+                console.log(`✅ Hold SMS sent to consumer: ${consumer_phone}`);
+            }
         }
 
         const actorEmail = req.body.actor_email || req.headers['x-user-email'];
@@ -820,7 +943,71 @@ function levenshteinDistance(str1, str2) {
 }
 
 // ============================================================================
-// GET TICKET LOGS (History / Audit Trail)
+// GET ALL TICKET LOGS (System-wide History - must be before /:ticketId/logs)
+// ============================================================================
+router.get('/tickets/logs', async (req, res) => {
+    try {
+        const { ticketId, actor_email, startDate, endDate, limit = 50, offset = 0 } = req.query;
+        const conditions = [];
+        const params = [];
+
+        if (ticketId && ticketId.trim()) {
+            conditions.push('ticket_id = ?');
+            params.push(ticketId.trim());
+        }
+        if (actor_email && actor_email.trim()) {
+            conditions.push('actor_email = ?');
+            params.push(actor_email.trim());
+        }
+        if (startDate) {
+            conditions.push('DATE(created_at) >= ?');
+            params.push(startDate);
+        }
+        if (endDate) {
+            conditions.push('DATE(created_at) <= ?');
+            params.push(endDate);
+        }
+
+        const whereClause = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
+        const lim = Math.min(parseInt(limit, 10) || 50, 200);
+        const off = Math.max(0, parseInt(offset, 10) || 0);
+
+        const [countRows] = await pool.execute(
+            `SELECT COUNT(*) as total FROM aleco_ticket_logs${whereClause}`,
+            params
+        );
+        const total = countRows[0]?.total ?? 0;
+
+        const dataParams = [...params, lim, off];
+        const [rows] = await pool.execute(
+            `SELECT id, ticket_id, action, from_status, to_status, actor_type, actor_email, actor_name, metadata, created_at
+             FROM aleco_ticket_logs${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+            dataParams
+        );
+        const data = rows.map(r => {
+            let meta = r.metadata;
+            if (meta === null || meta === undefined) meta = null;
+            else if (typeof meta === 'string' && meta) {
+                try { meta = JSON.parse(meta); } catch { meta = null; }
+            } else if (Buffer.isBuffer(meta)) {
+                try { meta = JSON.parse(meta.toString()); } catch { meta = null; }
+            }
+            return { ...r, metadata: meta };
+        });
+
+        res.json({ success: true, data, total });
+    } catch (error) {
+        console.error('❌ GET ALL LOGS ERROR:', error);
+        const msg = error.message || 'Internal Server Error';
+        if (msg.includes("doesn't exist") || msg.includes('aleco_ticket_logs')) {
+            return res.status(500).json({ success: false, message: 'Ticket logs table not found.' });
+        }
+        res.status(500).json({ success: false, message: msg });
+    }
+});
+
+// ============================================================================
+// GET TICKET LOGS (Single ticket - History / Audit Trail)
 // ============================================================================
 router.get('/tickets/:ticketId/logs', async (req, res) => {
     try {
@@ -855,8 +1042,9 @@ router.get('/tickets/:ticketId/logs', async (req, res) => {
 
 // ============================================================================
 // MANUAL STATUS UPDATE ROUTE (For Resolved/Unresolved)
+// Standard path: PUT /api/tickets/:ticketId/status
 // ============================================================================
-router.put('/:ticketId/status', async (req, res) => {
+const statusUpdateHandler = async (req, res) => {
     try {
         const { ticketId } = req.params;
         const { status } = req.body;
@@ -908,7 +1096,10 @@ router.put('/:ticketId/status', async (req, res) => {
         console.error("❌ STATUS UPDATE ERROR:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
     }
-});
+};
+
+router.put('/tickets/:ticketId/status', statusUpdateHandler);
+router.put('/:ticketId/status', statusUpdateHandler); // Legacy - backward compat
 
 // ============================================================================
 // PERSONNEL MANAGEMENT ROUTES (Surgically Updated for 3-Table Architecture)

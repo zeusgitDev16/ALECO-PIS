@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../../utils/api';
 
 /**
  * TicketHistoryLogs - Displays ticket audit/history timeline.
@@ -16,7 +17,7 @@ const TicketHistoryLogs = ({ ticketId, isVisible }) => {
         }
         setLoading(true);
         setError(null);
-        fetch(`http://localhost:5000/api/tickets/${ticketId}/logs`)
+        fetch(apiUrl(`/api/tickets/${ticketId}/logs`))
             .then(res => {
                 const ct = res.headers.get('content-type');
                 if (!ct || !ct.includes('application/json')) {

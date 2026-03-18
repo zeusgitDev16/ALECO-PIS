@@ -1,5 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import App from './App.jsx'
 import './index.css';
 import { LoadingProvider } from './context/LoadingContext';
@@ -13,6 +15,7 @@ createRoot(document.getElementById('root')).render(
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <LoadingProvider>
         <App />
+        <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover theme="colored" />
       </LoadingProvider>
     </GoogleOAuthProvider>
   </StrictMode>,

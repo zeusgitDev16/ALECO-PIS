@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import './CSS/ReportaProblem.css';
+import { apiUrl } from './utils/api';
 import { formatToPhilippineTime } from './utils/dateUtils';
 import { ALECO_SCOPE } from '../alecoScope';
 import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsLocationMatcher';
@@ -358,7 +359,7 @@ const ReportaProblem = () => {
         try {
             console.log('🔍 Checking for duplicate tickets...');
 
-            const duplicateCheckResponse = await fetch('http://localhost:5000/api/check-duplicates', {
+            const duplicateCheckResponse = await fetch(apiUrl('/api/check-duplicates'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -477,7 +478,7 @@ const ReportaProblem = () => {
 
         // 4. BACKEND EXECUTION
         try {
-            const response = await fetch('http://localhost:5000/api/tickets/submit', {
+            const response = await fetch(apiUrl('/api/tickets/submit'), {
                 method: 'POST',
                 body: submissionData,
             });
@@ -510,7 +511,7 @@ const ReportaProblem = () => {
         if (!trackingId) return alert("Please enter a Ticket ID.");
         setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/tickets/track/${trackingId}`);
+            const response = await fetch(apiUrl(`/api/tickets/track/${trackingId}`));
             const result = await response.json();
             if (result.success) {
                 setTicketData(result.data);
@@ -528,7 +529,7 @@ const ReportaProblem = () => {
     // --- Backend: Email Logic (Triggered from PopUp) ---
     const handleSendEmailCopy = async (email, setSentStatus) => {
         try {
-            const response = await fetch('http://localhost:5000/api/tickets/send-copy', {
+            const response = await fetch(apiUrl('/api/tickets/send-copy'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, ticketId: generatedId })

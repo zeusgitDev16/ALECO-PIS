@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { apiUrl } from '../utils/api';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketsPage.css'; // ✅ NEW ISOLATED CSS
@@ -18,6 +20,7 @@ import TicketLayoutPicker from './tickets/TicketLayoutPicker';
 import TicketFilterLayoutWrapper from './tickets/TicketFilterLayoutWrapper';
 import TicketTableView from './tickets/TicketTableView';
 import TicketKanbanView from './tickets/TicketKanbanView';
+import ConfirmModal from './tickets/ConfirmModal';
 
 const AdminTickets = () => {
     const { tickets, loading: isLoading, error, filters, setFilters, refetch } = useTickets();
@@ -28,6 +31,7 @@ const AdminTickets = () => {
     const [isMapOpen, setIsMapOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
     const [availableCrews, setAvailableCrews] = useState([]);
+    const [confirmState, setConfirmState] = useState({ open: false, type: null, payload: null });
     const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedTickets();
 
     const handleSelectTicket = (ticket) => {
@@ -38,7 +42,7 @@ const AdminTickets = () => {
     useEffect(() => {
         const fetchCrews = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/crews/list');
+                const response = await fetch(apiUrl('/api/crews/list'));
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     setAvailableCrews(data);
@@ -82,43 +86,51 @@ const AdminTickets = () => {
     const handleDispatchGroup = async (mainTicketId, dispatchData) => {
         try {
             const body = { ...dispatchData, ...getActor() };
-            const response = await fetch(`http://localhost:5000/api/tickets/group/${mainTicketId}/dispatch`, {
+            const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/dispatch`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                alert(`ALECO System: ${data.message}`);
+                toast.success(`ALECO System: ${data.message}`);
                 refetch();
             } else {
-                alert('Group dispatch failed: ' + (data.message || 'Unknown error'));
+                toast.error('Group dispatch failed: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Group dispatch error:', error);
-            alert('Failed to dispatch group. Please try again.');
+            toast.error('Failed to dispatch group. Please try again.');
         }
     };
 
-    const handleUngroup = async (mainTicketId) => {
-        if (!confirm('Dissolve this group? All tickets will become standalone.')) return;
+    const handleUngroup = (mainTicketId) => {
+        setConfirmState({ open: true, type: 'ungroup', payload: mainTicketId });
+    };
+
+    const executeUngroup = async (mainTicketId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/tickets/group/${mainTicketId}/ungroup`, {
+            const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/ungroup`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                alert(`ALECO System: ${data.message}`);
+                toast.success(`ALECO System: ${data.message}`);
                 setSelectedTicket(null);
                 refetch();
             } else {
-                alert('Ungroup failed: ' + (data.message || 'Unknown error'));
+                toast.error('Ungroup failed: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Ungroup error:', error);
-            alert('Failed to ungroup. Please try again.');
+            toast.error('Failed to ungroup. Please try again.');
         }
+    };
+
+    const handleConfirmUngroup = () => {
+        if (confirmState.payload) executeUngroup(confirmState.payload);
+        setConfirmState({ open: false, type: null, payload: null });
     };
 
     const getActor = () => ({
@@ -126,24 +138,45 @@ const AdminTickets = () => {
         actor_name: localStorage.getItem('userName') || null
     });
 
+    const handleDeleteTicket = async (ticketId) => {
+        try {
+            const response = await fetch(apiUrl(`/api/tickets/${ticketId}`), {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getActor())
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                toast.success(`Ticket ${ticketId} deleted.`);
+                setSelectedTicket(null);
+                refetch();
+            } else {
+                toast.error(data.message || 'Failed to delete ticket.');
+            }
+        } catch (error) {
+            console.error('Delete ticket error:', error);
+            toast.error('Failed to delete ticket. Please try again.');
+        }
+    };
+
     const handlePutHold = async (ticketId, holdData) => {
         try {
             const body = { ...holdData, ...getActor() };
-            const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/hold`, {
+            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/hold`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                alert(`ALECO System: Ticket ${ticketId} put on hold.`);
+                toast.success(`ALECO System: Ticket ${ticketId} put on hold.`);
                 refetch();
             } else {
-                alert('Hold failed: ' + (data.message || 'Unknown error'));
+                toast.error('Hold failed: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Hold error:', error);
-            alert('Failed to put ticket on hold. Please try again.');
+            toast.error('Failed to put ticket on hold. Please try again.');
         }
     };
 
@@ -151,7 +184,7 @@ const AdminTickets = () => {
         try {
             if (newStatus === 'Ongoing' && dispatchData) {
                 const body = { ...dispatchData, ...getActor() };
-                const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/dispatch`, {
+                const response = await fetch(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -160,17 +193,17 @@ const AdminTickets = () => {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert(`ALECO System: Crew successfully dispatched for Ticket ${ticketId}. SMS notifications sent.`);
+                    toast.success(`ALECO System: Crew successfully dispatched for Ticket ${ticketId}. SMS notifications sent.`);
                     refetch();
                 } else {
-                    alert("Dispatch failed: " + data.message);
+                    toast.error("Dispatch failed: " + data.message);
                 }
             }
-            else if (['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(newStatus)) {
+            else if (['Pending', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(newStatus)) {
                 const isGroupMaster = ticketId?.startsWith('GROUP-');
                 const url = isGroupMaster
-                    ? `http://localhost:5000/api/tickets/group/${ticketId}/status`
-                    : `http://localhost:5000/api/${ticketId}/status`; // legacy single-ticket route
+                    ? apiUrl(`/api/tickets/group/${ticketId}/status`)
+                    : apiUrl(`/api/tickets/${ticketId}/status`);
 
                 const response = await fetch(url, {
                     method: 'PUT',
@@ -181,14 +214,18 @@ const AdminTickets = () => {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert(`ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} marked as ${newStatus}.`);
+                    const msg = newStatus === 'Pending'
+                        ? `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} reverted to Pending. You can start resolution again.`
+                        : `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} marked as ${newStatus}.`;
+                    toast.success(msg);
                     refetch();
                 } else {
-                    alert("Status update failed: " + data.message);
+                    toast.error("Status update failed: " + data.message);
                 }
             }
         } catch (error) {
             console.error("Network error: ", error);
+            toast.error("Network error. Please try again.");
         }
     };
 
@@ -200,37 +237,34 @@ const AdminTickets = () => {
         }
     };
 
-    const handleBulkResolve = async () => {
+    const handleBulkResolve = () => {
         if (selectedIds.length === 0) {
-            alert('No tickets selected');
+            toast.warning('No tickets selected');
             return;
         }
+        setConfirmState({ open: true, type: 'bulkRestore', payload: null });
+    };
 
-        const confirmed = window.confirm(
-            `Are you sure you want to mark ${selectedIds.length} ticket(s) as Restored?`
-        );
-
-        if (!confirmed) return;
-
+    const executeBulkResolve = async () => {
         try {
             const groupMasters = selectedIds.filter(id => id?.startsWith('GROUP-'));
             const regularTickets = selectedIds.filter(id => !id?.startsWith('GROUP-'));
 
             for (const mainTicketId of groupMasters) {
-                const response = await fetch(`http://localhost:5000/api/tickets/group/${mainTicketId}/status`, {
+                const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/status`), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'Restored', ...getActor() })
                 });
                 const data = await response.json();
                 if (!response.ok || !data.success) {
-                    alert(`Failed to restore group ${mainTicketId}: ${data.message}`);
+                    toast.error(`Failed to restore group ${mainTicketId}: ${data.message}`);
                     return;
                 }
             }
 
             if (regularTickets.length > 0) {
-                const response = await fetch('http://localhost:5000/api/tickets/bulk/restore', {
+                const response = await fetch(apiUrl('/api/tickets/bulk/restore'), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ticketIds: regularTickets, ...getActor() })
@@ -239,18 +273,23 @@ const AdminTickets = () => {
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
-                    alert(`❌ Failed: ${data.message}`);
+                    toast.error(`Failed: ${data.message}`);
                     return;
                 }
             }
 
-            alert(`✅ ${groupMasters.length + regularTickets.length} ticket(s) marked as Restored.`);
+            toast.success(`${groupMasters.length + regularTickets.length} ticket(s) marked as Restored.`);
             setSelectedIds([]);
             refetch();
         } catch (error) {
             console.error('❌ Error bulk restoring tickets:', error);
-            alert('Failed to restore tickets. Please try again.');
+            toast.error('Failed to restore tickets. Please try again.');
         }
+        setConfirmState({ open: false, type: null, payload: null });
+    };
+
+    const handleConfirmBulkRestore = () => {
+        executeBulkResolve();
     };
 
     const barRef = useRef(null);
@@ -394,6 +433,8 @@ const AdminTickets = () => {
                 onPutHold={handlePutHold}
                 onDispatchGroup={handleDispatchGroup}
                 onUngroup={handleUngroup}
+                onDeleteTicket={handleDeleteTicket}
+                onRefetch={refetch}
                 crews={availableCrews}
             />
 
@@ -424,7 +465,7 @@ const AdminTickets = () => {
                             </button>
                             <button
                                 className="btn-bulk-action btn-resolve"
-                                onClick={handleBulkResolve}
+                                onClick={() => handleBulkResolve()}
                             >
                                 Restore
                             </button>
@@ -446,13 +487,36 @@ const AdminTickets = () => {
                 tickets={tickets}
             />
 
+            {confirmState.type === 'ungroup' && (
+                <ConfirmModal
+                    isOpen={confirmState.open}
+                    onClose={() => setConfirmState({ open: false, type: null, payload: null })}
+                    onConfirm={handleConfirmUngroup}
+                    title="Dissolve Group"
+                    message="All tickets will become standalone. Continue?"
+                    confirmLabel="Dissolve"
+                    cancelLabel="Cancel"
+                />
+            )}
+            {confirmState.type === 'bulkRestore' && (
+                <ConfirmModal
+                    isOpen={confirmState.open}
+                    onClose={() => setConfirmState({ open: false, type: null, payload: null })}
+                    onConfirm={handleConfirmBulkRestore}
+                    title="Bulk Restore"
+                    message={`Mark ${selectedIds.length} ticket(s) as Restored?`}
+                    confirmLabel="Restore"
+                    cancelLabel="Cancel"
+                />
+            )}
+
             <GroupIncidentModal
                 isOpen={isGroupModalOpen}
                 onClose={() => setIsGroupModalOpen(false)}
                 selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id) && !t.ticket_id?.startsWith('GROUP-'))}
                 onSubmit={async (groupData) => {
                     try {
-                        const response = await fetch('http://localhost:5000/api/tickets/group/create', {
+                        const response = await fetch(apiUrl('/api/tickets/group/create'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(groupData)
@@ -461,16 +525,16 @@ const AdminTickets = () => {
                         const data = await response.json();
 
                         if (response.ok && data.success) {
-                            alert(`✅ Success! ${data.message}\n\nMain Ticket ID: ${data.mainTicketId}`);
+                            toast.success(`Success! ${data.message} Main Ticket ID: ${data.mainTicketId}`);
                             setIsGroupModalOpen(false);
                             setSelectedIds([]);
                             refetch();
                         } else {
-                            alert(`❌ Failed to create group: ${data.message}`);
+                            toast.error(`Failed to create group: ${data.message}`);
                         }
                     } catch (error) {
                         console.error('❌ Error creating ticket group:', error);
-                        alert('Failed to create ticket group. Please try again.');
+                        toast.error('Failed to create ticket group. Please try again.');
                     }
                 }}
             />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../../utils/api';
 import '../../CSS/DispatchTicketModal.css';
 
 const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride, subtitleOverride, groupMainTicketId }) => {
@@ -17,7 +18,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
     useEffect(() => {
         if (isOpen) {
             setIsLoadingCrews(true);
-            fetch('http://localhost:5000/api/crews/list?availableOnly=true')
+            fetch(apiUrl('/api/crews/list?availableOnly=true'))
                 .then(res => res.json())
                 .then(data => {
                     setAvailableCrews(Array.isArray(data) ? data : []);
@@ -37,7 +38,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
     // --- FETCH GROUP MEMBERS when group dispatch (for Notify Consumer phone list) ---
     useEffect(() => {
         if (isOpen && groupMainTicketId) {
-            fetch(`http://localhost:5000/api/tickets/group/${groupMainTicketId}`)
+            fetch(apiUrl(`/api/tickets/group/${groupMainTicketId}`))
                 .then(res => res.json())
                 .then(data => {
                     const children = data?.success && data?.data?.children ? data.data.children : [];

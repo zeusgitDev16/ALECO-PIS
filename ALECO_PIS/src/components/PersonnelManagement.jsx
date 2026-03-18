@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../utils/api';
 import AdminLayout from './AdminLayout';
 import AddCrew from './personnels/AddCrew';
 import AddLinemen from './personnels/AddLinemen';
@@ -38,8 +39,8 @@ const PersonnelManagement = () => {
         try {
             // FIXED: Removed the stray '/tickets' from the URLs
             const [crewRes, poolRes] = await Promise.all([
-                fetch('http://localhost:5000/api/crews/list'), 
-                fetch('http://localhost:5000/api/pool/list')   
+                fetch(apiUrl('/api/crews/list')), 
+                fetch(apiUrl('/api/pool/list'))   
             ]);
 
             const crewData = await crewRes.json();
@@ -61,8 +62,8 @@ const PersonnelManagement = () => {
         
         // FIXED: Removed the stray '/tickets' from the URLs
         const url = isEdit 
-            ? `http://localhost:5000/api/crews/update/${crewData.id}`
-            : `http://localhost:5000/api/crews/add`;
+            ? apiUrl(`/api/crews/update/${crewData.id}`)
+            : apiUrl('/api/crews/add');
         const method = isEdit ? 'PUT' : 'POST';
 
         try {
@@ -92,8 +93,8 @@ const PersonnelManagement = () => {
         
         // FIXED: Removed the stray '/tickets' from the URLs
         const url = isEdit 
-            ? `http://localhost:5000/api/pool/update/${linemanData.id}`
-            : `http://localhost:5000/api/pool/add`;
+            ? apiUrl(`/api/pool/update/${linemanData.id}`)
+            : apiUrl('/api/pool/add');
         const method = isEdit ? 'PUT' : 'POST';
 
         try {

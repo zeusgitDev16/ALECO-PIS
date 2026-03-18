@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiUrl } from '../../utils/api';
 import '../../CSS/SearchBarGlobal.css';
 
 // 1. Accept the toggleSidebar prop from AdminLayout
@@ -59,7 +60,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
         const userEmail = localStorage.getItem('userEmail'); 
         
         if (userEmail) {
-          await fetch('http://localhost:5000/api/logout-all', {
+          await fetch(apiUrl('/api/logout-all'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: userEmail })

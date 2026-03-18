@@ -3,6 +3,17 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 
+// Minimal interruptions endpoint (placeholder for future full CRUD)
+router.get('/interruptions', async (req, res) => {
+    try {
+        // Future: query aleco_interruptions table when implemented
+        res.json({ success: true, data: [] });
+    } catch (error) {
+        console.error('Interruptions fetch error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch interruptions.' });
+    }
+});
+
 // IDEMPOTENT FILTER ROUTE: Returns tickets based on admin dashboard filters
 router.get('/filtered-tickets', async (req, res) => {
     try {
@@ -14,10 +25,11 @@ router.get('/filtered-tickets', async (req, res) => {
 
         console.log('🔍 Filter Request:', { tab, isNew, isUrgent, status, searchQuery, category, district, municipality, datePreset, groupFilter });
 
-        // Base: show parent tickets (GROUP-*) + ungrouped; exclude children. Include child_count for GROUP masters.
+        // Base: show parent tickets (GROUP-*) + ungrouped; exclude children and soft-deleted. Include child_count for GROUP masters.
+        // deleted_at: DATETIME column - use IS NULL only. Fallback for DBs without deleted_at (pre-migration).
         let query = `SELECT t.*, 
-            (SELECT COUNT(*) FROM aleco_tickets c WHERE c.parent_ticket_id = t.ticket_id) as child_count 
-            FROM aleco_tickets t WHERE 1=1`;
+            (SELECT COUNT(*) FROM aleco_tickets c WHERE c.parent_ticket_id = t.ticket_id AND c.deleted_at IS NULL) as child_count 
+            FROM aleco_tickets t WHERE 1=1 AND t.deleted_at IS NULL`;
         const params = [];
 
         // --- Group Filter (base visibility) ---

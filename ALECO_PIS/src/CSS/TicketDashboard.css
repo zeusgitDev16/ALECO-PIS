@@ -6,7 +6,7 @@
    TICKET GRID WRAPPER - COMPACT FOR HIGH DENSITY
    ========================================= */
 .ticket-list-pane-wrapper {
-    padding-bottom: 24px;
+    padding-bottom: 40px;
 }
 
 .ticket-grid-wrapper {
@@ -406,10 +406,11 @@
 /* ==========================================================================
    TICKET FILTER BAR (ISOLATED) - COMPACT PROFESSIONAL DESIGN
    ========================================================================== */
-.tickets-page-container .ticket-filter-bar {
+.tickets-page-container .ticket-filter-bar,
+.admin-page-container .ticket-filter-bar {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     background: var(--bg-card);
     padding: 12px 16px;
     border-radius: 8px;
@@ -424,20 +425,20 @@
 .filter-tier {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
 .filter-tier-1 {
-    gap: 8px;
+    gap: 10px;
 }
 
 .filter-tier-2 {
-    gap: 6px;
+    gap: 8px;
 }
 
 .filter-tier-3 {
-    gap: 8px;
+    gap: 10px;
 }
 
 .filter-tier-select-all {
@@ -574,7 +575,7 @@
    ========================================= */
 .search-category-group {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex: 1;
     min-width: 300px;
     align-items: stretch;
@@ -664,7 +665,7 @@
 .date-filter-group {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 

@@ -4,8 +4,8 @@
  */
 
 .recent-opened-tickets-wrapper {
-    margin-bottom: 20px;
-    padding: 12px 0;
+    margin-bottom: 32px;
+    padding: 12px 0 24px 0;
     border-bottom: 1px solid var(--border-color);
 }
 

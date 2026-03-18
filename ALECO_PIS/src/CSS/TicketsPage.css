@@ -6,14 +6,22 @@
    PAGE CONTAINER (LEVEL 1 SCROLL - ENTIRE PAGE)
    ========================================= */
 .admin-page-container {
-    padding: 10px 20px;
+    padding: 10px 20px 24px 20px;
     animation: fadeIn 0.3s ease-in-out;
     height: calc(100vh - 60px);
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+/* Tickets page: lift container so dual-pane is fully visible (no bottom cut-off)
+   Padding-bottom pushes content up; height reduction ensures buttons are accessible */
+.tickets-page-container {
+    padding-bottom: 40px;
+    padding-top: 10px;
+    height: calc(100vh - 280px);
+    min-height: 400px;
 }
 
 /* Custom Scrollbar for Page Container - Neutral Gray */
@@ -88,16 +96,16 @@
    MAIN CONTENT CARD (LEVEL 2 SCROLL - INTERNAL LIST SCROLL)
    ========================================= */
 .admin-page-container .main-content-card {
+    flex: 1 1 0;
+    min-height: 0;
     padding: 16px;
-    padding-bottom: 28px;
+    padding-bottom: 48px;
     background: var(--bg-card);
     border-radius: 8px;
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     overflow-y: auto;
     overflow-x: hidden;
-    min-height: 400px;
-    max-height: 60vh;
 }
 
 /* Custom Scrollbar for Content Card - Neutral Gray */
@@ -174,9 +182,15 @@
    ========================================= */
 @media (max-width: 800px) {
     .admin-page-container {
-        padding: 6px 10px;
+        padding: 6px 10px 24px 10px;
         height: calc(100vh - 60px);
         gap: 6px;
+    }
+
+    .tickets-page-container {
+        padding-bottom: 32px;
+        height: calc(100vh - 220px);
+        min-height: 350px;
     }
 
     .admin-page-container .dashboard-header-flex {
@@ -196,15 +210,20 @@
 
     .admin-page-container .main-content-card {
         padding: 10px;
-        min-height: 300px;
-        max-height: 50vh;
+        padding-bottom: 40px;
     }
 }
 
 @media (max-width: 500px) {
     .admin-page-container {
-        padding: 4px 8px;
+        padding: 4px 8px 20px 8px;
         gap: 4px;
+    }
+
+    .tickets-page-container {
+        padding-bottom: 28px;
+        height: calc(100vh - 200px);
+        min-height: 300px;
     }
 
     .admin-page-container .header-title {
@@ -217,7 +236,6 @@
 
     .admin-page-container .main-content-card {
         padding: 8px;
-        min-height: 250px;
-        max-height: 45vh;
+        padding-bottom: 36px;
     }
 }

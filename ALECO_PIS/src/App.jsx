@@ -17,6 +17,7 @@ import AdminUsers from './components/Users.jsx';
 import AdminTickets from './components/Tickets.jsx';
 import AdminInterruptions from './components/Interruptions.jsx';
 import AdminHistory from './components/History.jsx';
+import AdminBackup from './components/Backup.jsx';
 import ProfilePage from './components/profile/ProfilePage.jsx';
 import PersonnelManagement from './components/PersonnelManagement.jsx';
 
@@ -90,6 +91,7 @@ const isAdminPage = location.pathname.startsWith('/admin-')
         <Route path="/admin-tickets" element={<AdminTickets />} />
         <Route path="/admin-interruptions" element={<AdminInterruptions />} />
         <Route path="/admin-history" element={<AdminHistory />} />
+        <Route path="/admin-backup" element={<AdminBackup />} />
 
         {/* PROFILE ROUTE */}
         <Route path="/admin-profile" element={ 

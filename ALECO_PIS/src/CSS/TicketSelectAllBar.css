@@ -1,0 +1,122 @@
+.ticket-select-all-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(124, 77, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(124, 77, 255, 0.15);
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.ticket-select-all-bar.has-selection {
+    background: rgba(124, 77, 255, 0.1);
+    border-color: rgba(124, 77, 255, 0.3);
+}
+
+.ticket-select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.ticket-select-all-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.ticket-select-all-count {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.ticket-select-all-clear {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-body);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ticket-select-all-clear:hover {
+    border-color: var(--accent-primary);
+    background: rgba(124, 77, 255, 0.08);
+}
+
+/* Tablet - smaller Select All bar */
+@media (max-width: 1023px) {
+    .tickets-top-bar .ticket-select-all-bar {
+        padding: 5px 8px;
+        min-width: 140px;
+    }
+
+    .tickets-top-bar .ticket-select-all-label {
+        gap: 5px;
+        font-size: 0.7rem;
+    }
+
+    .tickets-top-bar .ticket-select-all-checkbox {
+        width: 14px;
+        height: 14px;
+    }
+
+    .tickets-top-bar .ticket-select-all-clear {
+        padding: 3px 6px;
+        font-size: 0.65rem;
+    }
+}
+
+/* Mobile - very compact Select All bar */
+@media (max-width: 767px) {
+    .tickets-top-bar .ticket-select-all-bar {
+        padding: 4px 6px;
+        min-width: 120px;
+    }
+
+    .tickets-top-bar .ticket-select-all-label {
+        gap: 4px;
+        font-size: 0.65rem;
+    }
+
+    .tickets-top-bar .ticket-select-all-checkbox {
+        width: 12px;
+        height: 12px;
+    }
+
+    .tickets-top-bar .ticket-select-all-clear {
+        padding: 2px 5px;
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 500px) {
+    .tickets-top-bar .ticket-select-all-bar {
+        padding: 3px 5px;
+        min-width: 100px;
+    }
+
+    .tickets-top-bar .ticket-select-all-label {
+        gap: 3px;
+        font-size: 0.6rem;
+    }
+
+    .tickets-top-bar .ticket-select-all-checkbox {
+        width: 11px;
+        height: 11px;
+    }
+
+    .tickets-top-bar .ticket-select-all-clear {
+        padding: 2px 4px;
+        font-size: 0.55rem;
+    }
+}

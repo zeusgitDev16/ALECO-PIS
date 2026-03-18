@@ -1,7 +1,7 @@
 import React from 'react';
 import '../../CSS/TicketLayoutPicker.css';
 
-const TicketLayoutPicker = ({ activeLayout, onLayoutChange }) => {
+const TicketLayoutPicker = ({ activeLayout, onLayoutChange, filterButton }) => {
     const layouts = [
         { id: 'grid', icon: '▦', label: 'Grid', tooltip: 'Card view for visual scanning' },
         { id: 'table', icon: '☰', label: 'Table', tooltip: 'Compact rows for bulk operations' },
@@ -24,6 +24,7 @@ const TicketLayoutPicker = ({ activeLayout, onLayoutChange }) => {
                     </button>
                 ))}
             </div>
+            {filterButton}
         </div>
     );
 };

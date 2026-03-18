@@ -1,0 +1,95 @@
+/* Entity Picker - Compact pill buttons (mirrors BackupLayoutPicker) */
+.entity-picker {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.entity-picker-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.entity-picker-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--bg-body);
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    position: relative;
+}
+
+.entity-picker-btn:hover:not(:disabled):not(.active) {
+    background: var(--bg-card);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+}
+
+.entity-picker-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--bg-body);
+    box-shadow: 0 2px 6px rgba(124, 77, 255, 0.3);
+    font-weight: 800;
+}
+
+[data-theme="light"] .entity-picker-btn.active {
+    color: #fff;
+}
+
+.entity-picker-btn.coming-soon {
+    opacity: 0.85;
+}
+
+.entity-picker-btn.coming-soon:hover {
+    border-color: var(--accent-primary);
+}
+
+.entity-picker-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.entity-picker-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.coming-soon-badge {
+    position: absolute;
+    top: -6px;
+    right: -4px;
+    font-size: 0.5rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    background: var(--accent-primary);
+    color: var(--bg-body);
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .entity-picker {
+        padding: 4px 8px;
+    }
+    .entity-picker-btn {
+        padding: 3px 6px;
+        font-size: 0.6rem;
+    }
+    .entity-picker-label {
+        font-size: 0.65rem;
+    }
+}

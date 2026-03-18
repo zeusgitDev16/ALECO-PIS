@@ -6,13 +6,12 @@
 .ticket-table-container {
     width: 100%;
     overflow-x: auto;
-    overflow-y: auto;
-    max-height: calc(100vh - 300px);
+    overflow-y: visible;
     border-radius: 8px;
     border: 1px solid var(--border-color);
     background: var(--bg-card);
     position: relative;
-    padding-bottom: 24px;
+    padding-bottom: 40px;
 }
 
 /* Group badge (Part of GROUP-XXX) */

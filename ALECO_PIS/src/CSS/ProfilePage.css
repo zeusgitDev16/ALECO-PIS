@@ -16,7 +16,7 @@
 [data-theme="dark"] {
   /* ALECO Dark Theme (Inspired by image_7.png) */
   --bg-profile: #161a1d;
-  --bg-profile-card: #1f2327;
+  --bg-profile-card: #111827;
   --color-text-main: #e1e3e8;
   --color-text-muted: #b0b3b8;
   --color-text-badge: #aaaaaa;
@@ -27,183 +27,389 @@
   --accent-btn-hover: #5d7593;
 }
 
-/* --- 2. GLOBAL PROFILE PAGE WRAPPER --- */
-.profile-page-wrapper {
+/* --- 2. GLOBAL & LAYOUT --- */
+.profile-main-container {
   padding: 40px;
-  display: flex;
-  gap: 30px;
-  background-color: var(--bg-profile);
+  background-color: transparent;
   min-height: calc(100vh - 70px);
   color: var(--color-text-main);
-  animation: fadeInProfile 0.5s ease;
+  animation: fadeIn 0.4s ease;
 }
 
-/* --- 3. THE SIDEBAR (LEFT COLUMN) --- */
-.profile-sidebar {
-  flex: 1;
-  max-width: 320px;
-  background-color: var(--bg-profile-card);
-  padding: 30px;
-  border-radius: 20px;
-  box-shadow: var(--card-shadow);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+.profile-header-text h1 {
+  /* Fluid font size: min 1.6rem, preferred 5vw, max 2rem */
+  font-size: 2rem;
+  color: var(--color-text-main);
+  margin-bottom: 5px;
+}
+.profile-header-text p {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  margin-bottom: 20px;
 }
 
-/* Role-based subtle border accent */
-.profile-sidebar.role-border-admin { border-left: 5px solid #f95959; }
-.profile-sidebar.role-border-employee { border-left: 5px solid #455d7a; }
-
-.profile-avatar-wrapper { text-align: center; margin-bottom: 20px; }
-.profile-avatar-wrapper img {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  border: 5px solid white;
-  object-fit: cover;
-}
-
-.profile-identifiers h1 { font-size: 24px; margin: 0; }
-.role-badge {
-  display: inline-block;
-  padding: 4px 15px;
-  border-radius: 50px;
-  font-size: 11px;
-  font-weight: 700;
-  border: 2px solid; /* Color applied inline based on accentColor */
+.profile-grid-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr; /* Slightly narrower sidebar col */
+  gap: 25px;
   margin-top: 10px;
 }
 
-/* --- 4. MAIN DETAILS PANEL (RIGHT COLUMN) --- */
-.profile-details {
-  flex: 2;
+/* --- 3. CARD STYLING --- */
+.profile-card {
   background-color: var(--bg-profile-card);
-  padding: 40px;
-  border-radius: 20px;
+  border-radius: 16px;
+  padding: 30px;
   box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  color: var(--color-text-main);
+  transition: all 0.3s ease;
 }
 
-.details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+/* --- 4. LEFT COLUMN: OVERVIEW CARD --- */
+.avatar-ring {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  padding: 8px;
+  margin: 0 auto 20px;
+  border: 3px solid var(--color-text-muted); /* Default border */
+  cursor: zoom-in;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-muted);
+.avatar-ring:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
-.status-dot { width: 10px; height: 10px; background: var(--color-status-on); border-radius: 50%; }
+.avatar-ring.role-admin { border-color: #a855f7; }
+.avatar-ring.role-employee { border-color: #22c55e; }
 
-.details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 25px 40px;
-  margin-top: 30px;
+.avatar-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+.user-intro { text-align: center; }
+.user-intro h2 {
+  font-size: 1.5rem;
+  color: var(--color-text-main);
+  margin: 0 0 10px 0;
 }
 
-.detail-item label {
-  display: block;
-  font-size: 11px;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.detail-item p { font-size: 15px; font-weight: 600; color: var(--color-text-main); margin-top: 6px; }
-
-/* Placeholder Social Media Link Styles */
-.profile-social-media { margin-top: 40px; }
-.social-links-grid { display: flex; gap: 10px; margin-top: 15px; }
-.social-link {
+.role-pill { 
   display: inline-block;
-  padding: 8px 15px;
-  background: #f0f0f0;
-  color: #555;
-  border-radius: 8px;
-  font-size: 12px;
-  cursor: not-allowed;
+  width: fit-content; 
+  margin: 10px auto;
+  padding: 6px 15px;
+  border-radius: 20px; 
+  font-size: 0.75rem;
+  font-weight: bold;
+  background: rgba(128, 128, 128, 0.1);
+  color: var(--color-text-muted);
 }
-[data-theme="dark"] .social-link { background: #333; color: #aaa; }
+.role-pill.admin { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+.role-pill.employee { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
 
-/* Button Styles */
 .edit-profile-btn {
-  width: 100%;
+  width: fit-content;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 10px 25px;
+  border-radius: 20px;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: 0.3s;
   border: none;
   background: var(--accent-btn-bg);
   color: white;
+  margin: 15px auto 0;
 }
 .edit-profile-btn:hover { background: var(--accent-btn-hover); }
 
-/* Entrance Animation */
-@keyframes fadeInProfile {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+/* --- 5. RIGHT COLUMN: DETAILS CARD --- */
+.details-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
+.details-header-row h3 { margin: 0; font-size: 1.25rem; }
 
-.profile-main-container {
-  padding: 20px;
-  animation: fadeIn 0.4s ease;
-}
-
-.profile-header-text h1 { font-size: 32px; color: var(--color-text-main); margin-bottom: 5px; }
-.profile-header-text p { color: var(--color-text-muted); font-size: 14px; margin-bottom: 30px; }
-
-.profile-grid-layout {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 24px;
-}
-
-/* Card Styling to match image_a28729.png */
-.profile-card {
-  background-color: var(--bg-profile-card); /* Should match #1f2327 in Dark Mode */
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: var(--card-shadow);
-  border: 1px solid var(--card-border);
-}
-
-.avatar-ring {
-  width: 180px;
-  height: 180px;
+.online-indicator {
+  width: 10px;
+  height: 10px;
+  background: var(--color-status-on);
   border-radius: 50%;
-  padding: 8px;
-  margin: 0 auto 20px;
-  border: 3px solid #f95959; /* Dynamic role color */
-}
-
-.avatar-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-
-.user-intro h2 { text-align: center; color: var(--color-text-main); }
-.role-pill { 
-  display: block; width: fit-content; margin: 10px auto;
-  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;
-  background: rgba(249, 89, 89, 0.1); color: #f95959;
+  box-shadow: 0 0 8px var(--color-status-on);
 }
 
 .info-details-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 30px;
+  gap: 25px;
   margin-top: 30px;
 }
 
-.info-group label { display: block; font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 8px; }
-.info-group p { font-size: 16px; font-weight: 500; color: var(--color-text-main); }
+.info-group label { 
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--color-text-muted); 
+  text-transform: uppercase; 
+  margin-bottom: 8px; 
+}
+.info-group p {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-main);
+  margin: 0;
+}
 
+.edit-input-field {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background-color: var(--bg-profile);
+  color: var(--color-text-main);
+  font-size: 1rem;
+  font-family: inherit;
+  margin-top: -4px;
+}
+
+[data-theme="dark"] .edit-input-field {
+  background-color: #0f172a; /* Darker blue for inputs */
+  border: 1px solid #475569;
+  color: #ffffff;
+  padding: 10px;
+  border-radius: 6px;
+}
+textarea.edit-input-field {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.change-pass-btn {
+  background: transparent;
+  border: 1px solid var(--color-text-muted);
+  color: var(--color-text-muted);
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-weight: 600; 
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.change-pass-btn:hover {
+  background: #ef4444; /* Red for warning/security action */
+  border-color: #ef4444;
+  color: white;
+}
+
+/* --- 6. BOTTOM ROW: SOCIALS & ACTIVITY --- */
+.social-media-container, .activity-logs-container {
+  padding: 20px 25px;
+}
+.social-media-container h3, .activity-logs-container h3 {
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.social-links-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 15px;
+  width: 100%;
+}
+
+/* Wrapper for each icon to create the list row with border */
+.social-item {
+  display: flex;
+  align-items: center; /* Vertically center the icon */
+  width: 100%;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--card-border); /* The line separator */
+}
+
+.social-item:last-child {
+  border-bottom: none;
+}
+
+.social-text {
+  margin-left: 15px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-main);
+}
+
+.social-icon {
+  font-size: 22px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.social-icon:hover {
+  color: #8e44ad; /* Admin Purple highlight */
+  transform: translateX(5px) scale(1.1); /* Slide right slightly on hover */
+}
+
+.activity-log-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.activity-log-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 0.85rem;
+}
+.activity-log-list li:last-child { border-bottom: none; }
+.activity-log-list small { color: var(--color-text-muted); }
+
+
+/* --- 7. ANIMATIONS --- */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- 8. RESPONSIVE ADJUSTMENTS --- */
+
+/* --- Tablet Breakpoint --- */
+@media (max-width: 1024px) {
+  .profile-grid-layout {
+    grid-template-columns: 1fr; /* Stack main cards into a single column */
+  }
+}
+
+/* --- Smaller Tablet & Mobile Breakpoint --- */
+@media (max-width: 768px) {
+  .info-details-grid {
+    grid-template-columns: 1fr; /* Stack detail fields vertically */
+  }
+
+  .details-header-row {
+    flex-direction: column; /* Stack header elements */
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* Begin scaling down text and elements for tablet portrait */
+  .profile-header-text h1 { font-size: 1.75rem; }
+  .user-intro h2 { font-size: 1.35rem; }
+  .profile-header-text p { font-size: 0.9rem; }
+  .details-header-row h3 { font-size: 1.15rem; }
+  .info-group p { font-size: 0.95rem; }
+  .social-text { font-size: 0.85rem; }
+  .activity-log-list li { font-size: 0.82rem; }
+  .avatar-ring { width: 130px; height: 130px; }
+}
+
+/* --- Mobile Phone Breakpoint --- */
+@media (max-width: 550px) {
+  .profile-main-container {
+    padding: 15px; /* Tighter padding for small screens */
+  }
+
+  /* FLUID TYPOGRAPHY: Text shrinks smoothly as screen width reduces */
+  .profile-header-text h1 { font-size: clamp(1.1rem, 5vw, 1.3rem); }
+  .profile-header-text p { font-size: clamp(0.7rem, 3vw, 0.85rem); }
+
+  .profile-grid-layout {
+    gap: 12px;
+  }
+
+  .profile-card {
+    padding: 15px; /* Even tighter padding */
+    border-radius: 10px;
+  }
+
+  .avatar-ring {
+    width: 75px; /* Even smaller avatar */
+    height: 75px;
+    padding: 2px;
+    border-width: 2px;
+  }
+
+  .user-intro h2 { font-size: clamp(0.8rem, 4vw, 1rem); margin-bottom: 5px; }
+  .role-pill { font-size: clamp(0.5rem, 2vw, 0.6rem); padding: 4px 8px; }
+
+  .edit-profile-btn { 
+    width: fit-content; /* Make it a compact box instead of full width */
+    min-width: 90px;   /* Ensures it doesn't get too small */
+    padding: 6px 12px; 
+    font-size: clamp(0.6rem, 2.2vw, 0.7rem); 
+    margin: 15px auto 0; /* Re-apply auto margin to center the button */
+    border-radius: 20px;
+  }
+
+  .details-header-row h3 { font-size: clamp(0.8rem, 3.8vw, 0.95rem); }
+  .info-details-grid { gap: clamp(8px, 3vw, 12px); }
+  .info-group label { font-size: clamp(0.45rem, 1.7vw, 0.55rem); }
+  .info-group {
+    text-align: left; /* Ensures all content inside aligns to the left */
+  }
+  .info-group p { 
+    font-size: clamp(0.68rem, 2.7vw, 0.82rem); 
+    word-break: break-word; /* Prevents long emails from breaking container */
+  }
+
+  .edit-input-field { padding: 5px; font-size: clamp(0.68rem, 2.8vw, 0.8rem); }
+  textarea.edit-input-field { min-height: 80px; }
+
+  /* Apply fluid typography to all remaining text elements */
+  .social-media-container h3, .activity-logs-container h3 {
+    font-size: clamp(0.85rem, 4vw, 1rem);
+  }
+
+  .change-pass-btn {
+    font-size: clamp(0.5rem, 1.8vw, 0.65rem);
+  }
+
+  .social-text { font-size: clamp(0.65rem, 3vw, 0.75rem); }
+  .social-icon { font-size: clamp(0.9rem, 3.5vw, 1.1rem); }
+  
+  .activity-log-list li { 
+    font-size: clamp(0.65rem, 3vw, 0.75rem); 
+    flex-direction: column; /* Stack date under action */
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .activity-log-list li small {
+    align-self: flex-start; /* Align date to left */
+    font-size: clamp(0.55rem, 2vw, 0.65rem);
+  }
+}
+
+/* --- 9. FULL SCREEN IMAGE MODAL --- */
+.profile-image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: zoom-out;
+  animation: fadeIn 0.3s ease;
+}
+
+.profile-image-modal img {
+  width: 450px;
+  height: 450px;
+  max-width: 80vw;
+  max-height: 80vw;
+  border-radius: 50%;
+  box-shadow: 0 0 50px rgba(0,0,0,0.6);
+  border: 5px solid var(--bg-profile-card);
+  object-fit: cover;
+}

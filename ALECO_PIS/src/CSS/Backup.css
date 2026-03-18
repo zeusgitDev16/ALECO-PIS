@@ -1,0 +1,592 @@
+/* =========================================
+   BACKUP PAGE - Sleek, Minimalist, Professional
+   ========================================= */
+
+.backup-page-container {
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.backup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.backup-header-pickers {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.coming-soon-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    padding: 24px;
+}
+
+.coming-soon-message {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.coming-soon-message strong {
+    color: var(--text-main);
+}
+
+.backup-date-bar-wrap {
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.backup-date-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.backup-date-bar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.backup-date-bar-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.backup-date-bar-inputs input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-body);
+    color: var(--text-main);
+    font-size: 0.85rem;
+}
+
+.backup-date-bar-sep {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.backup-date-bar-select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-body);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    min-width: 140px;
+}
+
+.backup-content {
+    flex: 1;
+    min-height: 200px;
+}
+
+/* Backup Filters Bar */
+.backup-filters-wrapper {
+    margin-bottom: 8px;
+}
+
+.backup-filters-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.backup-filter-pill {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-body);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.backup-filter-pill:hover {
+    border-color: var(--accent-primary);
+}
+
+.backup-filter-pill.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--bg-body);
+}
+
+.backup-filter-select {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-body);
+    color: var(--text-main);
+    min-width: 120px;
+}
+
+.backup-filter-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.backup-filters-content .issue-dropdown-container {
+    min-width: 160px;
+}
+
+.backup-filters-content .aleco-scope-inline {
+    display: flex;
+    gap: 8px;
+}
+
+.backup-filter-clear {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-left: auto;
+}
+
+.backup-filter-clear:hover {
+    color: var(--text-main);
+    border-color: var(--text-secondary);
+}
+
+/* Compact layout */
+.backup-compact-view {
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.backup-compact-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.backup-compact-tab {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.backup-compact-tab:hover {
+    color: var(--text-main);
+}
+
+.backup-compact-tab.active {
+    color: var(--accent-primary);
+    border-bottom: 2px solid var(--accent-primary);
+    margin-bottom: -1px;
+}
+
+.backup-compact-panel {
+    padding: 16px;
+}
+
+.backup-compact-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.backup-compact-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.backup-compact-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+}
+
+.backup-compact-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Cards layout */
+.backup-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.backup-card {
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.backup-card-icon {
+    font-size: 1.5rem;
+    color: var(--accent-primary);
+    line-height: 1;
+}
+
+.backup-card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-header);
+    margin: 0;
+}
+
+.backup-card-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.backup-card-row {
+    display: flex;
+    gap: 12px;
+}
+
+.backup-card-row label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.backup-card-file {
+    font-size: 0.8rem;
+}
+
+.backup-card-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.backup-card-preview {
+    margin-top: 8px;
+    padding: 8px;
+    font-size: 0.75rem;
+}
+
+/* Workflow layout */
+.backup-workflow {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.backup-workflow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.backup-workflow-badge {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-primary);
+    color: var(--bg-body);
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.backup-workflow-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.backup-workflow-content {
+    flex: 1;
+}
+
+.backup-workflow-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-header);
+    margin: 0 0 10px 0;
+}
+
+.backup-workflow-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.backup-workflow-block {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px;
+    background: rgba(128, 128, 128, 0.05);
+    border-radius: 6px;
+}
+
+.backup-workflow-sub {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.backup-workflow-block label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    margin-right: 8px;
+}
+
+.backup-workflow-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.backup-workflow-file {
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+}
+
+/* Focus states for accessibility */
+.backup-layout-btn:focus-visible,
+.backup-compact-tab:focus-visible,
+.backup-date-bar input:focus,
+.backup-date-bar select:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.backup-card button:focus-visible,
+.backup-workflow-step button:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .backup-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .backup-cards-grid {
+        grid-template-columns: 1fr;
+    }
+    .backup-workflow-row {
+        flex-direction: column;
+    }
+}
+
+/* Legacy (for ExportPreviewModal) */
+.backup-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.backup-section {
+    max-height: none !important;
+}
+
+.backup-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-header);
+    margin: 0 0 12px 0;
+}
+
+.backup-section-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+}
+
+.backup-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.backup-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.backup-dates {
+    gap: 8px;
+}
+
+.backup-dates input {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-body);
+    color: var(--text-main);
+}
+
+.backup-dates span {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.backup-section select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-body);
+    color: var(--text-main);
+    min-width: 160px;
+}
+
+.backup-actions {
+    gap: 12px;
+}
+
+.backup-preview {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(128, 128, 128, 0.08);
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+.backup-preview ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+    color: var(--text-secondary);
+}
+
+/* Export Preview Modal */
+.export-preview-modal-content {
+    background: var(--bg-card);
+    width: 92%;
+    max-width: 900px;
+    max-height: 85vh;
+    border-radius: 16px;
+    position: relative;
+    padding: 24px 28px;
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.export-preview-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.export-preview-tab {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-body);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.export-preview-tab:hover {
+    background: rgba(128, 128, 128, 0.1);
+}
+
+.export-preview-tab.active {
+    background: var(--accent-primary);
+    color: var(--bg-body);
+    border-color: var(--accent-primary);
+}
+
+.export-preview-table-wrap {
+    flex: 1;
+    min-height: 200px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.export-preview-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.export-preview-scroll .ticket-table {
+    min-width: 800px;
+}
+
+.export-preview-scroll .ticket-table th,
+.export-preview-scroll .ticket-table td {
+    padding: 8px 10px;
+    font-size: 11px;
+}
+
+.export-preview-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.export-preview-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+}

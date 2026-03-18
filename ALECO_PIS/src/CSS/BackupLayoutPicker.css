@@ -1,0 +1,73 @@
+/* Backup Layout Picker - Compact pill buttons */
+.backup-layout-picker {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.backup-layout-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.backup-layout-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--bg-body);
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.backup-layout-btn:hover:not(:disabled):not(.active) {
+    background: var(--bg-card);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+}
+
+.backup-layout-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--bg-body);
+    box-shadow: 0 2px 6px rgba(124, 77, 255, 0.3);
+    font-weight: 800;
+}
+
+[data-theme="light"] .backup-layout-btn.active {
+    color: #fff;
+}
+
+.backup-layout-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.backup-layout-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+@media (max-width: 600px) {
+    .backup-layout-picker {
+        padding: 4px 8px;
+    }
+    .backup-layout-btn {
+        padding: 3px 6px;
+        font-size: 0.6rem;
+    }
+    .backup-layout-label {
+        font-size: 0.65rem;
+    }
+}

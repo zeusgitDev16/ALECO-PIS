@@ -9,6 +9,7 @@ import ticketRoutes from './backend/routes/tickets.js';
 import userRoutes from './backend/routes/user.js'; // <-- NEW: Imported your Admin brick
 import ticketFilterRoutes from './backend/routes/ticket-routes.js';
 import ticketGroupingRoutes from './backend/routes/ticket-grouping.js'; // <-- NEW: Ticket Grouping System
+import backupRoutes from './backend/routes/backup.js';
 
 
 dotenv.config();
@@ -25,6 +26,7 @@ app.use(express.json());
 // 3. Mount the Lego Bricks
 // Every route you had before still perfectly exists at the exact same /api URL
 app.use('/api', authRoutes);
+app.use('/api', backupRoutes); // Must be before tickets for /tickets/export, /tickets/archive, /tickets/import
 app.use('/api', ticketRoutes);
 app.use('/api', userRoutes);
 app.use('/api', ticketFilterRoutes); // <-- Admin filter brick

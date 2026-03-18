@@ -1,15 +1,74 @@
-import React from 'react';
-import { useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown'; 
 import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';      
 import '../../CSS/TicketDashboard.css';
 
+const DEBOUNCE_MS = 400;
+
+const getDefaultFilterOverrides = () => ({
+    isNew: false,
+    isUrgent: false,
+    status: '',
+    searchQuery: '',
+    category: '',
+    district: '',
+    municipality: '',
+    datePreset: '',
+    startDate: '',
+    endDate: '',
+    groupFilter: 'all'
+});
+
 const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelectedIds }) => {
-    
-    // DEBUG: Log filter changes
+    const [searchInput, setSearchInput] = useState(filters.searchQuery || '');
+    const debounceRef = useRef(null);
+
     useEffect(() => {
-        console.log('🔍 Active Filters:', filters);
-    }, [filters]);
+        setSearchInput(filters.searchQuery || '');
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+            debounceRef.current = null;
+        }
+    }, [filters.searchQuery]);
+
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchInput(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            setFilters(prev => ({ ...prev, searchQuery: value }));
+            debounceRef.current = null;
+        }, DEBOUNCE_MS);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, []);
+
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (filters.searchQuery) count++;
+        if (filters.category) count++;
+        if (filters.district) count++;
+        if (filters.municipality) count++;
+        if (filters.datePreset) count++;
+        if (filters.isNew) count++;
+        if (filters.isUrgent) count++;
+        if (filters.status) count++;
+        if (filters.groupFilter && filters.groupFilter !== 'all') count++;
+        return count;
+    };
+
+    const handleClearAll = () => {
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+            debounceRef.current = null;
+        }
+        setSearchInput('');
+        setFilters(prev => ({ ...prev, ...getDefaultFilterOverrides() }));
+    };
 
     // 1. Generic handler for standard inputs (Search, Date Preset, Custom Dates)
     const handleFilterChange = (e) => {
@@ -58,11 +117,6 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
         const { value } = e.target;
         console.log('📊 Status Filter Changed:', value);
         setFilters(prev => ({ ...prev, status: value }));
-    };
-
-    // Placeholder for Export Actions
-    const handleExport = (type) => {
-        console.log(`Triggering ${type} report generation...`);
     };
 
     const isAllVisibleSelected = tickets?.length > 0 && selectedIds?.length === tickets?.length;
@@ -130,15 +184,15 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
                     <option value="ungrouped">📋 Filter Out Groups</option>
                 </select>
 
-                {/* Search: matches child ticket → shows parent group */}
+                {/* Search: matches child ticket → shows parent group (debounced) */}
                 <div className="search-category-group">
                     <input 
                         type="text" 
                         name="searchQuery"
                         placeholder="Search ID, name... (child ticket shows its group)" 
                         className="filter-input main-search"
-                        value={filters.searchQuery || ""}
-                        onChange={handleFilterChange}
+                        value={searchInput}
+                        onChange={handleSearchChange}
                     />
                     <IssueCategoryDropdown 
                         value={filters.category || ""} 
@@ -161,7 +215,7 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
             </div>
 
             {/* =========================================
-                TIER 3: Analytics & Reporting Actions
+                TIER 3: Date Filter
                 ========================================= */}
             <div className="filter-tier filter-tier-3">
                 
@@ -202,17 +256,6 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
                         </>
                     )}
                 </div>
-
-                {/* Export / Report Actions */}
-                <div className="report-actions-group">
-                    <button className="btn-report" onClick={() => handleExport('weekly')}>
-                        📥 Weekly
-                    </button>
-                    <button className="btn-report" onClick={() => handleExport('monthly')}>
-                        📥 Monthly
-                    </button>
-                </div>
-                
             </div>
 
             {/* --- NEW JSX: TIER 4 (Select All Bar) --- */}
@@ -241,6 +284,30 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
                     )}
                 </div>
             )}
+
+            {/* Clear All / Reset filters - same as sidebar */}
+            <div className="filter-drawer-actions">
+                {getActiveFiltersCount() > 0 && (
+                    <button
+                        type="button"
+                        className="filter-drawer-clear-btn"
+                        onClick={handleClearAll}
+                        title="Clear all filters"
+                        aria-label="Clear all filters"
+                    >
+                        ✕ Clear All
+                    </button>
+                )}
+                <button
+                    type="button"
+                    className="filter-drawer-reset-btn"
+                    onClick={handleClearAll}
+                    title="Reset filters"
+                    aria-label="Reset all filters"
+                >
+                    ↻ Reset
+                </button>
+            </div>
             
         </div>
     );

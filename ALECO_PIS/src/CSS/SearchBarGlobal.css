@@ -242,7 +242,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 99999; /* Stay above everything else including sticky headers */
+    z-index: 9999; /* Stay above everything else */
 }
 
 .logout-modal {
@@ -254,8 +254,6 @@
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     border: 1px solid var(--text-secondary);
     animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    z-index: 100000; /* Ensure modal content is above overlay */
 }
 
 .logout-modal h3 {
@@ -341,22 +339,43 @@
     .search-container {
         flex: 1; /* Allows the search bar to dynamically shrink to fit the screen */
         width: 100%;
-        max-width: 300px;
+        max-width: none; /* Uncap width so flex:1 takes over */
+        min-width: 0;    /* CRITICAL: Allows flex item to shrink below content size */
     }
 }
 
 @media (max-width: 480px) {
     .admin-top-nav {
-        padding: 15px 15px 10px 15px;
-        gap: 10px;
+        padding: 10px 12px; /* Tighter padding */
+        gap: 8px; /* Tighter gap */
     }
 
-    /* On extremely small screens, shrink the search bar more */
-    .search-container {
-        max-width: 180px; 
+    /* Optimize search bar internal space for small screens */
+    .search-input {
+        padding: 6px 12px 6px 30px; /* Even tighter padding */
+        font-size: 12px; /* Smaller font */
+        border-radius: 20px;
+    }
+    .search-icon {
+        left: 10px;
+        width: 14px; /* Smaller icon */
+        height: 14px;
     }
     
     .action-icons {
-        gap: 10px;
+        gap: 8px; /* Tighter gap */
+    }
+
+    /* Shrink all icons to match the new compact layout */
+    .mobile-menu-btn svg,
+    .icon-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Shrink profile picture to match */
+    .profile-image-border {
+        width: 32px;
+        height: 32px;
     }
 }

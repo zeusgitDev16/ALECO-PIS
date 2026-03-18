@@ -3,21 +3,27 @@ import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
-import '../CSS/TicketsPage.css'; // ✅ NEW ISOLATED CSS
-import '../CSS/TicketMain.css'; // ✅ BULK ACTION BAR STYLES
+import '../CSS/TicketsPage.css';
+import '../CSS/TicketDualPaneLayout.css';
+import '../CSS/TicketFilterSidebar.css';
+import '../CSS/TicketSelectAllBar.css';
+import '../CSS/TicketFilterDrawer.css';
+import '../CSS/TicketMain.css';
 import useTickets from '../utils/useTickets';
 import { useRecentOpenedTickets } from '../utils/useRecentOpenedTickets';
 import UrgentTickets from './containers/UrgentTickets';
 import RecentOpenedTickets from './containers/RecentOpenedTickets';
 import useDraggable from '../utils/useDraggable';
 import CoverageMap from './CoverageMap';
-import MapButton from './buttons/MapButton';
+import TicketFilterSidebar from './tickets/TicketFilterSidebar';
 import TicketFilterBar from './tickets/TicketFilterBar';
+import TicketFilterDrawer from './tickets/TicketFilterDrawer';
+import TicketSelectAllBar from './tickets/TicketSelectAllBar';
 import TicketListPane from './tickets/TicketListPane';
 import TicketDetailPane from './tickets/TicketDetailPane';
 import GroupIncidentModal from './tickets/GroupIncidentModal';
 import TicketLayoutPicker from './tickets/TicketLayoutPicker';
-import TicketFilterLayoutWrapper from './tickets/TicketFilterLayoutWrapper';
+import TicketDualPaneLayout from './tickets/TicketDualPaneLayout';
 import TicketTableView from './tickets/TicketTableView';
 import TicketKanbanView from './tickets/TicketKanbanView';
 import ConfirmModal from './tickets/ConfirmModal';
@@ -32,7 +38,16 @@ const AdminTickets = () => {
     const [selectedIds, setSelectedIds] = useState([]);
     const [availableCrews, setAvailableCrews] = useState([]);
     const [confirmState, setConfirmState] = useState({ open: false, type: null, payload: null });
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        const saved = localStorage.getItem('ticketFilterSidebarCollapsed');
+        return saved === 'true';
+    });
+    const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
     const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedTickets();
+
+    useEffect(() => {
+        localStorage.setItem('ticketFilterSidebarCollapsed', String(sidebarCollapsed));
+    }, [sidebarCollapsed]);
 
     const handleSelectTicket = (ticket) => {
         setSelectedTicket(ticket);
@@ -297,7 +312,7 @@ const AdminTickets = () => {
 
     return (
         <AdminLayout activePage="tickets">
-            <div className="admin-page-container">
+            <div className="admin-page-container tickets-page-container">
                 
                 {/* ✅ STANDARD HEADER (LIKE PERSONNELMANAGEMENT.JSX) */}
                 <div className="dashboard-header-flex">
@@ -305,7 +320,6 @@ const AdminTickets = () => {
                         <h2 className="header-title">Support Tickets</h2>
                         <p className="header-subtitle">Track and resolve user reported issues.</p>
                     </div>
-                    <MapButton onClick={() => setIsMapOpen(true)} />
                 </div>
 
                 {error && (
@@ -314,26 +328,52 @@ const AdminTickets = () => {
                     </div>
                 )}
 
-                {/* ✅ COLLAPSIBLE FILTER & LAYOUT WRAPPER */}
-                <TicketFilterLayoutWrapper activeFiltersCount={getActiveFiltersCount()}>
-                    {/* ✅ LEGO BRICK: Filter Bar */}
-                    <TicketFilterBar
-                        filters={filters}
-                        setFilters={setFilters}
-                        tickets={tickets}
-                        selectedIds={selectedIds}
-                        setSelectedIds={setSelectedIds}
-                    />
-
-                    {/* ✅ LEGO BRICK: Layout Picker */}
-                    <TicketLayoutPicker
-                        activeLayout={viewMode}
-                        onLayoutChange={handleLayoutChange}
-                    />
-                </TicketFilterLayoutWrapper>
-
-                {/* ✅ LEGO BRICK: Content Widget (WITH SCROLL) */}
-                <div className="dashboard-widget main-content-card">
+                {/* ✅ DUAL-PANE: Filters (left) + Content (right) */}
+                <TicketDualPaneLayout
+                    leftPaneCollapsed={sidebarCollapsed}
+                    leftPane={
+                        <TicketFilterSidebar
+                            filters={filters}
+                            setFilters={setFilters}
+                            tickets={tickets}
+                            selectedIds={selectedIds}
+                            setSelectedIds={setSelectedIds}
+                            isCollapsed={sidebarCollapsed}
+                            onToggleCollapse={() => setSidebarCollapsed(v => !v)}
+                        />
+                    }
+                    layoutPicker={
+                        <TicketLayoutPicker
+                            activeLayout={viewMode}
+                            onLayoutChange={handleLayoutChange}
+                            filterButton={
+                                <button
+                                    type="button"
+                                    className="ticket-filter-inline-btn"
+                                    onClick={() => setFilterDrawerOpen(true)}
+                                    aria-label="Open filters"
+                                    title="Filters"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                                    </svg>
+                                    {getActiveFiltersCount() > 0 && (
+                                        <span className="ticket-filter-inline-badge">{getActiveFiltersCount()}</span>
+                                    )}
+                                </button>
+                            }
+                        />
+                    }
+                    selectAllBar={
+                        <TicketSelectAllBar
+                            tickets={tickets}
+                            selectedIds={selectedIds}
+                            setSelectedIds={setSelectedIds}
+                        />
+                    }
+                    rightPane={
+                <>
+                    <div className="dashboard-widget main-content-card">
                     {viewMode === 'grid' && (
                         <>
                             <UrgentTickets 
@@ -423,6 +463,9 @@ const AdminTickets = () => {
                         </>
                     )}
                 </div>
+                </>
+                    }
+                />
             </div>
 
             {/* ✅ MODALS (OUTSIDE SCROLL CONTAINER) */}
@@ -509,6 +552,19 @@ const AdminTickets = () => {
                     cancelLabel="Cancel"
                 />
             )}
+
+            <TicketFilterDrawer
+                isOpen={filterDrawerOpen}
+                onClose={() => setFilterDrawerOpen(false)}
+            >
+                <TicketFilterBar
+                    filters={filters}
+                    setFilters={setFilters}
+                    tickets={tickets}
+                    selectedIds={selectedIds}
+                    setSelectedIds={setSelectedIds}
+                />
+            </TicketFilterDrawer>
 
             <GroupIncidentModal
                 isOpen={isGroupModalOpen}

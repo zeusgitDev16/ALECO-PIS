@@ -77,6 +77,61 @@
     font-weight: 600;
 }
 
+/* Inline filter button - hidden on desktop, small on mobile/tablet (<=767px) */
+.ticket-filter-inline-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    min-width: 32px;
+    padding: 0;
+    background: var(--bg-body);
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--accent-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.ticket-filter-inline-btn:hover {
+    border-color: var(--accent-primary);
+    background: rgba(124, 77, 255, 0.08);
+}
+
+.ticket-filter-inline-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    background: var(--accent-primary);
+    color: var(--bg-body);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 767px) {
+    .ticket-filter-inline-btn {
+        display: flex;
+    }
+
+    .tickets-page-container .layout-picker-container {
+        gap: 8px;
+    }
+
+    .layout-buttons {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
 /* =========================================
    MOBILE RESPONSIVENESS - INCREDIBLY COMPACT
    ========================================= */

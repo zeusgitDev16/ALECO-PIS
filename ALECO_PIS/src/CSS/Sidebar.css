@@ -20,7 +20,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  width: 240px; 
+  width: 225px; 
   background-color: var(--bg-body); 
   border-right: 1px solid var(--text-secondary);
   transition: left 0.3s ease, width 0.3s ease, border-right 0.3s ease; /* Added left transition */
@@ -158,7 +158,7 @@
   .sidebar {
     position: fixed; /* Detach from layout, making main content 100% wide */
     left: -220px; /* Hide off-screen by default */
-    width: 150px; /* Compact width for mobile POV */
+    width: 160px; /* Compact width for mobile POV 
     z-index: 1001; /* Must be higher than overlay */
   }
 

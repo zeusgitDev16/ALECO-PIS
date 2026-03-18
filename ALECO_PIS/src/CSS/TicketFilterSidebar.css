@@ -1,0 +1,296 @@
+/* ==========================================================================
+   TICKET FILTER SIDEBAR - Icon-only vertical strip
+   ========================================================================== */
+
+.filter-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 6px 12px 6px;
+    min-height: 100%;
+}
+
+.filter-sidebar:not(.filter-sidebar-collapsed) {
+    flex: 1;
+}
+
+.filter-sidebar-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-body);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.filter-sidebar-btn:hover {
+    border-color: var(--accent-primary);
+    background: rgba(124, 77, 255, 0.08);
+}
+
+.filter-sidebar-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--bg-body);
+    box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.35);
+}
+
+[data-theme="light"] .filter-sidebar-btn.active {
+    color: #fff;
+}
+
+.filter-sidebar-btn-wrap {
+    position: relative;
+}
+
+.filter-sidebar-badge-wrap {
+    margin-bottom: 4px;
+}
+
+.filter-sidebar-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: var(--accent-primary);
+    color: var(--bg-body);
+    border-radius: 10px;
+}
+
+.filter-sidebar-expand-with-badge {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-sidebar-expand-with-badge .filter-sidebar-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 14px;
+    height: 14px;
+    font-size: 0.6rem;
+}
+
+/* Collapsed expand - professional filter icon button */
+.filter-sidebar-expand-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-body);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.filter-sidebar-expand-btn:hover {
+    border-color: var(--accent-primary);
+    background: rgba(124, 77, 255, 0.12);
+    color: var(--accent-primary);
+}
+
+.filter-sidebar-expand-btn:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.filter-sidebar-expand-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    background: var(--accent-primary);
+    color: var(--bg-body);
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Actions group: Clear All, Reset, Collapse - ~10px between Clear All and Reset/Collapse */
+.filter-sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.filter-sidebar-actions .filter-sidebar-refresh-btn:not(:first-child) {
+    margin-top: 10px;
+}
+
+/* Small refresh button - reset all filters */
+.filter-sidebar-refresh-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-sidebar-refresh-btn:hover {
+    color: var(--text-main);
+    background: rgba(124, 77, 255, 0.06);
+    border-color: var(--accent-primary);
+}
+
+.filter-sidebar-clear {
+    font-size: 0.9rem;
+}
+
+.filter-sidebar-collapse-btn {
+    font-size: 0.75rem;
+    padding: 4px;
+    border-radius: 6px;
+    opacity: 0.85;
+}
+
+.filter-sidebar-collapse-btn:hover {
+    opacity: 1;
+}
+
+.filter-sidebar-collapsed {
+    justify-content: space-between;
+    padding: 8px 0 8px 4px;
+    flex: 1;
+    position: relative;
+}
+
+/* Banner wrap: centers the floating expand button vertically */
+.filter-sidebar-banner-wrap {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+.filter-sidebar-banner-wrap > * {
+    pointer-events: auto;
+}
+
+/* Floating banner button - sleek tab, centered, floating appearance */
+.filter-sidebar-banner-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 52px;
+    min-width: 32px;
+    min-height: 52px;
+    padding: 0;
+    border: 1.5px solid var(--border-color);
+    border-radius: 0 10px 10px 0;
+    background: var(--bg-card);
+    color: var(--accent-primary);
+    cursor: pointer;
+    position: relative;
+    margin-left: 4px;
+    box-shadow: 3px 0 12px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(124, 77, 255, 0.06);
+    transition: all 0.25s ease;
+}
+
+.filter-sidebar-banner-btn::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--accent-primary) 0%, rgba(124, 77, 255, 0.4) 100%);
+    border-radius: 2px 0 0 2px;
+    opacity: 0.8;
+}
+
+.filter-sidebar-banner-btn:hover {
+    background: linear-gradient(90deg, rgba(124, 77, 255, 0.08) 0%, var(--bg-card) 100%);
+    border-color: var(--accent-primary);
+    box-shadow: 4px 0 16px rgba(124, 77, 255, 0.18), 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateX(2px);
+}
+
+.filter-sidebar-banner-btn:hover::before {
+    opacity: 1;
+}
+
+.filter-sidebar-banner-btn svg {
+    width: 15px;
+    height: 15px;
+    opacity: 0.95;
+    color: var(--accent-primary);
+}
+
+.filter-sidebar-banner-btn:hover svg {
+    opacity: 1;
+}
+
+.filter-sidebar-banner-btn .filter-sidebar-expand-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 12px;
+    height: 12px;
+    font-size: 0.5rem;
+}
+
+.filter-sidebar-banner-btn:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Collapsed: shrink refresh button */
+.filter-sidebar-refresh-btn-collapsed {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    padding: 0;
+    border-radius: 6px;
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+.filter-sidebar-refresh-btn-collapsed svg {
+    width: 12px;
+    height: 12px;
+}

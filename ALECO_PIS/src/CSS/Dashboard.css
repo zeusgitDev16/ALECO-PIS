@@ -57,7 +57,8 @@
 
 .admin-content {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
   min-height: 0;
 }

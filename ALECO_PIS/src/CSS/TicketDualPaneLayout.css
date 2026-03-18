@@ -1,0 +1,165 @@
+/* ==========================================================================
+   TICKET DUAL-PANE LAYOUT
+   ========================================================================== */
+
+.tickets-dual-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    gap: 0;
+}
+
+.tickets-top-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.tickets-top-bar .layout-picker-container {
+    margin-bottom: 0;
+}
+
+.tickets-top-bar .ticket-select-all-bar {
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 180px;
+    /* Match layout picker vertical padding for equal height */
+    padding: 10px 12px;
+}
+
+.tickets-panes-row {
+    display: flex;
+    flex: 1 1 0;
+    min-height: 0;
+    gap: 0;
+    align-items: stretch;
+}
+
+.tickets-left-pane {
+    width: 56px;
+    flex-shrink: 0;
+    transition: width 0.2s ease;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+}
+
+.tickets-left-pane.collapsed {
+    width: 40px;
+}
+
+
+.tickets-right-pane {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    gap: 0;
+    align-self: stretch;
+}
+
+.tickets-right-pane .main-content-card {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    /* Match filter: 8px top (filter has 8px; card border adds 1px, so content at 9px like filter) */
+    padding: 8px 8px 12px 8px !important;
+}
+
+/* Align first list content with filter icons - 0 top so card padding (8px) matches filter offset */
+.tickets-right-pane .main-content-card .urgent-tickets-wrapper {
+    padding: 0 15px 15px 15px;
+}
+
+.tickets-right-pane .main-content-card > .separator:first-child {
+    margin-top: 8px;
+}
+
+.tickets-right-pane .main-content-card .urgent-tickets-wrapper + .separator {
+    margin-top: 8px;
+}
+
+/* =========================================
+   RESPONSIVE - 768px to 1023px (Tablet landscape)
+   ========================================= */
+@media (max-width: 1023px) {
+    .tickets-left-pane {
+        width: 48px;
+    }
+
+    .tickets-left-pane.collapsed {
+        width: 36px;
+    }
+
+    .tickets-top-bar {
+        padding: 6px 10px;
+    }
+
+    .tickets-right-pane .main-content-card {
+        padding: 8px 6px 12px 6px !important;
+    }
+}
+
+/* =========================================
+   RESPONSIVE - 600px to 767px (Tablet portrait)
+   Drawer mode - left pane hidden, FAB shown
+   ========================================= */
+@media (max-width: 767px) {
+    .tickets-left-pane {
+        display: none;
+    }
+
+    .tickets-panes-row {
+        gap: 0;
+    }
+
+    .tickets-right-pane .main-content-card {
+        padding: 8px 6px 12px 6px !important;
+    }
+}
+
+/* =========================================
+   RESPONSIVE - 480px to 599px (Mobile)
+   ========================================= */
+@media (max-width: 599px) {
+    .tickets-top-bar {
+        padding: 6px 8px;
+    }
+}
+
+/* =========================================
+   RESPONSIVE - 320px to 479px (Small mobile)
+   ========================================= */
+@media (max-width: 479px) {
+    .tickets-top-bar {
+        padding: 6px 8px;
+    }
+
+    .tickets-right-pane .main-content-card {
+        padding: 6px 4px 10px 4px !important;
+    }
+}
+
+/* =========================================
+   RESPONSIVE - Fallback < 320px
+   ========================================= */
+@media (max-width: 319px) {
+    .tickets-top-bar {
+        padding: 4px 6px;
+    }
+}

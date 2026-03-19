@@ -15,7 +15,6 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -174,7 +173,6 @@
     text-transform: uppercase;
     letter-spacing: 0.3px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(10px);
     width: fit-content;
 }
 
@@ -239,7 +237,6 @@
     background: rgba(255, 255, 255, 0.2);
     padding: 5px 10px;
     border-radius: 6px;
-    backdrop-filter: blur(10px);
     white-space: nowrap;
 }
 
@@ -320,6 +317,10 @@
     height: 2px;
     background: var(--border-color);
     opacity: 0.5;
+}
+
+.stepper-label-short {
+    display: none;
 }
 
 /* ============================================================================
@@ -707,115 +708,216 @@
 }
 
 /* ============================================================================
-   RESPONSIVE DESIGN - 320px to Desktop
+   RESPONSIVE DESIGN - Tablet and Mobile Only (Desktop 1024px+ unchanged)
    ============================================================================ */
 
-/* Tablet (768px - 1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
+/* Tablet and below: Simplified transforms, crisp text, scrollable */
+@media (max-width: 1023px) {
     .ticket-modal-content {
-        max-width: 650px;
+        animation: slideUpCompact 0.25s ease-out;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        overflow-y: auto;
     }
 
-    .detail-header {
-        padding: 28px 24px 20px 24px;
+    .ticket-modal-content::-webkit-scrollbar {
+        width: 6px;
     }
 
-    .detail-title {
-        font-size: 1.6rem;
+    @keyframes slideUpCompact {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    .detail-grid {
-        padding: 24px;
-        gap: 16px;
+    .ticket-modal-close-btn:hover {
+        transform: none;
     }
 
-    .detail-content-section {
-        padding: 0 24px 24px 24px;
+    .copyable-box:hover {
+        transform: none;
+    }
+
+    .evidence-img:hover {
+        transform: none;
+    }
+
+    .btn-action:active {
+        transform: none;
+    }
+
+    .copy-indicator.success {
+        animation: successPulseOpacity 0.3s ease;
+    }
+
+    @keyframes successPulseOpacity {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.85;
+        }
     }
 }
 
-/* Mobile Landscape (600px - 767px) */
-@media (min-width: 600px) and (max-width: 767px) {
+/* Tablet (768px - 1023px) - Compact, fixed height, scrollable */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .ticket-modal-content {
+        max-width: 600px;
+        height: calc(100vh - 32px);
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+    }
+
     .ticket-modal-overlay {
         padding: 16px;
     }
 
-    .ticket-modal-content {
-        max-width: 100%;
-        border-radius: 12px;
+    .ticket-detail-flip-container {
+        padding: 16px;
+        padding-top: 40px;
     }
 
     .detail-header {
-        padding: 24px 20px 18px 20px;
-        flex-direction: column;
-        gap: 16px;
+        padding: 20px 48px 14px 20px;
+    }
+
+    .detail-header::before {
+        width: 200px;
+        height: 200px;
     }
 
     .detail-title {
-        font-size: 1.4rem;
+        font-size: 1.1rem;
     }
 
-    .header-right {
-        align-items: flex-start;
-        width: 100%;
+    .status-tag {
+        padding: 3px 8px;
+        font-size: 0.6rem;
+    }
+
+    .reported-label {
+        font-size: 0.55rem;
+    }
+
+    .reported-date {
+        font-size: 0.65rem;
+        padding: 4px 8px;
+    }
+
+    .resolution-stepper {
+        padding: 10px 16px;
+    }
+
+    .stepper-step {
+        padding: 3px 8px;
+        font-size: 0.6rem;
+    }
+
+    .stepper-num {
+        width: 16px;
+        height: 16px;
+        font-size: 0.55rem;
+    }
+
+    .stepper-connector {
+        width: 12px;
     }
 
     .detail-grid {
-        grid-template-columns: 1fr;
-        padding: 20px;
-        gap: 16px;
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .detail-group label {
+        font-size: 0.6rem;
+    }
+
+    .detail-value {
+        padding: 8px 10px;
+        font-size: 0.8rem;
     }
 
     .detail-content-section {
-        padding: 0 20px 20px 20px;
-        gap: 20px;
+        padding: 0 16px 16px 16px;
+        gap: 14px;
+    }
+
+    .concern-box {
+        padding: 12px;
+        min-height: 70px;
+        font-size: 0.78rem;
     }
 
     .action-footer {
-        padding: 10px 20px;
+        padding: 8px 16px;
         gap: 6px;
-        grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
     }
 
     .btn-action {
-        padding: 6px 12px;
-        font-size: 0.65rem;
+        padding: 5px 8px;
+        font-size: 0.55rem;
+        min-height: 28px;
+    }
+
+    .group-child-item {
+        padding: 8px 10px;
+        font-size: 0.82rem;
+        gap: 8px;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.7rem;
+    }
+
+    .group-children-list {
+        max-height: 150px;
     }
 }
 
-/* Mobile Portrait (320px - 599px) */
-@media (min-width: 320px) and (max-width: 599px) {
+/* Large Mobile (600px - 767px) - Fixed height, scrollable */
+@media (min-width: 600px) and (max-width: 767px) {
     .ticket-modal-overlay {
         padding: 12px;
     }
 
     .ticket-modal-content {
         max-width: 100%;
-        max-height: 95vh;
+        height: calc(100vh - 24px);
+        max-height: calc(100vh - 24px);
+        overflow-y: auto;
         border-radius: 12px;
     }
 
-    .ticket-modal-close-btn {
-        width: 36px;
-        height: 36px;
-        top: 12px;
-        right: 12px;
-        font-size: 20px;
+    .ticket-detail-flip-container {
+        padding: 12px;
+        padding-top: 40px;
     }
 
     .detail-header {
-        padding: 50px 16px 16px 16px;
+        padding: 40px 14px 12px 14px;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
+    }
+
+    .detail-header::before {
+        width: 150px;
+        height: 150px;
     }
 
     .detail-title {
-        font-size: 1.3rem;
+        font-size: 1.1rem;
     }
 
     .status-tag {
-        padding: 5px 12px;
-        font-size: 0.7rem;
+        padding: 3px 8px;
+        font-size: 0.6rem;
     }
 
     .header-right {
@@ -824,79 +926,561 @@
     }
 
     .reported-label {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
     }
 
     .reported-date {
-        font-size: 0.75rem;
-        padding: 5px 10px;
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+
+    .resolution-stepper {
+        padding: 8px 12px;
+    }
+
+    .stepper-step {
+        padding: 3px 6px;
+        font-size: 0.6rem;
+    }
+
+    .stepper-num {
+        width: 15px;
+        height: 15px;
+        font-size: 0.55rem;
+    }
+
+    .stepper-connector {
+        width: 10px;
     }
 
     .detail-grid {
         grid-template-columns: 1fr;
-        padding: 16px;
-        gap: 14px;
+        padding: 14px;
+        gap: 12px;
     }
 
     .detail-group label {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
     }
 
     .detail-value {
-        font-size: 0.85rem;
-        padding: 10px 12px;
+        padding: 8px 10px;
+        font-size: 0.8rem;
     }
 
     .detail-content-section {
-        padding: 0 16px 16px 16px;
-        gap: 16px;
+        padding: 0 14px 14px 14px;
+        gap: 14px;
     }
 
     .concern-box {
-        font-size: 0.85rem;
-        padding: 16px;
-        min-height: 80px;
+        padding: 10px 12px;
+        min-height: 65px;
+        font-size: 0.78rem;
     }
 
     .action-footer {
-        padding: 10px 16px;
-        gap: 5px;
+        padding: 8px 14px;
+        gap: 6px;
         grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
     }
 
     .btn-action {
-        padding: 4px 5px;
-        font-size: 0.48rem;
-        min-height: 20px;
+        padding: 6px 8px;
+        font-size: 0.58rem;
+        min-height: 32px;
     }
 
-    .copy-indicator {
-        font-size: 0.65rem;
-        padding: 3px 8px;
+    .group-child-item {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        gap: 8px;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.68rem;
+    }
+
+    .group-children-list {
+        max-height: 140px;
     }
 }
 
-/* Extra Small (< 320px) - Fallback */
-@media (max-width: 319px) {
+/* Medium Mobile (480px - 599px) - Fixed height, scrollable */
+@media (min-width: 480px) and (max-width: 599px) {
+    .ticket-modal-overlay {
+        padding: 10px;
+    }
+
+    .ticket-modal-content {
+        height: calc(100vh - 20px);
+        max-height: calc(100vh - 20px);
+        overflow-y: auto;
+    }
+
+    .ticket-detail-flip-container {
+        padding: 10px;
+        padding-top: 38px;
+    }
+
+    .detail-header {
+        padding: 38px 12px 10px 12px;
+        gap: 8px;
+    }
+
+    .detail-header::before {
+        width: 120px;
+        height: 120px;
+    }
+
+    .detail-title {
+        font-size: 1rem;
+    }
+
+    .status-tag {
+        padding: 2px 6px;
+        font-size: 0.58rem;
+    }
+
+    .reported-label {
+        font-size: 0.55rem;
+    }
+
+    .reported-date {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+    }
+
+    .resolution-stepper {
+        padding: 6px 10px;
+    }
+
+    .stepper-step {
+        padding: 2px 5px;
+        font-size: 0.58rem;
+    }
+
+    .stepper-num {
+        width: 14px;
+        height: 14px;
+        font-size: 0.5rem;
+    }
+
+    .stepper-connector {
+        width: 8px;
+    }
+
+    .detail-grid {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .detail-group label {
+        font-size: 0.55rem;
+    }
+
+    .detail-value {
+        padding: 6px 8px;
+        font-size: 0.78rem;
+    }
+
+    .detail-content-section {
+        padding: 0 12px 12px 12px;
+        gap: 12px;
+    }
+
+    .concern-box {
+        padding: 10px;
+        min-height: 60px;
+        font-size: 0.75rem;
+    }
+
+    .action-footer {
+        padding: 6px 12px;
+        gap: 5px;
+        grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    }
+
+    .btn-action {
+        padding: 5px 6px;
+        font-size: 0.52rem;
+        min-height: 32px;
+    }
+
+    .group-child-item {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+        gap: 6px;
+    }
+
+    .group-child-item .child-id {
+        font-size: 0.78rem;
+    }
+
+    .group-child-item .child-location {
+        font-size: 0.72rem;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.65rem;
+    }
+
+    .group-children-list {
+        max-height: 120px;
+    }
+}
+
+/* Mobile Portrait base (320px - 599px) */
+@media (min-width: 320px) and (max-width: 599px) {
+    .ticket-modal-overlay {
+        padding: 10px;
+    }
+
+    .ticket-modal-content {
+        max-width: 100%;
+        border-radius: 12px;
+    }
+
+    .ticket-modal-close-btn {
+        width: 34px;
+        height: 34px;
+        top: 10px;
+        right: 10px;
+        font-size: 18px;
+    }
+
+    .detail-header {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .header-right {
+        align-items: flex-start;
+        width: 100%;
+    }
+}
+
+/* Small Mobile (320px - 479px) - Fixed height, scrollable */
+@media (min-width: 320px) and (max-width: 479px) {
     .ticket-modal-overlay {
         padding: 8px;
     }
 
+    .ticket-modal-content {
+        height: calc(100vh - 16px);
+        max-height: calc(100vh - 16px);
+        overflow-y: auto;
+        border-radius: 10px;
+    }
+
+    .ticket-detail-flip-container {
+        padding: 8px;
+        padding-top: 36px;
+    }
+
     .detail-header {
-        padding: 45px 12px 12px 12px;
+        padding: 34px 10px 8px 10px;
+        gap: 6px;
+    }
+
+    .detail-header::before {
+        width: 100px;
+        height: 100px;
     }
 
     .detail-title {
-        font-size: 1.1rem;
+        font-size: 0.95rem;
     }
 
-    .detail-grid,
+    .status-tag {
+        padding: 2px 6px;
+        font-size: 0.55rem;
+    }
+
+    .reported-label {
+        font-size: 0.5rem;
+    }
+
+    .reported-date {
+        font-size: 0.6rem;
+        padding: 3px 6px;
+    }
+
+    .resolution-stepper {
+        padding: 5px 8px;
+    }
+
+    .stepper-step {
+        padding: 2px 4px;
+        font-size: 0.55rem;
+    }
+
+    .stepper-num {
+        width: 13px;
+        height: 13px;
+        font-size: 0.5rem;
+    }
+
+    .stepper-connector {
+        width: 6px;
+    }
+
+    .detail-grid {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .detail-group label {
+        font-size: 0.5rem;
+    }
+
+    .detail-value {
+        padding: 5px 7px;
+        font-size: 0.72rem;
+    }
+
     .detail-content-section {
-        padding: 12px;
+        padding: 0 10px 10px 10px;
+        gap: 10px;
+    }
+
+    .concern-box {
+        padding: 8px 10px;
+        min-height: 55px;
+        font-size: 0.72rem;
     }
 
     .action-footer {
-        padding: 12px;
+        padding: 6px 10px;
+        gap: 4px;
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .btn-action {
+        padding: 5px 4px;
+        font-size: 0.5rem;
+        min-height: 34px;
+    }
+
+    .copy-indicator {
+        font-size: 0.58rem;
+        padding: 2px 5px;
+    }
+
+    .group-child-item {
+        padding: 5px 6px;
+        font-size: 0.7rem;
+        gap: 4px 6px;
+    }
+
+    .group-child-item .child-id {
+        font-size: 0.72rem;
+    }
+
+    .group-child-item .child-category {
+        font-size: 0.68rem;
+    }
+
+    .group-child-item .child-location {
+        font-size: 0.65rem;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.6rem;
+    }
+
+    .group-children-list {
+        max-height: 100px;
+    }
+}
+
+/* Extra Small (320px and below) - Fixed height, scrollable, crisp */
+@media (max-width: 320px) {
+    .ticket-modal-overlay {
+        padding: 4px;
+    }
+
+    .ticket-modal-content {
+        height: calc(100vh - 8px);
+        max-height: calc(100vh - 8px);
+        overflow-y: auto;
+        border-radius: 8px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        animation: slideUpCompact 0.25s ease-out;
+    }
+
+    .ticket-modal-content::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    @keyframes slideUpCompact {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ticket-modal-close-btn {
+        width: 32px;
+        height: 32px;
+        top: 6px;
+        right: 6px;
+        font-size: 16px;
+    }
+
+    .ticket-modal-close-btn:hover {
+        transform: none;
+    }
+
+    .detail-header {
+        padding: 28px 8px 8px 8px;
+        gap: 4px;
+    }
+
+    .detail-header::before {
+        display: none;
+    }
+
+    .header-left {
+        gap: 3px;
+    }
+
+    .detail-title {
+        font-size: 11px;
+        line-height: 1.2;
+        letter-spacing: -0.2px;
+    }
+
+    .status-tag {
+        padding: 2px 6px;
+        font-size: 9px;
+    }
+
+    .reported-label {
+        font-size: 8px;
+    }
+
+    .reported-date {
+        font-size: 9px;
+        padding: 3px 6px;
+    }
+
+    /* Stepper: abbreviated labels, uniform layout, no wrap */
+    .resolution-stepper {
+        padding: 4px 6px;
+        gap: 2px;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+    }
+
+    .stepper-step {
+        padding: 2px 4px;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    .stepper-label-full {
+        display: none;
+    }
+
+    .stepper-label-short {
+        display: inline;
+        font-size: 9px;
+        font-weight: 700;
+    }
+
+    .stepper-num {
+        width: 12px;
+        height: 12px;
+        font-size: 9px;
+        flex-shrink: 0;
+    }
+
+    .stepper-connector {
+        width: 4px;
+        flex-shrink: 0;
+        align-self: center;
+    }
+
+    .detail-divider {
+        margin: 3px 0;
+    }
+
+    .detail-grid {
+        padding: 6px 8px;
+        gap: 6px;
+    }
+
+    .detail-group {
+        gap: 2px;
+    }
+
+    .detail-group label {
+        font-size: 8px;
+    }
+
+    .detail-value {
+        padding: 4px 6px;
+        font-size: 10px;
+    }
+
+    .detail-content-section {
+        padding: 0 8px 8px 8px;
+        gap: 6px;
+    }
+
+    .concern-box {
+        padding: 6px 8px;
+        min-height: 40px;
+        font-size: 10px;
+    }
+
+    .action-footer {
+        padding: 4px 8px;
+        gap: 4px;
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .btn-action {
+        min-height: 36px;
+        font-size: 10px;
+        padding: 6px 4px;
+    }
+
+    .copy-indicator {
+        font-size: 9px;
+        padding: 2px 4px;
+    }
+
+    .group-child-item {
+        padding: 4px 6px;
+        font-size: 0.65rem;
+        gap: 3px 4px;
+    }
+
+    .group-child-item .child-id {
+        font-size: 0.68rem;
+    }
+
+    .group-child-item .child-category,
+    .group-child-item .child-location {
+        font-size: 0.6rem;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.55rem;
+    }
+
+    .group-children-list {
+        max-height: 80px;
     }
 }
 

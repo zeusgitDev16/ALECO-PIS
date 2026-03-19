@@ -10,23 +10,70 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 3000; /* Extremely high to sit ABOVE the TicketDetailPane */
+    z-index: 3000;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 20px;
 }
 
+/* ConfirmModal overlay - must sit above TicketDetailPane (100000) and other modals */
+.confirm-modal-overlay {
+    z-index: 100001;
+}
+
 .dispatch-modal-content {
     background: var(--bg-card);
     width: 92%;
-    max-width: 420px; /* Highly compact, action-oriented width */
+    max-width: 420px;
+    max-height: 65vh;
     border-radius: 16px;
     position: relative;
-    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 24px 28px 24px 28px;
     box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.08);
     animation: dispatchScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     text-align: left;
+}
+
+.dispatch-modal-content .dispatch-modal-header-container {
+    flex-shrink: 0;
+}
+
+.dispatch-modal-content form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.dispatch-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.dispatch-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dispatch-modal-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.dispatch-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.dispatch-modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .dispatch-modal-close-btn {
@@ -54,8 +101,8 @@
 }
 
 .dispatch-modal-header-container {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -80,6 +127,10 @@
 /* --- Micro-Typography Form Fields --- */
 .dispatch-form-group {
     margin-bottom: 16px;
+}
+
+.dispatch-modal-body .dispatch-form-group {
+    margin-bottom: 12px;
 }
 
 .dispatch-form-group label {
@@ -117,7 +168,8 @@
 }
 
 .dispatch-form-textarea {
-    height: 60px;
+    height: 48px;
+    min-height: 48px;
     resize: none;
 }
 
@@ -147,8 +199,8 @@ select.dispatch-form-input {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 12px;
-    padding: 12px;
-    margin-top: 20px;
+    padding: 10px;
+    margin-top: 12px;
 }
 
 .toggle-label {
@@ -236,13 +288,13 @@ select.dispatch-form-input {
 
 /* --- Notify Consumer: per-ticket breakdown (group dispatch) --- */
 .notify-consumer-ticket-list {
-    margin: 10px 0 0 0;
+    margin: 8px 0 0 0;
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    max-height: 180px;
+    gap: 4px;
+    max-height: 100px;
     overflow-y: auto;
     overflow-x: hidden;
     width: 100%;
@@ -317,10 +369,11 @@ select.dispatch-form-input {
 
 /* --- Footer Actions --- */
 .dispatch-modal-actions {
+    flex-shrink: 0;
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    margin-top: 24px;
+    margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -362,13 +415,75 @@ select.dispatch-form-input {
 @media (max-width: 500px) {
     .dispatch-modal-content {
         width: 88%;
-        padding: 20px 16px;
+        max-height: 75vh;
+        padding: 16px 16px 20px 16px;
     }
     .dispatch-modal-actions {
         flex-direction: column;
     }
     .dispatch-modal-actions button {
         width: 100%;
+    }
+}
+
+@media (min-width: 321px) and (max-width: 480px) {
+    .dispatch-modal-overlay {
+        padding: 12px;
+    }
+
+    .dispatch-modal-content {
+        padding: 14px 16px 18px;
+        max-height: 88vh;
+    }
+}
+
+@media (max-width: 320px) {
+    .dispatch-modal-overlay {
+        padding: 4px;
+    }
+
+    .dispatch-modal-content {
+        width: 100%;
+        max-width: none;
+        padding: 10px 12px 14px;
+        max-height: 96vh;
+        border-radius: 8px;
+    }
+
+    .dispatch-modal-close-btn {
+        top: 10px;
+        right: 10px;
+        width: 26px;
+        height: 26px;
+    }
+
+    .dispatch-modal-header {
+        font-size: 14px;
+    }
+
+    .dispatch-modal-subtitle {
+        font-size: 9px;
+    }
+
+    .dispatch-form-group label {
+        font-size: 7px;
+    }
+
+    .dispatch-form-input,
+    .dispatch-form-textarea {
+        padding: 6px 8px;
+        font-size: 13px;
+    }
+
+    .dispatch-modal-actions {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .dispatch-modal-actions .btn-action {
+        padding: 8px 12px;
+        min-height: 36px;
+        font-size: 11px;
     }
 }
 
@@ -510,5 +625,63 @@ select.dispatch-form-input {
     .edit-ticket-actions {
         padding-left: 20px;
         padding-right: 20px;
+    }
+}
+
+@media (min-width: 321px) and (max-width: 480px) {
+    .edit-ticket-header {
+        padding: 18px 44px 12px 20px;
+    }
+
+    .edit-ticket-form-body {
+        padding: 14px 20px;
+    }
+
+    .edit-ticket-actions {
+        padding: 12px 20px 18px;
+    }
+}
+
+@media (max-width: 320px) {
+    .edit-ticket-modal {
+        max-width: 100%;
+        max-height: 95vh;
+        padding: 0;
+    }
+
+    .edit-ticket-header {
+        padding: 12px 40px 10px 12px;
+    }
+
+    .edit-ticket-title {
+        font-size: 0.9rem;
+    }
+
+    .edit-ticket-subtitle {
+        font-size: 0.65rem;
+    }
+
+    .edit-ticket-form-body {
+        padding: 10px 12px;
+    }
+
+    .edit-ticket-grid {
+        gap: 8px;
+    }
+
+    .edit-ticket-textarea {
+        min-height: 70px;
+    }
+
+    .edit-ticket-actions {
+        padding: 10px 12px 14px;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .edit-ticket-actions .btn-action {
+        padding: 6px 10px;
+        min-height: 36px;
+        font-size: 11px;
     }
 }

@@ -119,10 +119,6 @@ const AdminTickets = () => {
         }
     };
 
-    const handleUngroup = (mainTicketId) => {
-        setConfirmState({ open: true, type: 'ungroup', payload: mainTicketId });
-    };
-
     const executeUngroup = async (mainTicketId) => {
         try {
             const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/ungroup`), {
@@ -141,11 +137,6 @@ const AdminTickets = () => {
             console.error('Ungroup error:', error);
             toast.error('Failed to ungroup. Please try again.');
         }
-    };
-
-    const handleConfirmUngroup = () => {
-        if (confirmState.payload) executeUngroup(confirmState.payload);
-        setConfirmState({ open: false, type: null, payload: null });
     };
 
     const getActor = () => ({
@@ -475,7 +466,7 @@ const AdminTickets = () => {
                 onUpdateTicket={handleUpdateTicket}
                 onPutHold={handlePutHold}
                 onDispatchGroup={handleDispatchGroup}
-                onUngroup={handleUngroup}
+                onUngroup={executeUngroup}
                 onDeleteTicket={handleDeleteTicket}
                 onRefetch={refetch}
                 crews={availableCrews}
@@ -530,17 +521,6 @@ const AdminTickets = () => {
                 tickets={tickets}
             />
 
-            {confirmState.type === 'ungroup' && (
-                <ConfirmModal
-                    isOpen={confirmState.open}
-                    onClose={() => setConfirmState({ open: false, type: null, payload: null })}
-                    onConfirm={handleConfirmUngroup}
-                    title="Dissolve Group"
-                    message="All tickets will become standalone. Continue?"
-                    confirmLabel="Dissolve"
-                    cancelLabel="Cancel"
-                />
-            )}
             {confirmState.type === 'bulkRestore' && (
                 <ConfirmModal
                     isOpen={confirmState.open}

@@ -21,7 +21,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel
     };
 
     return (
-        <div className="dispatch-modal-overlay" onClick={onClose}>
+        <div className="dispatch-modal-overlay confirm-modal-overlay" onClick={onClose}>
             <div className="dispatch-modal-content confirm-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
                 <button className="dispatch-modal-close-btn" onClick={onClose} aria-label="Close">&times;</button>
 

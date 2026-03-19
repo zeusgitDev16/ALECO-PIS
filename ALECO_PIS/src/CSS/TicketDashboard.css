@@ -9,6 +9,10 @@
     padding-bottom: 40px;
 }
 
+.ticket-grid-virtualized-container {
+    overflow: hidden;
+}
+
 .ticket-grid-wrapper {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -315,33 +319,61 @@
     }
 }
 
-/* Extra small mobile phones */
+/* Ultra-compact mobile: 2 columns, minimal card footprint */
 @media (max-width: 500px) {
     .ticket-grid-wrapper {
-        grid-template-columns: 1fr;
-        gap: 6px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
     }
 
     .ticket-card-container {
-        padding: 8px;
-        min-height: 100px;
+        padding: 4px;
+        min-height: 70px;
+        gap: 3px;
     }
 
     .ticket-id-bold {
-        font-size: 11px;
-    }
-
-    .concern-text-highlight {
-        font-size: 11px;
-    }
-
-    .location-text-full {
         font-size: 9px;
     }
 
+    .ticket-date-label {
+        font-size: 7px;
+    }
+
+    .concern-text-highlight {
+        font-size: 8px;
+        -webkit-line-clamp: 1;
+        line-clamp: 1;
+    }
+
+    .location-scroll-wrapper svg {
+        width: 10px;
+        height: 10px;
+    }
+
+    .location-text-full {
+        font-size: 7px;
+    }
+
     .status-pill-solid {
+        font-size: 5px;
+        padding: 1px 3px;
+    }
+
+    .banner-category-text {
         font-size: 6px;
-        padding: 2px 4px;
+    }
+}
+
+/* Extra-small phones: even more compact */
+@media (max-width: 360px) {
+    .ticket-grid-wrapper {
+        gap: 4px;
+    }
+
+    .ticket-card-container {
+        padding: 3px;
+        min-height: 65px;
     }
 }
 

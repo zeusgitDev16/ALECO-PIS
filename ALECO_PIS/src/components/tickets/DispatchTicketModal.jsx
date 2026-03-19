@@ -81,92 +81,94 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="dispatch-form-group">
-                        <label>Assigned Crew / Unit</label>
-                        <select 
-                            className="dispatch-form-input" 
-                            value={crew} 
-                            onChange={e => setCrew(e.target.value)} 
-                            required
-                            disabled={isLoadingCrews}
-                        >
-                            <option value="">
-                                {isLoadingCrews ? '-- Loading Units... --' : availableCrews.length === 0 ? '-- No available crews --' : '-- Select Field Unit --'}
-                            </option>
-                            
-                            {/* --- CREWS (filtered: Available only, lead Active) --- */}
-                            {availableCrews.map((c) => (
-                                <option key={c.id} value={c.crew_name}>
-                                    {c.crew_name} ({c.lead_lineman_name || 'No Lead'}) - {c.member_count} Members
+                    <div className="dispatch-modal-body">
+                        <div className="dispatch-form-group">
+                            <label>Assigned Crew / Unit</label>
+                            <select 
+                                className="dispatch-form-input" 
+                                value={crew} 
+                                onChange={e => setCrew(e.target.value)} 
+                                required
+                                disabled={isLoadingCrews}
+                            >
+                                <option value="">
+                                    {isLoadingCrews ? '-- Loading Units... --' : availableCrews.length === 0 ? '-- No available crews --' : '-- Select Field Unit --'}
                                 </option>
-                            ))}
-                        </select>
-                    </div>
+                                
+                                {/* --- CREWS (filtered: Available only, lead Active) --- */}
+                                {availableCrews.map((c) => (
+                                    <option key={c.id} value={c.crew_name}>
+                                        {c.crew_name} ({c.lead_lineman_name || 'No Lead'}) - {c.member_count} Members
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div className="dispatch-form-group">
-                        <label>Estimated Time of Arrival (ETA)</label>
-                        <input 
-                            type="text" 
-                            className="dispatch-form-input" 
-                            placeholder="e.g., 45 mins, 1.5 hours..." 
-                            value={eta} 
-                            onChange={e => setEta(e.target.value)} 
-                            required 
-                        />
-                    </div>
+                        <div className="dispatch-form-group">
+                            <label>Estimated Time of Arrival (ETA)</label>
+                            <input 
+                                type="text" 
+                                className="dispatch-form-input" 
+                                placeholder="e.g., 45 mins, 1.5 hours..." 
+                                value={eta} 
+                                onChange={e => setEta(e.target.value)} 
+                                required 
+                            />
+                        </div>
 
-                    <div className="dispatch-form-group">
-                        <label>Dispatch Notes / Operational Context</label>
-                        <textarea 
-                            className="dispatch-form-textarea" 
-                            placeholder="e.g., Bring replacement 50kVA transformer..." 
-                            value={notes} 
-                            onChange={e => setNotes(e.target.value)} 
-                        />
-                    </div>
+                        <div className="dispatch-form-group">
+                            <label>Dispatch Notes / Operational Context</label>
+                            <textarea 
+                                className="dispatch-form-textarea" 
+                                placeholder="e.g., Bring replacement 50kVA transformer..." 
+                                value={notes} 
+                                onChange={e => setNotes(e.target.value)} 
+                            />
+                        </div>
 
-                    {/* Custom UI Toggle Switch for Consumer Notification */}
-                    <div className={`dispatch-form-group toggle-group ${!notifyConsumer ? 'notify-off' : ''}`}>
-                        <label className="toggle-label">
-                            <div className="toggle-text">
-                                <span className="toggle-title">Notify Consumer</span>
-                                <span className="toggle-desc">
-                                    {groupMembers.length > 0 ? (
-                                        <>When ON, consumers with phone numbers will receive SMS when dispatched</>
-                                    ) : (
-                                        <>Send SMS update with ETA to {ticket.phone_number || 'the consumer'}</>
-                                    )}
-                                </span>
-                            </div>
-                            <div className="toggle-switch-wrapper">
-                                <input 
-                                    type="checkbox" 
-                                    className="toggle-checkbox" 
-                                    checked={notifyConsumer} 
-                                    onChange={e => setNotifyConsumer(e.target.checked)} 
-                                />
-                                <div className="toggle-switch"></div>
-                            </div>
-                        </label>
-                        {groupMembers.length > 0 && (
-                            <ul className="notify-consumer-ticket-list">
-                                {groupMembers.map((m) => {
-                                    const hasPhone = !!(m.phone_number && String(m.phone_number).trim());
-                                    return (
-                                        <li key={m.ticket_id} className={`notify-consumer-ticket-item ${hasPhone ? 'has-phone' : 'no-phone'}`}>
-                                            <span className="notify-ticket-id">{m.ticket_id}</span>
-                                            <span className="notify-ticket-status">
-                                                {hasPhone ? (
-                                                    <><span className="status-dot status-ok" /> Will receive SMS</>
-                                                ) : (
-                                                    <><span className="status-dot status-missing" /> No phone number</>
-                                                )}
-                                            </span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        )}
+                        {/* Custom UI Toggle Switch for Consumer Notification */}
+                        <div className={`dispatch-form-group toggle-group ${!notifyConsumer ? 'notify-off' : ''}`}>
+                            <label className="toggle-label">
+                                <div className="toggle-text">
+                                    <span className="toggle-title">Notify Consumer</span>
+                                    <span className="toggle-desc">
+                                        {groupMembers.length > 0 ? (
+                                            <>When ON, consumers with phone numbers will receive SMS when dispatched</>
+                                        ) : (
+                                            <>Send SMS update with ETA to {ticket.phone_number || 'the consumer'}</>
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="toggle-switch-wrapper">
+                                    <input 
+                                        type="checkbox" 
+                                        className="toggle-checkbox" 
+                                        checked={notifyConsumer} 
+                                        onChange={e => setNotifyConsumer(e.target.checked)} 
+                                    />
+                                    <div className="toggle-switch"></div>
+                                </div>
+                            </label>
+                            {groupMembers.length > 0 && (
+                                <ul className="notify-consumer-ticket-list">
+                                    {groupMembers.map((m) => {
+                                        const hasPhone = !!(m.phone_number && String(m.phone_number).trim());
+                                        return (
+                                            <li key={m.ticket_id} className={`notify-consumer-ticket-item ${hasPhone ? 'has-phone' : 'no-phone'}`}>
+                                                <span className="notify-ticket-id">{m.ticket_id}</span>
+                                                <span className="notify-ticket-status">
+                                                    {hasPhone ? (
+                                                        <><span className="status-dot status-ok" /> Will receive SMS</>
+                                                    ) : (
+                                                        <><span className="status-dot status-missing" /> No phone number</>
+                                                    )}
+                                                </span>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </div>
                     </div>
 
                     <div className="dispatch-modal-actions">

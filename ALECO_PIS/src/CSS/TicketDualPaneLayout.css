@@ -12,9 +12,9 @@
 
 .tickets-top-bar {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
     padding: 8px 12px;
     background: var(--bg-card);
     border-radius: 8px;
@@ -25,14 +25,23 @@
 
 .tickets-top-bar .layout-picker-container {
     margin-bottom: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    align-self: stretch;
 }
 
 .tickets-top-bar .ticket-select-all-bar {
     margin-bottom: 0;
-    flex: 1;
-    min-width: 180px;
-    /* Match layout picker vertical padding for equal height */
-    padding: 10px 12px;
+    width: 100%;
+    min-width: 0;
+    /* Very small container - checkbox stays 14px (matches ticket cards) */
+    padding: 3px 8px;
+    min-height: 24px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .tickets-panes-row {
@@ -58,6 +67,10 @@
     min-height: 0;
 }
 
+.tickets-left-pane .filter-sidebar {
+    padding: 8px 6px 8px 6px;
+}
+
 .tickets-left-pane.collapsed {
     width: 40px;
 }
@@ -77,8 +90,10 @@
     flex: 1 1 0;
     min-height: 0;
     overflow-y: auto;
-    /* Match filter: 8px top (filter has 8px; card border adds 1px, so content at 9px like filter) */
-    padding: 8px 8px 12px 8px !important;
+    /* Match filter sidebar: 8px top and bottom for aligned edges */
+    padding: 8px !important;
+    /* Override dashboard-widget margin-top so list aligns with filter sidebar */
+    margin-top: 0 !important;
 }
 
 /* Align first list content with filter icons - 0 top so card padding (8px) matches filter offset */
@@ -112,6 +127,21 @@
 
     .tickets-right-pane .main-content-card {
         padding: 8px 6px 12px 6px !important;
+    }
+}
+
+/* Very small Select All container at all breakpoints */
+@media (max-width: 800px) {
+    .tickets-dual-pane .tickets-top-bar .ticket-select-all-bar {
+        padding: 3px 6px;
+        min-height: 22px;
+    }
+}
+
+@media (max-width: 500px) {
+    .tickets-dual-pane .tickets-top-bar .ticket-select-all-bar {
+        padding: 2px 5px;
+        min-height: 20px;
     }
 }
 

@@ -412,3 +412,125 @@
     background: var(--border-color, rgba(0, 0, 0, 0.15));
     border-radius: 3px;
 }
+
+/* =========================================
+   RESPONSIVE - Tablet and Mobile
+   ========================================= */
+
+@media (max-width: 600px) {
+    .group-modal-overlay {
+        padding: 16px;
+    }
+
+    .group-modal-content {
+        max-width: 100%;
+        max-height: calc(100vh - 32px);
+    }
+
+    .group-modal-header-handle {
+        padding: 16px 44px 12px 16px;
+    }
+
+    .group-modal-body {
+        padding: 12px 16px 16px;
+    }
+}
+
+@media (min-width: 321px) and (max-width: 480px) {
+    .group-modal-overlay {
+        padding: 12px;
+    }
+
+    .group-modal-header-handle {
+        padding: 14px 44px 10px 14px;
+    }
+
+    .group-modal-body {
+        padding: 10px 14px 14px;
+    }
+
+    .group-modal-type-tab {
+        padding: 10px 12px;
+    }
+
+    .group-modal-ticket-list {
+        max-height: 150px;
+    }
+}
+
+@media (max-width: 320px) {
+    .group-modal-overlay {
+        padding: 4px;
+    }
+
+    .group-modal-content {
+        max-height: calc(100vh - 8px);
+        border-radius: 8px;
+    }
+
+    .group-modal-header-handle {
+        padding: 10px 36px 8px 10px;
+    }
+
+    .group-modal-close-btn {
+        width: 26px;
+        height: 26px;
+        top: 10px;
+        right: 10px;
+    }
+
+    .group-modal-title {
+        font-size: 13px;
+    }
+
+    .group-modal-desc {
+        font-size: 9px;
+    }
+
+    .group-modal-type-tabs {
+        grid-template-columns: 1fr;
+    }
+
+    .group-modal-type-tab {
+        padding: 8px 10px;
+    }
+
+    .tab-title {
+        font-size: 12px;
+    }
+
+    .tab-desc {
+        font-size: 9px;
+    }
+
+    .group-modal-ticket-list {
+        max-height: 100px;
+    }
+
+    .group-modal-ticket-row {
+        padding: 6px 8px;
+    }
+
+    .group-modal-ticket-id {
+        font-size: 10px;
+    }
+
+    .group-modal-ticket-meta {
+        font-size: 9px;
+    }
+
+    .group-modal-ticket-location {
+        font-size: 9px;
+    }
+
+    .group-modal-actions {
+        padding-top: 10px;
+        gap: 6px;
+    }
+
+    .group-modal-btn {
+        padding: 6px 12px;
+        min-height: 36px;
+        font-size: 11px;
+    }
+}

@@ -29,6 +29,17 @@ const FILTER_ICONS = {
     search: '🔍'
 };
 
+const FILTER_LABELS = {
+    new: 'New (48h)',
+    urgent: 'Urgent',
+    status: 'Status',
+    group: 'Group',
+    category: 'Category',
+    location: 'Location',
+    date: 'Date range',
+    search: 'Search'
+};
+
 const DEBOUNCE_MS = 400;
 
 const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSelectedIds, isCollapsed = false, onToggleCollapse }) => {
@@ -180,27 +191,37 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                     <span className="filter-sidebar-badge">{activeCount}</span>
                 </div>
             )}
-            <button
-                type="button"
-                className={`filter-sidebar-btn ${filters.isNew ? 'active' : ''}`}
-                onClick={toggleUrgentNew}
-                title="New (48h)"
-                aria-label="Filter: New in last 48 hours"
-            >
-                {FILTER_ICONS.new}
-            </button>
+            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
+                <button
+                    type="button"
+                    className={`filter-sidebar-btn ${filters.isNew ? 'active' : ''}`}
+                    onClick={toggleUrgentNew}
+                    title="New (48h)"
+                    aria-label="Filter: New in last 48 hours"
+                >
+                    {FILTER_ICONS.new}
+                </button>
+                <span className="filter-sidebar-tooltip">
+                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.new}</span>
+                </span>
+            </div>
 
-            <button
-                type="button"
-                className={`filter-sidebar-btn ${filters.isUrgent ? 'active' : ''}`}
-                onClick={toggleUrgent}
-                title="Urgent"
-                aria-label="Filter: Urgent only"
-            >
-                {FILTER_ICONS.urgent}
-            </button>
+            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
+                <button
+                    type="button"
+                    className={`filter-sidebar-btn ${filters.isUrgent ? 'active' : ''}`}
+                    onClick={toggleUrgent}
+                    title="Urgent"
+                    aria-label="Filter: Urgent only"
+                >
+                    {FILTER_ICONS.urgent}
+                </button>
+                <span className="filter-sidebar-tooltip">
+                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.urgent}</span>
+                </span>
+            </div>
 
-            <div className="filter-sidebar-btn-wrap">
+            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
                 <button
                     type="button"
                     className={`filter-sidebar-btn ${hasActiveFilter('status') ? 'active' : ''}`}
@@ -211,6 +232,9 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 >
                     {FILTER_ICONS.status}
                 </button>
+                <span className="filter-sidebar-tooltip">
+                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.status}</span>
+                </span>
             </div>
             <FilterModal isOpen={activeModal === 'status'} onClose={closeModal} title="Status">
                 <label className="filter-modal-label">Status</label>
@@ -233,7 +257,7 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 </select>
             </FilterModal>
 
-            <div className="filter-sidebar-btn-wrap">
+            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
                 <button
                     type="button"
                     className={`filter-sidebar-btn ${hasActiveFilter('group') ? 'active' : ''}`}
@@ -244,6 +268,9 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 >
                     {FILTER_ICONS.group}
                 </button>
+                <span className="filter-sidebar-tooltip">
+                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.group}</span>
+                </span>
             </div>
             <FilterModal isOpen={activeModal === 'group'} onClose={closeModal} title="Group">
                 <label className="filter-modal-label">Group</label>
@@ -262,7 +289,7 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 </select>
             </FilterModal>
 
-            <div className="filter-sidebar-btn-wrap">
+            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
                 <button
                     type="button"
                     className={`filter-sidebar-btn ${hasActiveFilter('category') ? 'active' : ''}`}
@@ -273,6 +300,9 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 >
                     {FILTER_ICONS.category}
                 </button>
+                <span className="filter-sidebar-tooltip">
+                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.category}</span>
+                </span>
             </div>
             <FilterModal isOpen={activeModal === 'category'} onClose={closeModal} title="Category">
                 <label className="filter-modal-label">Category</label>
@@ -287,7 +317,7 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 />
             </FilterModal>
 
-            <div className="filter-sidebar-btn-wrap">
+            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
                 <button
                     type="button"
                     className={`filter-sidebar-btn ${hasActiveFilter('location') ? 'active' : ''}`}
@@ -298,6 +328,9 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 >
                     {FILTER_ICONS.location}
                 </button>
+                <span className="filter-sidebar-tooltip">
+                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.location}</span>
+                </span>
             </div>
             <FilterModal isOpen={activeModal === 'location'} onClose={closeModal} title="Location">
                 <label className="filter-modal-label">District / Municipality</label>
@@ -310,7 +343,7 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 />
             </FilterModal>
 
-            <div className="filter-sidebar-btn-wrap">
+            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
                 <button
                     type="button"
                     className={`filter-sidebar-btn ${hasActiveFilter('date') ? 'active' : ''}`}
@@ -321,6 +354,9 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 >
                     {FILTER_ICONS.date}
                 </button>
+                <span className="filter-sidebar-tooltip">
+                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.date}</span>
+                </span>
             </div>
             <FilterModal isOpen={activeModal === 'date'} onClose={closeModal} title="Date Range">
                 <label className="filter-modal-label">Date</label>
@@ -358,7 +394,7 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 )}
             </FilterModal>
 
-            <div className="filter-sidebar-btn-wrap">
+            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
                 <button
                     type="button"
                     className={`filter-sidebar-btn ${hasActiveFilter('search') ? 'active' : ''}`}
@@ -369,6 +405,9 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                 >
                     {FILTER_ICONS.search}
                 </button>
+                <span className="filter-sidebar-tooltip">
+                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.search}</span>
+                </span>
             </div>
             <FilterModal isOpen={activeModal === 'search'} onClose={closeModal} title="Search">
                 <label className="filter-modal-label">Search</label>

@@ -17,6 +17,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
     const [isGroupDispatchOpen, setIsGroupDispatchOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [isUngroupConfirmOpen, setIsUngroupConfirmOpen] = useState(false);
     const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
     const [isRevertConfirmOpen, setIsRevertConfirmOpen] = useState(false);
     const [groupData, setGroupData] = useState(null);
@@ -107,17 +108,20 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 <div className="resolution-stepper">
                     <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
                         <span className="stepper-num">1</span>
-                        <span className="stepper-label">Dispatch</span>
+                        <span className="stepper-label stepper-label-full">Dispatch</span>
+                        <span className="stepper-label stepper-label-short" aria-hidden="true">Disp</span>
                     </div>
                     <div className="stepper-connector" />
                     <div className={`stepper-step ${ticket.status === 'Ongoing' ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
                         <span className="stepper-num">2</span>
-                        <span className="stepper-label">In Progress</span>
+                        <span className="stepper-label stepper-label-full">In Progress</span>
+                        <span className="stepper-label stepper-label-short" aria-hidden="true">Prog</span>
                     </div>
                     <div className="stepper-connector" />
                     <div className={`stepper-step ${['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'active' : ''}`}>
                         <span className="stepper-num">3</span>
-                        <span className="stepper-label">Resolved</span>
+                        <span className="stepper-label stepper-label-full">Resolved</span>
+                        <span className="stepper-label stepper-label-short" aria-hidden="true">Done</span>
                     </div>
                 </div>
 
@@ -349,7 +353,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                     {(isGroupMaster || isGroupChild) && mainTicketId && onUngroup && (
                         <button
                             className="btn-action btn-ungroup"
-                            onClick={() => onUngroup(mainTicketId)}
+                            onClick={() => setIsUngroupConfirmOpen(true)}
                             title="Ungroup"
                         >
                             Ungroup
@@ -477,6 +481,19 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 title="Delete Ticket"
                 message={`Delete ticket ${ticket.ticket_id}? This cannot be undone.`}
                 confirmLabel="Delete"
+                cancelLabel="Cancel"
+                variant="danger"
+            />
+
+            <ConfirmModal
+                isOpen={isUngroupConfirmOpen}
+                onClose={() => setIsUngroupConfirmOpen(false)}
+                onConfirm={() => {
+                    onUngroup?.(mainTicketId);
+                }}
+                title="Dissolve Group"
+                message="All tickets will become standalone. Continue?"
+                confirmLabel="Dissolve"
                 cancelLabel="Cancel"
                 variant="danger"
             />

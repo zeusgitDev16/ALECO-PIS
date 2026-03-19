@@ -59,6 +59,8 @@
 
 .issue-select {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     padding: 12px 14px;
     border-radius: 8px;
     border: 1px solid var(--border-color, #ccc);
@@ -90,6 +92,21 @@
     background-color: var(--bg-card, #fff);
     color: var(--text-main, #333);
     padding: 8px;
+}
+
+/* --- 320px: Ultra-compact, no overflow --- */
+@media (max-width: 320px) {
+    .issue-dropdown-container {
+        margin-bottom: 10px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .issue-dropdown-container.layout-form .issue-select {
+        padding: 8px 10px;
+        font-size: 12px;
+        border-radius: 6px;
+    }
 }
 
 /* --- STRICT MOBILE SIZING (768px and below) --- */

@@ -6,7 +6,7 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [userData, setUserData] = useState({
-    name: localStorage.getItem('userName') || 'Aezy Millete',
+    name: localStorage.getItem('userName') || 'User',
     email: localStorage.getItem('userEmail') || '',
     role: (localStorage.getItem('userRole') || 'ADMIN').toLowerCase(),
     pic: localStorage.getItem('googleProfilePic') || '',
@@ -49,7 +49,15 @@ const ProfilePage = () => {
             <span className={`role-pill ${userData.role}`}>{userData.role.toUpperCase()}</span>
           </div>
           
-          <button className="edit-profile-btn" onClick={() => setIsEditing(!isEditing)}>
+          <button className="edit-profile-btn" onClick={() => {
+            if (isEditing) {
+              localStorage.setItem('userName', userData.name);
+              localStorage.setItem('userBio', userData.bio);
+              localStorage.setItem('userAddress', userData.address);
+              localStorage.setItem('userPhone', userData.phone);
+            }
+            setIsEditing(!isEditing);
+          }}>
             {isEditing ? <><FaSave /> Save Profile</> : <><FaEdit /> Edit Profile</>}
           </button>
         </div>
@@ -98,7 +106,7 @@ const ProfilePage = () => {
             </div>
             <div className="info-group">
                <label><FaLock /> Security</label>
-               <button className="change-pass-btn">Change Password</button>
+               <button type="button" className="change-pass-btn" onClick={() => alert('To change your password, please log out and use "Forgot Password" on the login page.')}>Change Password</button>
             </div>
           </div>
         </div>

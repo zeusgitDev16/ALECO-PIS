@@ -69,18 +69,9 @@ const AdminTickets = () => {
         fetchCrews();
     }, []);
 
-    // Debug: Log when selectedIds changes
-    useEffect(() => {
-        console.log('🎯 Selected IDs changed:', selectedIds);
-        console.log('🎯 Bulk bar should show:', selectedIds.length > 0);
-    }, [selectedIds]);
-
     const toggleTicketSelection = (id) => {
-        console.log('🔘 Checkbox clicked for ticket:', id);
         setSelectedIds(prev => {
-            const newSelection = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
-            console.log('📋 Selected IDs updated:', newSelection);
-            return newSelection;
+            return prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
         });
     };
 

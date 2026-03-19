@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
+import { USER_ROLES } from '../../constants/userRoles';
 import '../../CSS/AllUsers.css';
 
-const USER_ROLES = {
-  EMPLOYEE: 'employee',
-  ADMIN: 'admin'
-};
-
-const AllUsers = () => {
+const AllUsers = ({ refreshKey = 0 }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -16,7 +12,7 @@ const AllUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/users');
+      const response = await fetch(apiUrl('/api/users'));
       const data = await response.json();
       setUsers(data);
     } catch (error) {
@@ -28,7 +24,7 @@ const AllUsers = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [refreshKey]);
 
   // Filter Logic: Searches through Name and Email in real-time
   const filteredUsers = users.filter((user) => {

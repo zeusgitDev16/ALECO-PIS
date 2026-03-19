@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axiosConfig'; 
+import { USER_ROLES } from '../../constants/userRoles';
 import '../../CSS/InviteNewUsers.css';
-
-const USER_ROLES = {
-  EMPLOYEE: 'employee',
-  ADMIN: 'admin'
-};
 
 const InviteNewUsers = ({ onUserInvited }) => {
   const [email, setEmail] = useState('');
@@ -64,13 +60,12 @@ const InviteNewUsers = ({ onUserInvited }) => {
         if (response.data.action === 'role_updated') {
           alert(`Success! ${email} has been updated to ${role}.`);
           handleClear(); // Clear form, do NOT show the 12-digit code screen
+          if (onUserInvited) onUserInvited();
         } else {
           // Standard logic for 'new' or 'pending' users
           setInvitationCode(code);
           
-          if (onUserInvited) {
-            onUserInvited({ ...newUser, id: Date.now(), status: 'Pending' });
-          }
+          if (onUserInvited) onUserInvited();
         }
       }
     } catch (error) {

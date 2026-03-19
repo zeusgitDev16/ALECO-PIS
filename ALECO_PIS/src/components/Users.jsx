@@ -4,21 +4,11 @@ import InviteNewUsers from './containers/InviteNewUsers';
 import AllUsers from './containers/AllUsers';
 import '../CSS/AdminPageLayout.css';
 
-// Define roles globally to avoid "magic strings"
-const USER_ROLES = {
-  EMPLOYEE: 'employee',
-  ADMIN: 'admin'
-};
-
 const AdminUsers = () => {
-  // Mock Database of Users
-  const [usersList, setUsersList] = useState([
-    { id: 1, email: 'admin@aleco.com', role: USER_ROLES.ADMIN, code: 'Used', status: 'Active' },
-    { id: 2, email: 'staff@aleco.com', role: USER_ROLES.EMPLOYEE, code: 'Used', status: 'Active' }
-  ]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleUserInvited = (newUser) => {
-    setUsersList([newUser, ...usersList]);
+  const handleUserInvited = () => {
+    setRefreshKey((k) => k + 1);
   };
 
   return (
@@ -38,7 +28,7 @@ const AdminUsers = () => {
           <InviteNewUsers onUserInvited={handleUserInvited} />
 
           {/* Content Area */}
-          <AllUsers users={usersList} />
+          <AllUsers refreshKey={refreshKey} />
         </div>
       </div>
     </AdminLayout>

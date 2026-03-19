@@ -71,6 +71,7 @@ const Login = () => {
     };
 
     // HANDLER: The "Gatekeeper" for Google Auth
+    // Always try google-login first; only fall back to setup when user is not found (401)
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
             const decoded = jwtDecode(credentialResponse.credential);
@@ -78,28 +79,12 @@ const Login = () => {
             const profilePicUrl = decoded.picture;
             const userName = decoded.name;
 
-            if (isFirstTimeSetup) {
-                if (!inviteCode || inviteCode.length !== 12) {
-                    alert("Please enter your 12-digit invite code first.");
-                    return;
-                }
-                const response = await API.post('/api/setup-google-account', { 
-                    email: userEmail,
-                    inviteCode: inviteCode,
-                    profilePic: profilePicUrl,
-                    name: userName
-                });
-                if (response.status === 200) {
-                    alert("Google account successfully linked!");
-                    setIsFirstTimeSetup(false);
-                }
-            } else {
+            try {
                 const response = await API.post('/api/google-login', { 
                     email: userEmail,
                     profilePic: profilePicUrl, 
                     name: userName
                 });
-
                 if (response.status === 200) {
                     localStorage.setItem('userRole', response.data.user.role);
                     localStorage.setItem('googleProfilePic', profilePicUrl); 
@@ -108,6 +93,32 @@ const Login = () => {
                     localStorage.setItem('tokenVersion', response.data.user.tokenVersion);
                     setShowModal(false);
                     navigate('/admin-dashboard');
+                    return;
+                }
+            } catch (loginError) {
+                if (loginError.response?.status === 401) {
+                    if (isFirstTimeSetup && inviteCode?.trim().length === 12) {
+                        try {
+                            const setupResponse = await API.post('/api/setup-google-account', { 
+                                email: userEmail,
+                                inviteCode: inviteCode.trim(),
+                                profilePic: profilePicUrl,
+                                name: userName
+                            });
+                            if (setupResponse.status === 200) {
+                                alert("Google account successfully linked!");
+                                setIsFirstTimeSetup(false);
+                            }
+                        } catch (setupError) {
+                            alert(setupError.response?.data?.error || "Setup failed.");
+                        }
+                    } else if (isFirstTimeSetup) {
+                        alert("Please enter your 12-digit invite code first.");
+                    } else {
+                        alert(loginError.response?.data?.error || "Account not found. Please use 'First Time Setup' with your 12-digit code.");
+                    }
+                } else {
+                    throw loginError;
                 }
             }
         } catch (error) {

@@ -1,19 +1,33 @@
 import React, { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { toast } from 'react-toastify';
 import './CSS/ReportaProblem.css';
 import { apiUrl } from './utils/api';
+import { formatPhoneDisplay } from './utils/phoneUtils';
 import { formatToPhilippineTime } from './utils/dateUtils';
 import { ALECO_SCOPE } from '../alecoScope';
 import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsLocationMatcher';
 
 // Importing the Lego Bricks
 import TextFieldProblem from './components/textfields/TextFieldProblem';
+import PhoneInputProblem from './components/textfields/PhoneInputProblem';
 import ExplainTheProblem from './components/textfields/ExplainTheProblem';
 import UploadTheProblem from './components/buckets/UploadTheProblem';
 import TicketPopUp from './components/containers/TicketPopUp'; 
 import IssueCategoryDropdown from './components/dropdowns/IssueCategoryDropdown';
 import LocationPreviewMap from './components/LocationPreviewMap';
+import AlecoScopeDropdown from './components/dropdowns/AlecoScopeDropdown';
+import ConfirmModal from './components/tickets/ConfirmModal';
+import HotlinesDisplay from './components/contact/HotlinesDisplay';
+
+const TOTAL_STEPS = 6;
 
 const ReportaProblem = () => {
+    // --- Wizard State ---
+    const [currentStep, setCurrentStep] = useState(1);
+    const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+    const [pendingDuplicateData, setPendingDuplicateData] = useState(null);
+
     // --- Phase State Management ---
     const [isFlipped, setIsFlipped] = useState(false);
     const [showModal, setShowModal] = useState(false);
@@ -61,50 +75,48 @@ const ReportaProblem = () => {
     });
 }, []);
 
-// ❌ REMOVED: handleLocationUpdate callback (no longer needed)
+    const canProceed = useCallback((step) => {
+        switch (step) {
+            case 1: return !!formData.category;
+            case 2: return !!formData.concern?.trim();
+            case 3: return true;
+            case 4: return !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim();
+            case 5: return !!formData.address?.trim() && !!formData.municipality;
+            case 6: return !!formData.category && !!formData.concern?.trim() && !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim() && !!formData.address?.trim() && !!formData.municipality;
+            default: return false;
+        }
+    }, [formData]);
+
+    const getStepState = (step) => {
+        if (step < currentStep) return 'done';
+        if (step === currentStep) return 'active';
+        return 'pending';
+    };
 
     // --- ENHANCED: Find My Location Handler ---
     const handleFindMyLocation = () => {
-        console.log('🚀 [STEP 1] Find My Location button clicked');
-        
         if (!navigator.geolocation) {
             console.error('❌ [STEP 1 FAILED] Browser does not support geolocation');
             setLocationError('Your browser does not support location services.');
             return;
         }
 
-        console.log('✅ [STEP 1 PASSED] Geolocation API available');
         setIsLocating(true);
         setLocationError('');
 
-        console.log('📡 [STEP 2] Requesting GPS coordinates...');
-        
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude, accuracy } = position.coords;
-                
-                console.log('✅ [STEP 2 PASSED] GPS ACQUIRED:', { latitude, longitude, accuracy });
 
                 try {
-                    console.log('🌐 [STEP 3] Calling Google Geocoding API...');
-                    console.log('   API Key exists:', !!import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
-                    
                     const response = await fetch(
                         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
                     );
                     const data = await response.json();
 
-                    console.log('📦 [STEP 3] Google API Response Status:', data.status);
-                    console.log('📦 [STEP 3] Full Response:', data);
-
                     if (data.status === 'OK' && data.results.length > 0) {
-                        console.log('✅ [STEP 3 PASSED] Google returned results');
-                        
                         const result = data.results[0];
                         const components = result.address_components;
-
-                        console.log('🔍 [STEP 4] Parsing address components...');
-                        console.log('   Total components:', components.length);
 
                         // Extract location components
                         let street = '';
@@ -112,9 +124,7 @@ const ReportaProblem = () => {
                         let googleMunicipality = '';
                         let province = '';
 
-                        components.forEach((comp, index) => {
-                            console.log(`   Component ${index}:`, comp.long_name, '→', comp.types);
-                            
+                        components.forEach((comp) => {
                             if (comp.types.includes('route')) street = comp.long_name;
                             
                             if (comp.types.includes('sublocality') || comp.types.includes('neighborhood')) {
@@ -140,18 +150,8 @@ const ReportaProblem = () => {
                             }
                         });
 
-                        console.log('✅ [STEP 4 PASSED] Extracted Components:', { 
-                            street, 
-                            barangay, 
-                            municipality: googleMunicipality, 
-                            province,
-                            fullAddress: result.formatted_address 
-                        });
-
                         // --- CRITICAL FIX: Detect if municipality === province ---
                         let alecoMatch = null;
-
-                        console.log('🔍 [STEP 5] Validating province...');
 
                         if (googleMunicipality.toLowerCase() === province.toLowerCase()) {
                             console.error('❌ [STEP 5 FAILED] Google returned province as municipality');
@@ -170,20 +170,13 @@ const ReportaProblem = () => {
                             setIsLocating(false);
                             return;
                         }
-                        console.log('✅ [STEP 5 PASSED] Province is Albay');
 
-                        console.log('🎯 [STEP 6] Matching municipality to ALECO scope...');
-                        console.log('   Input Municipality:', googleMunicipality);
-                        console.log('   Input Province:', province);
-                        
                         // STEP 2: Match Google's municipality to ALECO scope
                         if (googleMunicipality) {
-                            console.log('🔍 [STEP 6] Calling matchGPSToAlecoScope...');
                             alecoMatch = matchGPSToAlecoScope(googleMunicipality, province);
-                            console.log('📊 [STEP 6] Match Result:', alecoMatch);
                             
                             if (alecoMatch) {
-                                console.log('✅ [STEP 6 PASSED] GOOGLE CONFIRMED MUNICIPALITY:', alecoMatch);
+                                // Match found, continue
                             } else {
                                 console.error('❌ [STEP 6 FAILED] No match found in ALECO scope');
                                 console.error('   Google gave us:', googleMunicipality);
@@ -211,10 +204,8 @@ const ReportaProblem = () => {
                             return;
                         }
 
-                        console.log('🔍 [STEP 7] Validating district-municipality relationship...');
                         // STEP 3: Validate district-municipality relationship
                         const isValid = validateDistrictMunicipality(alecoMatch.municipality, alecoMatch.district);
-                        console.log('📊 [STEP 7] Validation Result:', isValid);
                         
                         if (!isValid) {
                             console.error('❌ [STEP 7 FAILED] District-Municipality mismatch!');
@@ -224,18 +215,13 @@ const ReportaProblem = () => {
                             setIsLocating(false);
                             return;
                         }
-                        console.log('✅ [STEP 7 PASSED] District-Municipality relationship valid');
 
-                        console.log('🏗️ [STEP 8] Building address string...');
                         // --- BUILD ADDRESS STRING ---
                         const addressParts = [street, barangay].filter(Boolean);
                         const fullAddress = addressParts.length > 0 
                             ? addressParts.join(', ') 
                             : `Near ${alecoMatch.municipality} City Center`;
-                        
-                        console.log('   Final Address:', fullAddress);
 
-                        console.log('📝 [STEP 9] Auto-filling form data...');
                         // --- AUTO-FILL FORM ---
                         setFormData(prev => {
                             const newData = {
@@ -244,11 +230,9 @@ const ReportaProblem = () => {
                                 district: alecoMatch.district,
                                 municipality: alecoMatch.municipality
                             };
-                            console.log('   New Form Data:', newData);
                             return newData;
                         });
 
-                        console.log('🔒 [STEP 10] Locking GPS data...');
                         // --- LOCK GPS DATA ---
                         const gpsLockData = {
                             lat: latitude,
@@ -258,18 +242,10 @@ const ReportaProblem = () => {
                             confidence: 'high',
                             isLocked: true
                         };
-                        console.log('   GPS Lock Data:', gpsLockData);
                         setGpsData(gpsLockData);
 
                         setLocationError('');
                         setIsLocating(false);
-                        
-                        console.log('🎉 [SUCCESS] GPS LOCK COMPLETE:', {
-                            municipality: alecoMatch.municipality,
-                            district: alecoMatch.district,
-                            accuracy: Math.round(accuracy),
-                            address: fullAddress
-                        });
 
                     } else {
                         console.error('❌ [STEP 3 FAILED] Google API returned no results');
@@ -305,8 +281,6 @@ const ReportaProblem = () => {
                 maximumAge: 0
             }
         );
-        
-        console.log('⏳ [STEP 2] Waiting for GPS response...');
     };
 
     // --- NEW: Unlock GPS Lock (Allow Manual Override) ---
@@ -314,7 +288,6 @@ const ReportaProblem = () => {
         setGpsData(prev => ({ ...prev, isLocked: false }));
     };
 
-    // --- NEW: Clear GPS Data Completely ---
     const handleClearGPS = () => {
         setGpsData({ 
             lat: null, 
@@ -330,91 +303,10 @@ const ReportaProblem = () => {
             municipality: '' 
         }));
         setLocationError('');
-        console.log('🔓 GPS Lock Cleared - Manual entry enabled');
     };
 
-    // --- Backend: Submit Ticket ---
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        // 1. STRICT VALIDATION (Updated for GPS compatibility)
-        const mandatoryFields = [
-            { key: 'firstName', label: 'First Name' },
-            { key: 'lastName', label: 'Last Name' },
-            { key: 'phoneNumber', label: 'Phone Number' },
-            { key: 'address', label: 'Street Address' },
-            { key: 'municipality', label: 'Municipality/City' },
-            { key: 'category', label: 'Issue Category' },
-            { key: 'concern', label: 'Issue Details' }
-        ];
-
-        for (const field of mandatoryFields) {
-            if (!formData[field.key] || formData[field.key].trim() === '') {
-                alert(`Please fill in: ${field.label}`);
-                return;
-            }
-        }
-
-        // 2. DUPLICATE DETECTION CHECK
-        try {
-            console.log('🔍 Checking for duplicate tickets...');
-
-            const duplicateCheckResponse = await fetch(apiUrl('/api/check-duplicates'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone_number: formData.phoneNumber,
-                    concern: formData.concern,
-                    category: formData.category
-                })
-            });
-
-            const duplicateResult = await duplicateCheckResponse.json();
-            console.log('📊 Duplicate Check Result:', duplicateResult);
-
-            if (duplicateResult.success && duplicateResult.hasDuplicates) {
-                const duplicates = duplicateResult.duplicates;
-
-                // Format duplicate information for user-friendly display
-                const duplicateList = duplicates.map((d, index) =>
-                    `\n${index + 1}. Ticket ID: ${d.ticket_id}\n` +
-                    `   Status: ${d.status}\n` +
-                    `   Similarity: ${d.similarityScore}% match\n` +
-                    `   Concern: "${d.concern}"\n` +
-                    `   Reported: ${new Date(d.created_at).toLocaleString('en-PH', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}`
-                ).join('\n');
-
-                const userConfirmation = window.confirm(
-                    `⚠️ POTENTIAL DUPLICATE DETECTED!\n\n` +
-                    `We found ${duplicates.length} similar ticket(s) from your number in the last 24 hours:\n` +
-                    duplicateList +
-                    `\n\n` +
-                    `📌 Your existing ticket is already being processed.\n\n` +
-                    `Do you still want to submit a NEW ticket?\n\n` +
-                    `(Click "Cancel" to avoid duplicate submission)`
-                );
-
-                if (!userConfirmation) {
-                    console.log('❌ User cancelled submission due to duplicate warning');
-                    return; // Stop submission
-                }
-
-                console.log('✅ User confirmed submission despite duplicate warning');
-            } else {
-                console.log('✅ No duplicates found - proceeding with submission');
-            }
-        } catch (duplicateCheckError) {
-            console.error('⚠️ Duplicate check failed:', duplicateCheckError);
-            // Continue with submission even if duplicate check fails (failsafe)
-            console.log('⚠️ Proceeding with submission despite duplicate check failure');
-        }
-
-        // 3. DATA PREPARATION
+    const executeSubmit = async () => {
+        // 1. DATA PREPARATION
         const submissionData = new FormData();
 
         // Personal Info
@@ -456,16 +348,8 @@ const ReportaProblem = () => {
         // Word-boundary matching to prevent false positives
         const isUrgent = urgentKeywords.some(keyword => {
             const regex = new RegExp(`\\b${keyword.replace(/\s+/g, '\\s+')}\\b`, 'i');
-            const match = regex.test(lowerConcern);
-            
-            if (match) {
-                console.log(`🚨 URGENT TRIGGER: "${keyword}" found in "${formData.concern}"`);
-            }
-            
-            return match;
+            return regex.test(lowerConcern);
         });
-
-        console.log(`🚨 Final Urgent Status: ${isUrgent ? 'YES' : 'NO'}`);
 
         submissionData.append('is_urgent', isUrgent ? 1 : 0);
 
@@ -487,28 +371,103 @@ const ReportaProblem = () => {
             
             if (data.success) {
                 setGeneratedId(data.ticketId);
-                setShowModal(true); 
-            
+                setShowModal(true);
+                setCurrentStep(1);
+
                 // RESET FORM
-                setFormData({ 
-                    accountNumber: '', firstName: '', middleName: '', 
-                    lastName: '', phoneNumber: '', address: '', 
-                    category: '', concern: '', district: '', 
+                setFormData({
+                    accountNumber: '', firstName: '', middleName: '',
+                    lastName: '', phoneNumber: '', address: '',
+                    category: '', concern: '', district: '',
                     municipality: ''
                 });
                 setSelectedFile(null);
-                setGpsData({ lat: null, lng: null, accuracy: null, method: 'manual' }); // Reset GPS
+                setGpsData({ lat: null, lng: null, accuracy: null, method: 'manual', isLocked: false, confidence: 'low' });
             } else {
-                alert("Submission failed: " + data.message);
+                toast.error("Submission failed: " + data.message);
             }
         } catch (error) {
             console.error("Submission Error:", error);
-            alert("Connection error. Is the server running?");
+            toast.error("Connection error. Is the server running?");
         }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Only submit when on the Review step (6); prevent accidental submit from Enter key on earlier steps
+        if (currentStep !== TOTAL_STEPS) {
+            return;
+        }
+
+        // 1. STRICT VALIDATION
+        const mandatoryFields = [
+            { key: 'firstName', label: 'First Name' },
+            { key: 'lastName', label: 'Last Name' },
+            { key: 'phoneNumber', label: 'Phone Number' },
+            { key: 'address', label: 'Street Address' },
+            { key: 'district', label: 'District' },
+            { key: 'municipality', label: 'Municipality/City' },
+            { key: 'category', label: 'Issue Category' },
+            { key: 'concern', label: 'Issue Details' }
+        ];
+
+        for (const field of mandatoryFields) {
+            if (!formData[field.key] || String(formData[field.key]).trim() === '') {
+                toast.warning(`Please fill in: ${field.label}`);
+                return;
+            }
+        }
+
+        // 2. DUPLICATE DETECTION CHECK
+        try {
+            const duplicateCheckResponse = await fetch(apiUrl('/api/check-duplicates'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone_number: formData.phoneNumber,
+                    concern: formData.concern,
+                    category: formData.category
+                })
+            });
+
+            const duplicateResult = await duplicateCheckResponse.json();
+
+            if (duplicateResult.success && duplicateResult.hasDuplicates) {
+                const duplicates = duplicateResult.duplicates;
+                const duplicateList = duplicates.map((d, index) =>
+                    `${index + 1}. Ticket ID: ${d.ticket_id} (${d.status}, ${d.similarityScore}% match) - ${new Date(d.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                ).join('\n');
+
+                setPendingDuplicateData({ duplicates, duplicateList });
+                setShowDuplicateModal(true);
+                return;
+            }
+        } catch (duplicateCheckError) {
+            console.error('⚠️ Duplicate check failed:', duplicateCheckError);
+        }
+
+        await executeSubmit();
+    };
+
+    const handleDuplicateConfirm = async () => {
+        setShowDuplicateModal(false);
+        const data = pendingDuplicateData;
+        setPendingDuplicateData(null);
+        if (data) await executeSubmit();
+    };
+
+    const handleDuplicateCancel = () => {
+        setShowDuplicateModal(false);
+        setPendingDuplicateData(null);
+        toast.info('Submission cancelled.');
     };
     // --- Backend: Track Ticket Status ---
     const handleTrackTicket = async () => {
-        if (!trackingId) return alert("Please enter a Ticket ID.");
+        if (!trackingId?.trim()) {
+            toast.warning("Please enter a Ticket ID.");
+            return;
+        }
         setIsLoading(true);
         try {
             const response = await fetch(apiUrl(`/api/tickets/track/${trackingId}`));
@@ -516,7 +475,7 @@ const ReportaProblem = () => {
             if (result.success) {
                 setTicketData(result.data);
             } else {
-                alert(result.message);
+                toast.error(result.message);
                 setTicketData(null);
             }
         } catch (error) {
@@ -537,7 +496,7 @@ const ReportaProblem = () => {
             if (response.ok) setSentStatus(true);
         } catch (err) { 
             console.error(err); 
-            alert("Could not send email.");
+            toast.error("Could not send email.");
         }
     };
 
@@ -558,104 +517,197 @@ const ReportaProblem = () => {
                         </div>
                     </div>
 
-                    <form className="report-main-card" onSubmit={handleSubmit}>
-                        <div className="report-form-column">
-                            <h3 className="column-section-title">Contact Information</h3>
-                            <TextFieldProblem id="acc_num" label="Account Number (Optional)" value={formData.accountNumber} onChange={handleFieldChange('accountNumber')} filterType="numeric" maxLength={15} />
-                            <TextFieldProblem id="fname" label="First Name *" value={formData.firstName} onChange={handleFieldChange('firstName')} filterType="name" />
-                            <TextFieldProblem id="mname" label="Middle Name" value={formData.middleName} onChange={handleFieldChange('middleName')} filterType="name" />
-                            <TextFieldProblem id="lname" label="Last Name *" value={formData.lastName} onChange={handleFieldChange('lastName')} filterType="name" />
-                            <TextFieldProblem id="phone" label="Phone Number *" value={formData.phoneNumber} onChange={handleFieldChange('phoneNumber')} filterType="numeric" maxLength={11} />
-                            
-                            <h3 className="column-section-title" style={{ marginTop: '30px' }}>Location Details</h3>
-
-                            {/* GPS Location Button */}
-                            <div className="gps-location-section">
-                                <button 
-                                    type="button"
-                                    onClick={handleFindMyLocation}
-                                    className="btn-find-location"
-                                    disabled={isLocating || gpsData.isLocked}
-                                >
-                                    {isLocating ? '📡 Locating...' : '📍 Find My Location'}
-                                </button>
-                                
-                                {locationError && (
-                                    <div className="location-error-box">
-                                        ⚠️ {locationError}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* GPS Lock Confirmation */}
-                            {gpsData.isLocked && (
-                                <div className="location-success-box">
-                                    <div className="gps-lock-info">
-                                        <span className="gps-lock-icon">🔒</span>
-                                        <div>
-                                            <strong>Using device location</strong>
-                                            <p className="gps-lock-details">
-                                                📍 {formData.address}<br/>
-                                                <strong>{formData.municipality}</strong>, {formData.district}
-                                            </p>
-                                            <p className="gps-accuracy">
-                                                Accuracy: ±{gpsData.accuracy}m
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        type="button"
-                                        onClick={handleClearGPS}
-                                        className="location-clear-btn"
+                    <div className="report-main-card report-wizard-form" role="form" aria-label="Report a Problem" onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < TOTAL_STEPS && canProceed(currentStep)) { e.preventDefault(); setCurrentStep(s => s + 1); } }}>
+                        {/* Dispatch-style Stepper */}
+                        <div className="report-wizard-stepper">
+                            {[
+                                { num: 1, label: 'Category' },
+                                { num: 2, label: 'Explain' },
+                                { num: 3, label: 'Upload' },
+                                { num: 4, label: 'Contact' },
+                                { num: 5, label: 'Location' },
+                                { num: 6, label: 'Submit' }
+                            ].map((s, i) => (
+                                <React.Fragment key={s.num}>
+                                    <div
+                                        className={`stepper-step ${getStepState(s.num)} ${currentStep >= s.num ? 'clickable' : ''}`}
+                                        onClick={() => currentStep >= s.num && setCurrentStep(s.num)}
+                                        role="button"
+                                        tabIndex={currentStep >= s.num ? 0 : -1}
+                                        onKeyDown={(e) => currentStep >= s.num && (e.key === 'Enter' || e.key === ' ') && setCurrentStep(s.num)}
                                     >
-                                        ✖ Clear & Re-locate
-                                    </button>
+                                        <span className="stepper-num">{s.num}</span>
+                                        <span className="stepper-label-short">{s.label}</span>
+                                    </div>
+                                    {i < 5 && (
+                                        <div
+                                            className={`stepper-connector stepper-connector-${currentStep > s.num ? 'done' : currentStep === s.num ? 'active' : 'pending'}`}
+                                            aria-hidden
+                                        />
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+
+                        {/* Step Content + Actions (row layout body) */}
+                        <div className="wizard-body">
+                        <div className="wizard-step-content">
+                            {currentStep === 1 && (
+                                <div className="wizard-step-block">
+                                    <h3 className="column-section-title">Issue Category</h3>
+                                    <IssueCategoryDropdown value={formData.category} onChange={handleFieldChange('category')} />
                                 </div>
                             )}
 
-                            {/* Manual Address Field (Disabled when GPS is locked) */}
-                            <TextFieldProblem 
-                                id="address" 
-                                label="Full Address *" 
-                                value={formData.address} 
-                                onChange={handleFieldChange('address')}
-                                disabled={gpsData.isLocked}
-                                placeholder={gpsData.isLocked ? "Auto-filled by GPS" : "Enter your address"}
-                            />
+                            {currentStep === 2 && (
+                                <div className="wizard-step-block">
+                                    <h3 className="column-section-title">Explain the Problem</h3>
+                                    <ExplainTheProblem value={formData.concern} onChange={handleFieldChange('concern')} />
+                                </div>
+                            )}
 
-                            {/* Hidden fields for district/municipality (GPS auto-fills these) */}
-                            <input type="hidden" name="district" value={formData.district} />
-                            <input type="hidden" name="municipality" value={formData.municipality} />
+                            {currentStep === 3 && (
+                                <div className="wizard-step-block">
+                                    <h3 className="column-section-title">Upload Picture (Optional)</h3>
+                                    <div className="upload-wrapper">
+                                        <UploadTheProblem onFileSelect={setSelectedFile} />
+                                    </div>
+                                </div>
+                            )}
 
-                            {/* --- LIVE GPS MAP PREVIEW --- */}
-                            {gpsData.method === 'gps' && gpsData.lat && gpsData.lng && (
-                                <LocationPreviewMap 
-                                    latitude={gpsData.lat}
-                                    longitude={gpsData.lng}
-                                    accuracy={gpsData.accuracy}
-                                    municipality={formData.municipality}
-                                    district={formData.district}
-                                />
+                            {currentStep === 4 && (
+                                <div className="wizard-step-block">
+                                    <h3 className="column-section-title">Contact Information</h3>
+                                    <HotlinesDisplay />
+                                    <TextFieldProblem id="acc_num" label="Account Number (Optional)" value={formData.accountNumber} onChange={handleFieldChange('accountNumber')} filterType="numeric" maxLength={15} />
+                                    <TextFieldProblem id="fname" label="First Name *" value={formData.firstName} onChange={handleFieldChange('firstName')} filterType="name" />
+                                    <TextFieldProblem id="mname" label="Middle Name" value={formData.middleName} onChange={handleFieldChange('middleName')} filterType="name" />
+                                    <TextFieldProblem id="lname" label="Last Name *" value={formData.lastName} onChange={handleFieldChange('lastName')} filterType="name" />
+                                    <PhoneInputProblem id="phone" label="Phone Number *" value={formData.phoneNumber} onChange={handleFieldChange('phoneNumber')} />
+                                </div>
+                            )}
+
+                            {currentStep === 5 && (
+                                <div className="wizard-step-block">
+                                    <h3 className="column-section-title">Find Location</h3>
+                                    <div className="gps-location-section">
+                                        <button
+                                            type="button"
+                                            onClick={handleFindMyLocation}
+                                            className="btn-find-location"
+                                            disabled={isLocating || gpsData.isLocked}
+                                        >
+                                            {isLocating ? '📡 Locating...' : '📍 Find My Location'}
+                                        </button>
+                                        {locationError && (
+                                            <div className="location-error-box">⚠️ {locationError}</div>
+                                        )}
+                                    </div>
+                                    {gpsData.isLocked && (
+                                        <div className="location-success-box">
+                                            <div className="gps-lock-info">
+                                                <span className="gps-lock-icon">🔒</span>
+                                                <div>
+                                                    <strong>Using device location</strong>
+                                                    <p className="gps-lock-details">
+                                                        📍 {formData.address}<br />
+                                                        <strong>{formData.municipality}</strong>, {formData.district}
+                                                    </p>
+                                                    <p className="gps-accuracy">Accuracy: ±{gpsData.accuracy}m</p>
+                                                </div>
+                                            </div>
+                                            <button type="button" onClick={handleClearGPS} className="location-clear-btn">✖ Clear & Re-locate</button>
+                                        </div>
+                                    )}
+                                    <TextFieldProblem
+                                        id="address"
+                                        label="Full Address *"
+                                        value={formData.address}
+                                        onChange={handleFieldChange('address')}
+                                        placeholder={gpsData.isLocked ? "Auto-filled by GPS" : "Enter your address"}
+                                    />
+                                    {(!gpsData.isLocked || locationError) && (
+                                        <div className="aleco-scope-manual">
+                                            <label className="column-section-title">Or select manually</label>
+                                            <AlecoScopeDropdown
+                                                initialDistrict={formData.district}
+                                                initialMunicipality={formData.municipality}
+                                                onLocationSelect={(loc) => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        district: loc?.district || '',
+                                                        municipality: loc?.municipality || ''
+                                                    }));
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                    {gpsData.method === 'gps' && gpsData.lat && gpsData.lng && (
+                                        <LocationPreviewMap
+                                            latitude={gpsData.lat}
+                                            longitude={gpsData.lng}
+                                            accuracy={gpsData.accuracy}
+                                            municipality={formData.municipality}
+                                            district={formData.district}
+                                        />
+                                    )}
+                                </div>
+                            )}
+
+                            {currentStep === 6 && (
+                                <div className="wizard-step-block wizard-summary">
+                                    <h3 className="column-section-title">Review and Submit</h3>
+                                    <div className="summary-grid">
+                                        <div className="summary-item"><strong>Category:</strong> {formData.category}</div>
+                                        <div className="summary-item"><strong>Concern:</strong> {formData.concern}</div>
+                                        <div className="summary-item"><strong>Name:</strong> {[formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ')}</div>
+                                        <div className="summary-item"><strong>Phone:</strong> {formatPhoneDisplay(formData.phoneNumber) || formData.phoneNumber}</div>
+                                        <div className="summary-item"><strong>Address:</strong> {formData.address}</div>
+                                        <div className="summary-item"><strong>Location:</strong> {formData.municipality}, {formData.district}</div>
+                                        {selectedFile && <div className="summary-item"><strong>Photo:</strong> {selectedFile.name}</div>}
+                                    </div>
+                                </div>
                             )}
                         </div>
-                        
-                        <div className="report-details-column">
-                            <h3 className="column-section-title">Issue Category</h3>
-                             {/* Issue Category Dropdown Lego Brick */}
-                                    <IssueCategoryDropdown 
-                                      value={formData.category} 
-                                         onChange={handleFieldChange('category')} 
-                                                                                />
-                            <h3 className="column-section-title">Issue Details</h3>
-                            <ExplainTheProblem value={formData.concern} onChange={handleFieldChange('concern')} />
-                            <div className="upload-wrapper">
-                                <UploadTheProblem onFileSelect={setSelectedFile} />
-                            </div>
-                            <div className="form-submit-row">
-                                <button type="submit" className="btn-submit-report">Submit Report</button>
+
+                        {/* Navigation */}
+                        <div className="wizard-actions">
+                            {currentStep > 1 && (
+                                <button type="button" className="btn-wizard-back" onClick={() => setCurrentStep(s => s - 1)}>
+                                    ← Back
+                                </button>
+                            )}
+                            <div className="wizard-actions-right">
+                                {currentStep < TOTAL_STEPS ? (
+                                    <button
+                                        type="button"
+                                        className="btn-wizard-next"
+                                        disabled={!canProceed(currentStep)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (canProceed(currentStep)) setCurrentStep(s => s + 1);
+                                        }}
+                                    >
+                                        Next →
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="btn-submit-report"
+                                        disabled={!canProceed(6)}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleSubmit(e);
+                                        }}
+                                    >
+                                        Submit Report
+                                    </button>
+                                )}
                             </div>
                         </div>
-                    </form>
+                        </div>
+                    </div>
                 </div>
 
                 {/* --- BACK SIDE: TRACKING UI --- */}
@@ -674,7 +726,7 @@ const ReportaProblem = () => {
                     <div className="report-main-card tracking-card-content">
                         <div className="track-input-container">
                             <TextFieldProblem id="track_id" label="Tracking Number" placeholder="e.g. ALECO-X892J" value={trackingId} onChange={setTrackingId} />
-                            <button className="btn-track-submit" onClick={handleTrackTicket} disabled={isLoading}>
+                            <button type="button" className="btn-track-submit" onClick={handleTrackTicket} disabled={isLoading}>
                                 {isLoading ? "Searching..." : "Check Status"}
                             </button>
                         </div>
@@ -770,12 +822,26 @@ const ReportaProblem = () => {
                 </div>
             </div>
             
-            {showModal && (
+            {showModal && createPortal(
                 <TicketPopUp 
                     ticketId={generatedId} 
                     onClose={() => setShowModal(false)} 
                     onSendEmail={handleSendEmailCopy} 
-                />
+                />,
+                document.body
+            )}
+            {createPortal(
+                <ConfirmModal
+                    isOpen={showDuplicateModal}
+                    onClose={handleDuplicateCancel}
+                    onConfirm={handleDuplicateConfirm}
+                    title="Potential Duplicate Detected"
+                    message={pendingDuplicateData ? `We found ${pendingDuplicateData.duplicates.length} similar ticket(s) from your number in the last 24 hours:\n\n${pendingDuplicateData.duplicateList}\n\nYour existing ticket is already being processed. Do you still want to submit a NEW ticket?` : ''}
+                    confirmLabel="Submit Anyway"
+                    cancelLabel="Cancel"
+                    variant="default"
+                />,
+                document.body
             )}
             <div style={{ paddingBottom: '100px' }}></div>
         </div>

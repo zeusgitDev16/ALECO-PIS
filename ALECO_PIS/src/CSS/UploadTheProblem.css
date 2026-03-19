@@ -4,6 +4,8 @@
     flex-direction: column;
     flex: 1;
     height: 100%;
+    min-width: 0;
+    max-width: 100%;
 }
 
 /* The outer card for the upload area */
@@ -11,12 +13,49 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0;
+    max-width: 100%;
     background-color: var(--bg-card); /* Integrates with your theme */
     border: 1px solid var(--text-secondary); /* Subtle border matching your theme */
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 4px 6px var(--shadow-color-dark);
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box;
+}
+
+@media (max-width: 320px) {
+    .report-upload-column,
+    .upload-modal {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .upload-modal {
+        padding: 10px;
+    }
+
+    .upload-modal-title {
+        font-size: 14px;
+    }
+
+    .upload-modal-description {
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+
+    .upload-area {
+        min-height: 140px;
+    }
+
+    .upload-area-title {
+        font-size: 12px;
+    }
+
+    .upload-area-description {
+        font-size: 11px;
+    }
 }
 
 /* Modal Body */
@@ -24,6 +63,8 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .upload-modal-title {
@@ -47,6 +88,8 @@
     justify-content: center;
     align-items: center;
     flex: 1;
+    min-width: 0;
+    max-width: 100%;
     min-height: 200px;
     background-color: var(--bg-body); /* Creates contrast against the card */
     border: 2px dashed var(--text-secondary); /* Signature dashed upload border */

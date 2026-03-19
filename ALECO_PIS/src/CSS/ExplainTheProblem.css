@@ -5,6 +5,9 @@
     flex: 1;
     margin-bottom: 20px;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* The Label */
@@ -23,6 +26,8 @@
     min-height: 180px; /* Gives plenty of room to type the problem */
     resize: none; /* Preserved from your original inline styles */
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     padding: 15px;
     font-size: 15px;
     font-family: var(--font-body);
@@ -45,4 +50,45 @@
 .concern-field.textarea-large:focus {
     border-color: #1cc972;
     box-shadow: 0 0 0 3px rgba(28, 201, 114, 0.15);
+}
+
+/* 320px and below: compact textarea, ensure no overflow */
+@media (max-width: 320px) {
+    .concern-group {
+        margin-bottom: 12px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .concern-label {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .concern-field.textarea-large {
+        min-height: 140px;
+        padding: 8px 10px;
+        font-size: 14px;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+}
+
+/* 321px - 480px: progressive sizing */
+@media (min-width: 321px) and (max-width: 480px) {
+    .concern-group {
+        margin-bottom: 14px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .concern-label {
+        font-size: 13px;
+    }
+
+    .concern-field.textarea-large {
+        min-height: 160px;
+        padding: 12px 14px;
+        font-size: 14px;
+    }
 }

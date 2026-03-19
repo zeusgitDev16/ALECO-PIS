@@ -7,6 +7,8 @@
 .aleco-scope-container {
     background: transparent;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -59,13 +61,16 @@
 /* --- SIMPLIFIED 2-COLUMN GRID --- */
 .dropdown-grid-simple {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Perfect 50/50 split */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
     width: 100%;
+    min-width: 0;
 }
 
 .location-select {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     padding: 12px 15px;
     font-size: 15px;
     color: var(--text-main);
@@ -148,6 +153,25 @@
 /* =========================================
    MOBILE RESPONSIVENESS
    ========================================= */
+
+/* 320px - Ultra-compact, stack and shrink */
+@media (max-width: 320px) {
+    .dropdown-grid-simple {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .location-select,
+    .location-search-input {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .clear-selection-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}
 
 /* Tablet and Below (768px) - Stack the 2 dropdowns */
 @media (max-width: 768px) {

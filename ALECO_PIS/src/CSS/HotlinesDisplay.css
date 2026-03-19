@@ -1,0 +1,78 @@
+/* HotlinesDisplay - Contact numbers in Report a Problem step 4 */
+.hotlines-display {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-body, #f8f9fa);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.hotlines-display.hotlines-loading {
+    color: var(--text-secondary, #666);
+    font-size: 0.875rem;
+}
+
+.hotlines-loading-text {
+    font-style: italic;
+}
+
+.hotlines-intro {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary, #333);
+}
+
+.hotlines-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.hotlines-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.75rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.hotlines-item:last-child {
+    margin-bottom: 0;
+}
+
+.hotlines-label {
+    font-weight: 500;
+    color: var(--text-primary, #333);
+}
+
+.hotlines-phone {
+    color: var(--accent-color, #0d6efd);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.hotlines-phone:hover {
+    text-decoration: underline;
+}
+
+.hotlines-desc {
+    color: var(--text-secondary, #666);
+    font-size: 0.8125rem;
+}
+
+/* Responsive - match ReportaProblem breakpoints */
+@media (max-width: 479px) {
+    .hotlines-display {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .hotlines-intro,
+    .hotlines-item {
+        font-size: 0.8125rem;
+    }
+}

@@ -1,6 +1,9 @@
 .body-padding {
   padding-top: 130px;
   padding-bottom: 60px;
+  max-width: 100%;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .interruption-list-container {

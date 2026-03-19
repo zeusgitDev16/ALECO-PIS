@@ -92,6 +92,46 @@
     }
 }
 
+/* --- 320px: Ultra-compact, no overflow --- */
+@media (max-width: 320px) {
+    .textfield-group {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0;
+        margin-bottom: 10px;
+        padding: 0 !important;
+        box-sizing: border-box;
+    }
+
+    .textfield-input-wrapper {
+        width: 100% !important;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .textfield-input {
+        width: 100% !important;
+        min-width: 0;
+        max-width: 100%;
+        padding: 8px 10px;
+        font-size: 13px;
+        border-radius: 6px;
+        box-sizing: border-box;
+    }
+
+    .textfield-label {
+        font-size: 11px;
+        margin-bottom: 4px;
+    }
+
+    .textfield-error-msg {
+        font-size: 9px;
+        top: 9px;
+        right: 8px;
+    }
+}
+
 /* --- MOBILE SHRINKING (480px and below) --- */
 @media (max-width: 480px) {
     /* The Group Container: Strictly follows parent width */

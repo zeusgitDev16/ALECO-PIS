@@ -84,14 +84,6 @@
   display: none;
 }
 
-@media (max-width: 700px) {
-  .nav-links li::after {
-    margin-left: 1px;
-    margin-right: 1px;
-    font-size: 0.8rem;
-  }
-}
-
 .nav-item {
   position: relative;
   text-decoration: none;
@@ -131,113 +123,300 @@
   transition: transform 0.3s ease; 
 }
 
-/* --- RESPONSIVE DESIGN (Media Queries) --- */
-
-/* 1. Tablet View (Screens smaller than 1024px) */
-@media (max-width: 1024px) {
-  .nav-brand a {
-    font-size: 1rem;
-  }
-  .nav-item {
-    font-size: 0.9rem;
-  }
-  .nav-links {
-    gap: 0.5rem;
-  }
-  .main-login-btn{
-    font-size: 0.8rem;
-  }
-  .logo-height{
-    height: 30px;
-    width: 30px;
-  }
-  .Title{
-    font-size: 20px;
-  }
-}
-
-/* 2. Mobile View (Screens smaller than 700px) */
-@media (max-width: 700px) {
-  .nav-links-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 5px; 
-    max-width: 100%;
-    padding-right: 15px; 
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .nav-links-container::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .main-login-btn {
-    flex-shrink: 0; 
-  }
-  .navbar {
-    padding: 0 0.4rem;
-  }
-  .nav-brand a {
-    font-size: 0.8rem;
-  }
-  .nav-item {
-    font-size: 0.65rem;
-  }
-  .nav-links {
-    gap: 0.1rem;
-    white-space: nowrap;
-  }
-  .main-login-btn{
-    font-size: 0.5rem;
-  }
-  .logo-height{
-    height: 20px;
-    width: 20px;
-  }
-  .Title{
-    font-size: 15px;
-  }
-}
-
-/* 3. Extra Small Mobile View (Screens smaller than 400px) */
-@media (max-width: 400px) {
-  .navbar {
-    padding: 0 0.2rem;
-  }
-  
-  /* Explicitly size elements instead of scaling */
-  .logo-height {
-    height: 20px;
-    width: 20px;
-  }
-  .Title {
-    font-size: 14px;
-    padding-left: 5px;
-  }
-
-  .nav-item {
-    font-size: 0.6rem;
-  }
-  .main-login-btn {
-    font-size: 0.4rem;
-    padding: 6px;
-  }
-}
-
-
 .logo-height {
   height: 40px;       
   width: 40px;
-  object-fit: fit;   
+  object-fit: contain;   
 }
 
 .Title {
   padding-left: 10px;
   font-weight: bold;
   font-size: 25px;
-  /* UPDATED: Transition for color change */
   transition: color 0.3s ease;
+}
+
+/* --- RESPONSIVE DESIGN (Desktop 1024px+ unchanged) --- */
+
+/* Tablet (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .navbar {
+    padding: 0 1rem;
+    height: 44px;
+  }
+  .nav-container {
+    height: 44px;
+  }
+  .nav-brand {
+    flex-shrink: 1;
+    min-width: 0;
+    padding-left: 0.25rem;
+  }
+  .nav-brand a {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .logo-height {
+    height: 24px;
+    width: 24px;
+    flex-shrink: 0;
+  }
+  .Title {
+    font-size: 16px;
+    padding-left: 5px;
+  }
+  .nav-item {
+    font-size: 0.9rem;
+    padding-bottom: 4px;
+  }
+  .nav-links {
+    gap: 0.75rem;
+  }
+  .nav-links-container {
+    gap: 12px;
+    flex-shrink: 0;
+    min-width: 0;
+  }
+  .nav-links li::after {
+    margin-left: 1px;
+    margin-right: 1px;
+  }
+  .main-login-btn {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}
+
+/* Large Mobile (600px - 767px) */
+@media (min-width: 600px) and (max-width: 767px) {
+  .navbar {
+    padding: 0 0.75rem;
+    height: 40px;
+  }
+  .nav-container {
+    height: 40px;
+  }
+  .nav-brand {
+    flex-shrink: 1;
+    min-width: 0;
+    padding-left: 0.25rem;
+  }
+  .nav-brand a {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .logo-height {
+    height: 20px;
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .Title {
+    font-size: 12px;
+    padding-left: 4px;
+  }
+  .nav-item {
+    font-size: 0.8rem;
+    padding-bottom: 3px;
+  }
+  .nav-links {
+    gap: 0.5rem;
+  }
+  .nav-links-container {
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 0;
+  }
+  .nav-links li::after {
+    margin-left: 1px;
+    margin-right: 1px;
+    font-size: 0.85rem;
+  }
+  .main-login-btn {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+}
+
+/* Medium Mobile (480px - 599px) */
+@media (min-width: 480px) and (max-width: 599px) {
+  .navbar {
+    padding: 0 0.65rem;
+    height: 36px;
+  }
+  .nav-container {
+    height: 36px;
+  }
+  .nav-brand {
+    flex-shrink: 1;
+    min-width: 0;
+    padding-left: 0.2rem;
+  }
+  .nav-brand a {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .logo-height {
+    height: 18px;
+    width: 18px;
+    flex-shrink: 0;
+  }
+  .Title {
+    font-size: 11px;
+    padding-left: 4px;
+  }
+  .nav-item {
+    font-size: 0.72rem;
+    padding-bottom: 2px;
+  }
+  .nav-links {
+    gap: 0.35rem;
+  }
+  .nav-links-container {
+    gap: 6px;
+    flex-shrink: 0;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .nav-links-container::-webkit-scrollbar {
+    display: none;
+  }
+  .main-login-btn {
+    flex-shrink: 0;
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+  .nav-links li::after {
+    margin-left: 1px;
+    margin-right: 1px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Small Mobile (320px - 479px) */
+@media (min-width: 320px) and (max-width: 479px) {
+  .navbar {
+    padding: 0 0.6rem;
+    height: 34px;
+  }
+  .nav-container {
+    height: 34px;
+  }
+  .nav-brand {
+    flex-shrink: 1;
+    min-width: 0;
+    padding-left: 0.2rem;
+  }
+  .nav-brand a {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .logo-height {
+    height: 14px;
+    width: 14px;
+    flex-shrink: 0;
+  }
+  .Title {
+    font-size: 9px;
+    padding-left: 2px;
+  }
+  .nav-item {
+    font-size: 0.65rem;
+    padding-bottom: 2px;
+  }
+  .nav-links {
+    gap: 0.25rem;
+    white-space: nowrap;
+  }
+  .nav-links-container {
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    padding-right: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .nav-links-container::-webkit-scrollbar {
+    display: none;
+  }
+  .main-login-btn {
+    flex-shrink: 0;
+    font-size: 10px;
+    padding: 4px 5px;
+    min-height: 28px;
+  }
+  .nav-links li::after {
+    margin-left: 0.5px;
+    margin-right: 0.5px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Extra Small (≤320px) */
+@media (max-width: 320px) {
+  .navbar {
+    padding: 0 0.5rem;
+    height: 32px;
+  }
+  .nav-container {
+    height: 32px;
+  }
+  .nav-brand {
+    flex-shrink: 1;
+    min-width: 0;
+    padding-left: 0.15rem;
+  }
+  .nav-brand a {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .logo-height {
+    height: 12px;
+    width: 12px;
+    flex-shrink: 0;
+  }
+  .Title {
+    font-size: 8px;
+    padding-left: 2px;
+  }
+  .nav-item {
+    font-size: 0.58rem;
+    padding-bottom: 2px;
+  }
+  .nav-links {
+    gap: 0.2rem;
+    white-space: nowrap;
+  }
+  .nav-links-container {
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    padding-right: 6px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .nav-links-container::-webkit-scrollbar {
+    display: none;
+  }
+  .main-login-btn {
+    flex-shrink: 0;
+    font-size: 9px;
+    padding: 3px 4px;
+    min-height: 28px;
+  }
+  .nav-links li::after {
+    margin-left: 0.5px;
+    margin-right: 0.5px;
+    font-size: 0.65rem;
+  }
 }
 
 .fix-container-nav {

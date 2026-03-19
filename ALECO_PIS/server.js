@@ -9,6 +9,7 @@ import ticketRoutes from './backend/routes/tickets.js';
 import userRoutes from './backend/routes/user.js'; // <-- NEW: Imported your Admin brick
 import ticketFilterRoutes from './backend/routes/ticket-routes.js';
 import ticketGroupingRoutes from './backend/routes/ticket-grouping.js'; // <-- NEW: Ticket Grouping System
+import contactNumbersRoutes from './backend/routes/contact-numbers.js';
 import backupRoutes from './backend/routes/backup.js';
 
 
@@ -31,6 +32,7 @@ app.use('/api', ticketRoutes);
 app.use('/api', userRoutes);
 app.use('/api', ticketFilterRoutes); // <-- Admin filter brick
 app.use('/api', ticketGroupingRoutes); // <-- NEW: Ticket Grouping System
+app.use('/api', contactNumbersRoutes);
 
 app.get('/api/debug/routes', (req, res) => {
     res.json({

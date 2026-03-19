@@ -174,11 +174,12 @@ router.post('/setup-google-account', async (req, res) => {
   if (!email || !inviteCode) return res.status(400).json({ error: "Missing info." });
 
   const cleanEmail = email.trim().toLowerCase();
+  const cleanCode = String(inviteCode).trim();
   try {
     // 1. VERIFY: Ensure the code matches and is still "pending"
     const [invite] = await pool.execute(
       'SELECT * FROM access_codes WHERE email = ? AND code = ? AND status = "pending"',
-      [cleanEmail, inviteCode]
+      [cleanEmail, cleanCode]
     );
 
     if (invite.length === 0) {
@@ -196,7 +197,7 @@ router.post('/setup-google-account', async (req, res) => {
     await pool.execute(insertQuery, [name || "Google User", cleanEmail, userRole, profilePic]);
 
     // 3. UPDATE STATUS: Mark the invitation as "used"
-    await pool.execute('UPDATE access_codes SET status = ? WHERE email = ?', [cleanEmail]);
+    await pool.execute('UPDATE access_codes SET status = ? WHERE email = ?', ['used', cleanEmail]);
 
     console.log(`--- [NEW USER] ${cleanEmail} linked Google as ${userRole} (Invite used) ---`);
     res.status(200).json({ message: "Google account linked successfully!" });
@@ -294,11 +295,12 @@ router.post('/reset-password', async (req, res) => {
   const { email, code, newPassword } = req.body;
   if (!email || !code || !newPassword) return res.status(400).json({ error: "Missing required info." });
 
+  const cleanEmail = email.trim().toLowerCase();
   try {
     // 1. VERIFY: Check code and expiration
     const [record] = await pool.execute(
       'SELECT * FROM password_resets WHERE email = ? AND token = ? AND expires_at > NOW()',
-      [email, code]
+      [cleanEmail, code]
     );
 
     if (record.length === 0) return res.status(400).json({ error: "Invalid or expired reset code." });
@@ -309,18 +311,35 @@ router.post('/reset-password', async (req, res) => {
     // Bump token_version to flush all existing sessions
     await pool.execute(
       'UPDATE users SET password = ?, token_version = token_version + 1 WHERE email = ?', 
-      [hashedPassword, email]
+      [hashedPassword, cleanEmail]
     );
 
     // 3. CLEANUP: Delete used token
-    await pool.execute('DELETE FROM password_resets WHERE email = ?', [email]);
+    await pool.execute('DELETE FROM password_resets WHERE email = ?', [cleanEmail]);
 
-    console.log(`--- [SUCCESS] Password updated for ${email} ---`);
+    console.log(`--- [SUCCESS] Password updated for ${cleanEmail} ---`);
     res.status(200).json({ message: "Password updated successfully!" });
 
   } catch (error) {
     console.error("--- [DEBUG] Reset Password Error:", error.message);
     res.status(500).json({ error: "Server error during password update." });
+  }
+});
+
+// Session verification for App.jsx - validates tokenVersion on navigation
+router.post('/verify-session', async (req, res) => {
+  const { email, tokenVersion } = req.body;
+  if (!email) return res.status(400).json({ status: 'invalid' });
+
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    const [users] = await pool.execute('SELECT token_version FROM users WHERE email = ?', [cleanEmail]);
+    if (users.length === 0) return res.status(200).json({ status: 'invalid' });
+    const match = Number(users[0].token_version) === Number(tokenVersion);
+    return res.status(200).json({ status: match ? 'valid' : 'invalid' });
+  } catch (error) {
+    console.error('Verify session error:', error.message);
+    return res.status(200).json({ status: 'invalid' });
   }
 });
 

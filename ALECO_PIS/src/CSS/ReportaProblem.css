@@ -1,13 +1,744 @@
+/* --- WIZARD LAYOUT --- */
+/* Fixed height based on Contact Information step - height never changes, width responsive */
+.report-wizard-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: auto;
+    overflow: hidden;
+    min-width: 0; /* Allow shrink below content */
+}
+
+.report-wizard-form .wizard-body {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+}
+
+.report-wizard-form .wizard-step-content {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.report-wizard-form .wizard-step-block {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Ensure all form elements adapt to container - no overflow */
+.report-wizard-form .concern-group,
+.report-wizard-form .textfield-group,
+.report-wizard-form .upload-wrapper,
+.report-wizard-form .aleco-scope-manual,
+.report-wizard-form .gps-location-section,
+.report-wizard-form .issue-dropdown-container {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.report-wizard-form textarea,
+.report-wizard-form input,
+.report-wizard-form select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.report-wizard-form .wizard-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.report-wizard-form .wizard-body::-webkit-scrollbar-track {
+    background: var(--bg-body);
+}
+
+.report-wizard-form .wizard-body::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+/* Stepper container: FIXED height - only text shrinks, container does not move */
+.report-wizard-stepper {
+    height: 44px;
+    min-height: 44px;
+    flex-shrink: 0;
+}
+
+/* Row layout: stepper + content side-by-side on desktop */
+@media (min-width: 900px) {
+    .report-wizard-form {
+        flex-direction: row;
+        align-items: stretch;
+        gap: 0;
+    }
+
+    .report-wizard-stepper {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        width: 160px;
+        min-width: 160px;
+        height: 240px;
+        min-height: 240px;
+        padding: 20px 12px;
+        border-bottom: none;
+        border-right: 1px solid var(--border-color);
+        border-radius: 12px 0 0 12px;
+        justify-content: flex-start;
+        align-items: stretch;
+    }
+
+    .report-wizard-stepper .stepper-step {
+        flex-direction: row;
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 0.7rem;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .report-wizard-stepper .stepper-connector {
+        width: 2px;
+        height: 10px;
+        margin-left: 19px;
+        align-self: flex-start;
+        flex-shrink: 0;
+    }
+
+    .report-wizard-form .wizard-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .report-wizard-form .wizard-step-content {
+        flex: 1;
+        padding: 20px 24px;
+    }
+
+    .report-wizard-form .wizard-actions {
+        padding: 16px 24px;
+        border-top: 1px solid var(--border-color);
+        flex-shrink: 0;
+    }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+    .report-wizard-stepper {
+        width: 180px;
+        min-width: 180px;
+        padding: 24px 16px;
+    }
+
+    .report-wizard-stepper .stepper-step {
+        font-size: 0.75rem;
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .report-wizard-stepper .stepper-num {
+        width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
+    }
+
+    .report-wizard-stepper .stepper-connector {
+        margin-left: 22px;
+    }
+
+    .report-wizard-form .wizard-step-content {
+        padding: 24px 28px;
+    }
+
+    .report-wizard-form .wizard-actions {
+        padding: 20px 28px;
+    }
+}
+
+/* ========== STEPPER RESPONSIVE (320px → tablet) ========== */
+
+/* 320px and below: numbers only, ultra-compact - no overlap */
+@media (max-width: 320px) {
+    .report-wizard-stepper {
+        padding: 8px 10px;
+        gap: 2px;
+        justify-content: center;
+    }
+
+    .report-wizard-stepper .stepper-step {
+        padding: 2px 3px;
+        gap: 0;
+        font-size: 0;
+    }
+
+    .report-wizard-stepper .stepper-label-short {
+        display: none !important;
+    }
+
+    .report-wizard-stepper .stepper-num {
+        width: 12px;
+        height: 12px;
+        font-size: 0.5rem;
+    }
+
+    .report-wizard-stepper .stepper-connector {
+        width: 3px;
+        height: 2px;
+    }
+
+    .wizard-step-content {
+        padding: 10px 12px;
+    }
+
+    .wizard-actions {
+        padding: 10px 12px;
+    }
+
+    .column-section-title {
+        font-size: 0.9rem !important;
+    }
+
+    .btn-wizard-back,
+    .btn-wizard-next {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+    }
+
+    /* Container & form adapt to 320px - no overflow */
+    .report-problem-container {
+        padding: 0 6px;
+    }
+
+    .report-main-card {
+        padding: 8px 10px;
+        gap: 12px;
+        border-radius: 8px;
+    }
+
+    .wizard-step-content {
+        padding: 8px 6px;
+    }
+
+    .wizard-actions {
+        padding: 8px 6px;
+    }
+
+    .column-section-title {
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+}
+
+/* 321px - 359px: numbers only, slightly larger */
+@media (min-width: 321px) and (max-width: 359px) {
+    .report-wizard-stepper {
+        padding: 8px 12px;
+        gap: 3px;
+        justify-content: center;
+    }
+
+    .report-wizard-stepper .stepper-step {
+        padding: 2px 4px;
+        gap: 0;
+        font-size: 0;
+    }
+
+    .report-wizard-stepper .stepper-label-short {
+        display: none !important;
+    }
+
+    .report-wizard-stepper .stepper-num {
+        width: 14px;
+        height: 14px;
+        font-size: 0.5rem;
+    }
+
+    .report-wizard-stepper .stepper-connector {
+        width: 4px;
+        height: 2px;
+    }
+
+    .wizard-step-content {
+        padding: 10px 12px;
+    }
+
+    .wizard-actions {
+        padding: 10px 12px;
+    }
+
+    .column-section-title {
+        font-size: 0.9rem !important;
+    }
+
+    .btn-wizard-back,
+    .btn-wizard-next {
+        padding: 8px 14px;
+        font-size: 0.8rem;
+    }
+
+    .report-problem-container {
+        padding: 0 10px;
+    }
+
+    .report-main-card {
+        padding: 12px 14px;
+    }
+
+    .wizard-step-content {
+        padding: 10px 10px;
+    }
+
+    .wizard-actions {
+        padding: 10px 10px;
+    }
+}
+
+/* 360px - 399px: numbers only (labels still hidden for fit) */
+@media (min-width: 360px) and (max-width: 399px) {
+    .report-wizard-stepper {
+        padding: 9px 14px;
+        gap: 4px;
+    }
+
+    .report-wizard-stepper .stepper-step {
+        padding: 3px 5px;
+        gap: 0;
+        font-size: 0;
+    }
+
+    .report-wizard-stepper .stepper-label-short {
+        display: none !important;
+    }
+
+    .report-wizard-stepper .stepper-num {
+        width: 16px;
+        height: 16px;
+        font-size: 0.55rem;
+    }
+
+    .report-wizard-stepper .stepper-connector {
+        width: 5px;
+        height: 2px;
+    }
+
+    .wizard-step-content {
+        padding: 11px 13px;
+    }
+
+    .wizard-actions {
+        padding: 11px 13px;
+    }
+
+    .column-section-title {
+        font-size: 0.92rem !important;
+    }
+
+    .btn-wizard-back,
+    .btn-wizard-next {
+        padding: 8px 14px;
+        font-size: 0.82rem;
+    }
+
+    .report-problem-container {
+        padding: 0 12px;
+    }
+
+    .report-main-card {
+        padding: 12px 16px;
+    }
+
+    .wizard-step-content {
+        padding: 11px 12px;
+    }
+
+    .wizard-actions {
+        padding: 11px 12px;
+    }
+}
+
+/* 400px - 479px: numbers only (labels hidden to prevent overlap) */
+@media (min-width: 400px) and (max-width: 479px) {
+    .report-wizard-stepper {
+        padding: 10px 14px;
+        gap: 4px;
+    }
+
+    .report-wizard-stepper .stepper-step {
+        padding: 3px 6px;
+        gap: 0;
+        font-size: 0;
+    }
+
+    .report-wizard-stepper .stepper-label-short {
+        display: none !important;
+    }
+
+    .report-wizard-stepper .stepper-num {
+        width: 16px;
+        height: 16px;
+        font-size: 0.55rem;
+    }
+
+    .report-wizard-stepper .stepper-connector {
+        width: 6px;
+        height: 2px;
+    }
+
+    .report-problem-container {
+        padding: 0 14px;
+    }
+
+    .report-main-card {
+        padding: 14px 16px;
+    }
+
+    .wizard-step-content {
+        padding: 12px 14px;
+    }
+
+    .wizard-actions {
+        padding: 12px 14px;
+    }
+
+    .column-section-title {
+        font-size: 0.95rem !important;
+    }
+
+    .btn-wizard-back,
+    .btn-wizard-next {
+        padding: 9px 16px;
+        font-size: 0.85rem;
+    }
+}
+
+/* 481px - 600px: large mobile */
+@media (min-width: 481px) and (max-width: 600px) {
+    .report-wizard-stepper {
+        padding: 10px 16px;
+        gap: 4px;
+    }
+
+    .report-wizard-stepper .stepper-step {
+        padding: 4px 8px;
+        gap: 5px;
+        font-size: 0.55rem;
+    }
+
+    .report-wizard-stepper .stepper-label-short {
+        font-size: 0.55rem;
+    }
+
+    .report-wizard-stepper .stepper-num {
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+    }
+
+    .report-wizard-stepper .stepper-connector {
+        width: 8px;
+        height: 2px;
+    }
+
+    .report-problem-container {
+        padding: 0 16px;
+    }
+
+    .report-main-card {
+        padding: 16px 18px;
+    }
+
+    .wizard-step-content {
+        padding: 14px 16px;
+    }
+
+    .wizard-actions {
+        padding: 14px 16px;
+    }
+
+    .column-section-title {
+        font-size: 1rem !important;
+    }
+
+    .btn-wizard-back,
+    .btn-wizard-next {
+        padding: 9px 18px;
+        font-size: 0.88rem;
+    }
+}
+
+/* 601px - 899px: tablet */
+@media (min-width: 601px) and (max-width: 899px) {
+    .report-wizard-stepper {
+        padding: 12px 18px;
+        gap: 4px;
+    }
+
+    .report-wizard-stepper .stepper-step {
+        padding: 5px 8px;
+        gap: 6px;
+        font-size: 0.6rem;
+    }
+
+    .report-wizard-stepper .stepper-label-short {
+        font-size: 0.6rem;
+    }
+
+    .report-wizard-stepper .stepper-num {
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+    }
+
+    .report-wizard-stepper .stepper-connector {
+        width: 10px;
+        height: 2px;
+    }
+
+    .report-problem-container {
+        padding: 0 18px;
+    }
+
+    .report-main-card {
+        padding: 18px 20px;
+    }
+
+    .wizard-step-content {
+        padding: 16px 18px;
+    }
+
+    .wizard-actions {
+        padding: 16px 18px;
+    }
+
+    .column-section-title {
+        font-size: 1.05rem !important;
+    }
+
+    .btn-wizard-back,
+    .btn-wizard-next {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}
+
+.report-wizard-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 13px 25px;
+    background: var(--bg-body);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 8px 8px 0 0;
+}
+
+.report-wizard-stepper .stepper-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+
+.report-wizard-stepper .stepper-step.done {
+    opacity: 0.9;
+    color: var(--text-secondary);
+}
+
+.report-wizard-stepper .stepper-step.active {
+    opacity: 1;
+    color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.report-wizard-stepper .stepper-step.clickable {
+    cursor: pointer;
+}
+
+.report-wizard-stepper .stepper-step.clickable:hover {
+    opacity: 1;
+}
+
+.report-wizard-stepper .stepper-num {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bg-card);
+    font-size: 0.6rem;
+    font-weight: 800;
+}
+
+.report-wizard-stepper .stepper-step.active .stepper-num {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.report-wizard-stepper .stepper-step.done .stepper-num {
+    background: rgba(34, 197, 94, 0.25);
+    color: #16a34a;
+}
+
+/* Colored connectors (sleek, minimalist) */
+.report-wizard-stepper .stepper-connector {
+    width: 16px;
+    height: 2px;
+    background: var(--border-color);
+    opacity: 0.4;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+.report-wizard-stepper .stepper-connector-pending {
+    background: var(--border-color);
+    opacity: 0.35;
+}
+
+.report-wizard-stepper .stepper-connector-active {
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+    opacity: 0.9;
+}
+
+.report-wizard-stepper .stepper-connector-done {
+    background: #16a34a;
+    opacity: 0.8;
+}
+
+[data-theme="dark"] .report-wizard-stepper .stepper-connector-active {
+    background: linear-gradient(90deg, #3b82f6 0%, #93c5fd 100%);
+}
+
+[data-theme="dark"] .report-wizard-stepper .stepper-connector-done {
+    background: #22c55e;
+}
+
+.report-wizard-stepper .stepper-label-short {
+    display: inline;
+}
+
+.wizard-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.wizard-step-content {
+    min-height: 200px;
+    padding: 16px 20px;
+}
+
+.wizard-step-block {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.wizard-summary .summary-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-body);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.wizard-summary .summary-item {
+    font-size: 14px;
+    color: var(--text-main);
+}
+
+.aleco-scope-manual {
+    margin-top: 12px;
+}
+
+.aleco-scope-manual label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.wizard-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.wizard-actions-right {
+    margin-left: auto;
+}
+
+.btn-wizard-back {
+    padding: 10px 20px;
+    background: var(--bg-body);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-wizard-back:hover {
+    background: var(--border-color);
+}
+
+.btn-wizard-next {
+    padding: 10px 24px;
+    background: var(--primary-color, #006bb3);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-wizard-next:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-wizard-next:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* --- PREVIOUS STYLES (Backward Compatible) --- */
 
-/* Main Wrapper */
+/* Main Wrapper (matches interruption-list-container responsiveness) */
 .report-problem-container {
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 40px 20px;
+    max-width: 1400px;
+    margin: 0 auto 60px auto;
+    padding: 0 20px;
     font-family: var(--font-body);
     box-sizing: border-box;
     width: 100%;
+    min-width: 0;
+    overflow: hidden;
     perspective: 1500px; /* Essential for the 3D flip */
 }
 
@@ -34,7 +765,7 @@
 /* THE TWO-COLUMN GRID */
 .report-main-card {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 30px;
     background-color: var(--bg-card);
     padding: 20px;
@@ -43,10 +774,20 @@
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
     box-sizing: border-box;
     width: 100%;
+    min-width: 0;
     overflow: hidden;
 }
 
+.report-main-card > * {
+    min-width: 0;
+}
+
 /* --- FLIP ANIMATION LOGIC --- */
+
+.report-card-inner,
+.report-card-front {
+    min-width: 0;
+}
 
 .report-card-inner {
     position: relative;

@@ -80,10 +80,10 @@ const CookieBanner = () => {
           services, to assist our campaigns and to provide personalized content.
           <br />
           For more information see our {" "}
-          <a href="#" className="privacy-link">Privacy Policy</a>.
+          <a href="#privacy" className="privacy-link">Privacy Policy</a>.
         </p>
 
-        <button className="more-options">More Options</button>
+        <button type="button" className="more-options" onClick={() => document.getElementById('privacy')?.scrollIntoView({ behavior: 'smooth' })}>More Options</button>
         <button className="accept-button" onClick={handleAccept} type="button">Accept</button>
       </div>
     </div>

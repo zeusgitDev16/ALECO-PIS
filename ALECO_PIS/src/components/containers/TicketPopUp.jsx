@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import '../../CSS/TicketPopUp.css';
 
 const TicketPopUp = ({ ticketId, onClose, onSendEmail }) => {
@@ -9,7 +10,7 @@ const TicketPopUp = ({ ticketId, onClose, onSendEmail }) => {
     const handleCopy = () => {
         if (!ticketId) return;
         navigator.clipboard.writeText(ticketId);
-        alert("Ticket ID copied to clipboard!");
+        toast.success("Ticket ID copied to clipboard!");
     };
 
     const handleSend = async () => {
@@ -18,7 +19,7 @@ const TicketPopUp = ({ ticketId, onClose, onSendEmail }) => {
 
     // 2. Existing Email Validation
     if (!email.includes('@')) {
-        alert("Please enter a valid email address.");
+        toast.warning("Please enter a valid email address.");
         return;
     }
 
@@ -31,7 +32,7 @@ const TicketPopUp = ({ ticketId, onClose, onSendEmail }) => {
         await onSendEmail(email, setEmailSent);
     } catch (error) {
         console.error("Submission failed:", error);
-        alert("Something went wrong. Please try again.");
+        toast.error("Something went wrong. Please try again.");
     } finally {
         // 5. Re-enable the button after process finishes
         setLoading(false);

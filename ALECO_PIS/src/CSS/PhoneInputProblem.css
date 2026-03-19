@@ -1,0 +1,13 @@
+/* PhoneInputProblem - extends TextFieldProblem styling */
+.phone-input-group {
+    /* Inherits from .textfield-group */
+}
+
+.phone-input-input {
+    /* Inherits from .textfield-input */
+    letter-spacing: 0.02em;
+}
+
+.phone-input-error {
+    /* Inherits from .textfield-error-msg */
+}

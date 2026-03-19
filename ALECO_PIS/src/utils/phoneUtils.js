@@ -43,3 +43,32 @@ export const normalizeForSubmit = (phone) => {
     if (!phone || typeof phone !== 'string') return '';
     return phone.trim();
 };
+
+/**
+ * Validate Philippine mobile number (09XX format, 11 digits)
+ * Mirrors backend normalizePhoneForDB rules for consistency
+ * @param {string} phone - User input (digits only or with formatting)
+ * @returns {{ valid: boolean, error?: string }}
+ */
+export const validatePhilippineMobile = (phone) => {
+    if (!phone || typeof phone !== 'string') {
+        return { valid: false, error: 'Phone number is required' };
+    }
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 0) {
+        return { valid: false, error: 'Phone number is required' };
+    }
+    if (digits.length < 10) {
+        return { valid: false, error: 'Enter 11 digits (09XX XXX XXXX)' };
+    }
+    if (digits.length > 12) {
+        return { valid: false, error: 'Phone number is too long' };
+    }
+    const valid = (digits.startsWith('63') && digits.length === 12) ||
+        (digits.startsWith('0') && digits.length === 11) ||
+        (digits.startsWith('9') && digits.length === 10);
+    if (!valid) {
+        return { valid: false, error: 'Use Philippine mobile format (09XX XXX XXXX)' };
+    }
+    return { valid: true };
+};

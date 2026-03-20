@@ -101,10 +101,10 @@ flowchart LR
 
 ### 3.1 Outbound — [`backend/utils/sms.js`](../backend/utils/sms.js)
 
-- **`sendPhilSMS(number, messageBody)`** — `normalizePhoneForSMS` → POST **`{PHILSMS_API_URL or https://app.philsms.com}/api/v3/sms/send`** (trailing slash on base URL stripped) with Bearer **`PHILSMS_API_KEY`**, JSON body: `recipient`, `message`, `sender_id` (`PHILSMS_SENDER_ID`), `type: plain`.
+- **`sendPhilSMS(number, messageBody)`** — `normalizePhoneForSMS` → POST **`{base}/api/v3/sms/send`** where **`base`** comes from **`PHILSMS_API_URL`** (optional) or defaults to **`https://dashboard.philsms.com`**. You may set **`PHILSMS_API_URL`** to the base only (`https://dashboard.philsms.com`) or to the full documented URL — if the value ends with **`/api/v3/sms/send`**, the code strips that suffix so the path is not doubled. Trailing slashes on the base are stripped. Bearer **`PHILSMS_API_KEY`**, JSON body: `recipient`, `message`, `sender_id` (`PHILSMS_SENDER_ID`), `type: plain`.
 - **Return value:** `{ success, skipped?, reason?, providerMessage? }` — not a bare boolean. `reason` examples: `invalid_number`, `no_api_key`, `unexpected_response`, `http_error`, `network_error`. `providerMessage` is a short, operator-safe hint (truncated).
 
-**Canonical API host:** PhilSMS documents **`https://app.philsms.com`** for `/api/v3/sms/send`. The dashboard may show a different hostname (e.g. `dashboard.philsms.com`); use that only if PhilSMS confirms it for REST SMS—wrong **`PHILSMS_API_URL`** causes silent failures until fixed.
+**API host:** Project default base is **`https://dashboard.philsms.com`** (full send URL **`https://dashboard.philsms.com/api/v3/sms/send`**). Some PhilSMS docs mention **`https://app.philsms.com`** — if your token only works there, set **`PHILSMS_API_URL=https://app.philsms.com`** in root **`.env`**. Wrong host + token mismatch often appears as **`Unauthenticated`**.
 
 #### 3.1.1 Dispatch / group-dispatch / hold — HTTP + `sms` payload
 
@@ -188,8 +188,9 @@ Detail and mount-order rationale: [BACKEND_SERVER_FLOW.md](./BACKEND_SERVER_FLOW
 |----------|------|
 | `VITE_GOOGLE_MAPS_API_KEY` | Report a Problem client geocoding |
 | `GOOGLE_API_KEY` | `geocoder.js` maintenance only |
-| `PHILSMS_API_URL` | Optional; default **`https://app.philsms.com`** (official REST host). Avoid unverified dashboard-only URLs. |
-| `PHILSMS_API_KEY`, `PHILSMS_SENDER_ID` | Outbound SMS (Bearer token; registered sender ID) |
+| `PHILSMS_API_URL` | Optional base URL; default **`https://dashboard.philsms.com`**. Override with **`https://app.philsms.com`** if required for your account. |
+| `PHILSMS_API_KEY` | PhilSMS API token (Bearer). Required for outbound SMS. |
+| `PHILSMS_SENDER_ID` | JSON `sender_id` (registered sender name; default **`PhilSMS`** if unset). |
 | `EMAIL_*` | send-copy, auth/invite mail |
 
 ---

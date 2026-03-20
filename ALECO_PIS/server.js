@@ -12,7 +12,8 @@ import ticketGroupingRoutes from './backend/routes/ticket-grouping.js'; // <-- N
 import contactNumbersRoutes from './backend/routes/contact-numbers.js';
 import backupRoutes from './backend/routes/backup.js';
 import interruptionsRoutes from './backend/routes/interruptions.js';
-
+import pool from './backend/config/db.js';
+import { transitionScheduledStarts } from './backend/services/interruptionLifecycle.js';
 
 dotenv.config();
 
@@ -52,4 +53,12 @@ app.get('/api/debug/routes', (req, res) => {
 // 4. Start the Office
 app.listen(PORT, () => {
   console.log(`Server running automatically on http://localhost:${PORT}`);
+
+  const runScheduledInterruptionTransition = () => {
+    transitionScheduledStarts(pool).catch((err) =>
+      console.error('[interruptions] scheduled start transition:', err.message || err)
+    );
+  };
+  runScheduledInterruptionTransition();
+  setInterval(runScheduledInterruptionTransition, 60_000);
 });

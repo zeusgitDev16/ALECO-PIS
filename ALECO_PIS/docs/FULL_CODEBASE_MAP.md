@@ -163,6 +163,8 @@ Paths are relative to **`/api`** prefix.
 
 **DB:** `aleco_interruptions`.
 
+**Client:** [`src/api/interruptionsApi.js`](../src/api/interruptionsApi.js) — shared list/CRUD; admin list uses `includeFuture=1` to include not-yet-public rows. Public landing uses [`usePublicInterruptions`](../src/hooks/usePublicInterruptions.js) (no `includeFuture`) and [`src/utils/interruptionDateFormat.js`](../src/utils/interruptionDateFormat.js) for readable times. **DB:** optional `public_visible_at` — NULL = visible immediately; future time hides row from public GET until then ([`add_public_visible_at_interruptions.sql`](../backend/migrations/add_public_visible_at_interruptions.sql)).
+
 ### [`backend/routes/contact-numbers.js`](../backend/routes/contact-numbers.js)
 
 | Method | Path |
@@ -206,6 +208,8 @@ Paths are relative to **`/api`** prefix.
 | [`create_contact_numbers.sql`](../backend/migrations/create_contact_numbers.sql) | Table `aleco_contact_numbers` + seed rows |
 | [`create_ticket_grouping_tables.sql`](../backend/migrations/create_ticket_grouping_tables.sql) | `aleco_ticket_groups`, `aleco_ticket_group_members`, `is_grouped`/`group_id` on tickets — **tables may exist without being used by current Node grouping code** |
 | [`create_aleco_interruptions.sql`](../backend/migrations/create_aleco_interruptions.sql) | Table `aleco_interruptions` |
+| [`add_facebook_style_interruptions.sql`](../backend/migrations/add_facebook_style_interruptions.sql) | `body`, `control_no`, `image_url` on `aleco_interruptions` (run before `alter_interruptions_nullable`) |
+| [`alter_interruptions_nullable.sql`](../backend/migrations/alter_interruptions_nullable.sql) | `affected_areas`, `cause` nullable on `aleco_interruptions` (run after `add_facebook_style_interruptions`) |
 
 Run helper: [`backend/run-migration.js`](../backend/run-migration.js).
 

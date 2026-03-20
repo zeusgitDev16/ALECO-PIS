@@ -1,0 +1,237 @@
+/**
+ * Power advisories — single client for GET/POST/PUT/DELETE /api/interruptions.
+ * @see backend/routes/interruptions.js
+ */
+import { apiUrl } from '../utils/api';
+
+/**
+ * @typedef {object} InterruptionsListResult
+ * @property {boolean} ok - HTTP response ok
+ * @property {boolean} success - API reported success with usable list (empty array is OK)
+ * @property {object[]} data
+ * @property {string|null} message
+ * @property {boolean} unavailable - true when public should show "bulletin unavailable"
+ */
+
+/**
+ * @param {{ limit?: number, includeFuture?: boolean, includeDeleted?: boolean, deletedOnly?: boolean }} opts
+ * @returns {Promise<InterruptionsListResult>}
+ */
+export async function listInterruptions({
+  limit = 100,
+  includeFuture = false,
+  includeDeleted = false,
+  deletedOnly = false,
+} = {}) {
+  const cap = Math.min(Math.max(parseInt(String(limit), 10) || 100, 1), 200);
+  const qs = new URLSearchParams({ limit: String(cap) });
+  if (includeFuture) qs.set('includeFuture', '1');
+  if (includeDeleted) qs.set('includeDeleted', '1');
+  if (deletedOnly) qs.set('deletedOnly', '1');
+  let res;
+  try {
+    res = await fetch(apiUrl(`/api/interruptions?${qs.toString()}`));
+  } catch {
+    return {
+      ok: false,
+      success: false,
+      data: [],
+      message: null,
+      unavailable: true,
+    };
+  }
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    return {
+      ok: false,
+      success: false,
+      data: [],
+      message: typeof json?.message === 'string' ? json.message : null,
+      unavailable: true,
+    };
+  }
+  if (json && json.success === true) {
+    return {
+      ok: true,
+      success: true,
+      data: Array.isArray(json.data) ? json.data : [],
+      message: null,
+      unavailable: false,
+    };
+  }
+  return {
+    ok: true,
+    success: false,
+    data: [],
+    message: typeof json?.message === 'string' ? json.message : null,
+    unavailable: true,
+  };
+}
+
+/**
+ * @param {object} body - POST body (camelCase per backend)
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ */
+export async function createInterruption(body) {
+  let res;
+  try {
+    res = await fetch(apiUrl('/api/interruptions'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { ok: false, status: 0, success: false, data: null, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    status: res.status,
+    success,
+    data: json?.data ?? null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
+ * @param {number} id
+ * @param {object} body
+ */
+export async function updateInterruption(id, body) {
+  let res;
+  try {
+    res = await fetch(apiUrl(`/api/interruptions/${id}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { ok: false, status: 0, success: false, data: null, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    status: res.status,
+    success,
+    data: json?.data ?? null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
+ * @param {number} id
+ */
+export async function deleteInterruption(id) {
+  let res;
+  try {
+    res = await fetch(apiUrl(`/api/interruptions/${id}`), { method: 'DELETE' });
+  } catch {
+    return { ok: false, success: false, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ */
+export async function restoreInterruption(id) {
+  let res;
+  try {
+    res = await fetch(apiUrl(`/api/interruptions/${id}/restore`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  } catch {
+    return { ok: false, success: false, data: null, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    data: json?.data ?? null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ */
+export async function getInterruption(id) {
+  let res;
+  try {
+    res = await fetch(apiUrl(`/api/interruptions/${id}`));
+  } catch {
+    return { ok: false, success: false, data: null, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    data: json?.data ?? null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
+ * Upload image for advisory. Returns imageUrl for form.
+ * @param {File} file - Image file (field name: image)
+ * @returns {Promise<{ ok: boolean, imageUrl: string|null, message: string|null }>}
+ */
+export async function uploadInterruptionImage(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  let res;
+  try {
+    res = await fetch(apiUrl('/api/interruptions/upload-image'), {
+      method: 'POST',
+      body: formData,
+    });
+  } catch {
+    return { ok: false, imageUrl: null, message: 'Upload failed.' };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: success,
+    imageUrl: success ? json.imageUrl ?? null : null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
+ * @param {number} id
+ * @param {{ remark: string, actorEmail?: string, actorName?: string }} body
+ */
+export async function addInterruptionUpdate(id, body) {
+  let res;
+  try {
+    res = await fetch(apiUrl(`/api/interruptions/${id}/updates`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { ok: false, success: false, data: null, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    data: json?.data ?? null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}

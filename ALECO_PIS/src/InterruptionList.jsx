@@ -1,138 +1,128 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import './CSS/BodyLandPage.css';
-import { apiUrl } from './utils/api';
+import './CSS/InterruptionFeed.css';
+import { usePublicInterruptions } from './hooks/usePublicInterruptions';
+import InterruptionFeedPost from './components/interruptions/InterruptionFeedPost';
+import VerticalProgressIndicator from './components/interruptions/VerticalProgressIndicator';
+import AsOfDateTracker from './components/interruptions/AsOfDateTracker';
 
 function InterruptionList() {
-  const sliderRef = useRef(null);
+  const feedRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [interruptions, setInterruptions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { interruptions, loading, listUnavailable, refetch } = usePublicInterruptions();
 
-  const date = new Date();
-  const month = date.toLocaleString('default', { month: 'long' });
-  const year = date.getFullYear();
-
-  const loadInterruptions = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(apiUrl('/api/interruptions?limit=50'));
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.success || !Array.isArray(json.data)) {
-        throw new Error(json.message || 'Could not load power advisories.');
-      }
-      setInterruptions(json.data);
-    } catch (e) {
-      setError(e.message || 'Failed to load interruptions.');
-      setInterruptions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadInterruptions();
-  }, [loadInterruptions]);
-
-  const scroll = (direction) => {
-    if (sliderRef.current) {
-      const { current } = sliderRef;
-      const scrollAmount = 300;
-      if (direction === 'left') {
-        current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-      } else {
-        current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      }
-    }
-  };
+  const bulletinDateFull = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   const handleScroll = () => {
-    if (sliderRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
-      const totalScroll = scrollWidth - clientWidth;
-      const currentProgress = totalScroll > 0 ? (scrollLeft / totalScroll) * 100 : 0;
-      setScrollProgress(currentProgress);
-    }
+    const el = feedRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const totalScroll = scrollHeight - clientHeight;
+    const progress = totalScroll > 0 ? (scrollTop / totalScroll) * 100 : 0;
+    setScrollProgress(progress);
   };
 
   useEffect(() => {
     handleScroll();
-  }, [interruptions, loading]);
+  }, [interruptions, loading, listUnavailable]);
+
+  const hasAdvisoryCards = !loading && !listUnavailable && interruptions.length > 0;
 
   return (
     <div className="interruption-list-container">
       <h2 className="section-title">Power Outages Updates (Brownout)</h2>
 
-      {loading && (
-        <p className="widget-text" style={{ textAlign: 'center', margin: '1rem 0' }}>
-          Loading advisories…
-        </p>
-      )}
-      {error && !loading && (
-        <p className="widget-text" style={{ textAlign: 'center', margin: '1rem 0', color: 'var(--error, #c00)' }}>
-          {error}{' '}
-          <button type="button" className="nav-btn" onClick={loadInterruptions} style={{ marginLeft: 8 }}>
-            Retry
-          </button>
-        </p>
-      )}
+      <div className="feed-controls">
+        <VerticalProgressIndicator scrollProgress={scrollProgress} />
+        <AsOfDateTracker />
+      </div>
 
       <div
-        className="interruption-slider"
-        ref={sliderRef}
+        className="interruption-feed"
+        ref={feedRef}
         onScroll={handleScroll}
       >
-        {!loading && !error && interruptions.length === 0 && (
-          <div className="interruption-card" style={{ minWidth: 280, opacity: 0.95 }}>
+        {loading && (
+          <div className="interruption-card interruption-card--bulletin interruption-card--feed" aria-busy="true">
+            <div className="blob blob-pending" aria-hidden />
             <div className="bg">
-              <h3 className="status-header">No active listings</h3>
-              <div className="card-details">
-                <p>There are no power interruption advisories published at this time.</p>
+              <h3 className="status-header status-pending">One moment…</h3>
+              <div className="card-details card-details--bulletin">
+                <p>We&apos;re checking for the latest brownout updates from ALECO.</p>
               </div>
             </div>
           </div>
         )}
-        {interruptions.map((item) => (
-          <div key={item.id} className="interruption-card">
-            <div className={`blob blob-${String(item.status).toLowerCase()}`}></div>
+
+        {!loading && listUnavailable && (
+          <div className="interruption-card interruption-card--bulletin interruption-card--feed" role="status">
+            <div className="blob blob-pending" aria-hidden />
             <div className="bg">
-              <h3 className={`status-header status-${String(item.status).toLowerCase()}`}>
-                {item.status} - {item.type}
-              </h3>
-              <div className="card-details">
-                <p><strong>Feeder:</strong> {item.feeder}</p>
-                <p><strong>Affected Areas:</strong> {(item.affectedAreas || []).join(', ')}</p>
-                <p><strong>Cause:</strong> {item.cause}</p>
-                <p><strong>Start:</strong> {item.dateTimeStart}</p>
-                {item.dateTimeEndEstimated && (
-                  <p><strong>Est. End:</strong> {item.dateTimeEndEstimated}</p>
-                )}
-                {item.dateTimeRestored && (
-                  <p><strong>Restored:</strong> {item.dateTimeRestored}</p>
-                )}
+              <h3 className="status-header status-pending">Updates will be back soon</h3>
+              <div className="card-details card-details--bulletin">
+                <p>
+                  We can&apos;t show the outage bulletin right now. This doesn&apos;t mean your power is
+                  out—only this page needs a quick refresh.
+                </p>
+                <button type="button" className="interruption-bulletin-btn" onClick={() => refetch()}>
+                  Refresh
+                </button>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        )}
 
-      <p className="date-tracker">
-        As of {month}, {year}!
-      </p>
+        {!loading && !listUnavailable && interruptions.length === 0 && (
+          <div className="interruption-card interruption-card--bulletin interruption-card--good-news interruption-card--feed">
+            <div className="blob blob-restored" aria-hidden />
+            <div className="bg interruption-good-news-inner">
+              <div className="interruption-good-news-icon" aria-hidden>
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" opacity="0.35" />
+                  <path
+                    d="M14 24.5l7 7 13-16"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <span className="interruption-good-news-badge">Good news</span>
+              <h3 className="status-header status-restored interruption-good-news-headline">
+                No power advisories to report
+              </h3>
+              <p className="interruption-good-news-date">{bulletinDateFull}</p>
+              <div className="card-details card-details--bulletin card-details--good-news">
+                <p className="interruption-good-news-lead">
+                  <strong>This board shares brownouts and planned outages</strong>—so when you see cards here,
+                  it means there is something the cooperative wants customers to know.{' '}
+                  <strong>Right now there are no new posts, and that&apos;s a good thing.</strong>
+                </p>
+                <p className="interruption-good-news-body">
+                  ALECO will publish advisories here whenever there&apos;s scheduled work or widespread
+                  interruptions worth announcing. Your lights might still flicker for other reasons—if you need
+                  help, we&apos;re still here for you.
+                </p>
+                <p className="interruption-good-news-help">
+                  Questions or an outage at home? Use <strong>Report a Problem</strong> or call{' '}
+                  <strong>ALECO</strong> so they can assist you directly.
+                </p>
+                <p className="interruption-bulletin-enjoy">Enjoy your day!</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-      <div className="slider-controls">
-        <div className="progress-track">
-          <div
-            className="progress-indicator"
-            style={{ width: `${Math.max(scrollProgress, 10)}%` }}
-          ></div>
-        </div>
-
-        <div className="nav-buttons">
-          <button type="button" className="nav-btn" onClick={() => scroll('left')}>←</button>
-          <button type="button" className="nav-btn" onClick={() => scroll('right')}>→</button>
-        </div>
+        {hasAdvisoryCards &&
+          interruptions.map((item) => (
+            <InterruptionFeedPost key={item.id} item={item} />
+          ))}
       </div>
     </div>
   );

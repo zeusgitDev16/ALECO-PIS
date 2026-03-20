@@ -1,75 +1,58 @@
 import express from 'express';
 import pool from '../config/db.js';
+import { upload } from '../../cloudinaryConfig.js';
+import {
+  parseAffectedAreas,
+  serializeAffectedAreas,
+  toMysqlDateTime,
+  mapRowToDto,
+  computeInitialStatus,
+  toMysqlDateTimeFromRow,
+} from '../utils/interruptionsDto.js';
+import {
+  listUpdates,
+  addUserUpdate,
+  insertSystemUpdate,
+} from '../services/interruptionLifecycle.js';
+import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
 
 const router = express.Router();
 
+/** Columns for list + single-row fetch (without leading SELECT … FROM). */
+const INTERRUPTION_TABLE_COLS = `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+  date_time_start, date_time_end_estimated, date_time_restored,
+  public_visible_at, created_at, updated_at`;
+
+function selectInterruptionRowSql(hasDeletedAt) {
+  return hasDeletedAt
+    ? `SELECT ${INTERRUPTION_TABLE_COLS}, deleted_at FROM aleco_interruptions`
+    : `SELECT ${INTERRUPTION_TABLE_COLS} FROM aleco_interruptions`;
+}
+
 const TYPES = new Set(['Scheduled', 'Unscheduled']);
 const STATUSES = new Set(['Pending', 'Ongoing', 'Restored']);
+const CAUSE_CATEGORY_VALUES = new Set([
+  'Maintenance',
+  'Equipment',
+  'Vegetation',
+  'Weather',
+  'ThirdParty',
+  'Load',
+  'Other',
+]);
 
-/** Parse DB text: JSON array or comma-separated */
-function parseAffectedAreas(text) {
-  if (!text || typeof text !== 'string') return [];
-  const trimmed = text.trim();
-  if (!trimmed) return [];
-  if (trimmed.startsWith('[')) {
-    try {
-      const j = JSON.parse(trimmed);
-      if (Array.isArray(j)) return j.map(String).filter(Boolean);
-    } catch {
-      /* fall through */
-    }
+/** @returns {{ value: string|null, error?: string }} */
+function parseCauseCategoryInput(raw) {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return { value: null };
+  const v = String(raw).trim();
+  if (!CAUSE_CATEGORY_VALUES.has(v)) {
+    return {
+      value: null,
+      error:
+        'causeCategory must be one of: Maintenance, Equipment, Vegetation, Weather, ThirdParty, Load, Other (or empty).',
+    };
   }
-  return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
-}
-
-/** Store as JSON array string for consistent reads */
-function serializeAffectedAreas(areas) {
-  if (Array.isArray(areas)) {
-    return JSON.stringify(areas.filter(Boolean).map(String));
-  }
-  if (typeof areas === 'string' && areas.trim()) {
-    return serializeAffectedAreas(parseAffectedAreas(areas));
-  }
-  return JSON.stringify([]);
-}
-
-function formatDisplayDateTime(val) {
-  if (!val) return null;
-  if (val instanceof Date) {
-    return val.toISOString().slice(0, 16).replace('T', ' ');
-  }
-  const s = String(val).replace('T', ' ');
-  return s.length >= 16 ? s.slice(0, 16) : s;
-}
-
-function toMysqlDateTime(input) {
-  if (input === undefined || input === null || input === '') return null;
-  const d = new Date(input);
-  if (!Number.isNaN(d.getTime())) {
-    return d.toISOString().slice(0, 19).replace('T', ' ');
-  }
-  if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}/.test(input)) {
-    return input.replace('T', ' ').slice(0, 19);
-  }
-  return null;
-}
-
-function mapRowToDto(row) {
-  return {
-    id: row.id,
-    type: row.type,
-    status: row.status,
-    affectedAreas: parseAffectedAreas(row.affected_areas),
-    feeder: row.feeder,
-    cause: row.cause,
-    dateTimeStart: formatDisplayDateTime(row.date_time_start),
-    dateTimeEndEstimated: row.date_time_end_estimated
-      ? formatDisplayDateTime(row.date_time_end_estimated)
-      : null,
-    dateTimeRestored: row.date_time_restored
-      ? formatDisplayDateTime(row.date_time_restored)
-      : null,
-  };
+  return { value: v };
 }
 
 function validatePayload(body, { partial = false } = {}) {
@@ -78,6 +61,7 @@ function validatePayload(body, { partial = false } = {}) {
   const status = body.status;
   const feeder = body.feeder;
   const cause = body.cause;
+  const bodyText = body.body;
   const dateTimeStart = body.dateTimeStart;
 
   if (!partial || type !== undefined) {
@@ -91,9 +75,11 @@ function validatePayload(body, { partial = false } = {}) {
       errors.push('feeder is required');
     }
   }
-  if (!partial || cause !== undefined) {
-    if (cause === undefined || cause === null || String(cause).trim() === '') {
-      errors.push('cause is required');
+  const hasBody = bodyText !== undefined && bodyText !== null && String(bodyText).trim() !== '';
+  const hasLegacy = cause !== undefined && cause !== null && String(cause).trim() !== '';
+  if (!partial) {
+    if (!hasBody && !hasLegacy) {
+      errors.push('Provide either body (free-form post) or cause (legacy). At least one is required.');
     }
   }
   if (!partial || dateTimeStart !== undefined) {
@@ -101,63 +87,212 @@ function validatePayload(body, { partial = false } = {}) {
     if (!dt) errors.push('dateTimeStart is required and must be a valid date/time');
   }
 
+  if (
+    body.publicVisibleAt !== undefined &&
+    body.publicVisibleAt !== null &&
+    String(body.publicVisibleAt).trim() !== ''
+  ) {
+    if (!toMysqlDateTime(body.publicVisibleAt)) {
+      errors.push('publicVisibleAt must be a valid date/time');
+    }
+  }
+
+  if (body.causeCategory !== undefined) {
+    const cc = parseCauseCategoryInput(body.causeCategory);
+    if (cc.error) errors.push(cc.error);
+  }
+
   return errors;
 }
 
-/** Public + admin list */
+/**
+ * Build WHERE for list: visibility window + optional soft-delete filters.
+ * @param {boolean} hasDeletedAtColumn - false if migration not applied (ignore archive query flags).
+ */
+function buildInterruptionsListWhere(req, hasDeletedAtColumn) {
+  const includeFuture =
+    req.query.includeFuture === '1' ||
+    req.query.includeFuture === 'true' ||
+    req.query.includeScheduled === '1';
+  const includeDeleted =
+    req.query.includeDeleted === '1' || req.query.includeDeleted === 'true';
+  const deletedOnly = req.query.deletedOnly === '1' || req.query.deletedOnly === 'true';
+
+  const clauses = [];
+  if (!includeFuture) {
+    clauses.push('(public_visible_at IS NULL OR public_visible_at <= NOW())');
+  }
+  if (hasDeletedAtColumn) {
+    if (deletedOnly) {
+      clauses.push('deleted_at IS NOT NULL');
+    } else if (!includeDeleted) {
+      clauses.push('deleted_at IS NULL');
+    }
+  }
+  return clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '';
+}
+
+/** Public + admin list (default: non-deleted only; admin archive via query flags). */
 router.get('/interruptions', async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 200);
-    const [rows] = await pool.execute(
-      `SELECT id, type, status, affected_areas, feeder, cause,
-       date_time_start, date_time_end_estimated, date_time_restored
-       FROM aleco_interruptions
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit), 10) || 100, 1), 200);
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const visibilityWhere = buildInterruptionsListWhere(req, hasDel);
+    const listCols = hasDel ? `${INTERRUPTION_TABLE_COLS}, deleted_at` : INTERRUPTION_TABLE_COLS;
+    const [rows] = await pool.query(
+      `SELECT ${listCols}
+       FROM aleco_interruptions${visibilityWhere}
        ORDER BY date_time_start DESC
-       LIMIT ?`,
-      [limit]
+       LIMIT ${limit}`
     );
-    res.json({ success: true, data: rows.map(mapRowToDto) });
+    const list = Array.isArray(rows) ? rows.map(mapRowToDto).filter(Boolean) : [];
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: list });
   } catch (error) {
     console.error('Interruptions fetch error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch interruptions.' });
   }
 });
 
-/** Create (admin UI) */
+/** Upload image for advisory (optional). Returns imageUrl for form. */
+router.post('/interruptions/upload-image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file || !req.file.path) {
+      return res.status(400).json({ success: false, message: 'No image file uploaded.' });
+    }
+    res.json({ success: true, imageUrl: req.file.path });
+  } catch (error) {
+    console.error('Interruptions upload image error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload image.' });
+  }
+});
+
+/** Single advisory + remarks/updates (admin) */
+router.get('/interruptions/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  try {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel)} WHERE id = ?`, [id]);
+    const row = rows[0];
+    if (!row) {
+      return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+    const dto = mapRowToDto(row);
+    const updates = await listUpdates(pool, id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: { ...dto, updates } });
+  } catch (error) {
+    console.error('Interruptions get by id error:', error);
+    res.status(500).json({ success: false, message: 'Failed to load interruption.' });
+  }
+});
+
+/** Append remark (optional notes for advisory) */
+router.post('/interruptions/:id/updates', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  const remark = req.body?.remark;
+  const actorEmail = req.body?.actorEmail ?? null;
+  const actorName = req.body?.actorName ?? null;
+
+  try {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const existsSql = hasDel
+      ? 'SELECT id FROM aleco_interruptions WHERE id = ? AND deleted_at IS NULL'
+      : 'SELECT id FROM aleco_interruptions WHERE id = ?';
+    const [existing] = await pool.execute(existsSql, [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+
+    const created = await addUserUpdate(pool, id, { remark, actorEmail, actorName });
+    const updates = await listUpdates(pool, id);
+    res.status(201).json({ success: true, data: { created, updates } });
+  } catch (error) {
+    if (error.statusCode === 400) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    console.error('Interruptions add update error:', error);
+    res.status(500).json({ success: false, message: 'Failed to add update.' });
+  }
+});
+
+/** Create (admin UI): no restoration time; status derived from type + start */
 router.post('/interruptions', async (req, res) => {
   const errs = validatePayload(req.body, { partial: false });
   if (errs.length) return res.status(400).json({ success: false, message: errs.join(' ') });
 
   const {
     type,
-    status,
     affectedAreas,
     feeder,
     cause,
+    causeCategory,
+    body: bodyText,
+    controlNo,
+    imageUrl,
     dateTimeStart,
     dateTimeEndEstimated,
-    dateTimeRestored,
+    publicVisibleAt,
+    actorEmail,
+    actorName,
   } = req.body;
 
   const areasText = serializeAffectedAreas(affectedAreas ?? []);
   const start = toMysqlDateTime(dateTimeStart);
   const endEst = dateTimeEndEstimated ? toMysqlDateTime(dateTimeEndEstimated) : null;
-  const restored = dateTimeRestored ? toMysqlDateTime(dateTimeRestored) : null;
+  const restored = null;
+  const initialStatus = computeInitialStatus(type, start);
+  const causeCat = parseCauseCategoryInput(causeCategory).value;
+  const pubVis =
+    publicVisibleAt !== undefined && publicVisibleAt !== null && String(publicVisibleAt).trim() !== ''
+      ? toMysqlDateTime(publicVisibleAt)
+      : null;
+  const bodyVal = bodyText != null && String(bodyText).trim() !== '' ? String(bodyText).trim() : null;
+  const causeVal = cause != null && String(cause).trim() !== '' ? String(cause).trim() : null;
+  const controlNoVal = controlNo != null && String(controlNo).trim() !== '' ? String(controlNo).trim() : null;
+  const imageUrlVal = imageUrl != null && String(imageUrl).trim() !== '' ? String(imageUrl).trim() : null;
 
   try {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const [result] = await pool.execute(
       `INSERT INTO aleco_interruptions
-       (type, status, affected_areas, feeder, cause, date_time_start, date_time_end_estimated, date_time_restored)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [type, status, areasText, String(feeder).trim(), String(cause).trim(), start, endEst, restored]
+       (type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        type,
+        initialStatus,
+        areasText,
+        String(feeder).trim(),
+        causeVal,
+        causeCat,
+        bodyVal,
+        controlNoVal,
+        imageUrlVal,
+        start,
+        endEst,
+        restored,
+        pubVis,
+      ]
     );
-    const [rows] = await pool.execute(
-      `SELECT id, type, status, affected_areas, feeder, cause,
-       date_time_start, date_time_end_estimated, date_time_restored
-       FROM aleco_interruptions WHERE id = ?`,
-      [result.insertId]
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel)} WHERE id = ?`, [result.insertId]);
+    const row = rows[0];
+    const dto = row ? mapRowToDto(row) : null;
+    if (!dto) {
+      return res.status(500).json({ success: false, message: 'Failed to load created interruption.' });
+    }
+    const actor = actorName || actorEmail || 'Staff';
+    const createdAtStr = dto.createdAt || '';
+    await insertSystemUpdate(
+      pool,
+      result.insertId,
+      `Advisory published by ${actor} at ${createdAtStr}`,
+      { actorEmail: actorEmail ?? null, actorName: actorName ?? null }
     );
-    res.status(201).json({ success: true, data: mapRowToDto(rows[0]) });
+    res.status(201).json({ success: true, data: dto });
   } catch (error) {
     console.error('Interruptions create error:', error);
     res.status(500).json({ success: false, message: 'Failed to create interruption.' });
@@ -178,15 +313,74 @@ router.put('/interruptions/:id', async (req, res) => {
     affectedAreas,
     feeder,
     cause,
+    causeCategory,
+    body: bodyText,
+    controlNo,
+    imageUrl,
     dateTimeStart,
     dateTimeEndEstimated,
     dateTimeRestored,
+    publicVisibleAt,
   } = req.body;
 
   try {
-    const [existing] = await pool.execute('SELECT id FROM aleco_interruptions WHERE id = ?', [id]);
-    if (existing.length === 0) {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const loadCols = hasDel
+      ? `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+       date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, deleted_at`
+      : `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+       date_time_start, date_time_end_estimated, date_time_restored, public_visible_at`;
+    const [fullRows] = await pool.execute(
+      `SELECT ${loadCols}
+       FROM aleco_interruptions WHERE id = ?`,
+      [id]
+    );
+    const ex = fullRows[0];
+    if (!ex) {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+    if (hasDel && ex.deleted_at != null && String(ex.deleted_at).trim() !== '') {
+      return res.status(410).json({
+        success: false,
+        message: 'This advisory is archived. Restore it before editing.',
+      });
+    }
+
+    const expectedUpdatedAt = req.body?.expectedUpdatedAt;
+    let expectedMysql = null;
+    if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== null && String(expectedUpdatedAt).trim() !== '') {
+      expectedMysql = toMysqlDateTime(expectedUpdatedAt);
+      if (!expectedMysql) {
+        return res.status(400).json({ success: false, message: 'expectedUpdatedAt must be a valid date/time.' });
+      }
+    }
+
+    const nextStatus = status !== undefined ? status : ex.status;
+    const hasNonEmptyRestored =
+      dateTimeRestored !== undefined &&
+      dateTimeRestored !== null &&
+      String(dateTimeRestored).trim() !== '';
+
+    if (hasNonEmptyRestored && nextStatus !== 'Restored') {
+      return res.status(400).json({
+        success: false,
+        message: 'dateTimeRestored is only allowed when status is Resolved (Restored).',
+      });
+    }
+
+    if (nextStatus === 'Restored') {
+      let restoredMysql = null;
+      if (hasNonEmptyRestored) {
+        restoredMysql = toMysqlDateTime(dateTimeRestored);
+      } else {
+        restoredMysql = ex.date_time_restored ? toMysqlDateTimeFromRow(ex.date_time_restored) : null;
+      }
+      if (!restoredMysql) {
+        return res.status(400).json({
+          success: false,
+          message: 'Resolved status requires actual restoration date/time (dateTimeRestored).',
+        });
+      }
     }
 
     const fields = [];
@@ -212,7 +406,25 @@ router.put('/interruptions/:id', async (req, res) => {
     }
     if (cause !== undefined) {
       fields.push('cause = ?');
-      params.push(String(cause).trim());
+      params.push(cause != null && String(cause).trim() !== '' ? String(cause).trim() : null);
+    }
+    if (bodyText !== undefined) {
+      fields.push('body = ?');
+      params.push(bodyText != null && String(bodyText).trim() !== '' ? String(bodyText).trim() : null);
+    }
+    if (controlNo !== undefined) {
+      fields.push('control_no = ?');
+      params.push(controlNo != null && String(controlNo).trim() !== '' ? String(controlNo).trim() : null);
+    }
+    if (imageUrl !== undefined) {
+      fields.push('image_url = ?');
+      params.push(imageUrl != null && String(imageUrl).trim() !== '' ? String(imageUrl).trim() : null);
+    }
+    if (causeCategory !== undefined) {
+      const cc = parseCauseCategoryInput(causeCategory);
+      if (cc.error) return res.status(400).json({ success: false, message: cc.error });
+      fields.push('cause_category = ?');
+      params.push(cc.value);
     }
     if (dateTimeStart !== undefined) {
       const dt = toMysqlDateTime(dateTimeStart);
@@ -225,36 +437,93 @@ router.put('/interruptions/:id', async (req, res) => {
       params.push(dateTimeEndEstimated ? toMysqlDateTime(dateTimeEndEstimated) : null);
     }
     if (dateTimeRestored !== undefined) {
+      if (nextStatus === 'Restored') {
+        const v = hasNonEmptyRestored
+          ? toMysqlDateTime(dateTimeRestored)
+          : ex.date_time_restored
+            ? toMysqlDateTimeFromRow(ex.date_time_restored)
+            : null;
+        if (v) {
+          fields.push('date_time_restored = ?');
+          params.push(v);
+        }
+      } else {
+        fields.push('date_time_restored = ?');
+        params.push(null);
+      }
+    }
+    if (publicVisibleAt !== undefined) {
+      fields.push('public_visible_at = ?');
+      const pv =
+        publicVisibleAt === null || publicVisibleAt === ''
+          ? null
+          : toMysqlDateTime(publicVisibleAt);
+      params.push(pv);
+    }
+
+    if (status !== undefined && status !== 'Restored' && dateTimeRestored === undefined) {
       fields.push('date_time_restored = ?');
-      params.push(dateTimeRestored ? toMysqlDateTime(dateTimeRestored) : null);
+      params.push(null);
     }
 
     if (fields.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update.' });
     }
 
-    params.push(id);
-    await pool.execute(`UPDATE aleco_interruptions SET ${fields.join(', ')} WHERE id = ?`, params);
+    let whereSql = 'WHERE id = ?';
+    const whereParams = [id];
+    if (expectedMysql) {
+      whereSql +=
+        " AND DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i') = DATE_FORMAT(?, '%Y-%m-%d %H:%i')";
+      whereParams.push(expectedMysql);
+    }
 
-    const [rows] = await pool.execute(
-      `SELECT id, type, status, affected_areas, feeder, cause,
-       date_time_start, date_time_end_estimated, date_time_restored
-       FROM aleco_interruptions WHERE id = ?`,
-      [id]
+    const [upd] = await pool.execute(
+      `UPDATE aleco_interruptions SET ${fields.join(', ')} ${whereSql}`,
+      [...params, ...whereParams]
     );
-    res.json({ success: true, data: mapRowToDto(rows[0]) });
+    if (upd.affectedRows === 0) {
+      if (expectedMysql) {
+        return res.status(409).json({
+          success: false,
+          message: 'This advisory was updated elsewhere. Reload the form and try again.',
+        });
+      }
+      return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel)} WHERE id = ?`, [id]);
+    const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+    if (!dto) {
+      return res.status(500).json({ success: false, message: 'Failed to load updated interruption.' });
+    }
+    res.json({ success: true, data: dto });
   } catch (error) {
     console.error('Interruptions update error:', error);
     res.status(500).json({ success: false, message: 'Failed to update interruption.' });
   }
 });
 
-/** Delete */
+/**
+ * Soft delete (UX still uses DELETE). Row and remarks remain for reporting.
+ */
 router.delete('/interruptions/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
   try {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    if (hasDel) {
+      const [result] = await pool.execute(
+        `UPDATE aleco_interruptions SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL`,
+        [id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: 'Interruption not found or already archived.' });
+      }
+      res.json({ success: true, message: 'Archived.' });
+      return;
+    }
     const [result] = await pool.execute('DELETE FROM aleco_interruptions WHERE id = ?', [id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
@@ -262,7 +531,39 @@ router.delete('/interruptions/:id', async (req, res) => {
     res.json({ success: true, message: 'Deleted.' });
   } catch (error) {
     console.error('Interruptions delete error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete interruption.' });
+    res.status(500).json({ success: false, message: 'Failed to remove interruption.' });
+  }
+});
+
+/** Restore a soft-deleted advisory (admin). */
+router.patch('/interruptions/:id/restore', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  try {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    if (!hasDel) {
+      return res.status(503).json({
+        success: false,
+        message: 'Restore is not available until the database migration for soft delete is applied.',
+      });
+    }
+    const [result] = await pool.execute(
+      `UPDATE aleco_interruptions SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL`,
+      [id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Interruption not found or not archived.' });
+    }
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(true)} WHERE id = ?`, [id]);
+    const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+    if (!dto) {
+      return res.status(500).json({ success: false, message: 'Failed to load restored interruption.' });
+    }
+    res.json({ success: true, data: dto });
+  } catch (error) {
+    console.error('Interruptions restore error:', error);
+    res.status(500).json({ success: false, message: 'Failed to restore interruption.' });
   }
 });
 

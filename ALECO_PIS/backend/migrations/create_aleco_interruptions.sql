@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS aleco_interruptions (
   date_time_start DATETIME NOT NULL,
   date_time_end_estimated DATETIME NULL,
   date_time_restored DATETIME NULL,
+  public_visible_at DATETIME NULL DEFAULT NULL COMMENT 'NULL = show on public bulletin immediately; otherwise hide until this time',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_type_status (type, status),

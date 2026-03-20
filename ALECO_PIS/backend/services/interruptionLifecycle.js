@@ -1,0 +1,127 @@
+import { mapUpdateRowToDto } from '../utils/interruptionsDto.js';
+import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
+
+const SYSTEM_START_REMARK =
+  'Status set to Ongoing automatically at scheduled outage start time.';
+
+/**
+ * @param {import('mysql2/promise').Pool} pool
+ * @param {number} interruptionId
+ */
+export async function listUpdates(pool, interruptionId) {
+  const [rows] = await pool.execute(
+    `SELECT id, interruption_id, remark, kind, actor_email, actor_name, created_at
+     FROM aleco_interruption_updates
+     WHERE interruption_id = ?
+     ORDER BY created_at ASC, id ASC`,
+    [interruptionId]
+  );
+  return Array.isArray(rows) ? rows.map((r) => mapUpdateRowToDto(r)).filter(Boolean) : [];
+}
+
+/**
+ * @param {import('mysql2/promise').Pool} pool
+ * @param {number} interruptionId
+ */
+export async function countUserMemos(pool, interruptionId) {
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS c FROM aleco_interruption_updates
+     WHERE interruption_id = ? AND kind = 'user'`,
+    [interruptionId]
+  );
+  const n = rows[0]?.c;
+  return typeof n === 'bigint' ? Number(n) : parseInt(String(n ?? 0), 10) || 0;
+}
+
+/**
+ * @param {import('mysql2/promise').Pool} pool
+ * @param {number} interruptionId
+ * @param {{ remark: string, actorEmail?: string|null, actorName?: string|null }} opts
+ */
+export async function addUserUpdate(pool, interruptionId, { remark, actorEmail, actorName }) {
+  const text = String(remark ?? '').trim();
+  if (!text) {
+    const err = new Error('remark is required');
+    err.statusCode = 400;
+    throw err;
+  }
+  const [result] = await pool.execute(
+    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name)
+     VALUES (?, ?, 'user', ?, ?)`,
+    [interruptionId, text, actorEmail ?? null, actorName ?? null]
+  );
+  const insertId = result.insertId;
+  const [rows] = await pool.execute(
+    `SELECT id, interruption_id, remark, kind, actor_email, actor_name, created_at
+     FROM aleco_interruption_updates WHERE id = ?`,
+    [insertId]
+  );
+  return rows[0] ? mapUpdateRowToDto(rows[0]) : null;
+}
+
+/**
+ * @param {import('mysql2/promise').Pool} pool
+ * @param {number} interruptionId
+ * @param {string} remark
+ * @param {{ actorEmail?: string|null, actorName?: string|null }} [opts]
+ */
+export async function insertSystemUpdate(pool, interruptionId, remark, { actorEmail, actorName } = {}) {
+  await pool.execute(
+    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name)
+     VALUES (?, ?, 'system', ?, ?)`,
+    [interruptionId, remark, actorEmail ?? null, actorName ?? null]
+  );
+}
+
+/**
+ * @param {import('mysql2/promise').Pool} pool
+ * @param {import('mysql2/promise').PoolConnection} conn
+ * @param {number} interruptionId
+ * @param {string} remark
+ */
+export async function insertSystemUpdateConn(conn, interruptionId, remark) {
+  await conn.execute(
+    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name)
+     VALUES (?, ?, 'system', NULL, NULL)`,
+    [interruptionId, remark]
+  );
+}
+
+/**
+ * Scheduled advisories: Pending → Ongoing when start time reached; one system memo each.
+ * @param {import('mysql2/promise').Pool} pool
+ */
+export async function transitionScheduledStarts(pool) {
+  const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+  const delClause = hasDel ? ' AND deleted_at IS NULL' : '';
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [pending] = await conn.query(
+      `SELECT id FROM aleco_interruptions
+       WHERE type = 'Scheduled' AND status = 'Pending' AND date_time_start <= NOW()${delClause}
+       FOR UPDATE`
+    );
+    const rows = Array.isArray(pending) ? pending : [];
+    if (rows.length === 0) {
+      await conn.commit();
+      return { transitioned: 0 };
+    }
+    const ids = rows.map((r) => r.id);
+    const placeholders = ids.map(() => '?').join(',');
+    await conn.query(
+      `UPDATE aleco_interruptions SET status = 'Ongoing' WHERE id IN (${placeholders})`,
+      ids
+    );
+    for (const id of ids) {
+      await insertSystemUpdateConn(conn, id, SYSTEM_START_REMARK);
+    }
+    await conn.commit();
+    return { transitioned: ids.length };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}

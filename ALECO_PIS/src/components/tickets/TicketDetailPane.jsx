@@ -20,6 +20,9 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
     const [isUngroupConfirmOpen, setIsUngroupConfirmOpen] = useState(false);
     const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
     const [isRevertConfirmOpen, setIsRevertConfirmOpen] = useState(false);
+    const [isUnresolvedConfirmOpen, setIsUnresolvedConfirmOpen] = useState(false);
+    const [isNoFaultFoundConfirmOpen, setIsNoFaultFoundConfirmOpen] = useState(false);
+    const [isAccessDeniedConfirmOpen, setIsAccessDeniedConfirmOpen] = useState(false);
     const [groupData, setGroupData] = useState(null);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -393,30 +396,21 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                             )}
                             <button
                                 className="btn-action btn-unresolved"
-                                onClick={() => {
-                                    onUpdateTicket(ticket.ticket_id, 'Unresolved');
-                                    onClose();
-                                }}
+                                onClick={() => setIsUnresolvedConfirmOpen(true)}
                                 title="Mark as Unresolved"
                             >
                                 Mark as Unresolved
                             </button>
                             <button
                                 className="btn-action btn-nff"
-                                onClick={() => {
-                                    onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
-                                    onClose();
-                                }}
+                                onClick={() => setIsNoFaultFoundConfirmOpen(true)}
                                 title="No Fault Found"
                             >
                                 No Fault Found
                             </button>
                             <button
                                 className="btn-action btn-access-denied"
-                                onClick={() => {
-                                    onUpdateTicket(ticket.ticket_id, 'AccessDenied');
-                                    onClose();
-                                }}
+                                onClick={() => setIsAccessDeniedConfirmOpen(true)}
                                 title="Access Denied"
                             >
                                 Access Denied
@@ -524,6 +518,51 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 title="Revert to Pending"
                 message={`Revert ticket ${ticket.ticket_id} to Pending? The ticket will be reopened and you can start resolution again. Use this if the ticket was closed by mistake or needs further action.`}
                 confirmLabel="Revert to Pending"
+                cancelLabel="Cancel"
+                variant="default"
+            />
+
+            <ConfirmModal
+                isOpen={isUnresolvedConfirmOpen}
+                onClose={() => setIsUnresolvedConfirmOpen(false)}
+                onConfirm={() => {
+                    onUpdateTicket(ticket.ticket_id, 'Unresolved');
+                    setIsUnresolvedConfirmOpen(false);
+                    onClose();
+                }}
+                title="Mark as Unresolved"
+                message={`Mark ticket ${ticket.ticket_id} as Unresolved? The ticket will return to the queue for re-dispatch.`}
+                confirmLabel="Mark Unresolved"
+                cancelLabel="Cancel"
+                variant="default"
+            />
+
+            <ConfirmModal
+                isOpen={isNoFaultFoundConfirmOpen}
+                onClose={() => setIsNoFaultFoundConfirmOpen(false)}
+                onConfirm={() => {
+                    onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
+                    setIsNoFaultFoundConfirmOpen(false);
+                    onClose();
+                }}
+                title="No Fault Found"
+                message={`Mark ticket ${ticket.ticket_id} as No Fault Found? This will close the ticket. Only confirm if the field crew verified no fault at the location.`}
+                confirmLabel="No Fault Found"
+                cancelLabel="Cancel"
+                variant="default"
+            />
+
+            <ConfirmModal
+                isOpen={isAccessDeniedConfirmOpen}
+                onClose={() => setIsAccessDeniedConfirmOpen(false)}
+                onConfirm={() => {
+                    onUpdateTicket(ticket.ticket_id, 'AccessDenied');
+                    setIsAccessDeniedConfirmOpen(false);
+                    onClose();
+                }}
+                title="Access Denied"
+                message={`Mark ticket ${ticket.ticket_id} as Access Denied? This will close the ticket. Only confirm if the field crew could not access the service location.`}
+                confirmLabel="Access Denied"
                 cancelLabel="Cancel"
                 variant="default"
             />

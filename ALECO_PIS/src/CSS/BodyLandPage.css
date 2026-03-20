@@ -29,32 +29,8 @@
   font-family: var(--font-header);
 }
 
-/* --- THE SLIDER (Replaces Grid) --- */
-.interruption-slider {
-  display: flex;             /* Lines them up horizontally */
-  gap: 30px;
-  overflow-x: auto;          /* Enables scrolling */
-  scroll-behavior: smooth;   /* Smooth sliding effect */
-  padding: 20px 10px;        /* Padding for shadow visibility */
-  
-  /* Snap effect (Like a mobile app carousel) */
-  scroll-snap-type: x mandatory;
-  
-  /* Hide scrollbar but keep functionality */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE */
-}
-
-.interruption-slider::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-
-/* --- The Card Container --- */
+/* --- The Card Container (bulletin states: loading, empty, unavailable) --- */
 .interruption-card {
-  /* Prevent squishing */
-  flex: 0 0 auto; 
-  scroll-snap-align: center; /* Snaps card to center when scrolling stops */
-  
   position: relative;
   width: 190px;
   height: 254px;
@@ -74,79 +50,6 @@
 
 .interruption-card:hover {
   transform: translateY(-5px);
-}
-
-/* --- Controls Section (Bottom) --- */
-.slider-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 5px; /* Keeps your reduced margin */
-    padding: 0 10px;
-}
-
-/* Progress Bar */
-.progress-track {
-    width: 70%; /* Takes up most space */
-    height: 4px;
-    
-    /* UPDATED: Track matches card color so it looks good in dark mode */
-    background-color: var(--bg-card);
-    
-    border-radius: 2px;
-    overflow: hidden;
-    position: relative;
-    border: 1px solid var(--text-secondary); /* Added subtle border for visibility */
-}
-
-.progress-indicator {
-    height: 100%;
-    background-color: #3b82f6; /* THE BLUE LINE (Kept distinct) */
-    border-radius: 2px;
-    transition: width 0.3s ease-out;
-}
-[data-theme="dark"] .progress-indicator {
-  background-color: #FACC15 !important; /* Yellow */
-}
-
-/* Navigation Buttons */
-.nav-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.nav-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    
-    /* UPDATED: Dynamic borders and background */
-    border: 1px solid var(--text-secondary);
-    background: var(--bg-body);
-    color: var(--text-main);
-    
-    font-size: 1.2rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.nav-btn:hover {
-    background: #3b82f6; /* Blue on hover */
-    color: white;
-    border-color: #3b82f6;
-}
-
-[data-theme="dark"] .nav-btn:hover {
-  background: #FACC15; /* Yellow on hover */
-  color: black;
-  border-color: #FACC15;
-}
-
-.nav-btn:active {
-    transform: scale(0.95);
 }
 
 /* --- The Blob & Glass (Preserved) --- */
@@ -240,16 +143,239 @@
     color: var(--text-header);
 }
 
+.card-details-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.card-details-image {
+  margin-top: 10px;
+}
+
+.card-details-image img {
+  max-width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+}
+
+/* Wider “bulletin” cards: good news / loading / refresh — same blob + glass as advisory cards */
+.interruption-card.interruption-card--bulletin {
+  width: auto;
+  min-width: 280px;
+  max-width: 340px;
+}
+
+.card-details--bulletin {
+  text-align: center;
+}
+
+.card-details--bulletin p {
+  line-height: 1.45;
+}
+
+.interruption-bulletin-date-line {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-header);
+  margin-top: 0 !important;
+  margin-bottom: 10px !important;
+}
+
+.interruption-bulletin-enjoy {
+  margin-top: 14px !important;
+  margin-bottom: 0 !important;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #16a34a;
+  text-transform: uppercase;
+}
+
+[data-theme="dark"] .interruption-bulletin-enjoy {
+  color: #4ade80;
+}
+
+.interruption-bulletin-subtle {
+  font-size: 0.82rem;
+  opacity: 0.95;
+}
+
+/* Empty bulletin = good news (no outage posts) */
+.interruption-card.interruption-card--good-news {
+  max-width: 380px;
+  outline: 1px solid rgba(34, 197, 94, 0.28);
+  box-shadow:
+    20px 20px 60px var(--shadow-color-dark),
+    -20px -20px 60px var(--shadow-color-light),
+    0 0 0 1px rgba(34, 197, 94, 0.08) inset;
+}
+
+[data-theme="dark"] .interruption-card.interruption-card--good-news {
+  outline-color: rgba(74, 222, 128, 0.35);
+}
+
+.interruption-good-news-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 8px;
+}
+
+.interruption-good-news-icon {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 6px;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.interruption-good-news-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+[data-theme="dark"] .interruption-good-news-icon {
+  color: #4ade80;
+}
+
+.interruption-good-news-badge {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+[data-theme="dark"] .interruption-good-news-badge {
+  color: #bbf7d0;
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.interruption-good-news-headline {
+  margin-top: 0 !important;
+  margin-bottom: 6px !important;
+  line-height: 1.2;
+  max-width: 16em;
+}
+
+.interruption-good-news-date {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  opacity: 0.95;
+}
+
+.card-details--good-news {
+  width: 100%;
+  text-align: center;
+  padding-top: 0;
+}
+
+.interruption-good-news-lead {
+  font-size: 0.88rem !important;
+  line-height: 1.55 !important;
+  margin-top: 0 !important;
+  color: var(--text-main) !important;
+}
+
+.interruption-good-news-body {
+  font-size: 0.82rem !important;
+  line-height: 1.5 !important;
+  opacity: 0.95;
+}
+
+.interruption-good-news-help {
+  font-size: 0.8rem !important;
+  line-height: 1.45 !important;
+  margin-bottom: 4px !important;
+}
+
+.interruption-bulletin-btn {
+  margin-top: 12px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--text-secondary);
+  background: var(--bg-body);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.interruption-bulletin-btn:hover {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+[data-theme="dark"] .interruption-bulletin-btn:hover {
+  background: #facc15;
+  color: #1a1a1a;
+  border-color: #facc15;
+}
+
 /* --- Mobile Responsiveness --- */
 @media (max-width: 600px) {
   .interruption-card {
     width: 190px; /* Keep fixed width on mobile for carousel feel */
   }
+
+  .interruption-card.interruption-card--bulletin {
+    width: auto;
+    min-width: 260px;
+    max-width: min(100%, 320px);
+  }
+
   .section-title {
     font-size: 1.5rem; 
   }
-  .progress-track {
-    width: 50%; /* Make bar shorter on phone */
+}
+
+/* --- 320px to 599px: Progressive mobile scaling --- */
+/* 480px - 599px: large mobile */
+@media (min-width: 480px) and (max-width: 599px) {
+  .interruption-list-container {
+    padding: 0 16px;
+  }
+  .section-title {
+    font-size: 1.4rem;
+    margin-bottom: 24px;
+  }
+}
+
+/* 321px - 479px: small mobile */
+@media (min-width: 321px) and (max-width: 479px) {
+  .interruption-list-container {
+    padding: 0 12px;
+  }
+  .section-title {
+    font-size: 1.25rem;
+    margin-bottom: 20px;
+  }
+}
+
+/* 320px and below: ultra-compact */
+@media (max-width: 320px) {
+  .interruption-list-container {
+    padding: 0 8px;
+  }
+  .section-title {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    padding-bottom: 6px;
   }
 }
 
@@ -264,6 +390,26 @@
     height: 340px;
     border-radius: 20px;
   }
+
+  .interruption-card.interruption-card--bulletin {
+    width: auto;
+    min-width: 300px;
+    max-width: 400px;
+    height: auto;
+    min-height: 300px;
+  }
+
+  .interruption-card.interruption-card--good-news {
+    max-width: 440px;
+  }
+
+  .interruption-good-news-headline {
+    font-size: 1.15rem;
+  }
+
+  .interruption-good-news-lead {
+    font-size: 0.95rem !important;
+  }
   
   .bg { top: 6px; left: 6px; right: 6px; bottom: 6px; }
   .blob { width: 200px; height: 200px; }
@@ -271,29 +417,6 @@
   .status-header { font-size: 1.2rem; margin-bottom: 20px; }
   .card-details { font-size: 1rem; }
   .card-details p { margin: 10px 0; }
-}
-
-.date-tracker {
-  text-align: left;       /* Aligns it with the progress bar */
-  margin-top: 20px;       /* Spacing from the cards */
-  margin-bottom: 5px;     /* Spacing from the controls */
-  font-size: 0.9rem;
-  font-weight: bold;
-  
-  /* UPDATED: Dynamic text color */
-  color: var(--text-secondary);
-  
-  font-style: italic;     /* Optional: Adds a nice touch */
-  padding-left: 10px;     /* Aligns with the track padding */
-}
-
-/* Ensure slider-controls doesn't have too much top margin now */
-.slider-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 5px; /* Reduced from 20px since we have the text now */
-    padding: 0 10px;
 }
 
 /* --- ABOUT SECTION LAYOUT --- */

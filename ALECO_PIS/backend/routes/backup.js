@@ -4,6 +4,7 @@ import pool from '../config/db.js';
 import ExcelJS from 'exceljs';
 import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';
+import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
 
 const router = express.Router();
 
@@ -110,6 +111,37 @@ function buildTicketQuery(ds, de, filters = {}) {
     }
 
     query += ` ORDER BY created_at ASC`;
+    return { query, params };
+}
+
+/** Build interruption query with optional filters. */
+async function buildInterruptionQuery(ds, de, filters = {}) {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const baseCols = `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+      date_time_start, date_time_end_estimated, date_time_restored,
+      public_visible_at, created_at, updated_at`;
+    const cols = hasDel ? `${baseCols}, deleted_at` : baseCols;
+    let query = `SELECT ${cols} FROM aleco_interruptions WHERE DATE(date_time_start) BETWEEN ? AND ?`;
+    const params = [ds, de];
+
+    if (hasDel) {
+        if (filters.includeArchived === 'true' || filters.includeArchived === true) {
+            // include all
+        } else {
+            query += ` AND deleted_at IS NULL`;
+        }
+    }
+
+    if (filters.type && String(filters.type).trim()) {
+        query += ` AND type = ?`;
+        params.push(filters.type.trim());
+    }
+    if (filters.status && String(filters.status).trim()) {
+        query += ` AND status = ?`;
+        params.push(filters.status.trim());
+    }
+
+    query += ` ORDER BY date_time_start ASC`;
     return { query, params };
 }
 
@@ -249,6 +281,159 @@ router.get('/tickets/export', async (req, res) => {
         }
     } catch (error) {
         console.error('❌ Export error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Export failed' });
+    }
+});
+
+// --- INTERRUPTIONS EXPORT PREVIEW ---
+router.get('/interruptions/export/preview', async (req, res) => {
+    try {
+        const { preset, startDate, endDate, type, status, includeArchived } = req.query;
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const filters = { type, status, includeArchived };
+        const { query, params } = await buildInterruptionQuery(ds, de, filters);
+        const [interruptionRows] = await pool.execute(query, params);
+        const interruptionIds = interruptionRows.map((r) => r.id);
+        let updateRows = [];
+        if (interruptionIds.length > 0) {
+            const placeholders = interruptionIds.map(() => '?').join(', ');
+            const [updResult] = await pool.execute(
+                `SELECT id, interruption_id, remark, kind, actor_email, actor_name, created_at
+                 FROM aleco_interruption_updates
+                 WHERE interruption_id IN (${placeholders})
+                 ORDER BY interruption_id, created_at ASC`,
+                interruptionIds
+            );
+            updateRows = updResult;
+        }
+        const metadata = {
+            dateStart: ds,
+            dateEnd: de,
+            interruptionCount: interruptionRows.length,
+            updateCount: updateRows.length,
+        };
+        res.json({ success: true, metadata, interruptions: interruptionRows, updates: updateRows });
+    } catch (error) {
+        console.error('❌ Interruptions export preview error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Preview failed' });
+    }
+});
+
+// --- INTERRUPTIONS EXPORT ---
+router.get('/interruptions/export', async (req, res) => {
+    try {
+        const { preset, startDate, endDate, format, type, status, includeArchived } = req.query;
+        const fmt = (format || 'excel').toLowerCase();
+        if (fmt !== 'excel' && fmt !== 'csv') {
+            return res.status(400).json({ success: false, message: 'Format must be excel or csv' });
+        }
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const filters = { type, status, includeArchived };
+        const { query, params } = await buildInterruptionQuery(ds, de, filters);
+        const [interruptionRows] = await pool.execute(query, params);
+        const interruptionIds = interruptionRows.map((r) => r.id);
+        let updateRows = [];
+        if (interruptionIds.length > 0) {
+            const placeholders = interruptionIds.map(() => '?').join(', ');
+            const [updResult] = await pool.execute(
+                `SELECT id, interruption_id, remark, kind, actor_email, actor_name, created_at
+                 FROM aleco_interruption_updates
+                 WHERE interruption_id IN (${placeholders})
+                 ORDER BY interruption_id, created_at ASC`,
+                interruptionIds
+            );
+            updateRows = updResult;
+        }
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
+        const baseFilename = `aleco_interruptions_${ds}_to_${de}_${timestamp}`;
+        const ext = fmt === 'excel' ? 'xlsx' : 'csv';
+        const filename = `${baseFilename}.${ext}`;
+        const exportedBy = req.headers['x-user-email'] || req.headers['x-user-name'] || null;
+
+        await pool.execute(
+            `INSERT INTO aleco_export_log (export_date, date_start, date_end, ticket_count, log_count, format, exported_by)
+             VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
+            [ds, de, interruptionRows.length, updateRows.length, fmt, exportedBy]
+        );
+
+        if (fmt === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'ALECO PIS';
+            workbook.created = new Date();
+            const metaSheet = workbook.addWorksheet('Metadata', { properties: { tabColor: { argb: 'FF4472C4' } } });
+            metaSheet.addRow(['Export Info']);
+            metaSheet.addRow(['Schema Version', '1']);
+            metaSheet.addRow(['Export Date', new Date().toISOString()]);
+            metaSheet.addRow(['Date Range', `${ds} to ${de}`]);
+            metaSheet.addRow(['Interruption Count', interruptionRows.length]);
+            metaSheet.addRow(['Update Count', updateRows.length]);
+            metaSheet.addRow(['Format', 'excel']);
+            metaSheet.addRow(['Exported By', exportedBy || '']);
+
+            const intCols = interruptionRows.length > 0 ? Object.keys(interruptionRows[0]) : [];
+            const intSheet = workbook.addWorksheet('Interruptions', { properties: { tabColor: { argb: 'FF70AD47' } } });
+            intSheet.addRow(intCols);
+            interruptionRows.forEach((row) => {
+                intSheet.addRow(
+                    intCols.map((c) => {
+                        const v = row[c];
+                        if (v instanceof Date) return v;
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        if (c === 'affected_areas' && (typeof v === 'string' || Array.isArray(v)))
+                            return typeof v === 'string' ? v : JSON.stringify(v);
+                        return v;
+                    })
+                );
+            });
+
+            const updCols = updateRows.length > 0 ? Object.keys(updateRows[0]) : [];
+            const updSheet = workbook.addWorksheet('InterruptionUpdates', {
+                properties: { tabColor: { argb: 'FFFFC000' } },
+            });
+            updSheet.addRow(updCols);
+            updateRows.forEach((row) => {
+                updSheet.addRow(
+                    updCols.map((c) => {
+                        const v = row[c];
+                        if (v instanceof Date) return v;
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        return v;
+                    })
+                );
+            });
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            await workbook.xlsx.write(res);
+        } else {
+            const intCols = interruptionRows.length > 0 ? Object.keys(interruptionRows[0]) : [];
+            const intCsv = stringify(
+                interruptionRows.map((r) =>
+                    intCols.map((c) => {
+                        const v = r[c];
+                        if (v instanceof Date) return v.toISOString();
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        if (c === 'affected_areas' && (typeof v === 'string' || Array.isArray(v)))
+                            return typeof v === 'string' ? v : JSON.stringify(v);
+                        return v ?? '';
+                    })
+                ),
+                { header: true, columns: intCols }
+            );
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.send(intCsv);
+        }
+    } catch (error) {
+        console.error('❌ Interruptions export error:', error);
         res.status(500).json({ success: false, message: error.message || 'Export failed' });
     }
 });

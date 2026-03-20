@@ -10,6 +10,7 @@ import BackupCompactView from './backup/BackupCompactView';
 import BackupCardsView from './backup/BackupCardsView';
 import BackupWorkflowView from './backup/BackupWorkflowView';
 import BackupFiltersBar from './backup/BackupFiltersBar';
+import BackupInterruptionFiltersBar from './backup/BackupInterruptionFiltersBar';
 import EntityPicker from './backup/EntityPicker';
 import ComingSoonPlaceholder from './backup/ComingSoonPlaceholder';
 import '../CSS/AdminPageLayout.css';
@@ -43,6 +44,11 @@ const AdminBackup = () => {
         groupFilter: 'all',
         isNew: false,
         isUrgent: false
+    });
+    const [interruptionFilters, setInterruptionFilters] = useState({
+        type: '',
+        status: '',
+        includeArchived: false
     });
 
     const getExportParams = () => {
@@ -86,7 +92,8 @@ const AdminBackup = () => {
         try {
             const params = getExportParams();
             const qs = new URLSearchParams(params).toString();
-            const url = apiUrl(`/api/tickets/export?${qs}`);
+            const basePath = entity === 'interruptions' ? '/api/interruptions/export' : '/api/tickets/export';
+            const url = apiUrl(`${basePath}?${qs}`);
             const userEmail = localStorage.getItem('userEmail');
             const userName = localStorage.getItem('userName');
             const headers = {};
@@ -133,7 +140,8 @@ const AdminBackup = () => {
         try {
             const params = getExportParams();
             const qs = new URLSearchParams(params).toString();
-            const res = await fetch(apiUrl(`/api/tickets/export/preview?${qs}`));
+            const basePath = entity === 'interruptions' ? '/api/interruptions/export/preview' : '/api/tickets/export/preview';
+            const res = await fetch(apiUrl(`${basePath}?${qs}`));
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Preview failed');
             setPreviewData(data);
@@ -297,6 +305,7 @@ const AdminBackup = () => {
                 isOpen={previewModalOpen}
                 onClose={() => setPreviewModalOpen(false)}
                 data={previewData}
+                entity={entity}
             />
         </AdminLayout>
     );

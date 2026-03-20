@@ -6,6 +6,12 @@
 
 ---
 
+## Power Advisory: Interim Remarks (Not Service Memos)
+
+**As of March 2026:** The Power Advisory edit modal uses **Remarks** (optional) instead of Service Memos. Remarks are stored in `aleco_interruption_updates` and are optional—no remark is required to mark an advisory as Resolved. The full **Service Memo** feature will be implemented separately and will cover all features (tickets, interruptions, etc.), not just power advisories. See this document for the full Service Memo design.
+
+---
+
 ## Recommendation: Implement After Core Features
 
 **Finish these first:**

@@ -52,7 +52,7 @@ function logPhilSmsDiagnosis(context, { url, formattedNumber, senderId, rawKey, 
     }
     if (unauth) {
         console.error(
-            '[PhilSMS] ➜ "Unauthenticated" = PhilSMS rejected the Bearer token. Regenerate/copy the API token from the PhilSMS developer dashboard into PHILSMS_API_KEY, restart the server, and ensure .env is in the folder you run node from (cwd).'
+            '[PhilSMS] ➜ "Unauthenticated" = PhilSMS rejected the Bearer token, or the token was issued for a different API host. Check PHILSMS_API_KEY, PHILSMS_API_URL (dashboard vs app.philsms.com), regenerate the token in the matching dashboard, restart the server, and ensure root .env is loaded (cwd).'
         );
     } else if (msg) {
         console.error(`[PhilSMS] ➜ Provider message: ${msg}`);
@@ -60,8 +60,28 @@ function logPhilSmsDiagnosis(context, { url, formattedNumber, senderId, rawKey, 
     console.error('[PhilSMS] ─────────────────────────────────────');
 }
 
+/** Default matches typical dashboard API: https://dashboard.philsms.com/api/v3/sms/send */
+const PHILSMS_DEFAULT_BASE = 'https://dashboard.philsms.com';
+const PHILSMS_SEND_PATH = '/api/v3/sms/send';
+
+/**
+ * Resolve base URL from PHILSMS_API_URL (.env). Accepts host only or full .../api/v3/sms/send paste.
+ * @param {string | undefined} raw
+ * @returns {string}
+ */
+function resolvePhilSmsBaseUrl(raw) {
+    if (raw == null || String(raw).trim() === '') return PHILSMS_DEFAULT_BASE;
+    let s = String(raw).trim().replace(/\/+$/, '');
+    const lower = s.toLowerCase();
+    if (lower.endsWith(PHILSMS_SEND_PATH)) {
+        s = s.slice(0, -PHILSMS_SEND_PATH.length).replace(/\/+$/, '');
+    }
+    return s || PHILSMS_DEFAULT_BASE;
+}
+
 /**
  * Send outbound SMS via PhilSMS API.
+ * Env: PHILSMS_API_URL (optional base), PHILSMS_API_KEY (Bearer), PHILSMS_SENDER_ID (optional).
  * @returns {Promise<PhilSmsResult>}
  */
 export const sendPhilSMS = async (number, messageBody) => {
@@ -76,9 +96,8 @@ export const sendPhilSMS = async (number, messageBody) => {
         };
     }
 
-    const baseRaw = process.env.PHILSMS_API_URL || 'https://app.philsms.com';
-    const baseUrl = String(baseRaw).replace(/\/+$/, '');
-    const url = `${baseUrl}/api/v3/sms/send`;
+    const baseUrl = resolvePhilSmsBaseUrl(process.env.PHILSMS_API_URL);
+    const url = `${baseUrl}${PHILSMS_SEND_PATH}`;
 
     const rawKey = process.env.PHILSMS_API_KEY;
     const apiKey = (rawKey == null ? '' : String(rawKey)).trim();

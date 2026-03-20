@@ -3,6 +3,7 @@ import { apiUrl } from '../../utils/api';
 import { toast } from 'react-toastify';
 import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';
 import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown';
+import { validatePhilippineMobile, toDisplayFormat, INVALID_PHONE_HINT } from '../../utils/phoneUtils';
 import '../../CSS/DispatchTicketModal.css';
 
 /**
@@ -61,6 +62,11 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
         e.preventDefault();
         if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.phone_number?.trim() || !formData.category?.trim() || !formData.concern?.trim()) {
             toast.error('First name, last name, phone, category, and concern are required.');
+            return;
+        }
+        const phoneCheck = validatePhilippineMobile(formData.phone_number);
+        if (!phoneCheck.valid) {
+            toast.error(phoneCheck.error || INVALID_PHONE_HINT);
             return;
         }
         if (formData.district && !formData.municipality) {

@@ -11,6 +11,7 @@ import ticketFilterRoutes from './backend/routes/ticket-routes.js';
 import ticketGroupingRoutes from './backend/routes/ticket-grouping.js'; // <-- NEW: Ticket Grouping System
 import contactNumbersRoutes from './backend/routes/contact-numbers.js';
 import backupRoutes from './backend/routes/backup.js';
+import interruptionsRoutes from './backend/routes/interruptions.js';
 
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.use('/api', ticketRoutes);
 app.use('/api', userRoutes);
 app.use('/api', ticketFilterRoutes); // <-- Admin filter brick
 app.use('/api', ticketGroupingRoutes); // <-- NEW: Ticket Grouping System
+app.use('/api', interruptionsRoutes); // Power advisory / aleco_interruptions
 app.use('/api', contactNumbersRoutes);
 
 app.get('/api/debug/routes', (req, res) => {

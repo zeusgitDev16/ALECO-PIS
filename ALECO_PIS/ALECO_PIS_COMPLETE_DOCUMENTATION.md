@@ -209,7 +209,7 @@ The ALECO PIS uses **8 core tables** to manage the entire system:
 | Column | Type | Nullable | Default | Key | Description |
 |--------|------|----------|---------|-----|-------------|
 | `id` | int | NO | NULL | PRI (auto_increment) | Internal ticket ID |
-| `ticket_id` | varchar(20) | NO | NULL | UNI | Public ticket ID (e.g., `TKT-20260316-0001`) |
+| `ticket_id` | varchar(20) | NO | NULL | UNI | Public ticket ID (e.g., `ALECO-AB12C` — generated in `tickets.js`) |
 | `parent_ticket_id` | varchar(20) | YES | NULL | | Master ticket ID for grouped tickets |
 | `account_number` | varchar(50) | YES | NULL | | Customer account number |
 | `first_name` | varchar(50) | NO | NULL | | Customer first name |
@@ -241,8 +241,8 @@ The ALECO PIS uses **8 core tables** to manage the entire system:
 
 **Purpose**: The heart of the system - stores all power outage tickets.
 
-**Ticket ID Format**: `TKT-YYYYMMDD-XXXX` (e.g., `TKT-20260316-0001`)
-**Master Ticket ID Format**: `GROUP-YYYYMMDD-XXXX` (e.g., `GROUP-20260316-0001`)
+**Consumer ticket ID format (live code)**: `ALECO-` + 5 uppercase alphanumeric characters (from `Math.random().toString(36)` in `backend/routes/tickets.js` on submit).  
+**Group master ticket ID format**: `GROUP-YYYYMMDD-XXXX` (e.g., `GROUP-20260316-0001`) from `backend/routes/ticket-grouping.js`.
 
 **Status Flow**:
 ```
@@ -526,35 +526,17 @@ router.post('/login', async (req, res) => {
 - `PUT /api/tickets/:ticketId/status` - Update ticket status
 
 **Key Features**:
-- ✅ Automatic ticket ID generation (`TKT-YYYYMMDD-XXXX`)
+- ✅ Automatic ticket ID generation (`ALECO-` + random 5-char suffix)
 - ✅ Cloudinary image upload
 - ✅ GPS coordinate validation
-- ✅ SMS notifications via Twilio
+- ✅ SMS (e.g. PhilSMS / configured provider in env)
 - ✅ Email notifications via Nodemailer
 
-**Ticket ID Generation Logic**:
+**Ticket ID generation (excerpt from `backend/routes/tickets.js` submit handler)**:
 ```javascript
-const generateTicketId = async () => {
-  const today = new Date();
-  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-
-  const [rows] = await pool.execute(
-    `SELECT ticket_id FROM aleco_tickets
-     WHERE ticket_id LIKE ?
-     ORDER BY ticket_id DESC LIMIT 1`,
-    [`TKT-${dateStr}-%`]
-  );
-
-  let sequence = 1;
-  if (rows.length > 0) {
-    const lastId = rows[0].ticket_id;
-    const lastSeq = parseInt(lastId.split('-')[2]);
-    sequence = lastSeq + 1;
-  }
-
-  return `TKT-${dateStr}-${String(sequence).padStart(4, '0')}`;
-};
+const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 ```
+*(Idempotency for duplicates uses phone/category/concern within a 5-minute window and returns the existing `ticket_id`.)*
 
 ---
 
@@ -562,8 +544,9 @@ const generateTicketId = async () => {
 
 **Endpoints**:
 - `GET /api/filtered-tickets` - Get filtered tickets
-- `GET /api/crews/list` - Get all crews
-- `GET /api/pool/list` - Get all linemen
+
+**Related (other bricks)**:
+- `GET /api/crews/list`, pool routes, etc. live in `backend/routes/tickets.js` (not in `ticket-routes.js`).
 
 **Query Parameters**:
 - `status` - Filter by status (`Pending`, `Ongoing`, `Restored`, `Unresolved`)
@@ -578,6 +561,18 @@ const generateTicketId = async () => {
 ```
 GET /api/filtered-tickets?status=Pending&district=Legazpi&isUrgent=true
 ```
+
+#### 3b. Power interruptions / advisories (`backend/routes/interruptions.js`)
+
+**Table**: `aleco_interruptions` (see `backend/migrations/create_aleco_interruptions.sql`).
+
+**Endpoints**:
+- `GET /api/interruptions` — Public list (optional `?limit=`); JSON `{ success, data: [...] }` with camelCase DTO fields (`affectedAreas`, `dateTimeStart`, …).
+- `POST /api/interruptions` — Create row (admin UI).
+- `PUT /api/interruptions/:id` — Partial or full update.
+- `DELETE /api/interruptions/:id` — Remove row.
+
+**Frontend**: Public carousel `src/InterruptionList.jsx`; admin CRUD `src/components/Interruptions.jsx`.
 
 ---
 
@@ -599,7 +594,7 @@ POST /api/tickets/group/create
   "title": "Transformer Failure - Brgy Rawis",
   "category": "PRIMARY LINE NO POWER",
   "remarks": "Multiple reports in same area",
-  "ticketIds": ["TKT-20260316-0001", "TKT-20260316-0002", "TKT-20260316-0003"]
+  "ticketIds": ["ALECO-AB12C", "ALECO-CD34E", "ALECO-FG56H"]
 }
 ```
 
@@ -1107,7 +1102,7 @@ const response = await api.post('/tickets/submit', ticketData);
 
 #### 2. ✅ Ticket Submission System
 - [x] Customer-facing ticket submission form
-- [x] Automatic ticket ID generation (`TKT-YYYYMMDD-XXXX`)
+- [x] Automatic ticket ID generation (`ALECO-` + random suffix)
 - [x] Image upload to Cloudinary
 - [x] GPS location capture
 - [x] Manual location entry
@@ -1400,7 +1395,7 @@ POST /api/tickets/submit
 ```json
 {
   "success": true,
-  "ticketId": "TKT-20260316-0001",
+  "ticketId": "ALECO-AB12C",
   "message": "Ticket submitted successfully"
 }
 ```
@@ -1409,7 +1404,7 @@ POST /api/tickets/submit
 
 #### 2. Get Filtered Tickets
 ```http
-GET /api/filtered-tickets?status=Pending&district=Legazpi&search=TKT-20260316
+GET /api/filtered-tickets?status=Pending&district=Legazpi&search=ALECO-AB12C
 ```
 
 **Query Parameters**:
@@ -1428,7 +1423,7 @@ GET /api/filtered-tickets?status=Pending&district=Legazpi&search=TKT-20260316
   "tickets": [
     {
       "id": 1,
-      "ticket_id": "TKT-20260316-0001",
+      "ticket_id": "ALECO-AB12C",
       "first_name": "Juan",
       "last_name": "Dela Cruz",
       "phone_number": "09123456789",
@@ -1457,7 +1452,7 @@ GET /api/tickets/track/:ticketId
 {
   "success": true,
   "ticket": {
-    "ticket_id": "TKT-20260316-0001",
+    "ticket_id": "ALECO-AB12C",
     "status": "Ongoing",
     "assigned_crew": "Team Alpha",
     "eta": "2 hours",
@@ -1529,7 +1524,7 @@ POST /api/tickets/group/create
   "title": "Transformer Failure - Brgy Rawis",
   "category": "PRIMARY LINE NO POWER",
   "remarks": "Multiple reports in same area",
-  "ticketIds": ["TKT-20260316-0001", "TKT-20260316-0002", "TKT-20260316-0003"]
+  "ticketIds": ["ALECO-AB12C", "ALECO-CD34E", "ALECO-FG56H"]
 }
 ```
 
@@ -1560,7 +1555,7 @@ GET /api/tickets/group/:masterTicketId
   },
   "childTickets": [
     {
-      "ticket_id": "TKT-20260316-0001",
+      "ticket_id": "ALECO-AB12C",
       "first_name": "Juan",
       "last_name": "Dela Cruz"
     }
@@ -1872,10 +1867,10 @@ const email = req.body.email;
 
 **4. Use Template Literals**:
 ```javascript
-// ✅ GOOD
-const ticketId = `TKT-${dateStr}-${sequence}`;
+// ✅ GOOD (matches live submit handler pattern)
+const ticketId = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-// ❌ BAD
+// ❌ BAD — docs/example IDs must match production format
 const ticketId = 'TKT-' + dateStr + '-' + sequence;
 ```
 
@@ -1948,7 +1943,7 @@ describe('POST /api/tickets/submit', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
-    expect(response.body.ticketId).toMatch(/^TKT-\d{8}-\d{4}$/);
+    expect(response.body.ticketId).toMatch(/^ALECO-[A-Z0-9]{5}$/);
   });
 });
 ```
@@ -2326,7 +2321,7 @@ app.use(cors());
 - **Lego Brick**: A self-contained, modular component or route
 - **Idempotent**: An operation that produces the same result when called multiple times
 - **Master Ticket**: A parent ticket that groups multiple child tickets
-- **Ticket ID**: Unique identifier in format `TKT-YYYYMMDD-XXXX`
+- **Ticket ID**: Consumer reports use `ALECO-` + 5 alphanumeric chars; group masters use `GROUP-YYYYMMDD-XXXX`
 - **Group ID**: Master ticket identifier in format `GROUP-YYYYMMDD-XXXX`
 - **ESM**: ES Modules (import/export syntax)
 - **Glassmorphism**: UI design with frosted glass effect
@@ -2342,7 +2337,7 @@ app.use(cors());
 
 ---
 
-**Last Updated**: March 16, 2026
+**Last Updated**: March 20, 2026
 **Version**: 1.0.0
 **License**: Proprietary - ALECO Internal Use Only
 

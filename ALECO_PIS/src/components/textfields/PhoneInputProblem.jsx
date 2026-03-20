@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { validatePhilippineMobile } from '../../utils/phoneUtils';
+import { validatePhilippineMobile, sanitizePhoneDigits } from '../../utils/phoneUtils';
 import '../../CSS/TextFieldProblem.css';
 import '../../CSS/PhoneInputProblem.css';
 
@@ -9,7 +9,8 @@ import '../../CSS/PhoneInputProblem.css';
  */
 const formatForDisplay = (digits) => {
     if (!digits || digits.length === 0) return '';
-    let d = String(digits).replace(/\D/g, '');
+    let d = sanitizePhoneDigits(digits);
+    if (d.startsWith('00')) d = d.slice(2);
     if (d.startsWith('63') && d.length >= 11) d = '0' + d.slice(2, 12);
     else if (d.startsWith('9') && d.length === 10) d = '0' + d;
     else if (d.length > 11) d = d.slice(0, 11);
@@ -22,12 +23,13 @@ const PhoneInputProblem = ({ id, label, value, onChange, placeholder }) => {
     const [touched, setTouched] = useState(false);
     const [showError, setShowError] = useState(false);
 
-    const digits = (value || '').replace(/\D/g, '');
+    const digits = sanitizePhoneDigits(value || '');
     const validation = validatePhilippineMobile(value || '');
     const hasError = touched && !validation.valid && digits.length > 0;
 
     const handleChange = useCallback((e) => {
-        let val = e.target.value.replace(/\D/g, '');
+        let val = sanitizePhoneDigits(e.target.value);
+        if (val.startsWith('00')) val = val.slice(2);
         if (val.startsWith('63') && val.length >= 11) {
             val = '0' + val.slice(2, 12);
         } else if (val.startsWith('9') && val.length === 10) {
@@ -62,7 +64,7 @@ const PhoneInputProblem = ({ id, label, value, onChange, placeholder }) => {
                     type="tel"
                     id={id}
                     className={`textfield-input phone-input-input ${hasError ? 'error' : ''}`}
-                    placeholder={placeholder || '09XX XXX XXXX'}
+                    placeholder={placeholder || '09XX XXX XXXX or +63 9XX XXX XXXX'}
                     value={displayValue}
                     onChange={handleChange}
                     onBlur={handleBlur}

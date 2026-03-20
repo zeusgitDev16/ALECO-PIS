@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { FaEdit, FaSave, FaLock, FaHistory, FaFacebook, FaTwitter, FaGithub } from 'react-icons/fa';
+import { apiUrl } from '../../utils/api';
 import '../../CSS/ProfilePage.css';
 
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [userData, setUserData] = useState({
     name: localStorage.getItem('userName') || 'User',
@@ -14,6 +16,36 @@ const ProfilePage = () => {
     address: localStorage.getItem('userAddress') || 'Albay, Philippines',
     phone: localStorage.getItem('userPhone') || '+63 000 000 0000'
   });
+
+  const handleSaveProfile = async () => {
+    if (!isEditing) {
+      setIsEditing(true);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const response = await fetch(apiUrl('/api/users/profile'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userData.email, name: userData.name })
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        alert(err.error || 'Failed to save profile.');
+        setIsSaving(false);
+        return;
+      }
+      localStorage.setItem('userName', userData.name);
+      localStorage.setItem('userBio', userData.bio);
+      localStorage.setItem('userAddress', userData.address);
+      localStorage.setItem('userPhone', userData.phone);
+      setIsEditing(false);
+    } catch {
+      alert('Network error. Profile name could not be saved to the server.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="profile-main-container">
@@ -49,16 +81,8 @@ const ProfilePage = () => {
             <span className={`role-pill ${userData.role}`}>{userData.role.toUpperCase()}</span>
           </div>
           
-          <button className="edit-profile-btn" onClick={() => {
-            if (isEditing) {
-              localStorage.setItem('userName', userData.name);
-              localStorage.setItem('userBio', userData.bio);
-              localStorage.setItem('userAddress', userData.address);
-              localStorage.setItem('userPhone', userData.phone);
-            }
-            setIsEditing(!isEditing);
-          }}>
-            {isEditing ? <><FaSave /> Save Profile</> : <><FaEdit /> Edit Profile</>}
+          <button className="edit-profile-btn" onClick={handleSaveProfile} disabled={isSaving}>
+            {isSaving ? 'Saving...' : isEditing ? <><FaSave /> Save Profile</> : <><FaEdit /> Edit Profile</>}
           </button>
         </div>
 

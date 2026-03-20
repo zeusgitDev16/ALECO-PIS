@@ -4,7 +4,7 @@ import pool from '../config/db.js';
 import { upload } from '../../cloudinaryConfig.js'; // <-- Adjusted path to go up two folders
 import axios from 'axios';
 import { sendPhilSMS } from '../utils/sms.js';
-import { normalizePhoneForDB } from '../utils/phoneUtils.js';
+import { normalizePhoneForDB, INVALID_PHONE_MESSAGE } from '../utils/phoneUtils.js';
 import { insertTicketLog } from '../utils/ticketLogHelper.js';
 
 const router = express.Router();
@@ -88,7 +88,7 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         if (!normalizedPhone) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid phone number. Use 09XXXXXXXXX format (11 digits).'
+                message: INVALID_PHONE_MESSAGE
             });
         }
 
@@ -273,7 +273,7 @@ router.put('/tickets/:ticketId', async (req, res) => {
         if (updates.phone_number) {
             const normalized = normalizePhoneForDB(updates.phone_number);
             if (!normalized) {
-                return res.status(400).json({ success: false, message: 'Invalid phone number. Use 09XXXXXXXXX format.' });
+                return res.status(400).json({ success: false, message: INVALID_PHONE_MESSAGE });
             }
             updates.phone_number = normalized;
         }
@@ -413,17 +413,36 @@ nofault
 nores
 
 keep safe!`;
-        await sendPhilSMS(lineman_phone, linemanMsg);
+        const linemanSmsResult = await sendPhilSMS(lineman_phone, linemanMsg);
+        if (!linemanSmsResult.success) {
+            console.log(`❌ Lineman SMS failed for crew ${assigned_crew}; ticket not updated.`);
+            return res.status(502).json({
+                success: false,
+                message:
+                    'Crew dispatch SMS could not be sent. The ticket was not updated. Check PhilSMS (API key, URL, sender ID) and server logs.',
+                sms: { lineman: linemanSmsResult }
+            });
+        }
         console.log(`✅ SMS sent to Lineman (${assigned_crew}): ${lineman_phone}`);
 
         // 2. Notify Consumer (optional - only when Notify Consumer toggle is ON)
+        let consumerSmsPayload;
         if (is_consumer_notified && consumer_phone) {
             const consumerMsg = `Greetings! This is from ALECO! Your ticket ${ticket_id} is currently being processed. Please be in touch or visit our website to track your ticket and for follow ups.
 
 You can enter this ticket to track:
 ${ticket_id}`;
-            await sendPhilSMS(consumer_phone, consumerMsg);
-            console.log(`✅ SMS sent to Consumer: ${consumer_phone}`);
+            const consumerResult = await sendPhilSMS(consumer_phone, consumerMsg);
+            consumerSmsPayload = { attempted: true, ...consumerResult };
+            if (consumerResult.success) {
+                console.log(`✅ SMS sent to Consumer: ${consumer_phone}`);
+            } else {
+                console.warn(`⚠️ Consumer SMS failed for ticket ${ticket_id}:`, consumerResult);
+            }
+        } else if (is_consumer_notified) {
+            consumerSmsPayload = { attempted: false, skipped: true, reason: 'no_phone_on_ticket' };
+        } else {
+            consumerSmsPayload = { attempted: false, skipped: true, reason: 'not_requested' };
         }
 
         // --- PHASE 3: DATABASE UPDATE ---
@@ -462,7 +481,20 @@ ${ticket_id}`;
                 metadata: { assigned_crew, eta, dispatch_notes: dispatch_notes || null }
             });
             console.log(`✅ DATABASE SUCCESS: Ticket ${ticket_id} updated to Ongoing.`);
-            res.status(200).json({ success: true, message: 'Dynamic Dispatch Complete!' });
+            const consumerFailed =
+                consumerSmsPayload.attempted === true && consumerSmsPayload.success === false;
+            const dispatchMessage = consumerFailed
+                ? 'Dynamic dispatch complete. Crew was notified by SMS; consumer SMS could not be sent.'
+                : 'Dynamic dispatch complete.';
+            res.status(200).json({
+                success: true,
+                message: dispatchMessage,
+                sms: {
+                    lineman: { success: true },
+                    consumer: consumerSmsPayload
+                },
+                ...(consumerFailed ? { warnings: ['consumer_sms_failed'] } : {})
+            });
         } else {
             res.status(500).json({ success: false, message: 'Failed to update ticket status.' });
         }
@@ -492,14 +524,22 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Ticket not found or not Ongoing.' });
         }
 
-        // Send SMS to consumer when notify_consumer is true
+        const sms = { consumer: { attempted: false, skipped: true, reason: 'not_requested' } };
+
         if (notify_consumer) {
             const [ticketRows] = await pool.execute('SELECT phone_number FROM aleco_tickets WHERE ticket_id = ?', [ticket_id]);
             const consumer_phone = ticketRows[0]?.phone_number;
             if (consumer_phone) {
                 const holdMsg = `ALECO: Your ticket ${ticket_id} has been put on hold. Reason: ${hold_reason.trim()}. We will resume work soon. Thank you for your patience.`;
-                await sendPhilSMS(consumer_phone, holdMsg);
-                console.log(`✅ Hold SMS sent to consumer: ${consumer_phone}`);
+                const holdSmsResult = await sendPhilSMS(consumer_phone, holdMsg);
+                sms.consumer = { attempted: true, ...holdSmsResult };
+                if (holdSmsResult.success) {
+                    console.log(`✅ Hold SMS sent to consumer: ${consumer_phone}`);
+                } else {
+                    console.warn(`⚠️ Hold consumer SMS failed for ${ticket_id}:`, holdSmsResult);
+                }
+            } else {
+                sms.consumer = { attempted: false, skipped: true, reason: 'no_phone_on_ticket' };
             }
         }
 
@@ -517,7 +557,18 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
         });
 
         console.log(`✅ Ticket ${ticket_id} put on hold by dispatcher.`);
-        res.status(200).json({ success: true, message: 'Ticket put on hold.' });
+        const holdMsgText =
+            sms.consumer.attempted && sms.consumer.success === false
+                ? 'Ticket put on hold. Consumer SMS could not be sent.'
+                : 'Ticket put on hold.';
+        res.status(200).json({
+            success: true,
+            message: holdMsgText,
+            sms,
+            ...(sms.consumer.attempted && sms.consumer.success === false
+                ? { warnings: ['consumer_sms_failed'] }
+                : {})
+        });
     } catch (error) {
         console.error("❌ HOLD ERROR:", error.message);
         res.status(500).json({ success: false, message: error.message });
@@ -832,7 +883,14 @@ router.get('/tickets/sms/receive', async (req, res) => {
 router.post('/check-duplicates', async (req, res) => {
     try {
         const { phone_number, concern, category } = req.body;
-        const normalizedPhone = normalizePhoneForDB(phone_number) || phone_number?.trim?.() || '';
+        const normalizedPhone = normalizePhoneForDB(phone_number);
+        if (!normalizedPhone) {
+            return res.status(400).json({
+                success: false,
+                invalidPhone: true,
+                message: INVALID_PHONE_MESSAGE
+            });
+        }
 
         console.log(`🔍 Checking for duplicates: ${normalizedPhone} | ${concern}`);
 
@@ -1206,7 +1264,7 @@ router.post('/crews/add', async (req, res) => {
             await connection.rollback();
             return res.status(400).json({
                 success: false,
-                message: 'Invalid phone number. Use 09XXXXXXXXX format (11 digits).'
+                message: INVALID_PHONE_MESSAGE
             });
         }
 
@@ -1288,7 +1346,7 @@ router.put('/crews/update/:id', async (req, res) => {
             await connection.rollback();
             return res.status(400).json({
                 success: false,
-                message: 'Invalid phone number. Use 09XXXXXXXXX format (11 digits).'
+                message: INVALID_PHONE_MESSAGE
             });
         }
 
@@ -1360,7 +1418,7 @@ router.post('/pool/add', async (req, res) => {
         if (!formattedPhone) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid phone number. Use 09XXXXXXXXX format (11 digits).'
+                message: INVALID_PHONE_MESSAGE
             });
         }
 
@@ -1384,7 +1442,7 @@ router.put('/pool/update/:id', async (req, res) => {
         if (!formattedPhone) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid phone number. Use 09XXXXXXXXX format (11 digits).'
+                message: INVALID_PHONE_MESSAGE
             });
         }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { toDisplayFormat } from '../../utils/phoneUtils';
+import { toast } from 'react-toastify';
+import { toDisplayFormat, validatePhilippineMobile, INVALID_PHONE_HINT } from '../../utils/phoneUtils';
 import '../../CSS/AddLinemen.css'; 
 
 const AddLinemen = ({ isOpen, onClose, onSave, initialData = null }) => {
@@ -103,7 +104,7 @@ const AddLinemen = ({ isOpen, onClose, onSave, initialData = null }) => {
                             onChange={e => setContactNo(e.target.value)} 
                             required 
                         />
-                        <small className="form-hint">Enter 09XXXXXXXXX format (no +63 needed)</small>
+                        <small className="form-hint">Philippine mobile: 09XXXXXXXXX, +63 9XX XXX XXXX, or 9XXXXXXXXX</small>
                     </div>
 
                     <div className="dispatch-form-group">

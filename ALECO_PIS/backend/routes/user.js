@@ -166,6 +166,24 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// Update profile name — persists the name field from ProfilePage to the DB
+router.put('/users/profile', async (req, res) => {
+  const { email, name } = req.body;
+  if (!email || !name || !name.trim()) return res.status(400).json({ error: "Missing email or name." });
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = name.trim();
+
+  try {
+    const [result] = await pool.execute('UPDATE users SET name = ? WHERE email = ?', [cleanName, cleanEmail]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: "User not found." });
+    res.status(200).json({ message: "Profile updated successfully." });
+  } catch (error) {
+    console.error("Profile Update Error:", error.message);
+    res.status(500).json({ error: "Failed to update profile." });
+  }
+});
+
 // Toggle Status (Matches Schema Casing)
 router.post('/users/toggle-status', async (req, res) => {
   const { id, currentStatus } = req.body;

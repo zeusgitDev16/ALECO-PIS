@@ -347,7 +347,18 @@ Tickets: ${ticketList}
 or bulk: all fixed | all unfixed | all nofault | all nores
 
 keep safe!`;
-        await sendPhilSMS(linemanPhone, linemanMsg);
+        const linemanSmsResult = await sendPhilSMS(linemanPhone, linemanMsg);
+        if (!linemanSmsResult.success) {
+            console.log(`❌ Group lineman SMS failed for ${mainTicketId}; no tickets updated.`);
+            return res.status(502).json({
+                success: false,
+                message:
+                    'Crew dispatch SMS could not be sent. No tickets in the group were updated. Check PhilSMS (API key, URL, sender ID) and server logs.',
+                sms: { lineman: linemanSmsResult }
+            });
+        }
+
+        const consumerSmsResults = [];
 
         for (const member of sortedMembers) {
             if (is_consumer_notified && member.phone_number) {
@@ -356,7 +367,18 @@ keep safe!`;
 You can enter these tickets to track:
 ${member.ticket_id}
 ${mainTicketId}`;
-                await sendPhilSMS(member.phone_number, consumerMsg);
+                const consumerResult = await sendPhilSMS(member.phone_number, consumerMsg);
+                consumerSmsResults.push({ ticket_id: member.ticket_id, attempted: true, ...consumerResult });
+                if (!consumerResult.success) {
+                    console.warn(`⚠️ Group consumer SMS failed for ${member.ticket_id}:`, consumerResult);
+                }
+            } else {
+                consumerSmsResults.push({
+                    ticket_id: member.ticket_id,
+                    attempted: false,
+                    skipped: true,
+                    reason: is_consumer_notified ? 'no_phone_on_ticket' : 'not_requested'
+                });
             }
 
             await pool.execute(
@@ -378,10 +400,21 @@ ${mainTicketId}`;
         }
 
         console.log(`✅ GROUP DISPATCH: ${mainTicketId} - ${members.length} tickets dispatched to ${assigned_crew}`);
+        const consumerAnyFailed = consumerSmsResults.some(
+            (e) => e.attempted === true && e.success === false
+        );
+        const baseMsg = `${members.length} tickets dispatched to ${assigned_crew}`;
         res.json({
             success: true,
-            message: `${members.length} tickets dispatched to ${assigned_crew}`,
-            dispatchedCount: members.length
+            message: consumerAnyFailed
+                ? `${baseMsg}. Some consumer SMS messages could not be sent.`
+                : baseMsg,
+            dispatchedCount: members.length,
+            sms: {
+                lineman: { success: true },
+                consumers: consumerSmsResults
+            },
+            ...(consumerAnyFailed ? { warnings: ['consumer_sms_failed'] } : {})
         });
     } catch (error) {
         console.error('❌ Group dispatch error:', error);

@@ -1,8 +1,9 @@
 # Codebase Scanning Verification Report
 
-**Scan Date:** 2025-03-16  
+**Original scan date:** 2025-03-16  
+**Doc / feature resync:** 2026-03-20 (verify-session, interruptions API, ticket ID docs, AllUsers, profile, phone utils); **2026-03-20** Task 1 interruption data-source inconsistency cleared (see [docs/FULL_CODEBASE_MAP.md](./docs/FULL_CODEBASE_MAP.md)).  
 **Scope:** Frontend, Backend, Database - 18 modular tasks  
-**Mode:** Read-only (no modifications)
+**Mode:** Historical findings below; items marked **(corrected)** were re-verified against the live repo. For a single navigational index of routes and files, prefer **FULL_CODEBASE_MAP.md**.
 
 ---
 
@@ -13,8 +14,8 @@
 ### Bugs Found
 | # | Description | Location | Severity |
 |---|-------------|----------|----------|
-| 1 | **Missing backend route**: App.jsx calls `POST /api/verify-session` (line 41) but this route is NOT defined in `backend/routes/auth.js`. Logged-in users will get 404 on every navigation; catch block runs but session verification never succeeds. | App.jsx:40-44 | **High** |
-| 2 | **InterruptionList uses hardcoded data**: Component uses static `interruptions` array (lines 14-58) instead of fetching from `GET /api/interruptions`. Backend has this endpoint in ticket-routes.js. Data is stale (2023 dates). | InterruptionList.jsx:14-58 | **Medium** |
+| 1 | **Missing verify-session** ~~(was reported)~~ **(corrected):** `POST /api/verify-session` **is defined** in `backend/routes/auth.js` (~line 330). Session guard in `App.jsx` can succeed when `VITE_API_URL` points at the Express origin. | auth.js | — |
+| 2 | **InterruptionList hardcoded data** ~~(was reported)~~ **(corrected):** Public `InterruptionList.jsx` now loads `GET /api/interruptions`; backend brick is `backend/routes/interruptions.js` (queries `aleco_interruptions`). | InterruptionList.jsx, interruptions.js | — |
 
 ### Duplicates Found
 - None in this scope.
@@ -22,11 +23,11 @@
 ### Inconsistencies Found
 | # | Description | Locations |
 |---|-------------|-----------|
-| 1 | InterruptionList (public home) uses hardcoded sample data; Admin Interruptions page likely uses API - inconsistent data source. | InterruptionList.jsx vs Admin Interruptions |
+| ~~1~~ | **(Resolved 2026 full-map audit):** Public `InterruptionList.jsx` and admin `Interruptions.jsx` both load **`GET /api/interruptions`** (and admin uses POST/PUT/DELETE). No hardcoded-vs-API split. | See [docs/FULL_CODEBASE_MAP.md](./docs/FULL_CODEBASE_MAP.md) §3 |
 
 ### Recommendations
-- Add `POST /api/verify-session` route in auth.js to validate tokenVersion and return `{ status: 'valid' \| 'invalid' }`.
-- Refactor InterruptionList to fetch from `GET /api/interruptions` and handle loading/error states.
+- Keep `VITE_API_URL` on the Express origin in dev (e.g. `http://localhost:5000`) so `/api/verify-session` and `/api/interruptions` resolve.
+- Optional: add auth middleware on interruption **mutations** (POST/PUT/DELETE) if you require stricter server-side admin checks.
 
 ---
 
@@ -61,7 +62,6 @@
 | GET /api/contact-numbers | contact-numbers.js | OK |
 
 ### Recommendations
-- Fix validatePhilippineMobile: change `digits.length === 11` to `digits.length === 12` for the 63 branch.
 - Extract toTelHref to phoneUtils if used elsewhere.
 - Remove or gate debug console.log in ReportaProblem.
 
@@ -105,8 +105,8 @@
 ### Bugs Found
 | # | Description | Location | Severity |
 |---|-------------|----------|----------|
-| 1 | **Missing /api/verify-session route**: App.jsx calls POST /api/verify-session on every navigation. auth.js does NOT define this route. Logged-in users get 404; catch runs, session check never succeeds. | auth.js (route missing) | **High** |
-| 2 | **setup-google-account UPDATE bug**: Line 199 passes `[cleanEmail]` but query has two placeholders `(status, email)`. Should be `['used', cleanEmail]`. Currently status gets email string, email gets undefined - invite never marked as used. | auth.js:199 | **High** |
+| 1 | **verify-session** ~~(was reported missing)~~ **(corrected):** `POST /api/verify-session` exists in `auth.js`. | auth.js | — |
+| 2 | **setup-google-account UPDATE** ~~(was reported)~~ **(corrected):** Uses `['used', cleanEmail]` for `UPDATE access_codes SET status = ? WHERE email = ?`. | auth.js ~200 | — |
 | 3 | **Login uses alert() for errors**: Inconsistent with rest of app (toast). | login.jsx (multiple handlers) | **Low** |
 | 4 | **setup-account: login.jsx does not send `name`**: Backend uses `name \|\| "New User"`. User will always get "New User" unless they use Google setup. | login.jsx:135-138 | **Low** |
 
@@ -127,15 +127,13 @@
 | POST /api/setup-account | auth.js | OK |
 | POST /api/login | auth.js | OK |
 | POST /api/google-login | auth.js | OK |
-| POST /api/setup-google-account | auth.js | OK (has UPDATE bug) |
+| POST /api/setup-google-account | auth.js | OK |
 | POST /api/logout-all | auth.js | OK |
 | POST /api/forgot-password | auth.js | OK |
 | POST /api/reset-password | auth.js | OK |
-| POST /api/verify-session | auth.js | **MISSING** |
+| POST /api/verify-session | auth.js | OK |
 
 ### Recommendations
-- Add POST /api/verify-session: check users.token_version matches request tokenVersion, return { status: 'valid' \| 'invalid' }.
-- Fix auth.js:199 to `['used', cleanEmail]`.
 - Add name field to setup-account form or document that "New User" is intentional.
 - Consider replacing alert() with toast for consistency.
 
@@ -149,7 +147,7 @@
 | # | Description | Location | Severity |
 |---|-------------|----------|----------|
 | 1 | **AllUsers ignores users prop**: Users.jsx passes `users={usersList}` to AllUsers, but AllUsers does not accept or use a users prop - it fetches from API. handleUserInvited updates usersList but AllUsers never displays it. | Users.jsx:42, AllUsers.jsx | **Medium** |
-| 2 | **AllUsers hardcoded API URL**: fetchUsers uses `'http://localhost:5000/api/users'` instead of apiUrl - breaks in production/different ports. | AllUsers.jsx:19 | **Medium** |
+| 2 | **AllUsers URL** ~~(was hardcoded localhost)~~ **(corrected):** Uses `apiUrl('/api/users')`. | AllUsers.jsx | — |
 | 3 | **Users.jsx mock data is dead**: usersList state and handleUserInvited are unused because AllUsers fetches its own data. | Users.jsx:15-22 | **Low** |
 | 4 | **user.js toggle-status ignores requesterEmail**: Backend receives requesterEmail but does not validate (e.g. prevent self-disable). Frontend blocks it; backend does not. | user.js:171-184 | **Low** |
 
@@ -167,14 +165,13 @@
 ### API Endpoint Verification
 | Frontend Call | Backend Route | Status |
 |---------------|---------------|--------|
-| GET /api/users | user.js GET /users | OK (AllUsers uses wrong URL) |
+| GET /api/users | user.js GET /users | OK |
 | POST /api/invite | user.js POST /invite | OK |
 | POST /api/send-email | user.js POST /send-email | OK |
 | POST /api/check-email | user.js POST /check-email | OK |
 | POST /api/users/toggle-status | user.js POST /users/toggle-status | OK |
 
 ### Recommendations
-- Fix AllUsers fetchUsers to use apiUrl('/api/users').
 - Either pass users + refetch callback from Users to AllUsers, or have InviteNewUsers trigger AllUsers refetch (e.g. via callback or shared state).
 - Extract USER_ROLES to shared constants.
 - Add backend validation for toggle-status (reject if requesterEmail === target user).
@@ -188,7 +185,7 @@
 ### Bugs Found
 | # | Description | Location | Severity |
 |---|-------------|----------|----------|
-| 1 | **Save Profile does not persist**: Edit mode updates local state only. No API call to save name, bio, phone, address. Data lost on refresh. | ProfilePage.jsx:50-52 | **Medium** |
+| 1 | **Profile save** ~~(was reported)~~ **(corrected):** `PUT /api/users/profile` in `user.js` persists name; `ProfilePage.jsx` should call it on save (verify UI wiring in branch). | ProfilePage.jsx, user.js | — |
 | 2 | **Change Password button has no handler**: Button (line 100) has no onClick - does nothing. | ProfilePage.jsx:100 | **Low** |
 | 3 | **Activity Logs are hardcoded**: "Profile Updated", "Logged in", "Password Changed" are static - not from API. | ProfilePage.jsx:127-131 | **Low** |
 | 4 | **Social links are non-functional**: Facebook, Twitter, GitHub have no href or onClick. | ProfilePage.jsx:109-120 | **Low** |
@@ -203,7 +200,6 @@
 | 1 | Profile reads from localStorage only; no backend profile API. Other admin pages use API. | ProfilePage.jsx |
 
 ### Recommendations
-- Add backend profile update endpoint and wire Save to it.
 - Add Change Password flow (forgot-password or dedicated endpoint).
 - Replace hardcoded activity logs with real audit data or remove.
 - Use generic fallback (e.g. "User") instead of specific name.
@@ -311,7 +307,7 @@
 | POST /api/tickets/import | backup.js | OK |
 
 ### Inconsistencies Found
-- dataManagementEntities has `interruptions` with available: false - matches unimplemented feature.
+- ~~dataManagementEntities interruptions `available: false`~~ **(corrected):** set to `true` now that interruptions CRUD exists.
 
 ---
 
@@ -322,16 +318,16 @@
 ### Bugs Found
 | # | Description | Location | Severity |
 |---|-------------|----------|----------|
-| 1 | **Missing verify-session route**: Frontend App.jsx calls POST /api/verify-session; no route defined. | auth.js | **High** |
-| 2 | **auth.js setup-google-account UPDATE bug**: Line 199 passes [cleanEmail] instead of ['used', cleanEmail]. | auth.js:199 | **High** |
+| 1 | **verify-session / setup-google-account** — see Task 4 **(corrected)** in live `auth.js`. | auth.js | — |
 
 ### Route Summary
 | Route File | Mount | Key Routes |
 |------------|-------|------------|
-| auth.js | /api | setup-account, login, google-login, setup-google-account, logout-all, forgot-password, reset-password |
-| user.js | /api | invite, send-email, check-email, users, users/toggle-status |
+| auth.js | /api | setup-account, login, google-login, setup-google-account, logout-all, forgot-password, reset-password, **verify-session** |
+| user.js | /api | invite, send-email, check-email, users, users/toggle-status, users/profile |
 | tickets.js | /api | tickets/submit, track, PUT, DELETE, send-copy, dispatch, hold, check-duplicates, logs, crews/*, pool/* |
-| ticket-routes.js | /api | interruptions, filtered-tickets |
+| ticket-routes.js | /api | filtered-tickets |
+| interruptions.js | /api | interruptions (GET list, POST/PUT/DELETE CRUD) |
 | ticket-grouping.js | /api | tickets/group/*, tickets/bulk/restore |
 | contact-numbers.js | /api | contact-numbers |
 | backup.js | /api | tickets/export/*, tickets/archive, tickets/import |
@@ -345,19 +341,20 @@
 
 **Files scanned:** `backend/migrations/*.sql`
 
-### Migration Files (12 total)
+### Migration Files (13+ total; add as needed)
 - create_ticket_grouping_tables.sql, create_contact_numbers.sql
 - add_ticket_logs.sql, add_deleted_at_to_tickets.sql, add_dispatched_at.sql
 - add_hold_columns.sql, add_lineman_leave_columns.sql, add_group_type_and_visit_order.sql
 - add_nff_access_denied_status.sql, fix_status_enum.sql, add_export_log.sql, add_phone_index.sql
+- **create_aleco_interruptions.sql** — power advisory table (apply if missing)
 
 ### Tables Referenced
 - aleco_tickets, aleco_ticket_logs, aleco_ticket_groups, aleco_ticket_group_members
 - aleco_contact_numbers, aleco_export_log, aleco_personnel, aleco_crew_members, aleco_linemen_pool
+- **aleco_interruptions** (power advisories; wired to `GET/POST/PUT/DELETE /api/interruptions`)
 - users, access_codes, password_resets
 
 ### Inconsistencies
-- No aleco_interruptions table; ticket-routes /interruptions returns empty array.
 - Migration order not enforced by run-migration.js - manual ordering required.
 
 ---
@@ -369,7 +366,7 @@
 ### Bugs Found
 | # | Description | Location | Severity |
 |---|-------------|----------|----------|
-| 1 | **Frontend phoneUtils validatePhilippineMobile**: 63-format branch checks digits.length === 11; should be 12. | src/utils/phoneUtils.js:66 | **Medium** |
+| 1 | **Frontend 63-format length** — see Task 2 **(corrected).** | src/utils/phoneUtils.js | — |
 
 ### Duplicates Found
 | # | Description | Locations |
@@ -379,7 +376,7 @@
 | 3 | **toTelHref**: HotlinesDisplay has local implementation; could live in phoneUtils. | HotlinesDisplay.jsx |
 
 ### Inconsistencies
-- Frontend validatePhilippineMobile 63-branch wrong; backend normalizePhoneForDB correct.
+- Frontend/backend phone helpers remain duplicated files; logic should stay aligned on 63 = 12 digits.
 
 ---
 
@@ -396,7 +393,7 @@
 | # | Description | Locations |
 |---|-------------|-----------|
 | 1 | **Mixed HTTP clients**: Login, InviteNewUsers, useTickets use axios; ReportaProblem, AllUsers, HotlinesDisplay use fetch. | Various |
-| 2 | **AllUsers hardcoded URL**: Uses 'http://localhost:5000' instead of apiUrl. | AllUsers.jsx:19 |
+| 2 | **AllUsers URL** — **(corrected):** uses `apiUrl`. | AllUsers.jsx |
 
 ### Recommendations
 - Use apiUrl for all fetch base URLs.
@@ -428,16 +425,18 @@
 
 ---
 
-# Summary: High-Priority Bugs
+# Summary: Previously flagged items (2026-03-20 status)
 
-| # | Bug | Severity |
-|---|-----|----------|
-| 1 | Missing POST /api/verify-session - session check fails for logged-in users | High |
-| 2 | auth.js setup-google-account: UPDATE access_codes uses wrong params [cleanEmail] instead of ['used', cleanEmail] | High |
-| 3 | AllUsers hardcoded 'http://localhost:5000/api/users' - breaks in production | Medium |
-| 4 | Frontend validatePhilippineMobile 63-format length check wrong (11 vs 12 digits) | Medium |
-| 5 | InterruptionList uses hardcoded data instead of GET /api/interruptions | Medium |
-| 6 | Profile Save does not persist - no API | Medium |
-| 7 | Users.jsx passes users to AllUsers but AllUsers ignores it - dead code | Medium |
+| # | Original finding | Status |
+|---|------------------|--------|
+| 1 | Missing POST /api/verify-session | **Fixed in code** — route in `auth.js`; ensure `VITE_API_URL` targets Express. |
+| 2 | setup-google-account UPDATE params | **Fixed** — `['used', cleanEmail]`. |
+| 3 | AllUsers hardcoded localhost | **Fixed** — `apiUrl('/api/users')`. |
+| 4 | Frontend 63-format phone length | **Fixed** — 12 digits for `63…`. |
+| 5 | InterruptionList static data / empty API | **Fixed** — `interruptions.js` + `InterruptionList` fetch; admin CRUD in `Interruptions.jsx`. |
+| 6 | Profile save persistence | **Addressed** — `PUT /api/users/profile` pattern (verify in branch). |
+| 7 | Users.jsx / AllUsers props | **Open** — optional refactor: `refreshKey` + refetch vs passing `users`. |
+
+Remaining lower-priority items: console.log cleanup, cookie/privacy handlers, mixed fetch vs axios, optional auth middleware on admin mutations.
 
 ---

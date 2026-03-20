@@ -3,17 +3,6 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 
-// Minimal interruptions endpoint (placeholder for future full CRUD)
-router.get('/interruptions', async (req, res) => {
-    try {
-        // Future: query aleco_interruptions table when implemented
-        res.json({ success: true, data: [] });
-    } catch (error) {
-        console.error('Interruptions fetch error:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch interruptions.' });
-    }
-});
-
 // IDEMPOTENT FILTER ROUTE: Returns tickets based on admin dashboard filters
 router.get('/filtered-tickets', async (req, res) => {
     try {

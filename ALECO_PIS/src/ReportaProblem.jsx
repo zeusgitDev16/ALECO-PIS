@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 import './CSS/ReportaProblem.css';
 import { apiUrl } from './utils/api';
-import { formatPhoneDisplay } from './utils/phoneUtils';
+import { formatPhoneDisplay, INVALID_PHONE_HINT } from './utils/phoneUtils';
 import { formatToPhilippineTime } from './utils/dateUtils';
 import { ALECO_SCOPE } from '../alecoScope';
 import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsLocationMatcher';
@@ -432,6 +432,11 @@ const ReportaProblem = () => {
             });
 
             const duplicateResult = await duplicateCheckResponse.json();
+
+            if (!duplicateCheckResponse.ok) {
+                toast.error(duplicateResult.message || INVALID_PHONE_HINT);
+                return;
+            }
 
             if (duplicateResult.success && duplicateResult.hasDuplicates) {
                 const duplicates = duplicateResult.duplicates;

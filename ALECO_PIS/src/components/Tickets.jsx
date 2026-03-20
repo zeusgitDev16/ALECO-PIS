@@ -99,7 +99,12 @@ const AdminTickets = () => {
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                toast.success(`ALECO System: ${data.message}`);
+                const msg = `ALECO System: ${data.message}`;
+                if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
+                    toast.warning(msg);
+                } else {
+                    toast.success(msg);
+                }
                 refetch();
             } else {
                 toast.error('Group dispatch failed: ' + (data.message || 'Unknown error'));
@@ -190,10 +195,15 @@ const AdminTickets = () => {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    toast.success(`ALECO System: Crew successfully dispatched for Ticket ${ticketId}. SMS notifications sent.`);
+                    const line = `ALECO System: Ticket ${ticketId}. ${data.message || 'Dispatch complete.'}`;
+                    if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
+                        toast.warning(line);
+                    } else {
+                        toast.success(line);
+                    }
                     refetch();
                 } else {
-                    toast.error("Dispatch failed: " + data.message);
+                    toast.error('Dispatch failed: ' + (data.message || 'Unknown error'));
                 }
             }
             else if (['Pending', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(newStatus)) {

@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { listInterruptions } from '../api/interruptionsApi.js';
 
 const PUBLIC_LIMIT = 50;
-/** Background refresh while tab visible (~100s) */
-const POLL_MS = 100_000;
+/** Background refresh while tab visible */
+const POLL_MS = 30_000;
+/** Faster poll when upcoming items may flip status (dateTimeStart) */
+const POLL_MS_FAST = 10_000;
 
 /**
  * Public power-advisory bulletin: load, refetch on tab focus, light polling.
@@ -53,13 +55,22 @@ export function usePublicInterruptions() {
   }, [load]);
 
   useEffect(() => {
+    const hasUpcoming = interruptions.some((i) => {
+      const start = i?.dateTimeStart ? new Date(i.dateTimeStart).getTime() : 0;
+      return start > 0 && start > Date.now();
+    });
+    const hasPendingVisibility = interruptions.some((i) => {
+      const pv = i?.publicVisibleAt ? new Date(i.publicVisibleAt).getTime() : 0;
+      return pv > 0 && pv > Date.now();
+    });
+    const intervalMs = hasUpcoming || hasPendingVisibility ? POLL_MS_FAST : POLL_MS;
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') {
         load({ showSpinner: false });
       }
-    }, POLL_MS);
+    }, intervalMs);
     return () => window.clearInterval(id);
-  }, [load]);
+  }, [load, interruptions]);
 
   const refetch = useCallback(() => load({ showSpinner: true }), [load]);
 

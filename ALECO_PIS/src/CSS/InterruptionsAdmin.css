@@ -596,6 +596,18 @@
   color: var(--text-primary);
 }
 
+[data-theme='dark'] .interruptions-admin-modal-form input,
+[data-theme='dark'] .interruptions-admin-modal-form select {
+  background: #374151;
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .interruptions-admin-modal-form select option {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
 .interruptions-admin-field-hint {
   margin: 0 0 8px;
   font-size: 0.65rem;
@@ -613,6 +625,99 @@
 .interruptions-admin-datetime-preview-label {
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.interruptions-admin-countdown {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--accent-purple, #7c3aed);
+  font-weight: 600;
+}
+
+.interruptions-admin-feeder-cascade {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.interruptions-admin-feeder-cascade-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.interruptions-admin-feeder-area-select,
+.interruptions-admin-feeder-number-select {
+  flex: 1;
+  min-width: 100px;
+}
+
+[data-theme='dark'] .interruptions-admin-feeder-area-select,
+[data-theme='dark'] .interruptions-admin-feeder-number-select {
+  background: #374151;
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .interruptions-admin-feeder-area-select option,
+[data-theme='dark'] .interruptions-admin-feeder-number-select option {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.interruptions-admin-feeder-custom-input {
+  width: 100%;
+}
+
+[data-theme='dark'] .interruptions-admin-feeder-custom-input {
+  background: #374151;
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.interruptions-admin-inmodal-datetime {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.interruptions-admin-inmodal-time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.interruptions-admin-inmodal-time-select {
+  width: 4rem;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+  border-radius: var(--border-radius-md, 8px);
+  border: 1px solid var(--border-color);
+  background: var(--bg-input, var(--bg-card));
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .interruptions-admin-inmodal-time-select {
+  background: #374151;
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .interruptions-admin-inmodal-time-select option {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.interruptions-admin-inmodal-time-sep {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.interruptions-admin-inmodal-ampm {
+  display: flex;
+  gap: 12px;
+  margin-left: 4px;
 }
 
 .interruptions-admin-visibility-toggle {
@@ -716,6 +821,61 @@
   outline: none;
   border-color: var(--accent-purple, #7c3aed);
   box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+[data-theme='dark'] .interruptions-admin-datetime-input {
+  background: #374151;
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .interruptions-admin-datetime-input::placeholder {
+  color: #9ca3af;
+}
+
+/* React-datepicker dark mode (used in advisory modal) */
+[data-theme='dark'] .react-datepicker {
+  background-color: #1f2937;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .react-datepicker__header {
+  background-color: #374151;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .react-datepicker__current-month,
+[data-theme='dark'] .react-datepicker__day-name {
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .react-datepicker__day {
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .react-datepicker__day:hover {
+  background-color: #4b5563;
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .react-datepicker__day--selected,
+[data-theme='dark'] .react-datepicker__day--keyboard-selected {
+  background-color: #7c3aed !important;
+  color: #fff !important;
+}
+
+[data-theme='dark'] .react-datepicker__day--outside-month {
+  color: #6b7280;
+}
+
+[data-theme='dark'] .react-datepicker__navigation-icon::before {
+  border-color: #9ca3af;
+}
+
+[data-theme='dark'] .react-datepicker-popper[data-placement^='bottom'] .react-datepicker__triangle {
+  fill: #1f2937;
 }
 
 .interruptions-admin-fieldset--bull {
@@ -1107,6 +1267,42 @@
   background: rgba(124, 58, 237, 0.2);
 }
 
+.interruptions-admin-stepper-step--active.interruptions-admin-stepper-step--pending {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #d97706;
+  color: #92400e;
+}
+
+[data-theme='dark'] .interruptions-admin-stepper-step--active.interruptions-admin-stepper-step--pending {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #fcd34d;
+}
+
+.interruptions-admin-stepper-step--active.interruptions-admin-stepper-step--ongoing {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: #2563eb;
+  color: #1e40af;
+}
+
+[data-theme='dark'] .interruptions-admin-stepper-step--active.interruptions-admin-stepper-step--ongoing {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+
+.interruptions-admin-stepper-step--active.interruptions-admin-stepper-step--restored {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: #16a34a;
+  color: #166534;
+}
+
+[data-theme='dark'] .interruptions-admin-stepper-step--active.interruptions-admin-stepper-step--restored {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: #22c55e;
+  color: #86efac;
+}
+
 .interruptions-admin-stepper-dot {
   display: inline-block;
   width: 6px;
@@ -1139,6 +1335,70 @@
 
 .interruptions-admin-stepper-select-wrap select {
   max-width: 200px;
+}
+
+/* Lifecycle dropdown: colorful border by status, small size */
+.interruptions-admin-lifecycle-select.interruptions-admin-stepper-select-wrap {
+  margin-top: 12px;
+}
+
+.interruptions-admin-lifecycle-select--pending .interruptions-admin-lifecycle-dropdown {
+  border-left: 3px solid #d97706;
+}
+
+.interruptions-admin-lifecycle-select--ongoing .interruptions-admin-lifecycle-dropdown {
+  border-left: 3px solid #dc2626;
+}
+
+.interruptions-admin-lifecycle-select--restored .interruptions-admin-lifecycle-dropdown {
+  border-left: 3px solid #16a34a;
+}
+
+.interruptions-admin-lifecycle-dropdown {
+  border: 1px solid var(--border-color);
+  background: var(--bg-input, var(--bg-card));
+  color: var(--text-primary);
+}
+
+.interruptions-admin-lifecycle-dropdown:focus {
+  outline: 2px solid var(--primary, #2563eb);
+  outline-offset: 1px;
+}
+
+/* Status change remark (required when changing status manually) */
+.interruptions-admin-status-remark-wrap {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.interruptions-admin-status-remark-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.interruptions-admin-status-remark-required {
+  color: var(--error, #c62828);
+}
+
+.interruptions-admin-status-remark-wrap--required .interruptions-admin-status-remark-input {
+  border-color: rgba(234, 179, 8, 0.6);
+}
+
+.interruptions-admin-status-remark-input {
+  padding: 10px 12px;
+  border-radius: var(--border-radius-md, 8px);
+  border: 1px solid var(--border-color);
+  background: var(--bg-input, var(--bg-card));
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.interruptions-admin-status-remark-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
 
 .interruptions-admin-bull-unscheduled-note {

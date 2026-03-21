@@ -1,11 +1,33 @@
 import { getStatusDisplayLabel } from './interruptionLabels.js';
 import { isoToDatetimeLocalPhilippine } from './dateUtils.js';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 
-/** @typedef {{ type: string, status: string, affectedAreasText: string, feeder: string, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string }} InterruptionFormState */
+dayjs.extend(utc);
+
+const PH_OFFSET_HOURS = 8;
+
+/**
+ * Convert ISO/UTC updatedAt from API to MySQL-compatible format for concurrency check.
+ * Backend compares DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i') with this value.
+ * @param {string|null|undefined} isoString - e.g. "2026-03-20T05:30:00.000Z"
+ * @returns {string} e.g. "2026-03-20 13:30:00" (Philippine time)
+ */
+export function toMysqlFormatForConcurrency(isoString) {
+  if (!isoString || !String(isoString).trim()) return '';
+  try {
+    return dayjs.utc(isoString).add(PH_OFFSET_HOURS, 'hour').format('YYYY-MM-DD HH:mm:ss');
+  } catch {
+    return '';
+  }
+}
+
+/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string }} InterruptionFormState */
 
 export const emptyForm = {
   type: 'Unscheduled',
   status: 'Pending',
+  statusChangeRemark: '',
   affectedAreasText: '',
   feeder: '',
   cause: '',
@@ -89,10 +111,10 @@ export function computeInitialStatusPreview(type, dateTimeStartLocal) {
 
 /**
  * @param {InterruptionFormState} form
- * @param {{ editingId: number|null, baselineUpdatedAt?: string|null }} opts
+ * @param {{ editingId: number|null, baselineUpdatedAt?: string|null, baselineStatus?: string }} opts
  * @returns {object} POST/PUT body for /api/interruptions
  */
-export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } = {}) {
+export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt, baselineStatus } = {}) {
   const affectedAreas = form.affectedAreasText
     .split(',')
     .map((x) => x.trim())
@@ -131,6 +153,12 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
 
   payload.status = form.status;
 
+  const statusIsChanging = baselineStatus != null && form.status !== baselineStatus;
+  const isPendingToOngoing = baselineStatus === 'Pending' && form.status === 'Ongoing';
+  if (statusIsChanging && !isPendingToOngoing && form.statusChangeRemark) {
+    payload.statusChangeRemark = String(form.statusChangeRemark).trim();
+  }
+
   if (form.status === 'Restored') {
     payload.dateTimeRestored = datetimeLocalToApi(form.dateTimeRestored);
   } else {
@@ -139,7 +167,8 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
 
   const base = baselineUpdatedAt != null ? String(baselineUpdatedAt).trim() : '';
   if (base) {
-    payload.expectedUpdatedAt = base;
+    const mysqlFormat = toMysqlFormatForConcurrency(base);
+    payload.expectedUpdatedAt = mysqlFormat || base;
   }
 
   return payload;
@@ -148,10 +177,12 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
 /**
  * Validates form before submit. Returns array of error messages.
  * Requires: feeder (always), and either body OR cause.
+ * When status changes (except Pending→Ongoing), requires statusChangeRemark.
  * @param {InterruptionFormState} form
+ * @param {{ baselineStatus?: string }} [opts]
  * @returns {string[]}
  */
-export function validateInterruptionForm(form) {
+export function validateInterruptionForm(form, { baselineStatus } = {}) {
   const errors = [];
   const hasBody = form.body && String(form.body).trim();
   const hasCause = form.cause && String(form.cause).trim();
@@ -164,8 +195,23 @@ export function validateInterruptionForm(form) {
   if (!hasBody && !hasCause) {
     errors.push('Provide either a post body (content) or a cause/reason. At least one is required.');
   }
+
+  const statusIsChanging = baselineStatus != null && form.status !== baselineStatus;
+  const isPendingToOngoing = baselineStatus === 'Pending' && form.status === 'Ongoing';
+  if (statusIsChanging && !isPendingToOngoing) {
+    const remark = form.statusChangeRemark && String(form.statusChangeRemark).trim();
+    if (!remark) {
+      errors.push('A remark is required when changing status. Enter the reason in the "Reason for status change" field below the Lifecycle dropdown (not in the advisory body).');
+    }
+  }
   if (!hasDateTimeStart) {
     errors.push('Start date and time is required.');
+  }
+  if (form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()) {
+    const p = datetimeLocalStringToDate(form.publicVisibleAt);
+    if (p && p.getTime() <= Date.now()) {
+      errors.push('Goes live at must be a future date and time.');
+    }
   }
   return errors;
 }
@@ -176,6 +222,7 @@ export function rowToFormState(row) {
   return {
     type: row.type,
     status: row.status,
+    statusChangeRemark: '',
     affectedAreasText: (row.affectedAreas || []).join(', '),
     feeder: row.feeder || '',
     cause: row.cause || '',

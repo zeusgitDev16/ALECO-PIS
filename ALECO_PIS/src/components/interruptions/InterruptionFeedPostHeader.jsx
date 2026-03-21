@@ -4,6 +4,7 @@ import { getStatusDisplayLabel } from '../../utils/interruptionLabels';
 
 /**
  * Facebook-style post header: ALECO branding, status, Record (Posted/Updated), visibility.
+ * Uses stored status from API (database is source of truth; backend auto-upgrades Pending to Ongoing when go-live passes).
  * @param {{ item: object }} props - item has status, createdAt, updatedAt (ISO from API)
  */
 export default function InterruptionFeedPostHeader({ item }) {
@@ -12,7 +13,7 @@ export default function InterruptionFeedPostHeader({ item }) {
   const postedFormatted = createdAt ? formatToPhilippineTime(createdAt) : '';
   const updatedFormatted = updatedAt ? formatToPhilippineTime(updatedAt) : '';
   const showUpdated = updatedAt && createdAt && String(updatedAt).trim() !== String(createdAt).trim();
-  const status = item.status || 'Ongoing';
+  const status = item?.status || 'Ongoing';
   const statusLabel = getStatusDisplayLabel(status);
   const statusClass = String(status).toLowerCase();
 

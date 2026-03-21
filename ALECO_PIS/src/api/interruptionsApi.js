@@ -140,6 +140,27 @@ export async function deleteInterruption(id) {
 }
 
 /**
+ * Permanently delete an archived advisory. Only works when advisory is archived (soft-deleted).
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
+ */
+export async function permanentlyDeleteInterruption(id) {
+  let res;
+  try {
+    res = await fetch(apiUrl(`/api/interruptions/${id}/permanent`), { method: 'DELETE' });
+  } catch {
+    return { ok: false, success: false, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
  * @param {number} id
  * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
  */

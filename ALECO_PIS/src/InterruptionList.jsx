@@ -1,7 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import './CSS/BodyLandPage.css';
 import './CSS/InterruptionFeed.css';
 import { usePublicInterruptions } from './hooks/usePublicInterruptions';
+import { useNow } from './hooks/useNow';
 import InterruptionFeedPost from './components/interruptions/InterruptionFeedPost';
 import VerticalProgressIndicator from './components/interruptions/VerticalProgressIndicator';
 import AsOfDateTracker from './components/interruptions/AsOfDateTracker';
@@ -10,6 +11,11 @@ function InterruptionList() {
   const feedRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const { interruptions, loading, listUnavailable, refetch } = usePublicInterruptions();
+  const upcomingItems = useMemo(
+    () => interruptions.filter((i) => i.status === 'Pending'),
+    [interruptions]
+  );
+  const now = useNow(upcomingItems);
 
   const bulletinDateFull = new Date().toLocaleDateString(undefined, {
     weekday: 'long',
@@ -121,9 +127,11 @@ function InterruptionList() {
 
         {hasAdvisoryCards &&
           interruptions.map((item) => (
-            <InterruptionFeedPost key={item.id} item={item} />
+            <InterruptionFeedPost key={item.id} item={item} now={now} />
           ))}
       </div>
+
+      <hr className="section-separator" aria-hidden="true" />
     </div>
   );
 }

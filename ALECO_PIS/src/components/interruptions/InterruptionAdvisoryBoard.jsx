@@ -9,6 +9,7 @@ import InterruptionAdvisoryCard from './InterruptionAdvisoryCard';
  * @param {(row: object) => void} props.onEdit
  * @param {(id: number) => void} props.onDelete
  * @param {(id: number) => void} [props.onRestore]
+ * @param {(id: number) => void} [props.onPermanentDelete]
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {boolean} props.saving
  */
@@ -19,6 +20,7 @@ export default function InterruptionAdvisoryBoard({
   onEdit,
   onDelete,
   onRestore,
+  onPermanentDelete,
   listArchiveFilter = 'active',
   saving,
 }) {
@@ -70,6 +72,7 @@ export default function InterruptionAdvisoryBoard({
             onEdit={() => onEdit(item)}
             onDelete={() => onDelete(item.id)}
             onRestore={onRestore ? () => onRestore(item.id) : undefined}
+            onPermanentDelete={onPermanentDelete ? () => onPermanentDelete(item.id) : undefined}
             saving={saving}
           />
         ))}

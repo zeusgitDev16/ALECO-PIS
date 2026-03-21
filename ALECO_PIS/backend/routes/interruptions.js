@@ -137,6 +137,20 @@ router.get('/interruptions', async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(String(req.query.limit), 10) || 100, 1), 200);
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    // Auto-upgrade Pending -> Ongoing when go-live (publicVisibleAt or dateTimeStart) has passed
+    const upgradeWhere = hasDel
+      ? "status = 'Pending' AND deleted_at IS NULL AND (COALESCE(public_visible_at, date_time_start) <= NOW())"
+      : "status = 'Pending' AND (COALESCE(public_visible_at, date_time_start) <= NOW())";
+    await pool.query(
+      `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = NOW() WHERE ${upgradeWhere}`
+    );
+    // Auto-archive Restored advisories after 1 day 12 hours (36h) from restoration time
+    if (hasDel) {
+      await pool.query(
+        `UPDATE aleco_interruptions SET deleted_at = NOW() WHERE status = 'Restored' AND deleted_at IS NULL
+         AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL 36 HOUR) <= NOW()`
+      );
+    }
     const visibilityWhere = buildInterruptionsListWhere(req, hasDel);
     const listCols = hasDel ? `${INTERRUPTION_TABLE_COLS}, deleted_at` : INTERRUPTION_TABLE_COLS;
     const [rows] = await pool.query(
@@ -310,6 +324,7 @@ router.put('/interruptions/:id', async (req, res) => {
   const {
     type,
     status,
+    statusChangeRemark,
     affectedAreas,
     feeder,
     cause,
@@ -321,6 +336,8 @@ router.put('/interruptions/:id', async (req, res) => {
     dateTimeEndEstimated,
     dateTimeRestored,
     publicVisibleAt,
+    actorEmail,
+    actorName,
   } = req.body;
 
   try {
@@ -353,9 +370,22 @@ router.put('/interruptions/:id', async (req, res) => {
       if (!expectedMysql) {
         return res.status(400).json({ success: false, message: 'expectedUpdatedAt must be a valid date/time.' });
       }
+      // Client sends "YYYY-MM-DD HH:mm:ss" (Philippine) or ISO; toMysqlDateTime normalizes both.
+      // Comparison uses minute precision to avoid second-level false conflicts.
     }
 
     const nextStatus = status !== undefined ? status : ex.status;
+    const statusIsChanging = status !== undefined && status !== ex.status;
+    const isPendingToOngoing = ex.status === 'Pending' && nextStatus === 'Ongoing';
+    if (statusIsChanging && !isPendingToOngoing) {
+      const remark = statusChangeRemark != null ? String(statusChangeRemark).trim() : '';
+      if (!remark) {
+        return res.status(400).json({
+          success: false,
+          message: 'A remark is required when changing status (except Upcoming to Ongoing). Explain the reason for this change.',
+        });
+      }
+    }
     const hasNonEmptyRestored =
       dateTimeRestored !== undefined &&
       dateTimeRestored !== null &&
@@ -492,6 +522,21 @@ router.put('/interruptions/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
     }
 
+    if (statusIsChanging && !isPendingToOngoing && statusChangeRemark) {
+      const remarkText = String(statusChangeRemark).trim();
+      if (remarkText) {
+        const statusLabels = { Pending: 'Upcoming', Ongoing: 'Ongoing', Restored: 'Resolved' };
+        const fromLabel = statusLabels[ex.status] ?? ex.status;
+        const toLabel = statusLabels[nextStatus] ?? nextStatus;
+        const fullRemark = `Status changed from ${fromLabel} to ${toLabel}: ${remarkText}`;
+        await addUserUpdate(pool, id, {
+          remark: fullRemark,
+          actorEmail: actorEmail ?? null,
+          actorName: actorName ?? null,
+        });
+      }
+    }
+
     const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     if (!dto) {
@@ -532,6 +577,40 @@ router.delete('/interruptions/:id', async (req, res) => {
   } catch (error) {
     console.error('Interruptions delete error:', error);
     res.status(500).json({ success: false, message: 'Failed to remove interruption.' });
+  }
+});
+
+/** Permanently delete an archived advisory. Only allowed when deleted_at IS NOT NULL. */
+router.delete('/interruptions/:id/permanent', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  try {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    if (!hasDel) {
+      return res.status(503).json({
+        success: false,
+        message: 'Permanent delete requires the soft-delete migration. Archive first, then delete permanently.',
+      });
+    }
+    const [check] = await pool.execute(
+      'SELECT id, deleted_at FROM aleco_interruptions WHERE id = ?',
+      [id]
+    );
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Advisory not found.' });
+    }
+    if (check[0].deleted_at == null || String(check[0].deleted_at).trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only archived advisories can be permanently deleted. Archive the advisory first.',
+      });
+    }
+    await pool.execute('DELETE FROM aleco_interruptions WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Permanently deleted.' });
+  } catch (error) {
+    console.error('Interruptions permanent delete error:', error);
+    res.status(500).json({ success: false, message: 'Failed to permanently delete.' });
   }
 });
 

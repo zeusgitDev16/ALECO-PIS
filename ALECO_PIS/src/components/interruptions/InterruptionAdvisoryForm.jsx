@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   STATUS_FORM_OPTIONS,
   TYPE_FORM_OPTIONS,
@@ -11,7 +11,8 @@ import {
   datetimeLocalStringToDate,
 } from '../../utils/interruptionFormUtils';
 import { formatAdvisoryDateTime } from '../../utils/interruptionDateFormat';
-import BulletinDatetimePicker from './BulletinDatetimePicker';
+import FeederCascadeSelect from './FeederCascadeSelect';
+import InModalDateTimePicker from './InModalDateTimePicker';
 import { uploadInterruptionImage } from '../../api/interruptionsApi';
 
 const BODY_PLACEHOLDER =
@@ -54,12 +55,35 @@ function DatetimePreview({ value }) {
   );
 }
 
+function GoesLiveCountdown({ value }) {
+  const [now, setNow] = useState(() => Date.now());
+  const target = datetimeLocalStringToDate(value);
+  useEffect(() => {
+    if (!value || !target || target.getTime() <= Date.now()) return;
+    const id = setInterval(() => setNow(Date.now()), 60 * 1000);
+    return () => clearInterval(id);
+  }, [value]);
+  if (!target || target.getTime() <= now) return null;
+  const diff = target.getTime() - now;
+  const hours = Math.floor(diff / (60 * 60 * 1000));
+  const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return (
+    <p className="interruptions-admin-countdown" role="status">
+      <strong>Goes live in</strong> {parts.join(' ')}
+    </p>
+  );
+}
+
 export default function InterruptionAdvisoryForm({
   form,
   setForm,
   onSubmit,
   onCancel,
   editingId,
+  baselineStatus,
   detailLoading = false,
   saving,
   memoSlot = null,
@@ -227,11 +251,10 @@ export default function InterruptionAdvisoryForm({
             </label>
             <label>
               Feeder
-              <input
-                type="text"
+              <FeederCascadeSelect
                 value={form.feeder}
-                onChange={(ev) => setForm((f) => ({ ...f, feeder: ev.target.value }))}
-                placeholder="Feeder name or ID"
+                onChange={(v) => setForm((f) => ({ ...f, feeder: v }))}
+                disabled={advisoryArchived}
               />
             </label>
             <label>
@@ -246,11 +269,11 @@ export default function InterruptionAdvisoryForm({
             <label>
               Start
               <div className="interruptions-admin-datetime-wrap">
-                <input
-                  className="interruptions-admin-datetime-input"
-                  type="datetime-local"
+                <InModalDateTimePicker
                   value={form.dateTimeStart}
-                  onChange={(ev) => setForm((f) => ({ ...f, dateTimeStart: ev.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, dateTimeStart: v }))}
+                  placeholder="Select start date and time"
+                  futureOnly={!editingId}
                 />
               </div>
               <DatetimePreview value={form.dateTimeStart} />
@@ -258,11 +281,11 @@ export default function InterruptionAdvisoryForm({
             <label>
               Estimated restoration (ERT)
               <div className="interruptions-admin-datetime-wrap">
-                <input
-                  className="interruptions-admin-datetime-input"
-                  type="datetime-local"
+                <InModalDateTimePicker
                   value={form.dateTimeEndEstimated}
-                  onChange={(ev) => setForm((f) => ({ ...f, dateTimeEndEstimated: ev.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, dateTimeEndEstimated: v }))}
+                  placeholder="Select ERT date and time"
+                  futureOnly={!editingId}
                 />
               </div>
               <DatetimePreview value={form.dateTimeEndEstimated} />
@@ -320,7 +343,7 @@ export default function InterruptionAdvisoryForm({
                   {lifecycleSteps.map((step, i) => (
                     <React.Fragment key={step}>
                       <div
-                        className={`interruptions-admin-stepper-step${form.status === step ? ' interruptions-admin-stepper-step--active' : ''}`}
+                        className={`interruptions-admin-stepper-step${form.status === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
                       >
                         <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
                         <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
@@ -331,14 +354,15 @@ export default function InterruptionAdvisoryForm({
                     </React.Fragment>
                   ))}
                 </div>
-                <label className="interruptions-admin-stepper-select-wrap">
+                <label className={`interruptions-admin-stepper-select-wrap interruptions-admin-lifecycle-select interruptions-admin-lifecycle-select--${(form.status || '').toLowerCase()}`}>
                   Lifecycle
                 <select
                   value={form.status}
+                  className="interruptions-admin-lifecycle-dropdown"
                   onChange={(ev) => {
                     const v = ev.target.value;
                     setForm((f) => {
-                      const next = { ...f, status: v };
+                      const next = { ...f, status: v, statusChangeRemark: f.statusChangeRemark || '' };
                       if (v === 'Restored') {
                         next.dateTimeRestored = f.dateTimeRestored && String(f.dateTimeRestored).trim()
                           ? f.dateTimeRestored
@@ -357,6 +381,24 @@ export default function InterruptionAdvisoryForm({
                   ))}
                 </select>
                 </label>
+                {editingId && baselineStatus != null && (
+                  <label className={`interruptions-admin-span2 interruptions-admin-status-remark-wrap${form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') ? ' interruptions-admin-status-remark-wrap--required' : ''}`}>
+                    <span className="interruptions-admin-status-remark-label">
+                      Reason for status change
+                      {form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') && (
+                        <span className="interruptions-admin-status-remark-required"> (required)</span>
+                      )}
+                    </span>
+                    <input
+                      type="text"
+                      value={form.statusChangeRemark || ''}
+                      onChange={(ev) => setForm((f) => ({ ...f, statusChangeRemark: ev.target.value }))}
+                      placeholder="e.g. Rescheduled to next week, Misinformation corrected, Feeder faulty again"
+                      className="interruptions-admin-status-remark-input"
+                      aria-required={form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing')}
+                    />
+                  </label>
+                )}
               </div>
             ) : (
               <div className="interruptions-admin-span2">
@@ -365,7 +407,7 @@ export default function InterruptionAdvisoryForm({
                   {lifecycleSteps.map((step, i) => (
                     <React.Fragment key={step}>
                       <div
-                        className={`interruptions-admin-stepper-step${currentLifecycleStep === step ? ' interruptions-admin-stepper-step--active' : ''}`}
+                        className={`interruptions-admin-stepper-step${currentLifecycleStep === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
                       >
                         <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
                         <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
@@ -480,13 +522,16 @@ export default function InterruptionAdvisoryForm({
               <label className="interruptions-admin-span2 interruptions-admin-label-tight">
                 Goes live at
                 <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
-                  <BulletinDatetimePicker
+                  <InModalDateTimePicker
                     value={form.publicVisibleAt}
                     onChange={(v) => setForm((f) => ({ ...f, publicVisibleAt: v }))}
                     required={form.schedulePublicLater}
+                    placeholder="Select goes live date and time"
+                    futureOnly
                   />
                 </div>
                 <DatetimePreview value={form.publicVisibleAt} />
+                <GoesLiveCountdown value={form.publicVisibleAt} />
               </label>
               <div className="interruptions-admin-preset-row" role="group" aria-label="Quick schedule presets">
                 {PRESETS.map((p) => (
@@ -521,12 +566,11 @@ export default function InterruptionAdvisoryForm({
               <label className="interruptions-admin-span2">
                 Actual restoration date and time
                 <div className="interruptions-admin-datetime-wrap">
-                  <input
-                    className="interruptions-admin-datetime-input"
-                    type="datetime-local"
+                  <InModalDateTimePicker
                     value={form.dateTimeRestored}
-                    onChange={(ev) => setForm((f) => ({ ...f, dateTimeRestored: ev.target.value }))}
+                    onChange={(v) => setForm((f) => ({ ...f, dateTimeRestored: v }))}
                     required
+                    placeholder="Select restoration date and time"
                   />
                 </div>
                 <DatetimePreview value={form.dateTimeRestored} />

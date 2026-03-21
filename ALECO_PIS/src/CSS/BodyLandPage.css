@@ -13,6 +13,13 @@
   overflow: hidden; /* Prevents full page horizontal scroll */
 }
 
+.section-separator {
+  margin: 48px 0 0;
+  border: none;
+  border-top: 2px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  max-width: 100%;
+}
+
 .about-aleco {
   font-size: 1.9rem;
   font-family: var(--font-header);

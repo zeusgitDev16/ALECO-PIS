@@ -20,9 +20,10 @@ function truncate(s, max) {
  * @param {() => void} props.onEdit
  * @param {() => void} props.onDelete
  * @param {() => void} [props.onRestore]
+ * @param {() => void} [props.onPermanentDelete]
  * @param {boolean} props.saving
  */
-export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onRestore, saving }) {
+export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onRestore, onPermanentDelete, saving }) {
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const archived = Boolean(item.deletedAt);
   const statusLabel = getStatusDisplayLabel(item.status);
@@ -182,6 +183,15 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onRes
               disabled={saving || typeof onRestore !== 'function'}
             >
               Restore
+            </button>
+            <button
+              type="button"
+              className="interruptions-admin-btn interruptions-admin-btn--danger"
+              onClick={onPermanentDelete}
+              disabled={saving || typeof onPermanentDelete !== 'function'}
+              title="Permanently remove from database. This cannot be undone."
+            >
+              Delete permanently
             </button>
           </>
         ) : (

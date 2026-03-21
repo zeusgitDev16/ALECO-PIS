@@ -251,6 +251,16 @@
   letter-spacing: 0.05em;
 }
 
+.feed-infographic-countdown {
+  background: rgba(234, 179, 8, 0.9);
+  color: #1e3a5f;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
 .feed-infographic-badges {
   display: flex;
   flex-direction: column;

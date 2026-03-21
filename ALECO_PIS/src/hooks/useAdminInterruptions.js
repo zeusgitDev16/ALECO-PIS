@@ -5,6 +5,7 @@ import {
   updateInterruption,
   deleteInterruption,
   restoreInterruption,
+  permanentlyDeleteInterruption,
   getInterruption,
   addInterruptionUpdate,
 } from '../api/interruptionsApi.js';
@@ -200,6 +201,29 @@ export function useAdminInterruptions() {
     [fetchList]
   );
 
+  const permanentDeleteAdvisory = useCallback(
+    async (id) => {
+      setSaving(true);
+      setMessage(null);
+      try {
+        const r = await permanentlyDeleteInterruption(id);
+        if (!r.success) {
+          setMessage({ type: 'err', text: r.message || 'Permanent delete failed.' });
+          return false;
+        }
+        setMessage({ type: 'ok', text: 'Permanently deleted.' });
+        await fetchList();
+        return true;
+      } catch {
+        setMessage({ type: 'err', text: 'Network error.' });
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [fetchList]
+  );
+
   return {
     interruptions,
     loading,
@@ -213,6 +237,7 @@ export function useAdminInterruptions() {
     saveAdvisory,
     removeAdvisory,
     restoreAdvisory,
+    permanentDeleteAdvisory,
     editDetail,
     detailLoading,
     memoSaving,

@@ -24,8 +24,7 @@ export default function InterruptionAdvisoryUpdates({
 }) {
   const [draft, setDraft] = useState('');
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
+  const handleAdd = async () => {
     const text = draft.trim();
     if (!text || memoSaving) return;
     const ok = await onAddMemo(interruptionId, text);
@@ -85,7 +84,7 @@ export default function InterruptionAdvisoryUpdates({
         </p>
       )}
 
-      <form className="interruptions-admin-memo-form" onSubmit={handleAdd}>
+      <div className="interruptions-admin-memo-form">
         <label className="interruptions-admin-span2">
           Add remark
           <textarea
@@ -98,13 +97,14 @@ export default function InterruptionAdvisoryUpdates({
           />
         </label>
         <button
-          type="submit"
+          type="button"
           className="interruptions-admin-btn interruptions-admin-btn--submit"
           disabled={memoSaving || detailLoading || archivedReadOnly || !draft.trim()}
+          onClick={handleAdd}
         >
           {memoSaving ? 'Saving…' : 'Add remark'}
         </button>
-      </form>
+      </div>
     </fieldset>
   );
 }

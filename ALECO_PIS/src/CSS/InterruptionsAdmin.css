@@ -1726,3 +1726,150 @@
   border-radius: 8px;
   border: 1px solid var(--border-color);
 }
+
+/* View-only modal (archived advisory) */
+.interruptions-admin-view-only {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.interruptions-admin-view-only .interruptions-admin-modal-footer {
+  flex-shrink: 0;
+}
+
+.interruptions-admin-view-body {
+  /* Uses modal-body-scroll for padding; this adds view-only content styling */
+}
+
+.interruptions-admin-view-section {
+  margin-bottom: 20px;
+}
+
+.interruptions-admin-view-section:last-child {
+  margin-bottom: 0;
+}
+
+.interruptions-admin-view-section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 10px;
+}
+
+.interruptions-admin-view-dl {
+  display: grid;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.interruptions-admin-view-dl > div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.interruptions-admin-view-dl dt {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.interruptions-admin-view-dl dd {
+  margin: 0;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.interruptions-admin-view-body-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+
+.interruptions-admin-view-body-text p {
+  margin: 0 0 6px;
+}
+
+.interruptions-admin-view-body-text p:last-child {
+  margin-bottom: 0;
+}
+
+.interruptions-admin-view-image {
+  margin-top: 12px;
+}
+
+.interruptions-admin-view-image img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.interruptions-admin-view-text {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.interruptions-admin-view-empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Advisory Log (audit trail) */
+.interruptions-admin-advisory-log .interruptions-admin-view-empty {
+  font-style: normal;
+}
+
+.interruptions-admin-advisory-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.interruptions-admin-advisory-log-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  background: var(--bg-input, rgba(0, 0, 0, 0.03));
+  border-radius: 8px;
+  border-left: 3px solid var(--border-color);
+}
+
+.interruptions-admin-advisory-log-entry:last-child {
+  margin-bottom: 0;
+}
+
+.interruptions-admin-advisory-log-time {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.interruptions-admin-advisory-log-sep {
+  color: var(--text-secondary);
+  font-size: 0.8em;
+}
+
+.interruptions-admin-advisory-log-actor {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--accent-color, #3b82f6);
+}
+
+.interruptions-admin-advisory-log-remark {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  color: var(--text-primary);
+}

@@ -80,7 +80,7 @@ export default function InterruptionAdvisoryUpdates({
 
       {archivedReadOnly && !detailLoading && (
         <p className="interruptions-admin-memo-archived-note" role="note">
-          This advisory is <strong>archived</strong>. Restore it from the list to add remarks or edit fields.
+          This advisory is <strong>archived</strong>. View only; remarks cannot be added.
         </p>
       )}
 

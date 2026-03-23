@@ -62,6 +62,14 @@ export function useAdminInterruptions() {
     fetchList();
   }, [fetchList]);
 
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchList();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [fetchList]);
+
   const loadEditDetail = useCallback(async (id) => {
     if (id == null) {
       setEditDetail(null);

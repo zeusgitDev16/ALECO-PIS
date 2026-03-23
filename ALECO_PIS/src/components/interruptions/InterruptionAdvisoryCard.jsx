@@ -19,11 +19,10 @@ function truncate(s, max) {
  * @param {object} props.item - API DTO
  * @param {() => void} props.onEdit
  * @param {() => void} props.onDelete
- * @param {() => void} [props.onRestore]
  * @param {() => void} [props.onPermanentDelete]
  * @param {boolean} props.saving
  */
-export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onRestore, onPermanentDelete, saving }) {
+export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onPermanentDelete, saving }) {
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const archived = Boolean(item.deletedAt);
   const statusLabel = getStatusDisplayLabel(item.status);
@@ -175,14 +174,6 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onRes
           <>
             <button type="button" className="interruptions-admin-btn" onClick={onEdit} disabled={saving}>
               View
-            </button>
-            <button
-              type="button"
-              className="interruptions-admin-btn interruptions-admin-btn--submit"
-              onClick={onRestore}
-              disabled={saving || typeof onRestore !== 'function'}
-            >
-              Restore
             </button>
             <button
               type="button"

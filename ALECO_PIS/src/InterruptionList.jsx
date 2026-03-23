@@ -3,9 +3,19 @@ import './CSS/BodyLandPage.css';
 import './CSS/InterruptionFeed.css';
 import { usePublicInterruptions } from './hooks/usePublicInterruptions';
 import { useNow } from './hooks/useNow';
+import { RESOLVED_DISPLAY_MS } from './constants/interruptionConstants';
 import InterruptionFeedPost from './components/interruptions/InterruptionFeedPost';
 import VerticalProgressIndicator from './components/interruptions/VerticalProgressIndicator';
 import AsOfDateTracker from './components/interruptions/AsOfDateTracker';
+
+/** True if a Resolved advisory should be hidden (past the display window). */
+function isResolvedPastDisplayWindow(item, now) {
+  if (item?.status !== 'Restored') return false;
+  const restored = item?.dateTimeRestored ? new Date(item.dateTimeRestored).getTime() : 0;
+  if (!restored) return false;
+  const cutoff = restored + RESOLVED_DISPLAY_MS;
+  return now >= cutoff;
+}
 
 function InterruptionList() {
   const feedRef = useRef(null);
@@ -16,6 +26,15 @@ function InterruptionList() {
     [interruptions]
   );
   const now = useNow(upcomingItems);
+
+  /** Exclude archived (deletedAt) and Resolved advisories past 36h display window. */
+  const visibleInterruptions = useMemo(() => {
+    return interruptions.filter((i) => {
+      if (i?.deletedAt) return false;
+      if (isResolvedPastDisplayWindow(i, now)) return false;
+      return true;
+    });
+  }, [interruptions, now]);
 
   const bulletinDateFull = new Date().toLocaleDateString(undefined, {
     weekday: 'long',
@@ -35,9 +54,9 @@ function InterruptionList() {
 
   useEffect(() => {
     handleScroll();
-  }, [interruptions, loading, listUnavailable]);
+  }, [visibleInterruptions, loading, listUnavailable]);
 
-  const hasAdvisoryCards = !loading && !listUnavailable && interruptions.length > 0;
+  const hasAdvisoryCards = !loading && !listUnavailable && visibleInterruptions.length > 0;
 
   return (
     <div className="interruption-list-container">
@@ -83,7 +102,7 @@ function InterruptionList() {
           </div>
         )}
 
-        {!loading && !listUnavailable && interruptions.length === 0 && (
+        {!loading && !listUnavailable && visibleInterruptions.length === 0 && (
           <div className="interruption-card interruption-card--bulletin interruption-card--good-news interruption-card--feed">
             <div className="blob blob-restored" aria-hidden />
             <div className="bg interruption-good-news-inner">
@@ -126,7 +145,7 @@ function InterruptionList() {
         )}
 
         {hasAdvisoryCards &&
-          interruptions.map((item) => (
+          visibleInterruptions.map((item) => (
             <InterruptionFeedPost key={item.id} item={item} now={now} />
           ))}
       </div>

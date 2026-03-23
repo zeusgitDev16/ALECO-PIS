@@ -8,7 +8,6 @@ import InterruptionAdvisoryCard from './InterruptionAdvisoryCard';
  * @param {number} props.totalCount - unfiltered list length (for empty-vs-filtered copy)
  * @param {(row: object) => void} props.onEdit
  * @param {(id: number) => void} props.onDelete
- * @param {(id: number) => void} [props.onRestore]
  * @param {(id: number) => void} [props.onPermanentDelete]
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {boolean} props.saving
@@ -19,7 +18,6 @@ export default function InterruptionAdvisoryBoard({
   totalCount = 0,
   onEdit,
   onDelete,
-  onRestore,
   onPermanentDelete,
   listArchiveFilter = 'active',
   saving,
@@ -50,7 +48,7 @@ export default function InterruptionAdvisoryBoard({
           </h3>
           <p className="widget-text">
             {archivedEmpty
-              ? 'Archived advisories appear here after you archive them from the active list.'
+              ? 'Archived advisories appear here after you archive them from the active list, or when Resolved advisories are auto-archived after 1 day 12 hours.'
               : allEmpty
                 ? 'Create a new advisory or switch back to Active to see published items.'
                 : noData
@@ -71,7 +69,6 @@ export default function InterruptionAdvisoryBoard({
             item={item}
             onEdit={() => onEdit(item)}
             onDelete={() => onDelete(item.id)}
-            onRestore={onRestore ? () => onRestore(item.id) : undefined}
             onPermanentDelete={onPermanentDelete ? () => onPermanentDelete(item.id) : undefined}
             saving={saving}
           />

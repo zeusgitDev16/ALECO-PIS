@@ -15,6 +15,7 @@ import {
   insertSystemUpdate,
 } from '../services/interruptionLifecycle.js';
 import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
+import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 
 const router = express.Router();
 
@@ -144,11 +145,12 @@ router.get('/interruptions', async (req, res) => {
     await pool.query(
       `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = NOW() WHERE ${upgradeWhere}`
     );
-    // Auto-archive Restored advisories after 1 day 12 hours (36h) from restoration time
+    // Auto-archive Restored advisories after 1 day 12 hours from restoration time
     if (hasDel) {
       await pool.query(
         `UPDATE aleco_interruptions SET deleted_at = NOW() WHERE status = 'Restored' AND deleted_at IS NULL
-         AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL 36 HOUR) <= NOW()`
+         AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= NOW()`,
+        [RESOLVED_ARCHIVE_HOURS]
       );
     }
     const visibilityWhere = buildInterruptionsListWhere(req, hasDel);

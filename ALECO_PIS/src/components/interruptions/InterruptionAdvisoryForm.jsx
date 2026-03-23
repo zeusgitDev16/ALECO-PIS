@@ -273,7 +273,7 @@ export default function InterruptionAdvisoryForm({
                   value={form.dateTimeStart}
                   onChange={(v) => setForm((f) => ({ ...f, dateTimeStart: v }))}
                   placeholder="Select start date and time"
-                  futureOnly={!editingId}
+                  futureOnly
                 />
               </div>
               <DatetimePreview value={form.dateTimeStart} />
@@ -285,7 +285,7 @@ export default function InterruptionAdvisoryForm({
                   value={form.dateTimeEndEstimated}
                   onChange={(v) => setForm((f) => ({ ...f, dateTimeEndEstimated: v }))}
                   placeholder="Select ERT date and time"
-                  futureOnly={!editingId}
+                  futureOnly
                 />
               </div>
               <DatetimePreview value={form.dateTimeEndEstimated} />
@@ -555,7 +555,7 @@ export default function InterruptionAdvisoryForm({
 
         {advisoryArchived && (
           <div className="interruptions-admin-callout interruptions-admin-callout--warn" role="status">
-            <strong>Archived</strong> — restore from the list to edit or publish again.
+            <strong>Archived</strong> — view only.
           </div>
         )}
 

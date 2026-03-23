@@ -13,7 +13,10 @@ import contactNumbersRoutes from './backend/routes/contact-numbers.js';
 import backupRoutes from './backend/routes/backup.js';
 import interruptionsRoutes from './backend/routes/interruptions.js';
 import pool from './backend/config/db.js';
-import { transitionScheduledStarts } from './backend/services/interruptionLifecycle.js';
+import {
+  transitionScheduledStarts,
+  autoArchiveResolvedInterruptions,
+} from './backend/services/interruptionLifecycle.js';
 
 dotenv.config();
 
@@ -61,4 +64,12 @@ app.listen(PORT, () => {
   };
   runScheduledInterruptionTransition();
   setInterval(runScheduledInterruptionTransition, 60_000);
+
+  const runAutoArchiveResolved = () => {
+    autoArchiveResolvedInterruptions(pool).catch((err) =>
+      console.error('[interruptions] auto-archive resolved:', err.message || err)
+    );
+  };
+  runAutoArchiveResolved();
+  setInterval(runAutoArchiveResolved, 5 * 60_000); // every 5 minutes
 });

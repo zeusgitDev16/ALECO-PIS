@@ -14,10 +14,14 @@ const migrationPath = process.argv[2] || join(__dirname, 'migrations', 'add_tick
 async function run() {
   try {
     const sql = readFileSync(migrationPath, 'utf8');
-    const statements = sql
+    const sqlNoComments = sql
+      .split('\n')
+      .filter((line) => !line.trim().startsWith('--'))
+      .join('\n');
+    const statements = sqlNoComments
       .split(';')
-      .map(s => s.trim())
-      .filter(s => s && !s.startsWith('--'));
+      .map((s) => s.trim())
+      .filter((s) => s);
     for (const stmt of statements) {
       if (stmt) {
         await pool.execute(stmt);

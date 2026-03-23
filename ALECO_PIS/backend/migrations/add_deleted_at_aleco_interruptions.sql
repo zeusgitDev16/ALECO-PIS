@@ -1,4 +1,4 @@
--- Soft delete for power advisories: rows stay for reporting; public lists hide archived.
+-- Soft delete for power advisories: rows stay for reporting, public lists hide archived.
 -- Run: node backend/run-migration.js backend/migrations/add_deleted_at_aleco_interruptions.sql
 
 ALTER TABLE aleco_interruptions

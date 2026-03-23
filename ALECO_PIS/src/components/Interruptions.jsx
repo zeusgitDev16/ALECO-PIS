@@ -8,6 +8,7 @@ import { emptyForm, buildInterruptionPayload, rowToFormState, validateInterrupti
 import { useAdminInterruptions } from '../hooks/useAdminInterruptions';
 import InterruptionAdvisoryFilters from './interruptions/InterruptionAdvisoryFilters';
 import InterruptionAdvisoryForm from './interruptions/InterruptionAdvisoryForm';
+import InterruptionAdvisoryViewOnly from './interruptions/InterruptionAdvisoryViewOnly';
 import InterruptionAdvisoryBoard from './interruptions/InterruptionAdvisoryBoard';
 import InterruptionAdvisoryUpdates from './interruptions/InterruptionAdvisoryUpdates';
 
@@ -24,7 +25,6 @@ const AdminInterruptions = () => {
     setListArchiveFilter,
     saveAdvisory,
     removeAdvisory,
-    restoreAdvisory,
     permanentDeleteAdvisory,
     editDetail,
     detailLoading,
@@ -81,11 +81,7 @@ const AdminInterruptions = () => {
     return JSON.stringify(form) !== JSON.stringify(baselineForm);
   }, [modalOpen, saving, editingId, form, baselineForm]);
 
-  const requestCloseModal = useCallback(() => {
-    if (saving) return;
-    if (isDirty) {
-      if (!window.confirm('You have unsaved changes. Discard them and close?')) return;
-    }
+  const doCloseModal = useCallback(() => {
     setModalOpen(false);
     setEditingId(null);
     setForm(emptyForm);
@@ -94,7 +90,18 @@ const AdminInterruptions = () => {
     setValidationErrors([]);
     setResolveConfirmOpen(false);
     setPendingSubmit(null);
-  }, [saving, isDirty, setMessage]);
+    setDiscardConfirmOpen(false);
+    formLoadedForIdRef.current = null;
+  }, []);
+
+  const requestCloseModal = useCallback(() => {
+    if (saving) return;
+    if (isDirty) {
+      setDiscardConfirmOpen(true);
+      return;
+    }
+    doCloseModal();
+  }, [saving, isDirty, doCloseModal]);
 
   const filteredInterruptions = useMemo(() => {
     let list = interruptions;
@@ -132,6 +139,7 @@ const AdminInterruptions = () => {
 
   const [resolveConfirmOpen, setResolveConfirmOpen] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(null);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (validationErrors.length === 0) return;
@@ -141,6 +149,10 @@ const AdminInterruptions = () => {
     }, 2000);
     return () => clearTimeout(id);
   }, [validationErrors, setMessage]);
+
+  useEffect(() => {
+    if (listArchiveFilter === 'archived') setActiveChipKey('all');
+  }, [listArchiveFilter]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -174,15 +186,7 @@ const AdminInterruptions = () => {
     if (userEmail) payload.actorEmail = userEmail;
     if (userName) payload.actorName = userName;
     const r = await saveAdvisory({ editingId, payload });
-    if (r.saved) {
-      setModalOpen(false);
-      setEditingId(null);
-      setForm(emptyForm);
-      setBaselineForm(null);
-      setValidationErrors([]);
-      setResolveConfirmOpen(false);
-      setPendingSubmit(null);
-    }
+    if (r.saved) doCloseModal();
   };
 
   const confirmResolveAndSave = async () => {
@@ -195,14 +199,13 @@ const AdminInterruptions = () => {
     setResolveConfirmOpen(false);
     const r = await saveAdvisory({ editingId, payload });
     setPendingSubmit(null);
-    if (r.saved) {
-      setModalOpen(false);
-      setEditingId(null);
-      setForm(emptyForm);
-      setBaselineForm(null);
-      setValidationErrors([]);
-    }
+    if (r.saved) doCloseModal();
   };
+
+  const confirmDiscardAndClose = useCallback(() => {
+    setDiscardConfirmOpen(false);
+    doCloseModal();
+  }, [doCloseModal]);
 
   const handleReloadAdvisory = async () => {
     if (!editingId) return;
@@ -227,7 +230,10 @@ const AdminInterruptions = () => {
     setPermanentDeleteConfirm(null);
   };
 
-  const advisoryArchived = Boolean(editingId && editDetail?.deletedAt);
+  const rowFromList = editingId ? interruptions.find((i) => i.id === editingId) : null;
+  const advisoryArchived = Boolean(
+    editingId && (editDetail?.deletedAt ?? rowFromList?.deletedAt)
+  );
 
   return (
     <AdminLayout activePage="interruptions">
@@ -272,16 +278,25 @@ const AdminInterruptions = () => {
             <div className="interruptions-admin-archive-scope" role="group" aria-label="Advisory list scope">
               <span className="interruptions-admin-archive-scope-label">Show</span>
               {[
-                { key: 'active', label: 'Active' },
-                { key: 'all', label: 'All' },
-                { key: 'archived', label: 'Archived' },
-              ].map(({ key, label }) => (
+                {
+                  key: 'active',
+                  label: 'Active',
+                  title: 'Advisories currently on the public bulletin or scheduled to appear (not archived)',
+                },
+                { key: 'all', label: 'All', title: 'All advisories including archived' },
+                {
+                  key: 'archived',
+                  label: 'Archived',
+                  title: 'Soft-deleted advisories; view or restore only',
+                },
+              ].map(({ key, label, title }) => (
                 <button
                   key={key}
                   type="button"
                   className={`interruptions-admin-archive-chip${listArchiveFilter === key ? ' interruptions-admin-archive-chip--active' : ''}`}
                   onClick={() => setListArchiveFilter(key)}
                   disabled={loading}
+                  title={title}
                 >
                   {label}
                 </button>
@@ -307,7 +322,6 @@ const AdminInterruptions = () => {
           listArchiveFilter={listArchiveFilter}
           onEdit={openEdit}
           onDelete={handleArchiveRequest}
-          onRestore={restoreAdvisory}
           onPermanentDelete={(id) => {
             const row = interruptions.find((i) => i.id === id);
             setPermanentDeleteConfirm({ id, feeder: String(row?.feeder || '').trim() || `Advisory #${id}` });
@@ -332,7 +346,11 @@ const AdminInterruptions = () => {
             >
               <div className="interruptions-admin-modal-header">
                 <h3 id="interruptions-modal-title" className="header-title interruptions-admin-modal-title">
-                  {editingId ? `Edit advisory #${editingId}` : 'New power advisory'}
+                  {advisoryArchived
+                    ? `View advisory #${editingId}`
+                    : editingId
+                      ? `Edit advisory #${editingId}`
+                      : 'New power advisory'}
                 </h3>
                 <button
                   type="button"
@@ -344,6 +362,13 @@ const AdminInterruptions = () => {
                   ×
                 </button>
               </div>
+              {advisoryArchived ? (
+                <InterruptionAdvisoryViewOnly
+                  detail={editDetail}
+                  loading={detailLoading}
+                  onClose={requestCloseModal}
+                />
+              ) : (
               <InterruptionAdvisoryForm
                 form={form}
                 setForm={setForm}
@@ -372,6 +397,49 @@ const AdminInterruptions = () => {
                   ) : null
                 }
               />
+              )}
+            </div>
+          </div>
+        )}
+
+        {discardConfirmOpen && (
+          <div
+            className="interruptions-admin-modal-backdrop interruptions-admin-modal-backdrop--confirm"
+            role="presentation"
+            onClick={(ev) => {
+              if (ev.target === ev.currentTarget && !saving) setDiscardConfirmOpen(false);
+            }}
+          >
+            <div
+              className="interruptions-admin-modal interruptions-admin-confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="discard-confirm-title"
+            >
+              <h3 id="discard-confirm-title" className="header-title interruptions-admin-confirm-title">
+                Discard unsaved changes?
+              </h3>
+              <p className="widget-text interruptions-admin-confirm-lead">
+                You have unsaved changes. If you close now, they will be lost. Are you sure you want to discard?
+              </p>
+              <div className="interruptions-admin-confirm-actions">
+                <button
+                  type="button"
+                  className="interruptions-admin-btn"
+                  onClick={() => setDiscardConfirmOpen(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--danger"
+                  onClick={confirmDiscardAndClose}
+                  disabled={saving}
+                >
+                  Discard
+                </button>
+              </div>
             </div>
           </div>
         )}

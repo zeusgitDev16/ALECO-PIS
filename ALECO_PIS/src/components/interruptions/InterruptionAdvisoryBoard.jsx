@@ -1,5 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNow } from '../../hooks/useNow';
+import { isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
 import InterruptionAdvisoryCard from './InterruptionAdvisoryCard';
+import InterruptionAdvisoryDetailModal from './InterruptionAdvisoryDetailModal';
+import InterruptionCardActionModal from './InterruptionCardActionModal';
+
+function useMatchMedia(query) {
+  const [matches, setMatches] = useState(() => (typeof window !== 'undefined' ? window.matchMedia(query).matches : false));
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia(query);
+    const handler = () => setMatches(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
 
 /**
  * @param {object} props
@@ -9,6 +25,8 @@ import InterruptionAdvisoryCard from './InterruptionAdvisoryCard';
  * @param {(row: object) => void} props.onEdit
  * @param {(id: number) => void} props.onDelete
  * @param {(id: number) => void} [props.onPermanentDelete]
+ * @param {(id: number) => void} [props.onPullFromFeed]
+ * @param {(id: number) => void} [props.onPushToFeed]
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {boolean} props.saving
  */
@@ -19,9 +37,16 @@ export default function InterruptionAdvisoryBoard({
   onEdit,
   onDelete,
   onPermanentDelete,
+  onPullFromFeed,
+  onPushToFeed,
   listArchiveFilter = 'active',
   saving,
 }) {
+  const [detailItem, setDetailItem] = useState(null);
+  const [actionModalItem, setActionModalItem] = useState(null);
+  const isMobile = useMatchMedia('(max-width: 320px)');
+  const now = useNow([]);
+
   if (loading) {
     return (
       <div className="interruptions-admin-board interruptions-admin-board--in-card">
@@ -61,19 +86,60 @@ export default function InterruptionAdvisoryBoard({
   }
 
   return (
-    <div className="interruptions-admin-board interruptions-admin-board--in-card">
-      <div className="interruptions-admin-card-grid">
-        {items.map((item) => (
-          <InterruptionAdvisoryCard
-            key={item.id}
-            item={item}
-            onEdit={() => onEdit(item)}
-            onDelete={() => onDelete(item.id)}
-            onPermanentDelete={onPermanentDelete ? () => onPermanentDelete(item.id) : undefined}
-            saving={saving}
-          />
-        ))}
+    <>
+      <div className="interruptions-admin-board interruptions-admin-board--in-card">
+        <div className="interruptions-admin-card-grid">
+          {items.map((item) => (
+            <InterruptionAdvisoryCard
+              key={item.id}
+              item={item}
+              onEdit={() => onEdit(item)}
+              onDelete={() => onDelete(item.id)}
+              onPermanentDelete={onPermanentDelete ? () => onPermanentDelete(item.id) : undefined}
+              onExpand={() => setDetailItem(item)}
+              onCardClick={isMobile ? (it) => setActionModalItem(it) : undefined}
+              feedIndicator={item.deletedAt ? 'archived' : isCurrentlyOnPublicFeed(item, now) ? 'on-feed' : 'not-on-feed'}
+              onPullFromFeed={onPullFromFeed}
+              onPushToFeed={onPushToFeed}
+              saving={saving}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {detailItem && (
+        <InterruptionAdvisoryDetailModal
+          item={detailItem}
+          onClose={() => setDetailItem(null)}
+          onEdit={(it) => {
+            setDetailItem(null);
+            onEdit(it);
+          }}
+        />
+      )}
+
+      {actionModalItem && (
+        <InterruptionCardActionModal
+          item={actionModalItem}
+          onClose={() => setActionModalItem(null)}
+          onViewFull={() => {
+            setActionModalItem(null);
+            setDetailItem(actionModalItem);
+          }}
+          onEdit={(it) => {
+            setActionModalItem(null);
+            onEdit(it);
+          }}
+          onArchive={(id) => {
+            setActionModalItem(null);
+            onDelete(id);
+          }}
+          onPermanentDelete={onPermanentDelete || undefined}
+          onPullFromFeed={onPullFromFeed}
+          onPushToFeed={onPushToFeed}
+          saving={saving}
+        />
+      )}
+    </>
   );
 }

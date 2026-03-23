@@ -1,6 +1,7 @@
 import express from 'express';
 import nodemailer from 'nodemailer';
 import pool from '../config/db.js';
+import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 
 const router = express.Router();
 
@@ -19,9 +20,7 @@ router.post('/invite', async (req, res) => {
   if (!email || !role || !code) return res.status(400).json({ error: "Missing info." });
 
   const cleanEmail = email.trim().toLowerCase();
-  
-  // Sync the clock to Node.js to avoid database time drift
-  const manilaTime = new Date().toISOString().slice(0, 19).replace('T', ' '); 
+  const phNow = nowPhilippineForMysql();
 
   try {
     // 1. Are they already a fully registered user in the 'users' table?
@@ -50,7 +49,7 @@ router.post('/invite', async (req, res) => {
         SET code = ?, role_assigned = ?, status = 'pending', created_at = ? 
         WHERE email = ?
       `;
-      await pool.execute(updateQuery, [code, role, manilaTime, cleanEmail]);
+      await pool.execute(updateQuery, [code, role, phNow, cleanEmail]);
       
       return res.status(200).json({ message: "Invitation code re-generated!", action: "code_regenerated" });
     } 
@@ -69,7 +68,7 @@ router.post('/invite', async (req, res) => {
         cleanEmail,  // 1st placeholder
         role,        // 2nd placeholder
         code,        // 3rd placeholder
-        manilaTime   // 4th placeholder (status is hardcoded as 'pending')
+        phNow   // 4th placeholder (status is hardcoded as 'pending')
     ]);
     
     return res.status(200).json({ message: "New invitation saved!", action: "code_generated" });

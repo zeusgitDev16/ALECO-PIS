@@ -79,15 +79,21 @@
     padding: 12px 14px 16px 14px;
 }
 
-/* Clear All / Reset actions - same as sidebar */
+/* Clear All / Reset actions - same spacing as filter tiers */
 .filter-drawer-actions {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 6px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--border-color);
+}
+
+.ticket-filter-drawer-content .filter-drawer-actions .filter-drawer-clear-btn,
+.ticket-filter-drawer-content .filter-drawer-actions .filter-drawer-reset-btn {
+    min-height: 36px;
+    width: 100%;
 }
 
 .filter-drawer-clear-btn {
@@ -129,6 +135,7 @@
     background: rgba(124, 77, 255, 0.06);
 }
 
+/* Reference: New and Urgent buttons define size + spacing. All controls match. */
 .ticket-filter-drawer-content .ticket-filter-bar {
     flex-direction: column;
     margin-bottom: 0;
@@ -150,19 +157,76 @@
     gap: 10px;
 }
 
+/* New & Urgent - reference size (full width, consistent height) */
+.ticket-filter-drawer-content .urgent-toggle-btn {
+    width: 100%;
+    min-height: 36px;
+    justify-content: center;
+}
+
+/* Status, Group, All Categories, Search - full width, same height */
+.ticket-filter-drawer-content .status-filter-select,
+.ticket-filter-drawer-content .group-filter-select {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    box-sizing: border-box;
+}
+
 .ticket-filter-drawer-content .search-category-group {
     min-width: 0;
+    width: 100%;
     flex-direction: column;
     gap: 10px;
 }
 
+.ticket-filter-drawer-content .search-category-group .filter-input,
+.ticket-filter-drawer-content .search-category-group .main-search,
+.ticket-filter-drawer-content .search-category-group .issue-select,
+.ticket-filter-drawer-content .search-category-group select {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    box-sizing: border-box;
+}
+
+/* District & Municipality - full width, same height as New/Urgent */
+.ticket-filter-drawer-content .aleco-scope-inline {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.ticket-filter-drawer-content .aleco-scope-inline .filter-dropdown {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    box-sizing: border-box;
+}
+
+/* All Time + Date inputs - full width, same height (fix for tiny All Time) */
 .ticket-filter-drawer-content .date-filter-group {
     flex-direction: column;
     gap: 10px;
+    align-items: stretch;
+    width: 100%;
 }
 
+.ticket-filter-drawer-content .date-preset-select,
+.ticket-filter-drawer-content .date-input {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    box-sizing: border-box;
+}
+
+/* Select All - full width, same visual weight */
 .ticket-filter-drawer-content .filter-tier-select-all {
-    padding: 6px 10px;
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 12px;
+    margin-top: 0;
+    box-sizing: border-box;
 }
 
 /* =========================================
@@ -208,52 +272,56 @@
         gap: 10px;
     }
 
-    .ticket-filter-drawer-content .filter-drawer-clear-btn,
-    .ticket-filter-drawer-content .filter-drawer-reset-btn {
+    .ticket-filter-drawer-content .filter-drawer-actions .filter-drawer-clear-btn,
+    .ticket-filter-drawer-content .filter-drawer-actions .filter-drawer-reset-btn {
         padding: 5px 8px;
         font-size: 0.7rem;
+        min-height: 32px;
     }
 
     .ticket-filter-drawer-content .urgent-toggle-btn {
         font-size: 0.65rem;
         padding: 4px 8px;
-        height: 26px;
+        min-height: 32px;
     }
 
     .ticket-filter-drawer-content .status-filter-select,
     .ticket-filter-drawer-content .group-filter-select {
         font-size: 0.65rem;
-        padding: 4px 6px;
-        height: 26px;
+        padding: 4px 8px;
+        min-height: 32px;
     }
 
     .ticket-filter-drawer-content .filter-input,
     .ticket-filter-drawer-content .main-search {
         font-size: 0.65rem;
         padding: 4px 8px;
-        height: 26px;
-    }
-
-    .ticket-filter-drawer-content .search-category-group {
-        gap: 10px;
+        min-height: 32px;
     }
 
     .ticket-filter-drawer-content .search-category-group .issue-select,
     .ticket-filter-drawer-content .search-category-group select {
         font-size: 0.65rem;
-        padding: 4px 6px;
-        height: 26px;
+        padding: 4px 8px;
+        min-height: 32px;
+    }
+
+    .ticket-filter-drawer-content .aleco-scope-inline .filter-dropdown {
+        font-size: 0.65rem;
+        padding: 4px 8px;
+        min-height: 32px;
     }
 
     .ticket-filter-drawer-content .date-preset-select,
     .ticket-filter-drawer-content .date-input {
         font-size: 0.65rem;
-        padding: 4px 6px;
-        height: 26px;
+        padding: 4px 8px;
+        min-height: 32px;
     }
 
     .ticket-filter-drawer-content .filter-tier-select-all {
         padding: 6px 10px;
+        min-height: 32px;
     }
 
     .ticket-filter-drawer-content .select-all-text {
@@ -291,52 +359,56 @@
         gap: 10px;
     }
 
-    .ticket-filter-drawer-content .filter-drawer-clear-btn,
-    .ticket-filter-drawer-content .filter-drawer-reset-btn {
+    .ticket-filter-drawer-content .filter-drawer-actions .filter-drawer-clear-btn,
+    .ticket-filter-drawer-content .filter-drawer-actions .filter-drawer-reset-btn {
         padding: 4px 6px;
         font-size: 0.65rem;
+        min-height: 28px;
     }
 
     .ticket-filter-drawer-content .urgent-toggle-btn {
         font-size: 0.6rem;
         padding: 3px 6px;
-        height: 24px;
+        min-height: 28px;
     }
 
     .ticket-filter-drawer-content .status-filter-select,
     .ticket-filter-drawer-content .group-filter-select {
         font-size: 0.6rem;
-        padding: 3px 5px;
-        height: 24px;
+        padding: 3px 6px;
+        min-height: 28px;
     }
 
     .ticket-filter-drawer-content .filter-input,
     .ticket-filter-drawer-content .main-search {
         font-size: 0.6rem;
         padding: 3px 6px;
-        height: 24px;
-    }
-
-    .ticket-filter-drawer-content .search-category-group {
-        gap: 10px;
+        min-height: 28px;
     }
 
     .ticket-filter-drawer-content .search-category-group .issue-select,
     .ticket-filter-drawer-content .search-category-group select {
         font-size: 0.6rem;
-        padding: 3px 5px;
-        height: 24px;
+        padding: 3px 6px;
+        min-height: 28px;
+    }
+
+    .ticket-filter-drawer-content .aleco-scope-inline .filter-dropdown {
+        font-size: 0.6rem;
+        padding: 3px 6px;
+        min-height: 28px;
     }
 
     .ticket-filter-drawer-content .date-preset-select,
     .ticket-filter-drawer-content .date-input {
         font-size: 0.6rem;
-        padding: 3px 5px;
-        height: 24px;
+        padding: 3px 6px;
+        min-height: 28px;
     }
 
     .ticket-filter-drawer-content .filter-tier-select-all {
         padding: 5px 8px;
+        min-height: 28px;
     }
 
     .ticket-filter-drawer-content .select-all-text {

@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // 2. Create the exact pool from your server.js
+// Note: timezone '+08:00' hints that DATE/DATETIME are Philippine. Aiven may still use
+// UTC for NOW(). We use explicit nowPhilippineForMysql() in writes for deterministic behavior.
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,

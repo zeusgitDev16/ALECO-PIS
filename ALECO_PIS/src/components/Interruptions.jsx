@@ -10,7 +10,14 @@ import InterruptionAdvisoryFilters from './interruptions/InterruptionAdvisoryFil
 import InterruptionAdvisoryForm from './interruptions/InterruptionAdvisoryForm';
 import InterruptionAdvisoryViewOnly from './interruptions/InterruptionAdvisoryViewOnly';
 import InterruptionAdvisoryBoard from './interruptions/InterruptionAdvisoryBoard';
+import InterruptionCompactView from './interruptions/InterruptionCompactView';
+import InterruptionWorkflowView from './interruptions/InterruptionWorkflowView';
+import InterruptionLayoutPicker from './interruptions/InterruptionLayoutPicker';
 import InterruptionAdvisoryUpdates from './interruptions/InterruptionAdvisoryUpdates';
+import InterruptionFilterDrawer from './interruptions/InterruptionFilterDrawer';
+import '../CSS/InterruptionLayoutPicker.css';
+import '../CSS/InterruptionWorkflowView.css';
+import '../CSS/InterruptionFilterDrawer.css';
 
 const AdminInterruptions = () => {
   const {
@@ -26,6 +33,8 @@ const AdminInterruptions = () => {
     saveAdvisory,
     removeAdvisory,
     permanentDeleteAdvisory,
+    pullFromFeedAdvisory,
+    pushToFeedAdvisory,
     editDetail,
     detailLoading,
     memoSaving,
@@ -47,6 +56,14 @@ const AdminInterruptions = () => {
   const [activeChipKey, setActiveChipKey] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [validationErrors, setValidationErrors] = useState([]);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('interruptionViewMode') || 'card');
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('interruptionViewMode', viewMode);
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     if (modalOpen && editingId) {
@@ -102,6 +119,13 @@ const AdminInterruptions = () => {
     }
     doCloseModal();
   }, [saving, isDirty, doCloseModal]);
+
+  const getActiveFiltersCount = useCallback(() => {
+    let count = 0;
+    if (activeChipKey !== 'all') count += 1;
+    if (searchQuery.trim()) count += 1;
+    return count;
+  }, [activeChipKey, searchQuery]);
 
   const filteredInterruptions = useMemo(() => {
     let list = interruptions;
@@ -238,14 +262,36 @@ const AdminInterruptions = () => {
   return (
     <AdminLayout activePage="interruptions">
       <div className="admin-page-container interruptions-page-container">
-        <div className="dashboard-header-flex">
+        <div className="dashboard-header-flex interruptions-header-flex">
           <div className="header-text-group">
             <h2 className="header-title">Power advisories</h2>
             <p className="header-subtitle">Outage notices shown on the public home page.</p>
           </div>
-          <button type="button" className="btn-add-purple" onClick={openCreate} disabled={saving}>
-            + New advisory
-          </button>
+          <div className="interruptions-header-pickers">
+            <InterruptionLayoutPicker
+              activeLayout={viewMode}
+              onLayoutChange={setViewMode}
+              filterButton={
+                <button
+                  type="button"
+                  className="interruption-filter-inline-btn"
+                  onClick={() => setFilterDrawerOpen(true)}
+                  aria-label="Open filters"
+                  title="Filters"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                  {getActiveFiltersCount() > 0 && (
+                    <span className="interruption-filter-inline-badge">{getActiveFiltersCount()}</span>
+                  )}
+                </button>
+              }
+            />
+            <button type="button" className="btn-new-advisory" onClick={openCreate} disabled={saving}>
+              + New advisory
+            </button>
+          </div>
         </div>
 
         {message && message.type !== 'conflict' && (
@@ -315,19 +361,57 @@ const AdminInterruptions = () => {
         </div>
 
         <div className="main-content-card interruptions-admin-content-card">
-        <InterruptionAdvisoryBoard
-          loading={loading}
-          items={filteredInterruptions}
-          totalCount={interruptions.length}
-          listArchiveFilter={listArchiveFilter}
-          onEdit={openEdit}
-          onDelete={handleArchiveRequest}
-          onPermanentDelete={(id) => {
-            const row = interruptions.find((i) => i.id === id);
-            setPermanentDeleteConfirm({ id, feeder: String(row?.feeder || '').trim() || `Advisory #${id}` });
-          }}
-          saving={saving}
-        />
+        {viewMode === 'card' && (
+          <InterruptionAdvisoryBoard
+            loading={loading}
+            items={filteredInterruptions}
+            totalCount={interruptions.length}
+            listArchiveFilter={listArchiveFilter}
+            onEdit={openEdit}
+            onDelete={handleArchiveRequest}
+            onPermanentDelete={(id) => {
+              const row = interruptions.find((i) => i.id === id);
+              setPermanentDeleteConfirm({ id, feeder: String(row?.feeder || '').trim() || `Advisory #${id}` });
+            }}
+            onPullFromFeed={pullFromFeedAdvisory}
+            onPushToFeed={pushToFeedAdvisory}
+            saving={saving}
+          />
+        )}
+        {viewMode === 'compact' && (
+          <InterruptionCompactView
+            loading={loading}
+            items={filteredInterruptions}
+            totalCount={interruptions.length}
+            listArchiveFilter={listArchiveFilter}
+            onEdit={openEdit}
+            onDelete={handleArchiveRequest}
+            onPermanentDelete={(id) => {
+              const row = interruptions.find((i) => i.id === id);
+              setPermanentDeleteConfirm({ id, feeder: String(row?.feeder || '').trim() || `Advisory #${id}` });
+            }}
+            onPullFromFeed={pullFromFeedAdvisory}
+            onPushToFeed={pushToFeedAdvisory}
+            saving={saving}
+          />
+        )}
+        {viewMode === 'workflow' && (
+          <InterruptionWorkflowView
+            loading={loading}
+            items={filteredInterruptions}
+            totalCount={interruptions.length}
+            listArchiveFilter={listArchiveFilter}
+            onEdit={openEdit}
+            onDelete={handleArchiveRequest}
+            onPermanentDelete={(id) => {
+              const row = interruptions.find((i) => i.id === id);
+              setPermanentDeleteConfirm({ id, feeder: String(row?.feeder || '').trim() || `Advisory #${id}` });
+            }}
+            onPullFromFeed={pullFromFeedAdvisory}
+            onPushToFeed={pushToFeedAdvisory}
+            saving={saving}
+          />
+        )}
         </div>
 
         {modalOpen && (
@@ -540,6 +624,90 @@ const AdminInterruptions = () => {
             </div>
           </div>
         )}
+
+        <InterruptionFilterDrawer
+          isOpen={filterDrawerOpen}
+          onClose={() => setFilterDrawerOpen(false)}
+        >
+          <div className="interruption-filter-drawer-inner">
+            <InterruptionAdvisoryFilters
+              activeChipKey={activeChipKey}
+              onChipChange={setActiveChipKey}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+            <div className="interruption-filter-drawer-archive-scope" role="group" aria-label="Advisory list scope">
+              <span className="interruption-filter-drawer-scope-label">Show</span>
+              <div className="interruption-filter-drawer-scope-chips">
+                {[
+                  {
+                    key: 'active',
+                    label: 'Active',
+                    title: 'Advisories currently on the public bulletin or scheduled to appear (not archived)',
+                  },
+                  { key: 'all', label: 'All', title: 'All advisories including archived' },
+                  {
+                    key: 'archived',
+                    label: 'Archived',
+                    title: 'Soft-deleted advisories; view or restore only',
+                  },
+                ].map(({ key, label, title }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`interruptions-admin-archive-chip${listArchiveFilter === key ? ' interruptions-admin-archive-chip--active' : ''}`}
+                    onClick={() => setListArchiveFilter(key)}
+                    disabled={loading}
+                    title={title}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="interruption-filter-drawer-actions">
+              {getActiveFiltersCount() > 0 && (
+                <button
+                  type="button"
+                  className="interruption-filter-drawer-clear-btn"
+                  onClick={() => {
+                    setActiveChipKey('all');
+                    setSearchQuery('');
+                  }}
+                  title="Clear all filters"
+                  aria-label="Clear all filters"
+                >
+                  ✕ Clear All
+                </button>
+              )}
+              <button
+                type="button"
+                className="interruption-filter-drawer-reset-btn"
+                onClick={() => {
+                  setActiveChipKey('all');
+                  setSearchQuery('');
+                }}
+                title="Reset filters"
+                aria-label="Reset all filters"
+              >
+                ↻ Reset
+              </button>
+              <button
+                type="button"
+                className="interruption-filter-drawer-refresh-btn"
+                onClick={() => {
+                  fetchList();
+                  setFilterDrawerOpen(false);
+                }}
+                disabled={loading}
+                title="Reload advisories from the server"
+                aria-label="Refresh advisories list"
+              >
+                ↻ {loading ? 'Loading…' : 'Refresh list'}
+              </button>
+            </div>
+          </div>
+        </InterruptionFilterDrawer>
 
         {permanentDeleteConfirm && (
           <div

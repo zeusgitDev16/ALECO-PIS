@@ -4,6 +4,8 @@
  * crew dispatch, status changes, and (future) lineman SMS-based resolution.
  */
 
+import { nowPhilippineForMysql } from './dateTimeUtils.js';
+
 /**
  * @param {import('mysql2/promise').Pool} pool
  * @param {Object} opts
@@ -33,10 +35,11 @@ export async function insertTicketLog(pool, {
   const metadataJson = metadata ? JSON.stringify(metadata) : null;
 
   try {
+    const phNow = nowPhilippineForMysql();
     await pool.execute(
       `INSERT INTO aleco_ticket_logs 
-       (ticket_id, action, from_status, to_status, actor_type, actor_id, actor_email, actor_name, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (ticket_id, action, from_status, to_status, actor_type, actor_id, actor_email, actor_name, metadata, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         ticket_id,
         action,
@@ -46,7 +49,8 @@ export async function insertTicketLog(pool, {
         actor_id,
         actor_email || null,
         actor_name || null,
-        metadataJson
+        metadataJson,
+        phNow
       ]
     );
   } catch (err) {

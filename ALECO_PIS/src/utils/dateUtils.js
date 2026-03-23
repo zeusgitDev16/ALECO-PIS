@@ -142,6 +142,29 @@ export const isPublicVisibilityPending = (publicVisibleAtApi) => {
     }
 };
 
+/** Resolved advisories stay on feed for 36h after restoration. */
+const RESOLVED_DISPLAY_MS = 36 * 60 * 60 * 1000;
+
+/**
+ * True if this advisory would appear on the public feed (InterruptionList).
+ * Mirrors InterruptionList visibleInterruptions logic.
+ * @param {object} item - Advisory DTO (deletedAt, status, publicVisibleAt, dateTimeRestored)
+ * @param {number} [now] - Unix ms (default: Date.now())
+ */
+export function isCurrentlyOnPublicFeed(item, now = Date.now()) {
+    if (!item) return false;
+    if (item.deletedAt) return false;
+    if (item.pulledFromFeedAt) return false;
+    const pv = item.publicVisibleAt ? dayjs.utc(item.publicVisibleAt).valueOf() : 0;
+    if (pv > 0 && pv > now) return false;
+    if (item.status === 'Restored') {
+        const restored = item.dateTimeRestored ? dayjs.utc(item.dateTimeRestored).valueOf() : 0;
+        if (!restored) return false;
+        if (now >= restored + RESOLVED_DISPLAY_MS) return false;
+    }
+    return true;
+}
+
 /** Parse UTC/ISO to dayjs in Philippine time for formatting. */
 function toPhilippineDayjs(dateString) {
     if (!dateString) return null;

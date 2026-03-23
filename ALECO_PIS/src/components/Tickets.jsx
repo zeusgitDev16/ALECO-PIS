@@ -31,7 +31,7 @@ import ConfirmModal from './tickets/ConfirmModal';
 const AdminTickets = () => {
     const { tickets, loading: isLoading, error, filters, setFilters, refetch } = useTickets();
     
-    const [viewMode, setViewMode] = useState('grid');
+    const [viewMode, setViewMode] = useState('card');
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [isMapOpen, setIsMapOpen] = useState(false);
@@ -99,11 +99,11 @@ const AdminTickets = () => {
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                const msg = `ALECO System: ${data.message}`;
+                const msg = data.message || 'Group dispatched.';
                 if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
-                    toast.warning(msg);
+                    toast.warning(`ALECO System: ${msg}`);
                 } else {
-                    toast.success(msg);
+                    toast.success(`ALECO System: ${msg}`);
                 }
                 refetch();
             } else {
@@ -171,7 +171,12 @@ const AdminTickets = () => {
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                toast.success(`ALECO System: Ticket ${ticketId} put on hold.`);
+                const msg = data.message || `Ticket ${ticketId} put on hold.`;
+                if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
+                    toast.warning(`ALECO System: ${msg}`);
+                } else {
+                    toast.success(`ALECO System: ${msg}`);
+                }
                 refetch();
             } else {
                 toast.error('Hold failed: ' + (data.message || 'Unknown error'));
@@ -195,11 +200,11 @@ const AdminTickets = () => {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    const line = `ALECO System: Ticket ${ticketId}. ${data.message || 'Dispatch complete.'}`;
+                    const msg = data.message || 'Dispatch complete.';
                     if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
-                        toast.warning(line);
+                        toast.warning(`ALECO System: ${msg}`);
                     } else {
-                        toast.success(line);
+                        toast.success(`ALECO System: ${msg}`);
                     }
                     refetch();
                 } else {
@@ -366,7 +371,7 @@ const AdminTickets = () => {
                     rightPane={
                 <>
                     <div className="dashboard-widget main-content-card">
-                    {viewMode === 'grid' && (
+                    {viewMode === 'card' && (
                         <>
                             <UrgentTickets 
                                 tickets={tickets} 
@@ -389,7 +394,7 @@ const AdminTickets = () => {
                             />
 
                             <RecentOpenedTickets
-                                layout="grid"
+                                layout="card"
                                 tickets={tickets}
                                 recentIds={recentIds}
                                 timeRange={timeRange}
@@ -404,7 +409,7 @@ const AdminTickets = () => {
                         </>
                     )}
 
-                    {viewMode === 'table' && (
+                    {viewMode === 'compact' && (
                         <>
                             <TicketTableView
                                 tickets={tickets}
@@ -414,7 +419,7 @@ const AdminTickets = () => {
                                 onToggleSelect={toggleTicketSelection}
                             />
                             <RecentOpenedTickets
-                                layout="table"
+                                layout="compact"
                                 tickets={tickets}
                                 recentIds={recentIds}
                                 timeRange={timeRange}
@@ -429,7 +434,7 @@ const AdminTickets = () => {
                         </>
                     )}
 
-                    {viewMode === 'kanban' && (
+                    {viewMode === 'workflow' && (
                         <>
                             <TicketKanbanView
                                 tickets={tickets}
@@ -440,7 +445,7 @@ const AdminTickets = () => {
                                 onToggleSelect={toggleTicketSelection}
                             />
                             <RecentOpenedTickets
-                                layout="kanban"
+                                layout="workflow"
                                 tickets={tickets}
                                 recentIds={recentIds}
                                 timeRange={timeRange}

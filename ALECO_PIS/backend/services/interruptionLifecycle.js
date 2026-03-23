@@ -1,4 +1,5 @@
 import { mapUpdateRowToDto } from '../utils/interruptionsDto.js';
+import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 
@@ -46,10 +47,11 @@ export async function addUserUpdate(pool, interruptionId, { remark, actorEmail, 
     err.statusCode = 400;
     throw err;
   }
+  const phNow = nowPhilippineForMysql();
   const [result] = await pool.execute(
-    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name)
-     VALUES (?, ?, 'user', ?, ?)`,
-    [interruptionId, text, actorEmail ?? null, actorName ?? null]
+    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name, created_at)
+     VALUES (?, ?, 'user', ?, ?, ?)`,
+    [interruptionId, text, actorEmail ?? null, actorName ?? null, phNow]
   );
   const insertId = result.insertId;
   const [rows] = await pool.execute(
@@ -67,10 +69,11 @@ export async function addUserUpdate(pool, interruptionId, { remark, actorEmail, 
  * @param {{ actorEmail?: string|null, actorName?: string|null }} [opts]
  */
 export async function insertSystemUpdate(pool, interruptionId, remark, { actorEmail, actorName } = {}) {
+  const phNow = nowPhilippineForMysql();
   await pool.execute(
-    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name)
-     VALUES (?, ?, 'system', ?, ?)`,
-    [interruptionId, remark, actorEmail ?? null, actorName ?? null]
+    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name, created_at)
+     VALUES (?, ?, 'system', ?, ?, ?)`,
+    [interruptionId, remark, actorEmail ?? null, actorName ?? null, phNow]
   );
 }
 
@@ -81,10 +84,11 @@ export async function insertSystemUpdate(pool, interruptionId, remark, { actorEm
  * @param {string} remark
  */
 export async function insertSystemUpdateConn(conn, interruptionId, remark) {
+  const phNow = nowPhilippineForMysql();
   await conn.execute(
-    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name)
-     VALUES (?, ?, 'system', NULL, NULL)`,
-    [interruptionId, remark]
+    `INSERT INTO aleco_interruption_updates (interruption_id, remark, kind, actor_email, actor_name, created_at)
+     VALUES (?, ?, 'system', NULL, NULL, ?)`,
+    [interruptionId, remark, phNow]
   );
 }
 
@@ -97,10 +101,11 @@ export async function insertSystemUpdateConn(conn, interruptionId, remark) {
 export async function autoArchiveResolvedInterruptions(pool) {
   const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
   if (!hasDel) return { archived: 0 };
+  const phNow = nowPhilippineForMysql();
   const [result] = await pool.query(
-    `UPDATE aleco_interruptions SET deleted_at = NOW() WHERE status = 'Restored' AND deleted_at IS NULL
-     AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= NOW()`,
-    [RESOLVED_ARCHIVE_HOURS]
+    `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = 'Restored' AND deleted_at IS NULL
+     AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= ?`,
+    [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
   );
   const archived = result?.affectedRows ?? 0;
   if (archived > 0) {

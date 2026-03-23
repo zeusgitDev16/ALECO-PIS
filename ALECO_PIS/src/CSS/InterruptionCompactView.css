@@ -1,0 +1,362 @@
+/* =========================================
+   INTERRUPTION COMPACT VIEW - High-density layout
+   Mirrors TicketTableView: sortable, sticky header, zebra striping, responsive
+   ========================================= */
+
+.interruptions-compact-table-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  position: relative;
+}
+
+.interruptions-compact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  background: var(--bg-card);
+  min-width: 800px;
+}
+
+/* Sticky header */
+.interruptions-compact-table-header {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.modal-open .interruptions-compact-table-header {
+  position: relative;
+  z-index: 1;
+}
+
+.interruptions-compact-table-header tr {
+  background: var(--bg-card);
+}
+
+.interruptions-compact-table-header th {
+  background: var(--bg-card);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-color);
+  user-select: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.interruptions-compact-table-header th.sortable {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.interruptions-compact-table-header th.sortable:hover {
+  background: var(--bg-body);
+}
+
+[data-theme='dark'] .interruptions-compact-table-header,
+[data-theme='dark'] .interruptions-compact-table-header tr,
+[data-theme='dark'] .interruptions-compact-table-header th {
+  background: #18212f;
+}
+
+[data-theme='light'] .interruptions-compact-table-header,
+[data-theme='light'] .interruptions-compact-table-header tr,
+[data-theme='light'] .interruptions-compact-table-header th {
+  background: #f2f2f2;
+}
+
+/* Column widths */
+.col-feeder {
+  width: 100px;
+  padding: 6px 10px !important;
+}
+
+.col-type {
+  width: 80px;
+  padding: 6px 10px !important;
+}
+
+.col-status {
+  width: 90px;
+  padding: 6px 10px !important;
+}
+
+.col-start {
+  width: 85px;
+  padding: 6px 10px !important;
+}
+
+.col-ert {
+  width: 85px;
+  padding: 6px 10px !important;
+}
+
+.col-affected {
+  width: 180px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 6px 10px !important;
+}
+
+.col-actions {
+  width: 160px;
+  padding: 6px 10px !important;
+  white-space: nowrap;
+}
+
+/* Body - zebra striping & hover */
+.interruptions-compact-table-body tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s ease;
+}
+
+.interruptions-compact-table-body tr.even {
+  background: var(--bg-card);
+}
+
+.interruptions-compact-table-body tr.odd {
+  background: var(--bg-body);
+}
+
+.interruptions-compact-table-body tr:hover {
+  background: var(--bg-hover, rgba(124, 58, 237, 0.06));
+}
+
+.interruptions-compact-table-body tr.interruptions-compact-row--archived {
+  opacity: 0.92;
+}
+
+/* Feed indicator: green=on feed, purple=not on feed, red=archived */
+.interruptions-compact-table-body tr.interruptions-compact-row--feed-on-feed {
+  border-left: 3px solid #22c55e;
+}
+
+.interruptions-compact-table-body tr.interruptions-compact-row--feed-not-on-feed {
+  border-left: 3px solid var(--accent-primary, #7c3aed);
+}
+
+[data-theme='dark'] .interruptions-compact-table-body tr.interruptions-compact-row--feed-not-on-feed {
+  border-left-color: #a78bfa;
+}
+
+.interruptions-compact-table-body tr.interruptions-compact-row--feed-archived {
+  border-left: 3px solid #dc2626;
+}
+
+/* Row click opens modal only on tablet/mobile (≤767px) */
+.interruptions-compact-table-body tr.interruptions-compact-row--clickable {
+  cursor: pointer;
+}
+
+.interruptions-compact-table-body td {
+  padding: 6px 10px;
+  color: var(--text-main);
+  vertical-align: middle;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* Status badges */
+.interruptions-compact-status-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.interruptions-compact-status-badge.status-pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #b45309;
+}
+
+.interruptions-compact-status-badge.status-ongoing {
+  background: rgba(220, 38, 38, 0.15);
+  color: #b91c1c;
+}
+
+.interruptions-compact-status-badge.status-restored {
+  background: rgba(22, 163, 74, 0.15);
+  color: #15803d;
+}
+
+/* Action buttons - smaller than default admin btn */
+.interruptions-compact-btn {
+  font-size: 0.6rem !important;
+  padding: 4px 8px !important;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+
+.interruptions-compact-btn:last-child {
+  margin-right: 0;
+}
+
+/* Icon-only buttons */
+.interruptions-compact-btn--icon {
+  padding: 4px !important;
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.interruptions-compact-btn--icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.interruptions-compact-btn--push {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #15803d;
+}
+
+.interruptions-compact-btn--push:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.35);
+  border-color: #22c55e;
+}
+
+.interruptions-compact-btn--pull {
+  background: rgba(236, 72, 153, 0.2);
+  border-color: rgba(236, 72, 153, 0.5);
+  color: #be185d;
+}
+
+.interruptions-compact-btn--pull:hover:not(:disabled) {
+  background: rgba(236, 72, 153, 0.35);
+  border-color: #ec4899;
+}
+
+.interruptions-compact-btn--archive {
+  background: rgba(107, 114, 128, 0.15);
+  border-color: rgba(107, 114, 128, 0.4);
+  color: #4b5563;
+}
+
+.interruptions-compact-btn--archive:hover:not(:disabled) {
+  background: rgba(107, 114, 128, 0.25);
+  border-color: #6b7280;
+}
+
+.interruptions-compact-btn--danger {
+  border-color: rgba(198, 40, 40, 0.35);
+  color: var(--error, #c62828);
+  background: rgba(198, 40, 40, 0.04);
+}
+
+.interruptions-compact-btn--danger:hover:not(:disabled) {
+  border-color: var(--error, #c62828);
+  background: rgba(198, 40, 40, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .col-ert {
+    display: none;
+  }
+
+  .interruptions-compact-table {
+    min-width: 680px;
+  }
+}
+
+@media (max-width: 768px) {
+  .col-affected {
+    display: none;
+  }
+
+  .interruptions-compact-table {
+    min-width: 520px;
+  }
+
+  .interruptions-compact-table-container {
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 320px) {
+  .interruptions-compact-table {
+    font-size: 9px;
+    min-width: 460px;
+  }
+
+  .interruptions-compact-table-header th {
+    font-size: 8px;
+    padding: 6px 8px;
+  }
+
+  .interruptions-compact-table-body td {
+    font-size: 9px;
+    padding: 5px 8px;
+  }
+
+  .interruptions-compact-status-badge {
+    font-size: 7px;
+    padding: 2px 6px;
+  }
+
+  .col-feeder {
+    width: 80px;
+  }
+
+  .col-type {
+    width: 60px;
+  }
+
+  .col-status {
+    width: 72px;
+  }
+
+  .col-start {
+    width: 70px;
+  }
+
+  .col-actions {
+    width: 130px;
+  }
+
+  .interruptions-compact-btn {
+    font-size: 0.55rem !important;
+    padding: 3px 6px !important;
+    margin-right: 2px;
+  }
+}
+
+/* Scrollbar */
+.interruptions-compact-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.interruptions-compact-table-container::-webkit-scrollbar-track {
+  background: var(--bg-body);
+  border-radius: 4px;
+}
+
+.interruptions-compact-table-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.interruptions-compact-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

@@ -1,45 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import { toDisplayFormat, validatePhilippineMobile, INVALID_PHONE_HINT } from '../../utils/phoneUtils';
+import { toDisplayFormat } from '../../utils/phoneUtils';
 import '../../CSS/AddCrew.css';
 
-// Display phone in 09 format for personnel cards
 const formatContact = (contact) => toDisplayFormat(contact) || contact || '';
 
 const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null }) => {
-    // Real functional state
     const [crewName, setCrewName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [members, setMembers] = useState([]);
     const [leadId, setLeadId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    // Populate or reset form based on edit/add mode
-    // Populate or reset form based on edit/add mode
     useEffect(() => {
         if (initialData) {
             setCrewName(initialData.crew_name || '');
             setPhoneNumber(toDisplayFormat(initialData.phone_number) || '');
-            
-            // CONVERSION FIX: Ensure members and lead_id are always read as Numbers!
             setMembers(initialData.members ? initialData.members.map(Number) : []);
             setLeadId(initialData.lead_id ? Number(initialData.lead_id) : null);
-            
         } else {
             setCrewName('');
             setPhoneNumber('');
             setMembers([]);
             setLeadId(null);
         }
+        setSearchQuery('');
     }, [initialData, isOpen]);
 
-    // Idempotent Guard
+    const filteredPool = searchQuery.trim()
+        ? linemenPool.filter(man =>
+            (man.full_name || '').toLowerCase().includes(searchQuery.trim().toLowerCase())
+        )
+        : linemenPool;
+
     if (!isOpen) return null;
 
     const handleToggleMember = (id) => {
         const isMember = members.includes(id);
         const newMembers = isMember ? members.filter(m => m !== id) : [...members, id];
         const newLead = (isMember && leadId === id) ? null : leadId;
-        
         setMembers(newMembers);
         setLeadId(newLead);
     };
@@ -60,99 +58,127 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
     };
 
     return (
-        <div className="dispatch-modal-overlay" onClick={onClose}>
-            <div className="dispatch-modal-content" onClick={(e) => e.stopPropagation()}>
-                
-                <button className="dispatch-modal-close-btn" onClick={onClose} aria-label="Close">
-                    &times;
-                </button>
-
-                <div className="dispatch-modal-header-container">
-                    <h2 className="dispatch-modal-header">
-                        {initialData ? '🛠️ Edit Field Unit' : '🛠️ Assemble Field Unit'}
-                    </h2>
-                    <p className="dispatch-modal-subtitle">
-                        Configure team members and assign a unit leader.
-                    </p>
+        <div className="personnel-modal-backdrop" onClick={onClose}>
+            <div className="personnel-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="personnel-modal-header">
+                    <div className="personnel-modal-title-wrap">
+                        <h2 className="personnel-modal-title">
+                            {initialData ? 'Edit Field Unit' : 'Assemble Field Unit'}
+                        </h2>
+                        <p className="personnel-modal-subtitle">
+                            Configure team members and assign a unit leader.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        className="personnel-modal-close"
+                        onClick={onClose}
+                        aria-label="Close"
+                    >
+                        &times;
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="dispatch-form-group">
-                        <label>Crew / Unit Name</label>
-                        <input 
-                            type="text" 
-                            className="dispatch-form-input" 
-                            placeholder="e.g. Alpha-01" 
-                            value={crewName} 
-                            onChange={e => setCrewName(e.target.value)} 
-                            required 
-                        />
-                    </div>
+                <form className="personnel-modal-form" onSubmit={handleSubmit}>
+                    <div className="personnel-modal-scroll-outer">
+                        <div className="personnel-modal-body-scroll">
+                            <div className="personnel-modal-form-group">
+                                <label>Crew / Unit Name</label>
+                                <input
+                                    type="text"
+                                    className="personnel-modal-input"
+                                    placeholder="e.g. Alpha-01"
+                                    value={crewName}
+                                    onChange={e => setCrewName(e.target.value)}
+                                    required
+                                />
+                            </div>
 
-                    <div className="dispatch-form-group">
-                        <label>Dispatch Hotline</label>
-                        <input 
-                            type="tel" 
-                            className="dispatch-form-input" 
-                            placeholder="e.g. 09943917653" 
-                            value={phoneNumber} 
-                            onChange={e => setPhoneNumber(e.target.value)} 
-                            required 
-                        />
-                        <small className="form-hint">Philippine mobile: 09XXXXXXXXX, +63 9XX XXX XXXX, or 9XXXXXXXXX</small>
-                    </div>
+                            <div className="personnel-modal-form-group">
+                                <label>Dispatch Hotline</label>
+                                <input
+                                    type="tel"
+                                    className="personnel-modal-input"
+                                    placeholder="e.g. 09943917653"
+                                    value={phoneNumber}
+                                    onChange={e => setPhoneNumber(e.target.value)}
+                                    required
+                                />
+                                <small className="form-hint">Philippine mobile: 09XXXXXXXXX, +63 9XX XXX XXXX, or 9XXXXXXXXX</small>
+                            </div>
 
-                    <div className="dispatch-form-group">
-                        <label>Personnel Selection (Pool)</label>
-                        {/* We will style this to match the recessed look of dispatch-form-input in the CSS phase */}
-                        <div className="personnel-selection-grid">
-                            {linemenPool.length === 0 ? (
-                                <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>No personnel available.</p>
-                            ) : (
-                                linemenPool.map(man => {
-                                    const isInactive = ['inactive', 'leave'].includes((man.status || 'Active').toLowerCase());
-                                    return (
-                                    <div 
-                                        key={man.id} 
-                                        className={`personnel-card ${members.includes(man.id) ? 'selected' : ''} ${isInactive ? 'inactive-lineman' : ''}`}
-                                        onClick={() => !isInactive && handleToggleMember(man.id)}
-                                        title={isInactive ? 'Inactive linemen cannot be added to crews' : ''}
-                                    >
-                                        <div className="personnel-info">
-                                            <span className="personnel-name">{man.full_name}</span>
-                                            {man.contact_no && (
-                                                <span className="personnel-contact">{formatContact(man.contact_no)}</span>
-                                            )}
-                                            {isInactive && <span className="personnel-inactive-badge">Inactive</span>}
-                                        </div>
-                                        {members.includes(man.id) && (
-                                            <button 
-                                                type="button"
-                                                className={`lead-toggle-btn ${leadId === man.id ? 'active' : ''}`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                   setLeadId(leadId === man.id ? null : man.id);
-                                                }}
-                                            >
-                                                {leadId === man.id ? '⭐ LEAD' : 'SET LEAD'}
-                                            </button>
-                                        )}
-                                    </div>
-                                ); })
-                            )}
+                            <fieldset className="personnel-pool-fieldset">
+                                <legend>
+                                    Personnel Selection
+                                    {members.length > 0 && (
+                                        <span className="personnel-selection-count">{members.length} selected</span>
+                                    )}
+                                </legend>
+                                <input
+                                    type="text"
+                                    className="personnel-search-input"
+                                    placeholder="Search by name..."
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    aria-label="Search personnel by name"
+                                />
+                                <ul className="personnel-list" role="list">
+                                    {filteredPool.length === 0 ? (
+                                        <li className="personnel-list-empty">
+                                            {linemenPool.length === 0 ? 'No personnel available.' : 'No matches for your search.'}
+                                        </li>
+                                    ) : (
+                                        filteredPool.map(man => {
+                                            const isInactive = ['inactive', 'leave'].includes((man.status || 'Active').toLowerCase());
+                                            const isSelected = members.includes(man.id);
+                                            const isLead = leadId === man.id;
+                                            return (
+                                                <li
+                                                    key={man.id}
+                                                    className={`personnel-list-item ${isSelected ? 'selected' : ''} ${isInactive ? 'inactive' : ''}`}
+                                                    onClick={() => !isInactive && handleToggleMember(man.id)}
+                                                    title={isInactive ? 'Inactive linemen cannot be added to crews' : (isSelected ? 'Click to remove from crew' : 'Click to add to crew')}
+                                                >
+                                                    <span className={`personnel-list-check ${isSelected ? 'checked' : ''}`} aria-hidden="true">
+                                                        {isSelected ? '✓' : ''}
+                                                    </span>
+                                                    <span className="personnel-list-name">
+                                                        {isLead && <span className="personnel-list-lead-mark" title="Unit leader">★</span>}
+                                                        {man.full_name}
+                                                        {man.contact_no && <span className="personnel-list-contact">{formatContact(man.contact_no)}</span>}
+                                                        {isInactive && <span className="personnel-list-inactive">(inactive)</span>}
+                                                    </span>
+                                                    {isSelected && (
+                                                        <button
+                                                            type="button"
+                                                            className={`personnel-list-lead-btn ${isLead ? 'active' : ''}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setLeadId(isLead ? null : man.id);
+                                                            }}
+                                                            title={isLead ? 'Remove as leader' : 'Set as leader'}
+                                                        >
+                                                            {isLead ? '★' : 'Lead'}
+                                                        </button>
+                                                    )}
+                                                </li>
+                                            );
+                                        })
+                                    )}
+                                </ul>
+                            </fieldset>
                         </div>
                     </div>
 
-                    <div className="dispatch-modal-actions">
-                        <button type="button" className="btn-action btn-cancel" onClick={onClose}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn-action btn-ongoing">
+                    <div className="personnel-modal-footer">
+                        <button type="submit" className="personnel-modal-btn personnel-modal-btn-submit">
                             {initialData ? 'Update Unit' : 'Deploy Unit'}
+                        </button>
+                        <button type="button" className="personnel-modal-btn personnel-modal-btn-cancel" onClick={onClose}>
+                            Cancel
                         </button>
                     </div>
                 </form>
-
             </div>
         </div>
     );

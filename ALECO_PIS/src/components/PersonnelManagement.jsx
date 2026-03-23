@@ -17,7 +17,7 @@ import '../CSS/PersonnelLayoutPicker.css';
 const PersonnelManagement = () => {
     // --- 1. VIEW & DATA STATE ---
     const [activeTab, setActiveTab] = useState('crews'); // 'crews' or 'pool'
-    const [viewMode, setViewMode] = useState('table'); // 'grid' | 'table' | 'kanban'
+    const [viewMode, setViewMode] = useState('compact'); // 'card' | 'compact' | 'workflow'
     const [crews, setCrews] = useState([]);
     const [linemenPool, setLinemenPool] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -198,14 +198,14 @@ const PersonnelManagement = () => {
                                     onEditCrew={(crew) => { setEditingCrew(crew); setIsCrewModalOpen(true); }}
                                 />
                             )}
-                            {viewMode === 'table' && (
+                            {viewMode === 'compact' && (
                                 <CrewTableView
                                     crews={filteredCrews}
                                     isLoading={isLoading}
                                     onEditCrew={(crew) => { setEditingCrew(crew); setIsCrewModalOpen(true); }}
                                 />
                             )}
-                            {viewMode === 'kanban' && (
+                            {viewMode === 'workflow' && (
                                 <CrewKanbanView
                                     crews={filteredCrews}
                                     isLoading={isLoading}
@@ -223,14 +223,14 @@ const PersonnelManagement = () => {
                                     onEditLineman={(man) => { setEditingLineman(man); setIsLinemenModalOpen(true); }}
                                 />
                             )}
-                            {viewMode === 'table' && (
+                            {viewMode === 'compact' && (
                                 <LinemanTableView
                                     linemen={filteredPool}
                                     isLoading={isLoading}
                                     onEditLineman={(man) => { setEditingLineman(man); setIsLinemenModalOpen(true); }}
                                 />
                             )}
-                            {viewMode === 'kanban' && (
+                            {viewMode === 'workflow' && (
                                 <LinemanKanbanView
                                     linemen={filteredPool}
                                     isLoading={isLoading}

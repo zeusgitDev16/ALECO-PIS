@@ -5,6 +5,7 @@ import ExcelJS from 'exceljs';
 import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';
 import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
+import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 
 const router = express.Router();
 
@@ -464,11 +465,12 @@ router.post('/tickets/archive', async (req, res) => {
                 `DELETE FROM aleco_ticket_logs WHERE ticket_id IN (${placeholders})`,
                 ticketIds
             );
+            const phNow = nowPhilippineForMysql();
             const { query: selQuery, params: selParams } = buildTicketQuery(ds, de, filters);
             const updateQuery = selQuery
-                .replace('SELECT * FROM aleco_tickets WHERE', 'UPDATE aleco_tickets SET deleted_at = NOW() WHERE')
+                .replace('SELECT * FROM aleco_tickets WHERE', 'UPDATE aleco_tickets SET deleted_at = ? WHERE')
                 .replace(' ORDER BY created_at ASC', '');
-            const [updateResult] = await pool.execute(updateQuery, selParams);
+            const [updateResult] = await pool.execute(updateQuery, [phNow, ...selParams]);
             archivedCount = updateResult.affectedRows ?? ticketIds.length;
         }
 

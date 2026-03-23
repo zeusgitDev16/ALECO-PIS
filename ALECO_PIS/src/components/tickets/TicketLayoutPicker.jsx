@@ -3,9 +3,9 @@ import '../../CSS/TicketLayoutPicker.css';
 
 const TicketLayoutPicker = ({ activeLayout, onLayoutChange, filterButton }) => {
     const layouts = [
-        { id: 'grid', icon: '▦', label: 'Grid', tooltip: 'Card view for visual scanning' },
-        { id: 'table', icon: '☰', label: 'Table', tooltip: 'Compact rows for bulk operations' },
-        { id: 'kanban', icon: '▥', label: 'Kanban', tooltip: 'Drag-and-drop workflow columns by status' },
+        { id: 'card', icon: '▦', label: 'Card', tooltip: 'Card view for visual scanning' },
+        { id: 'compact', icon: '≡', label: 'Compact', tooltip: 'Compact rows for bulk operations' },
+        { id: 'workflow', icon: '⇣', label: 'Workflow', tooltip: 'Workflow columns by status' },
         { id: 'map', icon: '🗺️', label: 'Map', tooltip: 'Geographic coverage view' }
     ];
 

@@ -1,0 +1,129 @@
+/* Interruption Layout Picker - Compact pill buttons (Data Management parity) */
+.interruption-layout-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.interruption-layout-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.interruption-layout-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--bg-body);
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.interruption-layout-btn:hover:not(:disabled):not(.active) {
+    background: var(--bg-card);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+}
+
+.interruption-layout-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--bg-body);
+    box-shadow: 0 2px 6px rgba(124, 77, 255, 0.3);
+    font-weight: 800;
+}
+
+[data-theme="light"] .interruption-layout-btn.active {
+    color: #fff;
+}
+
+.interruption-layout-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.interruption-layout-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Filter button - hidden on desktop, shown on mobile (≤767px) - TicketFilterLayout parity */
+.interruption-filter-inline-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    min-width: 32px;
+    padding: 0;
+    background: var(--bg-body);
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--accent-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.interruption-filter-inline-btn:hover {
+    border-color: var(--accent-primary);
+    background: rgba(124, 77, 255, 0.08);
+}
+
+.interruption-filter-inline-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    background: var(--accent-primary);
+    color: var(--bg-body);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 767px) {
+    .interruption-filter-inline-btn {
+        display: flex;
+    }
+
+    .interruption-layout-picker {
+        gap: 8px;
+    }
+
+    .interruption-layout-buttons {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .interruption-layout-picker {
+        padding: 4px 8px;
+    }
+    .interruption-layout-btn {
+        padding: 3px 6px;
+        font-size: 0.6rem;
+    }
+    .interruption-layout-label {
+        font-size: 0.65rem;
+    }
+}

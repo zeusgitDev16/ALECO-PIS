@@ -85,12 +85,30 @@ export function toMysqlDateTimeFromRow(val) {
   return s.length >= 19 ? s.slice(0, 19) : s.length >= 16 ? `${s.slice(0, 10)} ${s.slice(11, 16)}:00` : null;
 }
 
-/** Pass through Date for JSON serialization to ISO (client uses formatToPhilippineTime). */
-function toIsoForClient(val) {
+/**
+ * Convert DB datetime to ISO UTC for client (client uses formatToPhilippineTime).
+ * DB uses timezone '+08:00' and dateStrings:true, so we get "YYYY-MM-DD HH:mm:ss" in Philippine time.
+ * Treat that explicitly as Asia/Manila to get correct UTC regardless of server TZ.
+ */
+export function toIsoForClient(val) {
   if (val == null || val === '') return null;
   if (val instanceof Date) {
     if (Number.isNaN(val.getTime())) return null;
     return val.toISOString();
+  }
+  const s = String(val).trim();
+  if (!s) return null;
+  // Already has Z or explicit offset - parse as-is
+  if (/Z$/i.test(s) || /[+-]\d{2}:?\d{2}$/.test(s)) {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  // MySQL "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DDTHH:mm:ss" - treat as Philippine (+08:00)
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?/);
+  if (m) {
+    const isoWithOffset = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6] || '00'}+08:00`;
+    const d = new Date(isoWithOffset);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
   }
   const d = new Date(val);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
@@ -114,6 +132,7 @@ export function mapRowToDto(row) {
       dateTimeEndEstimated: row.date_time_end_estimated ? toIsoForClient(row.date_time_end_estimated) : null,
       dateTimeRestored: row.date_time_restored ? toIsoForClient(row.date_time_restored) : null,
       publicVisibleAt: row.public_visible_at ? toIsoForClient(row.public_visible_at) : null,
+      pulledFromFeedAt: row.pulled_from_feed_at != null ? toIsoForClient(row.pulled_from_feed_at) : null,
       createdAt: toIsoForClient(row.created_at),
       updatedAt: toIsoForClient(row.updated_at),
       deletedAt: toIsoForClient(row.deleted_at),

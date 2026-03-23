@@ -9,25 +9,38 @@ import {
   computeInitialStatus,
   toMysqlDateTimeFromRow,
 } from '../utils/interruptionsDto.js';
+import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import {
   listUpdates,
   addUserUpdate,
   insertSystemUpdate,
 } from '../services/interruptionLifecycle.js';
-import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
+import {
+  getAlecoInterruptionsDeletedAtSupported,
+  getAlecoInterruptionsPulledFromFeedAtSupported,
+} from '../utils/interruptionsDbSupport.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 
 const router = express.Router();
 
 /** Columns for list + single-row fetch (without leading SELECT … FROM). */
-const INTERRUPTION_TABLE_COLS = `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+const INTERRUPTION_TABLE_COLS_BASE = `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
   date_time_start, date_time_end_estimated, date_time_restored,
   public_visible_at, created_at, updated_at`;
+const INTERRUPTION_TABLE_COLS_WITH_PULLED = `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+  date_time_start, date_time_end_estimated, date_time_restored,
+  public_visible_at, pulled_from_feed_at, created_at, updated_at`;
 
-function selectInterruptionRowSql(hasDeletedAt) {
+function selectInterruptionRowSql(hasDeletedAt, hasPulledFromFeedAt = true) {
+  const cols = hasPulledFromFeedAt ? INTERRUPTION_TABLE_COLS_WITH_PULLED : INTERRUPTION_TABLE_COLS_BASE;
   return hasDeletedAt
-    ? `SELECT ${INTERRUPTION_TABLE_COLS}, deleted_at FROM aleco_interruptions`
-    : `SELECT ${INTERRUPTION_TABLE_COLS} FROM aleco_interruptions`;
+    ? `SELECT ${cols}, deleted_at FROM aleco_interruptions`
+    : `SELECT ${cols} FROM aleco_interruptions`;
+}
+
+function listInterruptionCols(hasDeletedAt, hasPulledFromFeedAt) {
+  const cols = hasPulledFromFeedAt ? INTERRUPTION_TABLE_COLS_WITH_PULLED : INTERRUPTION_TABLE_COLS_BASE;
+  return hasDeletedAt ? `${cols}, deleted_at` : cols;
 }
 
 const TYPES = new Set(['Scheduled', 'Unscheduled']);
@@ -109,8 +122,9 @@ function validatePayload(body, { partial = false } = {}) {
 /**
  * Build WHERE for list: visibility window + optional soft-delete filters.
  * @param {boolean} hasDeletedAtColumn - false if migration not applied (ignore archive query flags).
+ * @param {boolean} hasPulledFromFeedAtColumn - false if migration not applied.
  */
-function buildInterruptionsListWhere(req, hasDeletedAtColumn) {
+function buildInterruptionsListWhere(req, hasDeletedAtColumn, hasPulledFromFeedAtColumn = true) {
   const includeFuture =
     req.query.includeFuture === '1' ||
     req.query.includeFuture === 'true' ||
@@ -122,6 +136,9 @@ function buildInterruptionsListWhere(req, hasDeletedAtColumn) {
   const clauses = [];
   if (!includeFuture) {
     clauses.push('(public_visible_at IS NULL OR public_visible_at <= NOW())');
+    if (hasPulledFromFeedAtColumn) {
+      clauses.push('pulled_from_feed_at IS NULL');
+    }
   }
   if (hasDeletedAtColumn) {
     if (deletedOnly) {
@@ -142,19 +159,22 @@ router.get('/interruptions', async (req, res) => {
     const upgradeWhere = hasDel
       ? "status = 'Pending' AND deleted_at IS NULL AND (COALESCE(public_visible_at, date_time_start) <= NOW())"
       : "status = 'Pending' AND (COALESCE(public_visible_at, date_time_start) <= NOW())";
+    const phNow = nowPhilippineForMysql();
     await pool.query(
-      `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = NOW() WHERE ${upgradeWhere}`
+      `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = ? WHERE ${upgradeWhere}`,
+      [phNow]
     );
     // Auto-archive Restored advisories after 1 day 12 hours from restoration time
     if (hasDel) {
       await pool.query(
-        `UPDATE aleco_interruptions SET deleted_at = NOW() WHERE status = 'Restored' AND deleted_at IS NULL
-         AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= NOW()`,
-        [RESOLVED_ARCHIVE_HOURS]
+        `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = 'Restored' AND deleted_at IS NULL
+         AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= ?`,
+        [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
       );
     }
-    const visibilityWhere = buildInterruptionsListWhere(req, hasDel);
-    const listCols = hasDel ? `${INTERRUPTION_TABLE_COLS}, deleted_at` : INTERRUPTION_TABLE_COLS;
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const visibilityWhere = buildInterruptionsListWhere(req, hasDel, hasPulled);
+    const listCols = listInterruptionCols(hasDel, hasPulled);
     const [rows] = await pool.query(
       `SELECT ${listCols}
        FROM aleco_interruptions${visibilityWhere}
@@ -190,7 +210,8 @@ router.get('/interruptions/:id', async (req, res) => {
 
   try {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel)} WHERE id = ?`, [id]);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled)} WHERE id = ?`, [id]);
     const row = rows[0];
     if (!row) {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
@@ -274,10 +295,11 @@ router.post('/interruptions', async (req, res) => {
 
   try {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const phNow = nowPhilippineForMysql();
     const [result] = await pool.execute(
       `INSERT INTO aleco_interruptions
-       (type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         type,
         initialStatus,
@@ -292,9 +314,12 @@ router.post('/interruptions', async (req, res) => {
         endEst,
         restored,
         pubVis,
+        phNow,
+        phNow,
       ]
     );
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel)} WHERE id = ?`, [result.insertId]);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled)} WHERE id = ?`, [result.insertId]);
     const row = rows[0];
     const dto = row ? mapRowToDto(row) : null;
     if (!dto) {
@@ -501,6 +526,8 @@ router.put('/interruptions/:id', async (req, res) => {
     if (fields.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update.' });
     }
+    fields.push('updated_at = ?');
+    params.push(nowPhilippineForMysql());
 
     let whereSql = 'WHERE id = ?';
     const whereParams = [id];
@@ -539,7 +566,8 @@ router.put('/interruptions/:id', async (req, res) => {
       }
     }
 
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel)} WHERE id = ?`, [id]);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     if (!dto) {
       return res.status(500).json({ success: false, message: 'Failed to load updated interruption.' });
@@ -562,8 +590,8 @@ router.delete('/interruptions/:id', async (req, res) => {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     if (hasDel) {
       const [result] = await pool.execute(
-        `UPDATE aleco_interruptions SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL`,
-        [id]
+        `UPDATE aleco_interruptions SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL`,
+        [nowPhilippineForMysql(), id]
       );
       if (result.affectedRows === 0) {
         return res.status(404).json({ success: false, message: 'Interruption not found or already archived.' });
@@ -636,7 +664,8 @@ router.patch('/interruptions/:id/restore', async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Interruption not found or not archived.' });
     }
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(true)} WHERE id = ?`, [id]);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(true, hasPulled)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     if (!dto) {
       return res.status(500).json({ success: false, message: 'Failed to load restored interruption.' });
@@ -645,6 +674,91 @@ router.patch('/interruptions/:id/restore', async (req, res) => {
   } catch (error) {
     console.error('Interruptions restore error:', error);
     res.status(500).json({ success: false, message: 'Failed to restore interruption.' });
+  }
+});
+
+/** Pull advisory out of public feed (temporarily hide without archiving). */
+router.patch('/interruptions/:id/pull-from-feed', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  try {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    if (!hasPulled) {
+      return res.status(503).json({
+        success: false,
+        message: 'Pull from feed requires migration. Run: node backend/run-migration.js backend/migrations/add_pulled_from_feed_at_interruptions.sql',
+      });
+    }
+    const [check] = await pool.execute(
+      hasDel
+        ? 'SELECT id, deleted_at FROM aleco_interruptions WHERE id = ?'
+        : 'SELECT id FROM aleco_interruptions WHERE id = ?',
+      [id]
+    );
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Advisory not found.' });
+    }
+    if (hasDel && check[0].deleted_at != null && String(check[0].deleted_at).trim() !== '') {
+      return res.status(410).json({
+        success: false,
+        message: 'Archived advisories cannot be pulled. Restore it first.',
+      });
+    }
+    const phNow = nowPhilippineForMysql();
+    await pool.execute(
+      'UPDATE aleco_interruptions SET pulled_from_feed_at = ?, updated_at = ? WHERE id = ?',
+      [phNow, phNow, id]
+    );
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true)} WHERE id = ?`, [id]);
+    const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+    res.json({ success: true, data: dto, message: 'Advisory pulled from public feed.' });
+  } catch (error) {
+    console.error('Pull from feed error:', error);
+    res.status(500).json({ success: false, message: 'Failed to pull advisory from feed.' });
+  }
+});
+
+/** Push advisory back into public feed (make visible again per normal rules). */
+router.patch('/interruptions/:id/push-to-feed', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  try {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    if (!hasPulled) {
+      return res.status(503).json({
+        success: false,
+        message: 'Push to feed requires migration. Run: node backend/run-migration.js backend/migrations/add_pulled_from_feed_at_interruptions.sql',
+      });
+    }
+    const [check] = await pool.execute(
+      hasDel
+        ? 'SELECT id, deleted_at FROM aleco_interruptions WHERE id = ?'
+        : 'SELECT id FROM aleco_interruptions WHERE id = ?',
+      [id]
+    );
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Advisory not found.' });
+    }
+    if (hasDel && check[0].deleted_at != null && String(check[0].deleted_at).trim() !== '') {
+      return res.status(410).json({
+        success: false,
+        message: 'Archived advisories cannot be pushed. Restore it first.',
+      });
+    }
+    await pool.execute(
+      'UPDATE aleco_interruptions SET pulled_from_feed_at = NULL, updated_at = ? WHERE id = ?',
+      [nowPhilippineForMysql(), id]
+    );
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true)} WHERE id = ?`, [id]);
+    const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+    res.json({ success: true, data: dto, message: 'Advisory pushed back to public feed.' });
+  } catch (error) {
+    console.error('Push to feed error:', error);
+    res.status(500).json({ success: false, message: 'Failed to push advisory to feed.' });
   }
 });
 

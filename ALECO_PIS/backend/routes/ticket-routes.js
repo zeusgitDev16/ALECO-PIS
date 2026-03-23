@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/db.js';
+import { mapTicketRowToDto } from '../utils/ticketDto.js';
 
 const router = express.Router();
 
@@ -116,7 +117,7 @@ router.get('/filtered-tickets', async (req, res) => {
         const [rows] = await pool.execute(query, params);
         
         console.log(`✅ Filter Query Success: ${rows.length} tickets returned`);
-        res.json({ success: true, data: rows });
+        res.json({ success: true, data: rows.map(mapTicketRowToDto) });
 
     } catch (error) {
         console.error("❌ Filter Error:", error);

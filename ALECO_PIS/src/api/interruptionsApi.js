@@ -121,6 +121,56 @@ export async function updateInterruption(id, body) {
 }
 
 /**
+ * Pull advisory out of public feed (temporarily hide without archiving).
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ */
+export async function pullFromFeed(id) {
+  try {
+    const res = await fetch(apiUrl(`/api/interruptions/${id}/pull-from-feed`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const json = await res.json().catch(() => null);
+    const success = res.ok && json && json.success === true;
+    return {
+      ok: res.ok,
+      success,
+      data: success ? json?.data ?? null : null,
+      message: typeof json?.message === 'string' ? json.message : null,
+    };
+  } catch {
+    return { ok: false, success: false, data: null, message: null };
+  }
+}
+
+/**
+ * Push advisory back into public feed.
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ */
+export async function pushToFeed(id) {
+  try {
+    const res = await fetch(apiUrl(`/api/interruptions/${id}/push-to-feed`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const json = await res.json().catch(() => null);
+    const success = res.ok && json && json.success === true;
+    return {
+      ok: res.ok,
+      success,
+      data: success ? json?.data ?? null : null,
+      message: typeof json?.message === 'string' ? json.message : null,
+    };
+  } catch {
+    return { ok: false, success: false, data: null, message: null };
+  }
+}
+
+/**
  * @param {number} id
  */
 export async function deleteInterruption(id) {

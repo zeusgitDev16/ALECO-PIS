@@ -231,9 +231,9 @@ const RecentOpenedTickets = ({
             </div>
             {!isCollapsed && (
                 <>
-                    {layout === 'grid' && renderGridCards()}
-                    {layout === 'table' && renderTable()}
-                    {layout === 'kanban' && renderKanban()}
+                    {layout === 'card' && renderGridCards()}
+                    {layout === 'compact' && renderTable()}
+                    {layout === 'workflow' && renderKanban()}
                 </>
             )}
         </div>

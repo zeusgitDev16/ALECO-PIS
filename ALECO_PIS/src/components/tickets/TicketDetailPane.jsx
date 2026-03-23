@@ -125,6 +125,9 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
 
                 <hr className="detail-divider" />
 
+                {/* --- SCROLLABLE BODY (middle only; footer stays fixed like advisory modal) --- */}
+                <div className="ticket-detail-scroll-outer">
+                <div className="ticket-detail-body-scroll">
                 {/* --- SECTION 2: REPORTER & SYSTEM INFO --- */}
                 <div className="detail-grid">
                     {!isGroupMaster && (
@@ -253,8 +256,10 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </div>
                     )}
                 </div>
+                </div>
+                </div>
 
-                {/* --- SECTION 4: ADMIN ACTIONS --- */}
+                {/* --- SECTION 4: ADMIN ACTIONS (fixed footer, never scrolls) --- */}
                 <div className="action-footer">
                     {!isGroupMaster && !isGroupChild && (
                         <>
@@ -420,7 +425,9 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                 <h3 className="ticket-history-title">Ticket History</h3>
                                 <p className="ticket-history-subtitle">{ticket.ticket_id} — All actions by dispatchers and field crew</p>
                             </div>
-                            <TicketHistoryLogs ticketId={ticket.ticket_id} isVisible={isFlipped} />
+                            <div className="ticket-detail-back-scroll">
+                                <TicketHistoryLogs ticketId={ticket.ticket_id} isVisible={isFlipped} />
+                            </div>
                         </div>
                     </div>
                     <button type="button" className="flip-toggle-btn" onClick={() => setIsFlipped(v => !v)} title={isFlipped ? 'View Details' : 'View History'}>

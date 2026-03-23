@@ -51,3 +51,55 @@ async function probeDeletedAtColumn(pool) {
 export function resetAlecoInterruptionsDeletedAtCache() {
   deletedAtSupportedCache = null;
 }
+
+/** @type {boolean|null} */
+let pulledFromFeedAtSupportedCache = null;
+
+/** @type {Promise<boolean>|null} */
+let pulledFromFeedAtProbePromise = null;
+
+function isMissingColumnError(e, col) {
+  return (
+    e?.code === 'ER_BAD_FIELD_ERROR' ||
+    e?.errno === 1054 ||
+    (typeof e?.sqlMessage === 'string' && e.sqlMessage.includes(col))
+  );
+}
+
+/**
+ * Detects whether aleco_interruptions.pulled_from_feed_at exists.
+ * @param {import('mysql2/promise').Pool} pool
+ * @returns {Promise<boolean>}
+ */
+export async function getAlecoInterruptionsPulledFromFeedAtSupported(pool) {
+  if (pulledFromFeedAtSupportedCache !== null) {
+    return pulledFromFeedAtSupportedCache;
+  }
+  if (!pulledFromFeedAtProbePromise) {
+    pulledFromFeedAtProbePromise = probePulledFromFeedAtColumn(pool).finally(() => {
+      pulledFromFeedAtProbePromise = null;
+    });
+  }
+  return pulledFromFeedAtProbePromise;
+}
+
+async function probePulledFromFeedAtColumn(pool) {
+  try {
+    await pool.query('SELECT pulled_from_feed_at FROM aleco_interruptions LIMIT 0');
+    pulledFromFeedAtSupportedCache = true;
+    return true;
+  } catch (e) {
+    if (isMissingColumnError(e, 'pulled_from_feed_at')) {
+      pulledFromFeedAtSupportedCache = false;
+      console.warn(
+        '[interruptions] Column pulled_from_feed_at missing. Run: node backend/run-migration.js backend/migrations/add_pulled_from_feed_at_interruptions.sql'
+      );
+      return false;
+    }
+    throw e;
+  }
+}
+
+export function resetAlecoInterruptionsPulledFromFeedAtCache() {
+  pulledFromFeedAtSupportedCache = null;
+}

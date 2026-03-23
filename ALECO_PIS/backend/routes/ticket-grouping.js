@@ -2,6 +2,8 @@ import express from 'express';
 import pool from '../config/db.js';
 import { sendPhilSMS } from '../utils/sms.js';
 import { insertTicketLog } from '../utils/ticketLogHelper.js';
+import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
+import { mapTicketRowToDto } from '../utils/ticketDto.js';
 
 const router = express.Router();
 
@@ -75,7 +77,7 @@ router.post('/tickets/group/create', async (req, res) => {
         const mainTicketId = `GROUP-${dateStr}-${String(groupNumber).padStart(4, '0')}`;
 
         // Create a master ticket record for the group
-        const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        const createdAt = nowPhilippineForMysql();
 
         // Get info from first ticket for the master record
         const [firstTicket] = await connection.execute(
@@ -170,9 +172,9 @@ router.get('/tickets/groups', async (req, res) => {
                 );
 
                 return {
-                    ...group,
+                    ...mapTicketRowToDto(group),
                     ticket_count: members.length,
-                    tickets: members
+                    tickets: members.map(mapTicketRowToDto)
                 };
             })
         );
@@ -219,8 +221,8 @@ router.get('/tickets/group/:mainTicketId', async (req, res) => {
         );
 
         const data = {
-            ...masterRows[0],
-            children
+            ...mapTicketRowToDto(masterRows[0]),
+            children: children.map(mapTicketRowToDto)
         };
 
         res.json({ success: true, data });
@@ -381,9 +383,10 @@ ${mainTicketId}`;
                 });
             }
 
+            const phNow = nowPhilippineForMysql();
             await pool.execute(
-                `UPDATE aleco_tickets SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, dispatched_at = NOW() WHERE ticket_id = ?`,
-                [assigned_crew, eta, is_consumer_notified ? 1 : 0, dispatch_notes || '', member.ticket_id]
+                `UPDATE aleco_tickets SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, dispatched_at = ? WHERE ticket_id = ?`,
+                [assigned_crew, eta, is_consumer_notified ? 1 : 0, dispatch_notes || '', phNow, member.ticket_id]
             );
             const actorEmail = req.body.actor_email || req.headers['x-user-email'];
             const actorName = req.body.actor_name || req.headers['x-user-name'];
@@ -400,15 +403,34 @@ ${mainTicketId}`;
         }
 
         console.log(`✅ GROUP DISPATCH: ${mainTicketId} - ${members.length} tickets dispatched to ${assigned_crew}`);
-        const consumerAnyFailed = consumerSmsResults.some(
-            (e) => e.attempted === true && e.success === false
-        );
-        const baseMsg = `${members.length} tickets dispatched to ${assigned_crew}`;
+        const total = consumerSmsResults.length;
+        const attempted = consumerSmsResults.filter(r => r.attempted).length;
+        const successCount = consumerSmsResults.filter(r => r.attempted && r.success).length;
+        const failedCount = consumerSmsResults.filter(r => r.attempted && !r.success).length;
+        const noPhoneCount = consumerSmsResults.filter(r => r.reason === 'no_phone_on_ticket').length;
+        const notRequested = consumerSmsResults.filter(r => r.reason === 'not_requested').length;
+
+        let groupMsg;
+        if (notRequested === total) {
+            groupMsg = `${members.length} ticket(s) dispatched to ${assigned_crew}. Crew notified by SMS.`;
+        } else if (attempted === 0) {
+            groupMsg = noPhoneCount === total && total > 0
+                ? `${members.length} ticket(s) dispatched. Crew notified. All consumers have no phone on file.`
+                : `${members.length} ticket(s) dispatched to ${assigned_crew}. Crew notified by SMS.`;
+        } else if (successCount === attempted) {
+            groupMsg = `${members.length} ticket(s) dispatched. Crew and all ${successCount} consumer(s) notified by SMS.`;
+        } else {
+            const parts = [`${members.length} ticket(s) dispatched. Crew notified.`];
+            if (successCount > 0) parts.push(`${successCount} consumer(s) notified.`);
+            if (failedCount > 0) parts.push(`${failedCount} consumer(s) could not be reached.`);
+            if (noPhoneCount > 0) parts.push(`${noPhoneCount} consumer(s) have no phone.`);
+            groupMsg = parts.join(' ');
+        }
+
+        const consumerAnyFailed = failedCount > 0;
         res.json({
             success: true,
-            message: consumerAnyFailed
-                ? `${baseMsg}. Some consumer SMS messages could not be sent.`
-                : baseMsg,
+            message: groupMsg,
             dispatchedCount: members.length,
             sms: {
                 lineman: { success: true },

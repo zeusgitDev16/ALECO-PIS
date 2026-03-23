@@ -6,6 +6,9 @@ import axios from 'axios';
 import { sendPhilSMS } from '../utils/sms.js';
 import { normalizePhoneForDB, INVALID_PHONE_MESSAGE } from '../utils/phoneUtils.js';
 import { insertTicketLog } from '../utils/ticketLogHelper.js';
+import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
+import { mapTicketRowToDto } from '../utils/ticketDto.js';
+import { toIsoForClient } from '../utils/interruptionsDto.js';
 
 const router = express.Router();
 
@@ -52,7 +55,7 @@ const validateDistrictMunicipality = (district, municipality) => {
 // --- 1. THE MASTER TICKET SUBMISSION ROUTE ---
 router.post('/tickets/submit', upload.single('image'), async (req, res) => {
     try {
-        const manilaTime = new Date().toISOString().slice(0, 19).replace('T', ' '); 
+        const manilaTime = nowPhilippineForMysql();
 
         const { 
             account_number, first_name, middle_name, last_name, 
@@ -224,7 +227,7 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
             return res.status(404).json({ success: false, message: "Ticket ID not found. Please check your tracking number and try again." });
         }
 
-        res.json({ success: true, data: rows[0] });
+        res.json({ success: true, data: mapTicketRowToDto(rows[0]) });
         
     } catch (error) {
         console.error("Database Tracking Error:", error);
@@ -323,7 +326,7 @@ router.delete('/tickets/:ticketId', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Ticket is already deleted.' });
         }
 
-        await pool.execute('UPDATE aleco_tickets SET deleted_at = NOW() WHERE ticket_id = ?', [ticketId]);
+        await pool.execute('UPDATE aleco_tickets SET deleted_at = ? WHERE ticket_id = ?', [nowPhilippineForMysql(), ticketId]);
 
         const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
         const actorName = req.body?.actor_name || req.headers['x-user-name'];
@@ -448,6 +451,7 @@ ${ticket_id}`;
         // --- PHASE 3: DATABASE UPDATE ---
         console.log("➡️ Phase 3 (DB Update) Starting...");
         
+        const phNow = nowPhilippineForMysql();
         const updateQuery = `
             UPDATE aleco_tickets 
             SET status = 'Ongoing', 
@@ -455,7 +459,7 @@ ${ticket_id}`;
                 eta = ?, 
                 is_consumer_notified = ?, 
                 dispatch_notes = ?,
-                dispatched_at = NOW()
+                dispatched_at = ?
             WHERE ticket_id = ?
         `;
 
@@ -464,6 +468,7 @@ ${ticket_id}`;
             eta, 
             is_consumer_notified ? 1 : 0, 
             dispatch_notes || '', 
+            phNow,
             ticket_id
         ]);
 
@@ -481,11 +486,19 @@ ${ticket_id}`;
                 metadata: { assigned_crew, eta, dispatch_notes: dispatch_notes || null }
             });
             console.log(`✅ DATABASE SUCCESS: Ticket ${ticket_id} updated to Ongoing.`);
-            const consumerFailed =
-                consumerSmsPayload.attempted === true && consumerSmsPayload.success === false;
-            const dispatchMessage = consumerFailed
-                ? 'Dynamic dispatch complete. Crew was notified by SMS; consumer SMS could not be sent.'
-                : 'Dynamic dispatch complete.';
+            const c = consumerSmsPayload;
+            let dispatchMessage;
+            if (!c.attempted) {
+                if (c.reason === 'not_requested') {
+                    dispatchMessage = `Ticket ${ticket_id} dispatched. Crew notified by SMS.`;
+                } else {
+                    dispatchMessage = `Ticket ${ticket_id} dispatched. Crew notified by SMS. Consumer has no phone on file.`;
+                }
+            } else if (c.success) {
+                dispatchMessage = `Ticket ${ticket_id} dispatched. Crew and consumer notified by SMS.`;
+            } else {
+                dispatchMessage = `Ticket ${ticket_id} dispatched. Crew notified by SMS. Consumer SMS could not be sent.`;
+            }
             res.status(200).json({
                 success: true,
                 message: dispatchMessage,
@@ -493,7 +506,7 @@ ${ticket_id}`;
                     lineman: { success: true },
                     consumer: consumerSmsPayload
                 },
-                ...(consumerFailed ? { warnings: ['consumer_sms_failed'] } : {})
+                ...(c.attempted && !c.success ? { warnings: ['consumer_sms_failed'] } : {})
             });
         } else {
             res.status(500).json({ success: false, message: 'Failed to update ticket status.' });
@@ -516,8 +529,8 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
 
     try {
         const [dbResult] = await pool.execute(
-            `UPDATE aleco_tickets SET hold_reason = ?, hold_since = NOW() WHERE ticket_id = ? AND status = 'Ongoing'`,
-            [hold_reason.trim(), ticket_id]
+            `UPDATE aleco_tickets SET hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
+            [hold_reason.trim(), nowPhilippineForMysql(), ticket_id]
         );
 
         if (dbResult.affectedRows === 0) {
@@ -557,17 +570,22 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
         });
 
         console.log(`✅ Ticket ${ticket_id} put on hold by dispatcher.`);
-        const holdMsgText =
-            sms.consumer.attempted && sms.consumer.success === false
-                ? 'Ticket put on hold. Consumer SMS could not be sent.'
-                : 'Ticket put on hold.';
+        const c = sms.consumer;
+        let holdMsgText;
+        if (!c.attempted) {
+            holdMsgText = c.reason === 'not_requested'
+                ? `Ticket ${ticket_id} put on hold.`
+                : `Ticket ${ticket_id} put on hold. Consumer has no phone on file.`;
+        } else if (c.success) {
+            holdMsgText = `Ticket ${ticket_id} put on hold. Consumer notified by SMS.`;
+        } else {
+            holdMsgText = `Ticket ${ticket_id} put on hold. Consumer SMS could not be sent.`;
+        }
         res.status(200).json({
             success: true,
             message: holdMsgText,
             sms,
-            ...(sms.consumer.attempted && sms.consumer.success === false
-                ? { warnings: ['consumer_sms_failed'] }
-                : {})
+            ...(c.attempted && !c.success ? { warnings: ['consumer_sms_failed'] } : {})
         });
     } catch (error) {
         console.error("❌ HOLD ERROR:", error.message);
@@ -792,8 +810,8 @@ router.get('/tickets/sms/receive', async (req, res) => {
             console.log(`🔍 Extracted Ticket ID (Hold): ${ticketId} | Reason: ${reason}`);
 
             const [dbResult] = await pool.execute(
-                `UPDATE aleco_tickets SET hold_reason = ?, hold_since = NOW() WHERE ticket_id = ? AND status = 'Ongoing'`,
-                [reason, ticketId]
+                `UPDATE aleco_tickets SET hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
+                [reason, nowPhilippineForMysql(), ticketId]
             );
 
             if (dbResult.affectedRows > 0) {
@@ -804,10 +822,11 @@ router.get('/tickets/sms/receive', async (req, res) => {
             const etaUpdate = enrouteMatch[2] ? enrouteMatch[2].trim() : null;
             console.log(`🔍 Extracted Ticket ID (En Route): ${ticketId}${etaUpdate ? ` | ETA: ${etaUpdate}` : ''}`);
 
+            const phNow = nowPhilippineForMysql();
             const updateQuery = etaUpdate
                 ? `UPDATE aleco_tickets SET eta = ? WHERE ticket_id = ? AND status = 'Ongoing'`
-                : `UPDATE aleco_tickets SET updated_at = NOW() WHERE ticket_id = ? AND status = 'Ongoing'`;
-            const updateParams = etaUpdate ? [etaUpdate, ticketId] : [ticketId];
+                : `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status = 'Ongoing'`;
+            const updateParams = etaUpdate ? [etaUpdate, ticketId] : [phNow, ticketId];
             const [dbResult] = await pool.execute(updateQuery, updateParams);
 
             if (dbResult.affectedRows > 0) {
@@ -818,8 +837,8 @@ router.get('/tickets/sms/receive', async (req, res) => {
             console.log(`🔍 Extracted Ticket ID (Arrived): ${ticketId}`);
 
             const [dbResult] = await pool.execute(
-                `UPDATE aleco_tickets SET updated_at = NOW() WHERE ticket_id = ? AND status = 'Ongoing'`,
-                [ticketId]
+                `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
+                [nowPhilippineForMysql(), ticketId]
             );
 
             if (dbResult.affectedRows > 0) {
@@ -1050,7 +1069,7 @@ router.get('/tickets/logs', async (req, res) => {
             } else if (Buffer.isBuffer(meta)) {
                 try { meta = JSON.parse(meta.toString()); } catch { meta = null; }
             }
-            return { ...r, metadata: meta };
+            return { ...r, metadata: meta, created_at: toIsoForClient(r.created_at) ?? r.created_at };
         });
 
         res.json({ success: true, data, total });
@@ -1085,7 +1104,7 @@ router.get('/tickets/:ticketId/logs', async (req, res) => {
             } else if (Buffer.isBuffer(meta)) {
                 try { meta = JSON.parse(meta.toString()); } catch { meta = null; }
             }
-            return { ...r, metadata: meta };
+            return { ...r, metadata: meta, created_at: toIsoForClient(r.created_at) ?? r.created_at };
         });
         res.json({ success: true, data });
     } catch (error) {

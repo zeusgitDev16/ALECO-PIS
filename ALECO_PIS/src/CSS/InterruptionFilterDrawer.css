@@ -1,0 +1,334 @@
+/* ==========================================================================
+   INTERRUPTION FILTER DRAWER - Mobile/Tablet overlay (TicketFilterDrawer parity)
+   ========================================================================== */
+
+.interruption-filter-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1200;
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+  animation: interruptionDrawerOverlayFadeIn 0.2s ease;
+}
+
+@keyframes interruptionDrawerOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.interruption-filter-drawer-panel {
+  width: min(260px, calc(100vw - 32px));
+  max-width: 260px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  animation: interruptionDrawerSlideIn 0.25s ease;
+  overflow: hidden;
+}
+
+@keyframes interruptionDrawerSlideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.interruption-filter-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.interruption-filter-drawer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.interruption-filter-drawer-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.interruption-filter-drawer-close:hover {
+  background: var(--bg-body);
+  color: var(--text-main);
+}
+
+.interruption-filter-drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 14px 16px 14px;
+  min-width: 0;
+}
+
+/* Inner wrapper - vertical stack with consistent spacing */
+.interruption-filter-drawer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* Status filter chips - stacked, left-aligned, no overflow */
+.interruption-filter-drawer-inner .interruptions-admin-filters {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+
+.interruption-filter-drawer-inner .interruptions-admin-filters .interruptions-admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+}
+
+/* Search input - constrain to drawer, prevent overflow (override InterruptionsAdmin min-width) */
+.interruption-filter-drawer-inner .interruptions-admin-search-input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* Archive scope - Show label + chips row */
+.interruption-filter-drawer-archive-scope {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  min-width: 0;
+}
+
+.interruption-filter-drawer-scope-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.interruption-filter-drawer-scope-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+}
+
+/* Actions - Clear All, Reset, Refresh (TicketFilterDrawer parity) */
+.interruption-filter-drawer-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.interruption-filter-drawer-clear-btn {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-body);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.interruption-filter-drawer-clear-btn:hover {
+  border-color: var(--accent-primary);
+  background: rgba(124, 77, 255, 0.08);
+}
+
+.interruption-filter-drawer-reset-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.interruption-filter-drawer-reset-btn:hover {
+  color: var(--text-main);
+  border-color: var(--accent-primary);
+  background: rgba(124, 77, 255, 0.06);
+}
+
+.interruption-filter-drawer-refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.interruption-filter-drawer-refresh-btn:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  background: rgba(124, 77, 255, 0.08);
+  color: var(--accent-primary);
+}
+
+.interruption-filter-drawer-refresh-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   MOBILE/TABLET - Smaller drawer (767px)
+   ========================================= */
+@media (max-width: 767px) {
+  .interruption-filter-drawer-panel {
+    width: min(220px, calc(100vw - 32px));
+    max-width: 220px;
+  }
+
+  .interruption-filter-drawer-header {
+    padding: 8px 10px;
+  }
+
+  .interruption-filter-drawer-title {
+    font-size: 0.85rem;
+  }
+
+  .interruption-filter-drawer-close {
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+  }
+
+  .interruption-filter-drawer-content {
+    padding: 10px 12px 16px 12px;
+  }
+
+  .interruption-filter-drawer-inner {
+    gap: 12px;
+  }
+
+  .interruption-filter-drawer-inner .interruptions-admin-chip {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+  }
+
+  .interruption-filter-drawer-inner .interruptions-admin-search-input {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
+
+  .interruption-filter-drawer-scope-chips .interruptions-admin-archive-chip {
+    font-size: 0.65rem !important;
+    padding: 5px 10px !important;
+  }
+
+  .interruption-filter-drawer-actions {
+    margin-top: 2px;
+    padding-top: 10px;
+    gap: 6px;
+  }
+
+  .interruption-filter-drawer-clear-btn,
+  .interruption-filter-drawer-reset-btn,
+  .interruption-filter-drawer-refresh-btn {
+    padding: 5px 8px;
+    font-size: 0.65rem;
+  }
+}
+
+/* =========================================
+   500px - Even smaller
+   ========================================= */
+@media (max-width: 500px) {
+  .interruption-filter-drawer-panel {
+    width: min(200px, calc(100vw - 24px));
+    max-width: 200px;
+  }
+
+  .interruption-filter-drawer-content {
+    padding: 8px 10px 16px 10px;
+  }
+
+  .interruption-filter-drawer-inner {
+    gap: 10px;
+  }
+
+  .interruption-filter-drawer-inner .interruptions-admin-chip {
+    font-size: 0.65rem;
+    padding: 4px 8px;
+  }
+
+  .interruption-filter-drawer-inner .interruptions-admin-search-input {
+    font-size: 0.75rem;
+    padding: 5px 8px;
+  }
+
+  .interruption-filter-drawer-scope-chips .interruptions-admin-archive-chip {
+    font-size: 0.6rem !important;
+    padding: 4px 8px !important;
+  }
+
+  .interruption-filter-drawer-actions {
+    margin-top: 0;
+    padding-top: 8px;
+    gap: 6px;
+  }
+
+  .interruption-filter-drawer-clear-btn,
+  .interruption-filter-drawer-reset-btn,
+  .interruption-filter-drawer-refresh-btn {
+    padding: 4px 6px;
+    font-size: 0.6rem;
+  }
+}
+
+/* =========================================
+   320px - Fallback
+   ========================================= */
+@media (max-width: 319px) {
+  .interruption-filter-drawer-panel {
+    width: min(200px, calc(100vw - 24px));
+    max-width: 200px;
+  }
+}

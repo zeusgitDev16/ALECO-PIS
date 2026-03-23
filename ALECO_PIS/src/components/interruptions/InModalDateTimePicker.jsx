@@ -57,8 +57,11 @@ export default function InModalDateTimePicker({
     const p = datetimeLocalStringToDate(value);
     if (p) {
       if (futureOnly && p.getTime() <= now.getTime()) {
-        const soonest = new Date(now.getTime() + 60000);
-        onChange(dateToDatetimeLocalString(soonest));
+        /* Don't auto-correct on load - that would mark form as dirty when user didn't change anything. */
+        setDatePart(p);
+        setHour(String((p.getHours() % 12) || 12));
+        setMinuteStr(String(p.getMinutes()).padStart(2, '0'));
+        setPm(p.getHours() >= 12);
         return;
       }
       setDatePart(p);

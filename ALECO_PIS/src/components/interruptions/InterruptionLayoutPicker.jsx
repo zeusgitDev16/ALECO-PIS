@@ -1,12 +1,11 @@
 import React from 'react';
-import '../../CSS/PersonnelLayoutPicker.css';
+import '../../CSS/InterruptionLayoutPicker.css';
 
 /**
- * PersonnelLayoutPicker - Lego Brick for switching Crew/Linemen view modes
+ * InterruptionLayoutPicker - Layout toggle for Power Advisories dashboard
  * Data Management parity: Card, Compact, Workflow
- * No Map option (personnel have no geographic data)
  */
-const PersonnelLayoutPicker = ({ activeLayout, onLayoutChange }) => {
+const InterruptionLayoutPicker = ({ activeLayout, onLayoutChange, filterButton }) => {
     const layouts = [
         { id: 'card', icon: '▦', label: 'Card', tooltip: 'Card view for visual scanning' },
         { id: 'compact', icon: '≡', label: 'Compact', tooltip: 'Compact rows for bulk operations' },
@@ -14,22 +13,24 @@ const PersonnelLayoutPicker = ({ activeLayout, onLayoutChange }) => {
     ];
 
     return (
-        <div className="layout-picker-container personnel-layout-picker">
-            <div className="layout-buttons">
+        <div className="interruption-layout-picker">
+            <div className="interruption-layout-buttons">
                 {layouts.map(layout => (
                     <button
                         key={layout.id}
-                        className={`layout-btn ${activeLayout === layout.id ? 'active' : ''}`}
+                        className={`interruption-layout-btn ${activeLayout === layout.id ? 'active' : ''}`}
                         onClick={() => onLayoutChange(layout.id)}
                         title={layout.tooltip}
+                        aria-label={`Switch to ${layout.label} layout`}
                     >
-                        <span className="layout-icon">{layout.icon}</span>
-                        <span className="layout-label">{layout.label}</span>
+                        <span className="interruption-layout-icon">{layout.icon}</span>
+                        <span className="interruption-layout-label">{layout.label}</span>
                     </button>
                 ))}
             </div>
+            {filterButton}
         </div>
     );
 };
 
-export default PersonnelLayoutPicker;
+export default InterruptionLayoutPicker;

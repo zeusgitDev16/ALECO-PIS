@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
-import { getStatusDisplayLabel, getCauseCategoryLabel } from '../../utils/interruptionLabels';
-import {
-  formatToPhilippineTime,
-  isPublicVisibilityPending,
-} from '../../utils/dateUtils';
+import React from 'react';
+import { getStatusDisplayLabel } from '../../utils/interruptionLabels';
+import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand } from './AdvisoryActionIcons';
 
-const BODY_TRUNCATE_LEN = 200;
+const CARD_PREVIEW_LEN = 80;
 
 function truncate(s, max) {
   if (!s) return '';
@@ -15,188 +13,152 @@ function truncate(s, max) {
 }
 
 /**
+ * InterruptionAdvisoryCard - Compact card for grid view (like ticket cards).
+ * Full details available via expand modal.
+ * On mobile (<=320px): card is clickable, opens action modal (buttons hidden on card).
  * @param {object} props
  * @param {object} props.item - API DTO
  * @param {() => void} props.onEdit
  * @param {() => void} props.onDelete
  * @param {() => void} [props.onPermanentDelete]
+ * @param {() => void} [props.onExpand] - Open full advisory view in modal
+ * @param {(item: object) => void} [props.onCardClick] - When set (mobile), whole card opens action modal
+ * @param {'on-feed'|'not-on-feed'|'archived'} [props.feedIndicator] - Green=on feed, purple=not on feed, red=archived
+ * @param {(id: number) => void} [props.onPullFromFeed]
+ * @param {(id: number) => void} [props.onPushToFeed]
  * @param {boolean} props.saving
  */
-export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onPermanentDelete, saving }) {
-  const [bodyExpanded, setBodyExpanded] = useState(false);
+export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onPermanentDelete, onExpand, onCardClick, feedIndicator, onPullFromFeed, onPushToFeed, saving }) {
   const archived = Boolean(item.deletedAt);
   const statusLabel = getStatusDisplayLabel(item.status);
   const statusClass = String(item.status || '').toLowerCase();
   const feederDisplay = String(item.feeder || '').trim() || '—';
   const areasFull = (item.affectedAreas || []).join(', ') || '—';
-  const areasShort = truncate(areasFull, 140);
+  const areasShort = truncate(areasFull, 50);
   const hasBody = item.body && String(item.body).trim();
-  const bodyDisplay = hasBody ? String(item.body).trim() : '';
-  const bodyTruncated = bodyDisplay.length > BODY_TRUNCATE_LEN;
+  const previewText = hasBody ? truncate(String(item.body).trim(), CARD_PREVIEW_LEN) : truncate(item.cause, CARD_PREVIEW_LEN);
+
+  const handleCardClick = () => {
+    if (onCardClick) onCardClick(item);
+  };
 
   return (
-    <article className={`interruptions-admin-card${archived ? ' interruptions-admin-card--archived' : ''}`}>
+    <article
+      className={`interruptions-admin-card interruptions-admin-card--compact${archived ? ' interruptions-admin-card--archived' : ''}${onCardClick ? ' interruptions-admin-card--mobile-clickable' : ''}${feedIndicator ? ` interruptions-admin-card--feed-${feedIndicator}` : ''}`}
+      onClick={onCardClick ? handleCardClick : undefined}
+      role={onCardClick ? 'button' : undefined}
+      tabIndex={onCardClick ? 0 : undefined}
+      onKeyDown={onCardClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(); } } : undefined}
+    >
       <div className="interruptions-admin-card-head">
         <span className={`interruptions-admin-status-chip status-${statusClass}`}>{statusLabel}</span>
         <span className="interruptions-admin-type-pill">{item.type}</span>
         {archived && (
-          <span className="interruptions-admin-archived-chip" title="Not shown on the public home page">
-            Archived
-          </span>
+          <span className="interruptions-admin-archived-chip" title="Archived">Archived</span>
         )}
         {isPublicVisibilityPending(item.publicVisibleAt) && (
-          <span className="interruptions-admin-bull-scheduled-chip" title="Not yet shown on the public home page">
-            Bulletin scheduled
-          </span>
+          <span className="interruptions-admin-bull-scheduled-chip" title="Scheduled">Scheduled</span>
         )}
       </div>
 
-      <div className="interruptions-admin-card-identity">
+      <div className="interruptions-admin-card-identity interruptions-admin-card-identity--compact">
         <div className="interruptions-admin-card-identity-main">
           <span className="interruptions-admin-card-feeder-label">Feeder</span>
-          <h3 className="interruptions-admin-card-feeder-value">{feederDisplay}</h3>
+          <h3 className="interruptions-admin-card-feeder-value interruptions-admin-card-feeder-value--compact">{feederDisplay}</h3>
         </div>
-        <span className="interruptions-admin-card-ref-id" title="Advisory reference number">
-          #{item.id}
-        </span>
-        {item.controlNo && (
-          <span className="interruptions-admin-card-control-no" title="Control number">
-            {item.controlNo}
-          </span>
-        )}
+        <span className="interruptions-admin-card-ref-id interruptions-admin-card-ref-id--compact">#{item.id}</span>
       </div>
 
-      {hasBody ? (
-        <div className="interruptions-admin-card-body">
-          <p className="interruptions-admin-card-body-text">
-            {bodyExpanded || !bodyTruncated
-              ? bodyDisplay
-              : truncate(bodyDisplay, BODY_TRUNCATE_LEN)}
-          </p>
-          {bodyTruncated && (
-            <button
-              type="button"
-              className="interruptions-admin-card-read-more"
-              onClick={() => setBodyExpanded((e) => !e)}
-            >
-              {bodyExpanded ? 'Show less' : 'Read more'}
-            </button>
+      {(previewText || areasShort) && (
+        <div className="interruptions-admin-card-preview">
+          {previewText && (
+            <p className="interruptions-admin-card-preview-text" title={hasBody ? item.body : item.cause}>
+              {previewText}
+            </p>
+          )}
+          {areasShort !== '—' && areasShort && (
+            <p className="interruptions-admin-card-preview-areas" title={areasFull}>
+              {areasShort}
+            </p>
           )}
         </div>
-      ) : (
-        <>
-          <p className="interruptions-admin-card-cause">
-            {truncate(item.cause, 220)}
-            {item.causeCategory && (
-              <span className="interruptions-admin-cause-category-pill" title="Cause category">
-                {getCauseCategoryLabel(item.causeCategory)}
-              </span>
-            )}
-          </p>
-          <p className="interruptions-admin-card-areas" title={areasFull !== areasShort ? areasFull : undefined}>
-            <span className="interruptions-admin-card-areas-label">Affected areas</span>
-            <span className="interruptions-admin-card-areas-value">{areasShort}</span>
-          </p>
-        </>
       )}
 
-      {item.imageUrl && (
-        <div className="interruptions-admin-card-image">
-          <img src={item.imageUrl} alt="Advisory" />
-        </div>
-      )}
-
-      <div className="interruptions-admin-card-date-section">
-        <h4 className="interruptions-admin-card-section-label">Schedule</h4>
-        <dl className="interruptions-admin-card-dates interruptions-admin-card-dates--schedule">
-          <div>
-            <dt>Start</dt>
-            <dd title={item.dateTimeStart || undefined}>
-              {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
-            </dd>
-          </div>
-          <div>
-            <dt>ERT (forecast)</dt>
-            <dd title={item.dateTimeEndEstimated || undefined}>
-              {item.dateTimeEndEstimated ? formatToPhilippineTime(item.dateTimeEndEstimated) : '—'}
-            </dd>
-          </div>
-          <div>
-            <dt>Actual restore</dt>
-            <dd title={item.dateTimeRestored || undefined}>
-              {item.dateTimeRestored ? formatToPhilippineTime(item.dateTimeRestored) : '—'}
-            </dd>
-          </div>
-        </dl>
+      <div className="interruptions-admin-card-meta">
+        <span className="interruptions-admin-card-meta-label">Start</span>
+        <span className="interruptions-admin-card-meta-value">
+          {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
+        </span>
       </div>
 
-      {item.publicVisibleAt && (
-        <div className="interruptions-admin-card-date-section">
-          <h4 className="interruptions-admin-card-section-label">Public bulletin</h4>
-          <p className="interruptions-admin-card-pubvis">
-            {isPublicVisibilityPending(item.publicVisibleAt) ? (
-              <>
-                <strong>Goes live</strong>{' '}
-                <span title={item.publicVisibleAt}>{formatToPhilippineTime(item.publicVisibleAt)}</span>
-              </>
-            ) : (
-              <>
-                <strong>Visible since</strong>{' '}
-                <span title={item.publicVisibleAt}>{formatToPhilippineTime(item.publicVisibleAt)}</span>
-              </>
-            )}
-          </p>
-        </div>
-      )}
-
-      {(item.createdAt || item.updatedAt) && (
-        <div className="interruptions-admin-card-date-section">
-          <h4 className="interruptions-admin-card-section-label">Record</h4>
-          <dl className="interruptions-admin-card-dates interruptions-admin-card-dates--record">
-            {item.createdAt && (
-              <div>
-                <dt>Posted</dt>
-                <dd title={item.createdAt}>{formatToPhilippineTime(item.createdAt)}</dd>
-              </div>
-            )}
-            {item.updatedAt && (
-              <div>
-                <dt>Updated</dt>
-                <dd title={item.updatedAt}>{formatToPhilippineTime(item.updatedAt)}</dd>
-              </div>
-            )}
-          </dl>
-        </div>
-      )}
-
-      <div className="interruptions-admin-card-actions">
+      <div className="interruptions-admin-card-actions interruptions-admin-card-actions--compact">
+        {onExpand && (
+          <button
+            type="button"
+            className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--expand"
+            onClick={onExpand}
+            title="View full advisory"
+            aria-label="View full advisory"
+          >
+            <IconExpand />
+          </button>
+        )}
         {archived ? (
           <>
-            <button type="button" className="interruptions-admin-btn" onClick={onEdit} disabled={saving}>
-              View
+            <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={onEdit} disabled={saving} title="View" aria-label="View">
+              <IconPencil />
             </button>
-            <button
-              type="button"
-              className="interruptions-admin-btn interruptions-admin-btn--danger"
-              onClick={onPermanentDelete}
-              disabled={saving || typeof onPermanentDelete !== 'function'}
-              title="Permanently remove from database. This cannot be undone."
-            >
-              Delete permanently
-            </button>
+            {onPermanentDelete && (
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--danger"
+                onClick={onPermanentDelete}
+                disabled={saving}
+                title="Delete permanently"
+                aria-label="Delete permanently"
+              >
+                <IconTrash />
+              </button>
+            )}
           </>
         ) : (
           <>
-            <button type="button" className="interruptions-admin-btn" onClick={onEdit} disabled={saving}>
-              Edit
+            {feedIndicator === 'on-feed' && onPullFromFeed && (
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--pull"
+                onClick={() => onPullFromFeed(item.id)}
+                disabled={saving}
+                title="Pull from public feed"
+                aria-label="Pull from public feed"
+              >
+                <IconArrowDown />
+              </button>
+            )}
+            {item.pulledFromFeedAt && onPushToFeed && (
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--push"
+                onClick={() => onPushToFeed(item.id)}
+                disabled={saving}
+                title="Push back to public feed"
+                aria-label="Push back to public feed"
+              >
+                <IconArrowUp />
+              </button>
+            )}
+            <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={onEdit} disabled={saving} title="Edit" aria-label="Edit">
+              <IconPencil />
             </button>
             <button
               type="button"
-              className="interruptions-admin-btn interruptions-admin-btn--danger"
+              className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--archive"
               onClick={onDelete}
               disabled={saving}
+              title={isPublicVisibilityPending(item.publicVisibleAt) ? 'Cancel' : 'Archive'}
+              aria-label={isPublicVisibilityPending(item.publicVisibleAt) ? 'Cancel' : 'Archive'}
             >
-              {isPublicVisibilityPending(item.publicVisibleAt) ? 'Cancel scheduled' : 'Archive'}
+              <IconArchive />
             </button>
           </>
         )}

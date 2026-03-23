@@ -6,6 +6,8 @@ import {
   deleteInterruption,
   restoreInterruption,
   permanentlyDeleteInterruption,
+  pullFromFeed,
+  pushToFeed,
   getInterruption,
   addInterruptionUpdate,
 } from '../api/interruptionsApi.js';
@@ -232,6 +234,52 @@ export function useAdminInterruptions() {
     [fetchList]
   );
 
+  const pullFromFeedAdvisory = useCallback(
+    async (id) => {
+      setSaving(true);
+      setMessage(null);
+      try {
+        const r = await pullFromFeed(id);
+        if (!r.success) {
+          setMessage({ type: 'err', text: r.message || 'Pull from feed failed.' });
+          return false;
+        }
+        setMessage({ type: 'ok', text: 'Advisory pulled from public feed.' });
+        await fetchList();
+        return true;
+      } catch {
+        setMessage({ type: 'err', text: 'Network error.' });
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [fetchList]
+  );
+
+  const pushToFeedAdvisory = useCallback(
+    async (id) => {
+      setSaving(true);
+      setMessage(null);
+      try {
+        const r = await pushToFeed(id);
+        if (!r.success) {
+          setMessage({ type: 'err', text: r.message || 'Push to feed failed.' });
+          return false;
+        }
+        setMessage({ type: 'ok', text: 'Advisory pushed back to public feed.' });
+        await fetchList();
+        return true;
+      } catch {
+        setMessage({ type: 'err', text: 'Network error.' });
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [fetchList]
+  );
+
   return {
     interruptions,
     loading,
@@ -246,6 +294,8 @@ export function useAdminInterruptions() {
     removeAdvisory,
     restoreAdvisory,
     permanentDeleteAdvisory,
+    pullFromFeedAdvisory,
+    pushToFeedAdvisory,
     editDetail,
     detailLoading,
     memoSaving,

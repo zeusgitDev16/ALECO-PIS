@@ -10,7 +10,7 @@ import {
   computeInitialStatusPreview,
   datetimeLocalStringToDate,
 } from '../../utils/interruptionFormUtils';
-import { formatAdvisoryDateTime } from '../../utils/interruptionDateFormat';
+import { formatPhilippineWallClock } from '../../utils/dateUtils';
 import FeederCascadeSelect from './FeederCascadeSelect';
 import InModalDateTimePicker from './InModalDateTimePicker';
 import { uploadInterruptionImage } from '../../api/interruptionsApi';
@@ -50,7 +50,7 @@ function DatetimePreview({ value }) {
   return (
     <p className="interruptions-admin-datetime-preview">
       <span className="interruptions-admin-datetime-preview-label">Shows as:</span>{' '}
-      {formatAdvisoryDateTime(api)}
+      {formatPhilippineWallClock(api)}
     </p>
   );
 }

@@ -1,3 +1,10 @@
+import {
+  formatPhilippineWallClock,
+  formatToPhilippineDateRangeShort,
+  formatToPhilippineTimeRangeShort,
+  formatToPhilippineDayRangeShort,
+} from './dateUtils.js';
+
 /**
  * Format API / DB datetime strings (local wall clock, no timezone suffix) for display.
  * Handles: "2026-03-20 13:30", "2026-03-20T13:30:00", "2026-03-20T05:30:00.000Z" (UTC).
@@ -33,24 +40,12 @@ export function parseApiDateTimeToLocalDate(apiLike) {
 }
 
 /**
- * @param {string|null|undefined} apiLike
- * @param {{ locale?: string }} [opts]
+ * Format API datetime for display in Philippine time.
+ * @param {string|null|undefined} apiLike - ISO or "YYYY-MM-DD HH:mm"
+ * @param {{ locale?: string }} [opts] - locale ignored; always Philippine
  */
 export function formatAdvisoryDateTime(apiLike, { locale = 'en-US' } = {}) {
-  if (apiLike == null || apiLike === '') return '';
-  const date = parseApiDateTimeToLocalDate(apiLike);
-  if (!date) return String(apiLike);
-  const datePart = date.toLocaleDateString(locale, {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const timePart = date.toLocaleTimeString(locale, {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-  return `${datePart} at ${timePart}`;
+  return formatPhilippineWallClock(apiLike);
 }
 
 /**
@@ -66,62 +61,28 @@ export function apiDateTimeToDatetimeLocalAttr(apiLike) {
 }
 
 /**
- * Short date range for infographic badge, e.g. "MARCH 16-18".
- * @param {string|null|undefined} startApi - YYYY-MM-DD HH:mm
- * @param {string|null|undefined} endApi - YYYY-MM-DD HH:mm
+ * Short date range for infographic badge, e.g. "MARCH 16-18". Delegates to dateUtils (Philippine time).
+ * @param {string|null|undefined} startApi - YYYY-MM-DD HH:mm or ISO
+ * @param {string|null|undefined} endApi - YYYY-MM-DD HH:mm or ISO
  */
 export function formatDateRangeShort(startApi, endApi) {
-  const start = parseApiDateTimeToLocalDate(startApi);
-  if (!start) return '';
-  const month = start.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
-  const dayStart = start.getDate();
-  if (endApi) {
-    const end = parseApiDateTimeToLocalDate(endApi);
-    if (end && end.getMonth() === start.getMonth() && end.getFullYear() === start.getFullYear()) {
-      const dayEnd = end.getDate();
-      if (dayEnd !== dayStart) return `${month} ${dayStart}-${dayEnd}`;
-    }
-  }
-  return `${month} ${dayStart}`;
+  return formatToPhilippineDateRangeShort(startApi, endApi);
 }
 
 /**
- * Short time range for infographic badge, e.g. "8:00 AM - 5:00 PM".
+ * Short time range for infographic badge, e.g. "8:00 AM - 5:00 PM". Delegates to dateUtils (Philippine time).
  * @param {string|null|undefined} startApi
  * @param {string|null|undefined} endApi
  */
 export function formatTimeRangeShort(startApi, endApi) {
-  const start = parseApiDateTimeToLocalDate(startApi);
-  const end = parseApiDateTimeToLocalDate(endApi);
-  if (!start) return '';
-  const startStr = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  if (!end) return startStr;
-  const endStr = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  return `${startStr} - ${endStr}`;
+  return formatToPhilippineTimeRangeShort(startApi, endApi);
 }
 
 /**
- * Day-of-week short, e.g. "MON-WED".
+ * Day-of-week short, e.g. "MON-WED". Delegates to dateUtils (Philippine time).
  * @param {string|null|undefined} startApi
  * @param {string|null|undefined} endApi
  */
 export function formatDayRangeShort(startApi, endApi) {
-  const start = parseApiDateTimeToLocalDate(startApi);
-  const end = parseApiDateTimeToLocalDate(endApi);
-  if (!start) return '';
-  const startDay = start.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0, 3);
-  if (!end) return startDay;
-  const endDay = end.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0, 3);
-  return startDay === endDay ? startDay : `${startDay}-${endDay}`;
-}
-
-/**
- * True if public_visible_at is set and still in the future (client clock).
- * @param {string|null|undefined} publicVisibleAtApi
- */
-export function isPublicVisibilityPending(publicVisibleAtApi) {
-  if (!publicVisibleAtApi) return false;
-  const d = parseApiDateTimeToLocalDate(publicVisibleAtApi);
-  if (!d) return false;
-  return d.getTime() > Date.now();
+  return formatToPhilippineDayRangeShort(startApi, endApi);
 }

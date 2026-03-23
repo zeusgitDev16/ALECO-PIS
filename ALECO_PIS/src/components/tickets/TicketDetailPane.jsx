@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
+import { formatToPhilippineTime } from '../../utils/dateUtils';
 import '../../CSS/TicketDetailPane.css';
 import DispatchTicketModal from './DispatchTicketModal';
 import HoldTicketModal from './HoldTicketModal';
@@ -56,13 +57,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
     if (!ticket) return null;
 
     // 2. Formatting Helpers
-    const formattedDate = new Date(ticket.created_at).toLocaleString('en-PH', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    const formattedDate = formatToPhilippineTime(ticket.created_at);
 
     const fullName = `${ticket.first_name} ${ticket.middle_name || ''} ${ticket.last_name}`.replace(/\s+/g, ' ').trim();
 
@@ -243,7 +238,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                 {ticket.eta && <p><strong>ETA:</strong> {ticket.eta}</p>}
                                 {ticket.dispatch_notes && <p><strong>Notes:</strong> {ticket.dispatch_notes}</p>}
                                 {ticket.hold_reason && (
-                                    <p className="hold-info"><strong>On Hold:</strong> {ticket.hold_reason}{ticket.hold_since ? ` (since ${new Date(ticket.hold_since).toLocaleString('en-PH')})` : ''}</p>
+                                    <p className="hold-info"><strong>On Hold:</strong> {ticket.hold_reason}{ticket.hold_since ? ` (since ${formatToPhilippineTime(ticket.hold_since)})` : ''}</p>
                                 )}
                             </div>
                         </div>

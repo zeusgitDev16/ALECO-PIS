@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatToPhilippineDate } from '../../utils/dateUtils';
 import '../../CSS/RecentOpenedTickets.css';
 import '../../CSS/TicketDashboard.css';
 import '../../CSS/TicketTableView.css';
@@ -108,7 +109,7 @@ const RecentOpenedTickets = ({
                                 <span className="group-badge group-badge-parent">{ticket.child_count} ticket{(ticket.child_count ?? 0) !== 1 ? 's' : ''}</span>
                             )}
                             <span className="ticket-date-label">
-                                {new Date(ticket.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {formatToPhilippineDate(ticket.created_at)}
                             </span>
                         </div>
                         <div className="card-body-content">

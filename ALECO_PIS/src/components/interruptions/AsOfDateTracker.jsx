@@ -1,15 +1,14 @@
 import React from 'react';
+import { formatPhilippineNow } from '../../utils/dateUtils';
 
 /**
- * "As of {month}, {year}!" date tracker for the feed.
+ * "As of {month}, {year}!" date tracker for the feed (Philippine time).
  */
 export default function AsOfDateTracker() {
-  const date = new Date();
-  const month = date.toLocaleString('default', { month: 'long' });
-  const year = date.getFullYear();
+  const dateStr = formatPhilippineNow({ month: true, year: true });
   return (
     <p className="feed-date-tracker">
-      As of {month}, {year}!
+      As of {dateStr}!
     </p>
   );
 }

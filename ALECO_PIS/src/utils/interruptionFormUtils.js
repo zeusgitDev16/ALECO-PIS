@@ -1,25 +1,9 @@
 import { getStatusDisplayLabel } from './interruptionLabels.js';
-import { isoToDatetimeLocalPhilippine } from './dateUtils.js';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
+import { isoToDatetimeLocalPhilippine, toMysqlFormatPhilippine } from './dateUtils.js';
 
-dayjs.extend(utc);
-
-const PH_OFFSET_HOURS = 8;
-
-/**
- * Convert ISO/UTC updatedAt from API to MySQL-compatible format for concurrency check.
- * Backend compares DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i') with this value.
- * @param {string|null|undefined} isoString - e.g. "2026-03-20T05:30:00.000Z"
- * @returns {string} e.g. "2026-03-20 13:30:00" (Philippine time)
- */
+/** Alias for backwards compatibility; delegates to dateUtils. */
 export function toMysqlFormatForConcurrency(isoString) {
-  if (!isoString || !String(isoString).trim()) return '';
-  try {
-    return dayjs.utc(isoString).add(PH_OFFSET_HOURS, 'hour').format('YYYY-MM-DD HH:mm:ss');
-  } catch {
-    return '';
-  }
+  return toMysqlFormatPhilippine(isoString);
 }
 
 /** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string }} InterruptionFormState */

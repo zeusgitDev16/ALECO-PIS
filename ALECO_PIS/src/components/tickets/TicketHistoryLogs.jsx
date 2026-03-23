@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
+import { formatToPhilippineTime } from '../../utils/dateUtils';
 
 /**
  * TicketHistoryLogs - Displays ticket audit/history timeline.
@@ -38,14 +39,7 @@ const TicketHistoryLogs = ({ ticketId, isVisible }) => {
 
     const formatDate = (d) => {
         if (!d) return '—';
-        const dt = new Date(d);
-        return dt.toLocaleString('en-PH', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return formatToPhilippineTime(d);
     };
 
     const getActionLabel = (log) => {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatToPhilippineDate } from '../../utils/dateUtils';
 import '../../CSS/UrgentTickets.css';
 
 const UrgentTickets = ({ tickets, onSelectTicket, selectedIds, onToggleSelect }) => {
@@ -39,9 +40,7 @@ const UrgentTickets = ({ tickets, onSelectTicket, selectedIds, onToggleSelect })
                         <div className="card-header-row">
                             <span className="ticket-id-bold text-red-glow">{ticket.ticket_id}</span>
                             <span className="ticket-date-label">
-                                {new Date(ticket.created_at).toLocaleDateString('en-PH', { 
-                                    month: 'short', day: 'numeric', year: 'numeric' 
-                                })}
+                                {formatToPhilippineDate(ticket.created_at)}
                             </span>
                         </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../utils/api';
+import { formatToPhilippineTime } from '../utils/dateUtils';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketTableView.css';
@@ -33,13 +34,7 @@ const getActorDisplay = (log) => {
 
 const formatDate = (d) => {
     if (!d) return '—';
-    return new Date(d).toLocaleString('en-PH', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    return formatToPhilippineTime(d);
 };
 
 const AdminHistory = () => {

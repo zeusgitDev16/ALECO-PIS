@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import './CSS/ReportaProblem.css';
 import { apiUrl } from './utils/api';
 import { formatPhoneDisplay, INVALID_PHONE_HINT } from './utils/phoneUtils';
-import { formatToPhilippineTime } from './utils/dateUtils';
+import { formatToPhilippineTime, formatToPhilippineTimeShort } from './utils/dateUtils';
 import { ALECO_SCOPE } from '../alecoScope';
 import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsLocationMatcher';
 
@@ -441,7 +441,7 @@ const ReportaProblem = () => {
             if (duplicateResult.success && duplicateResult.hasDuplicates) {
                 const duplicates = duplicateResult.duplicates;
                 const duplicateList = duplicates.map((d, index) =>
-                    `${index + 1}. Ticket ID: ${d.ticket_id} (${d.status}, ${d.similarityScore}% match) - ${new Date(d.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                    `${index + 1}. Ticket ID: ${d.ticket_id} (${d.status}, ${d.similarityScore}% match) - ${formatToPhilippineTimeShort(d.created_at)}`
                 ).join('\n');
 
                 setPendingDuplicateData({ duplicates, duplicateList });

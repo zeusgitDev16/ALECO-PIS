@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { formatPhilippineNow } from './utils/dateUtils';
 import './CSS/BodyLandPage.css';
 import './CSS/InterruptionFeed.css';
 import { usePublicInterruptions } from './hooks/usePublicInterruptions';
@@ -36,12 +37,7 @@ function InterruptionList() {
     });
   }, [interruptions, now]);
 
-  const bulletinDateFull = new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const bulletinDateFull = formatPhilippineNow({ weekday: true, month: true, day: true, year: true });
 
   const handleScroll = () => {
     const el = feedRef.current;

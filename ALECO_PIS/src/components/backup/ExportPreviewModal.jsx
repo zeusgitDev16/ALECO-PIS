@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatToPhilippineTime } from '../../utils/dateUtils';
 import '../../CSS/DispatchTicketModal.css';
 import '../../CSS/TicketTableView.css';
 import '../../CSS/Backup.css';
@@ -10,13 +11,7 @@ const INTERRUPTION_UPDATE_COLUMNS = ['id', 'interruption_id', 'remark', 'kind', 
 
 const formatDate = (d) => {
     if (!d) return '—';
-    return new Date(d).toLocaleString('en-PH', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    return formatToPhilippineTime(d);
 };
 
 const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {

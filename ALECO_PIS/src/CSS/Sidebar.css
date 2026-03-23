@@ -20,7 +20,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  width:230px; 
+  width:250px; 
   background-color: var(--bg-body); 
   border-right: 1px solid var(--text-secondary);
   transition: left 0.3s ease, width 0.3s ease, border-right 0.3s ease; /* Added left transition */

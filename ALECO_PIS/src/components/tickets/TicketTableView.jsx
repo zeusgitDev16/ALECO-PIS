@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatToPhilippineDate } from '../../utils/dateUtils';
 import '../../CSS/TicketTableView.css';
 
 /**
@@ -186,11 +187,7 @@ const TicketTableView = ({
                                     </span>
                                 </td>
                                 <td className="col-date">
-                                    {new Date(ticket.created_at).toLocaleDateString('en-PH', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                    })}
+                                    {formatToPhilippineDate(ticket.created_at)}
                                 </td>
                             </tr>
                         );

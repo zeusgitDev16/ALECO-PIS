@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatToPhilippineDate } from '../../utils/dateUtils';
 
 /**
  * TicketGridCard - Single ticket card for grid view.
@@ -39,11 +40,7 @@ const TicketGridCard = ({ ticket, isSelected, isChecked, onSelectTicket, onToggl
                     </span>
                 )}
                 <span className="ticket-date-label">
-                    {new Date(ticket.created_at).toLocaleDateString('en-PH', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                    })}
+                    {formatToPhilippineDate(ticket.created_at)}
                 </span>
             </div>
 

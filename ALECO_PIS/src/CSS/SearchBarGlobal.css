@@ -1,66 +1,136 @@
+/* =========================================
+   ADMIN TOP NAV — modular scale (laptop 1024+ = reference)
+   Same tier breakpoints as Sidebar / LandPageHeader: 1024 / 768 / 425 / 375 / 320
+   ========================================= */
 .admin-top-nav {
+    --nav-scale: 1;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    padding: 30px 40px 10px 40px;
+    padding: calc(30px * var(--nav-scale)) calc(40px * var(--nav-scale))
+        calc(10px * var(--nav-scale)) calc(40px * var(--nav-scale));
     background-color: var(--bg-body);
     flex-shrink: 0;
+    flex-grow: 0;
     z-index: 10;
     box-sizing: border-box;
-    transition: padding 0.3s ease;
+    transition: padding 0.3s ease, gap 0.3s ease;
 }
 
-/* --- MOBILE MENU BUTTON --- */
-.mobile-menu-btn {
-    display: none; /* Strictly hidden on Desktop */
+/* Hamburger + search: explicit .admin-top-nav scope so --nav-scale always applies */
+.admin-top-nav .mobile-menu-btn {
+    display: none;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
     background: transparent;
     border: none;
     color: var(--text-header);
-    padding: 6px;
+    padding: calc(6px * var(--nav-scale));
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: calc(6px * var(--nav-scale));
     transition: background-color 0.2s ease, color 0.2s ease;
     outline: none;
+    box-sizing: border-box;
+    min-width: calc(36px * var(--nav-scale));
+    min-height: calc(36px * var(--nav-scale));
 }
 
-.mobile-menu-btn:hover {
+.admin-top-nav .mobile-menu-btn:hover {
     background-color: rgba(128, 128, 128, 0.1);
 }
 
-/* --- Search Bar --- */
-.search-container {
-    position: relative;
-    width: 300px;
-    transition: width 0.3s ease;
+.admin-top-nav .mobile-menu-btn svg {
+    display: block;
+    width: calc(24px * var(--nav-scale));
+    height: calc(24px * var(--nav-scale));
+    flex-shrink: 0;
 }
 
-.search-icon {
+.admin-top-nav .mobile-menu-btn svg line {
+    stroke: currentColor;
+    stroke-width: calc(2px * var(--nav-scale));
+}
+
+/* Global admin search (beside menu): --ns mirrors --nav-scale so the field always picks up tiers */
+.admin-top-nav .search-container.admin-nav-search {
+    --ns: var(--nav-scale, 1);
+    position: relative;
+    width: calc(300px * var(--ns));
+    min-width: 0;
+    flex-shrink: 1;
+    transition: width 0.3s ease;
+    box-sizing: border-box;
+}
+
+.admin-top-nav .admin-nav-search__icon.search-icon {
     position: absolute;
-    left: 15px;
+    left: calc(15px * var(--ns));
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-secondary);
-}
-
-.search-input {
-    padding: 10px 20px 10px 45px;
-    border-radius: 25px;
-    border: 1px solid var(--text-secondary);
-    background-color: rgba(128, 128, 128, 0.1);
-    color: var(--text-header);
-    width: 100%;
-    outline: none;
+    width: calc(20px * var(--ns));
+    height: calc(20px * var(--ns));
+    pointer-events: none;
+    display: block;
+    overflow: visible;
     box-sizing: border-box;
-    transition: all 0.2s ease;
 }
 
-/* --- Action Icons --- */
+.admin-top-nav .admin-nav-search__icon circle,
+.admin-top-nav .admin-nav-search__icon line {
+    stroke: currentColor;
+    stroke-width: calc(2px * var(--ns));
+}
+
+/*
+ * Admin header search field — ID + !important beats Tailwind v4 preflight
+ * (`input { font: inherit; border-radius: 0; background-color: transparent }`) which
+ * can load after component CSS and visually “snap” the control back to defaults.
+ */
+#aleco-admin-header-search.admin-nav-search__input {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    margin: 0;
+    width: 100%;
+    min-width: 0;
+    padding: calc(10px * var(--ns, var(--nav-scale, 1))) calc(20px * var(--ns, var(--nav-scale, 1)))
+        calc(10px * var(--ns, var(--nav-scale, 1))) calc(45px * var(--ns, var(--nav-scale, 1))) !important;
+    border-radius: calc(25px * var(--ns, var(--nav-scale, 1))) !important;
+    border: 1px solid var(--text-secondary) !important;
+    background-color: rgba(128, 128, 128, 0.1) !important;
+    color: var(--text-header) !important;
+    outline: none;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    min-height: calc(44px * var(--ns, var(--nav-scale, 1))) !important;
+    line-height: 1.3 !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    font-weight: 400 !important;
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif !important;
+    font-size: calc(1rem * var(--ns, var(--nav-scale, 1))) !important;
+}
+
+#aleco-admin-header-search.admin-nav-search__input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.85;
+}
+
+/* Touch phones: avoid iOS input zoom */
+@media (pointer: coarse) and (max-width: 480px) {
+    #aleco-admin-header-search.admin-nav-search__input {
+        font-size: max(16px, calc(1rem * var(--ns, var(--nav-scale, 1)))) !important;
+    }
+}
+
 .action-icons {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: calc(15px * var(--nav-scale));
 }
 
 .icon-btn {
@@ -75,11 +145,14 @@
     transition: color 0.2s ease;
 }
 
+.icon-btn svg {
+    width: calc(24px * var(--nav-scale));
+    height: calc(24px * var(--nav-scale));
+}
+
 .icon-btn:hover {
     color: var(--text-secondary);
 }
-
-/* --- PROFILE PICTURE BUTTON --- */
 
 .profile-btn {
     background: none;
@@ -89,16 +162,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 10px;
+    margin-left: calc(10px * var(--nav-scale));
     outline: none;
 }
 
-/* The base container for the border and glow */
 .profile-image-border {
-    width: 36px;  
-    height: 36px; 
+    width: calc(36px * var(--nav-scale));
+    height: calc(36px * var(--nav-scale));
     border-radius: 50%;
-    padding: 2px; 
+    padding: calc(2px * var(--nav-scale));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -106,131 +178,141 @@
     box-sizing: border-box;
 }
 
-/* ADMIN: Vibrant Purple Glazing Glow */
 .profile-image-border.role-admin {
-    border: 1.5px solid #a855f7; 
+    border: max(1px, calc(1.5px * var(--nav-scale))) solid #a855f7;
     background: linear-gradient(135deg, #a855f7, #7c3aed);
-    box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    box-shadow: 0 0 calc(10px * var(--nav-scale)) rgba(168, 85, 247, 0.3);
     animation: pulse-admin 3s infinite ease-in-out;
 }
 
-/* EMPLOYEE: Fresh Green Glazing Glow */
 .profile-image-border.role-employee {
-    border: 1.5px solid #22c55e; 
+    border: max(1px, calc(1.5px * var(--nav-scale))) solid #22c55e;
     background: linear-gradient(135deg, #22c55e, #16a34a);
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    box-shadow: 0 0 calc(10px * var(--nav-scale)) rgba(34, 197, 94, 0.3);
     animation: pulse-employee 3s infinite ease-in-out;
 }
 
-/* --- Hover Effects --- */
 .profile-btn:hover .profile-image-border {
     transform: scale(1.1);
 }
 
 .profile-btn:hover .profile-image-border.role-admin {
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+    box-shadow: 0 0 calc(20px * var(--nav-scale)) rgba(168, 85, 247, 0.6);
 }
 
 .profile-btn:hover .profile-image-border.role-employee {
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+    box-shadow: 0 0 calc(20px * var(--nav-scale)) rgba(34, 197, 94, 0.6);
 }
 
-/* --- Actual Image --- */
 .profile-image {
     width: 100%;
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    background-color: var(--bg-body); 
-    border: 2px solid var(--bg-body); 
+    background-color: var(--bg-body);
+    border: max(1px, calc(2px * var(--nav-scale))) solid var(--bg-body);
     box-sizing: border-box;
 }
 
-/* --- Role-Based Pulse Animations --- */
 @keyframes pulse-admin {
-    0% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.2); }
-    50% { box-shadow: 0 0 18px rgba(168, 85, 247, 0.5); }
-    100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.2); }
+    0% {
+        box-shadow: 0 0 8px rgba(168, 85, 247, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(168, 85, 247, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 8px rgba(168, 85, 247, 0.2);
+    }
 }
 
 @keyframes pulse-employee {
-    0% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.2); }
-    50% { box-shadow: 0 0 18px rgba(34, 197, 94, 0.5); }
-    100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.2); }
+    0% {
+        box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(34, 197, 94, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
+    }
 }
 
-/* --- DROPDOWN SYSTEM --- */
-
 .profile-menu-wrapper {
-    position: relative; /* Anchor for the absolute dropdown */
+    position: relative;
 }
 
 .profile-dropdown {
     position: absolute;
-    top: calc(100% + 15px);
+    top: calc(100% + (15px * var(--nav-scale)));
     right: 0;
-    width: 200px;
-    background-color: var(--bg-body); /* Theme sync */
+    width: calc(200px * var(--nav-scale));
+    min-width: 160px;
+    background-color: var(--bg-body);
     border: 1px solid var(--text-secondary);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    padding: 12px 0;
+    border-radius: calc(12px * var(--nav-scale));
+    box-shadow: 0 calc(10px * var(--nav-scale)) calc(30px * var(--nav-scale)) rgba(0, 0, 0, 0.2);
+    padding: calc(12px * var(--nav-scale)) 0;
     z-index: 100;
     animation: slideDown 0.2s ease-out;
 }
 
 .dropdown-info {
-    padding: 8px 20px;
+    padding: calc(8px * var(--nav-scale)) calc(20px * var(--nav-scale));
     display: flex;
     flex-direction: column;
 }
 
 .user-name {
-    font-size: 14px;
+    font-size: calc(14px * var(--nav-scale));
     font-weight: 700;
     color: var(--text-header);
 }
 
 .user-role {
-    font-size: 11px;
+    font-size: calc(11px * var(--nav-scale));
     color: var(--text-secondary);
-    letter-spacing: 0.5px;
+    letter-spacing: calc(0.5px * var(--nav-scale));
 }
 
 .dropdown-divider {
     height: 1px;
     background-color: var(--text-secondary);
     opacity: 0.2;
-    margin: 10px 0;
+    margin: calc(10px * var(--nav-scale)) 0;
 }
 
 .dropdown-link {
     width: 100%;
-    padding: 10px 20px;
+    padding: calc(10px * var(--nav-scale)) calc(20px * var(--nav-scale));
     background: transparent;
     border: none;
     text-align: left;
     color: var(--text-header);
-    font-size: 14px;
+    font-size: calc(14px * var(--nav-scale));
     cursor: pointer;
 }
 
 .dropdown-link:hover {
-    background-color: rgba(128, 128, 128, 0.1); 
+    background-color: rgba(128, 128, 128, 0.1);
     color: var(--text-header);
 }
 
 .logout-red {
-    color: #ef4444 !important; /* Professional warning red */
+    color: #ef4444 !important;
     font-weight: 600;
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-
-/* --- LOGOUT CONFIRMATION MODAL --- */
 
 .logout-modal-overlay {
     position: fixed;
@@ -238,47 +320,55 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.6); /* Dim the background */
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 9999; /* Stay above everything else */
+    z-index: 9999;
+    padding: calc(16px * var(--nav-scale));
+    box-sizing: border-box;
 }
 
 .logout-modal {
-    background-color: var(--bg-body); /* Theme sync */
-    padding: 30px;
-    border-radius: 15px;
-    width: 400px;
+    background-color: var(--bg-body);
+    padding: calc(30px * var(--nav-scale));
+    border-radius: calc(15px * var(--nav-scale));
+    width: min(100%, calc(400px * var(--nav-scale)));
     text-align: center;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 calc(20px * var(--nav-scale)) calc(40px * var(--nav-scale)) rgba(0, 0, 0, 0.4);
     border: 1px solid var(--text-secondary);
     animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-sizing: border-box;
 }
 
 .logout-modal h3 {
     color: var(--text-header);
-    margin-bottom: 15px;
+    margin-bottom: calc(15px * var(--nav-scale));
+    font-size: calc(1.125rem * var(--nav-scale));
 }
 
 .logout-modal p {
     color: var(--text-secondary);
-    margin-bottom: 25px;
+    margin-bottom: calc(25px * var(--nav-scale));
+    font-size: calc(0.9375rem * var(--nav-scale));
 }
 
 .modal-actions {
     display: flex;
-    gap: 15px;
+    gap: calc(15px * var(--nav-scale));
     justify-content: center;
+    flex-wrap: wrap;
 }
 
-.cancel-btn, .confirm-btn {
-    padding: 10px 25px;
-    border-radius: 8px;
+.cancel-btn,
+.confirm-btn {
+    padding: calc(10px * var(--nav-scale)) calc(25px * var(--nav-scale));
+    border-radius: calc(8px * var(--nav-scale));
     cursor: pointer;
     font-weight: 600;
     border: none;
     transition: all 0.2s ease;
+    font-size: calc(0.875rem * var(--nav-scale));
 }
 
 .cancel-btn {
@@ -287,7 +377,7 @@
 }
 
 .confirm-btn {
-    background-color: #ef4444; /* Alert red */
+    background-color: #ef4444;
     color: white;
 }
 
@@ -297,12 +387,18 @@
 }
 
 @keyframes modalPop {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .security-option {
-    margin: 15px 0;
+    margin: calc(15px * var(--nav-scale)) 0;
     display: flex;
     justify-content: center;
 }
@@ -310,72 +406,82 @@
 .checkbox-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: calc(10px * var(--nav-scale));
     cursor: pointer;
-    font-size: 14px;
+    font-size: calc(14px * var(--nav-scale));
     color: var(--text-secondary);
 }
 
 .checkbox-container input {
     cursor: pointer;
-    accent-color: #ef4444; /* Matches your logout button color */
+    accent-color: #ef4444;
+    width: calc(18px * var(--nav-scale));
+    height: calc(18px * var(--nav-scale));
 }
 
-/* =========================================
-   MOBILE RESPONSIVENESS (Header & Sidebar Button)
-   ========================================= */
-@media (max-width: 1000px) {
+/* Narrow admin: hamburger + flex search + actions */
+@media (max-width: 1023px) {
     .admin-top-nav {
-        padding: 20px 20px 10px 20px; /* Reduce padding for smaller screens */
-        gap: 15px; /* Adds breathing room between the 3 elements */
+        gap: calc(15px * var(--nav-scale));
     }
 
-    .mobile-menu-btn {
-        display: flex; /* Activates the hamburger button on mobile */
-        align-items: center;
-        justify-content: center;
+    .admin-top-nav .mobile-menu-btn {
+        display: flex;
     }
 
-    .search-container {
-        flex: 1; /* Allows the search bar to dynamically shrink to fit the screen */
+    .admin-top-nav .search-container.admin-nav-search {
+        flex: 1;
         width: 100%;
-        max-width: none; /* Uncap width so flex:1 takes over */
-        min-width: 0;    /* CRITICAL: Allows flex item to shrink below content size */
+        max-width: none;
+        min-width: 0;
     }
 }
 
-@media (max-width: 480px) {
+/* --- Modular --nav-scale tiers (match Sidebar) --- */
+@media (max-width: 1023px) and (min-width: 768px) {
     .admin-top-nav {
-        padding: 10px 12px; /* Tighter padding */
-        gap: 8px; /* Tighter gap */
+        --nav-scale: 0.88;
     }
+}
 
-    /* Optimize search bar internal space for small screens */
-    .search-input {
-        padding: 6px 12px 6px 30px; /* Even tighter padding */
-        font-size: 12px; /* Smaller font */
-        border-radius: 20px;
+@media (max-width: 767px) and (min-width: 600px) {
+    .admin-top-nav {
+        --nav-scale: 0.72;
     }
-    .search-icon {
-        left: 10px;
-        width: 14px; /* Smaller icon */
-        height: 14px;
-    }
-    
-    .action-icons {
-        gap: 8px; /* Tighter gap */
-    }
+}
 
-    /* Shrink all icons to match the new compact layout */
-    .mobile-menu-btn svg,
-    .icon-btn svg {
-        width: 20px;
-        height: 20px;
+@media (max-width: 599px) and (min-width: 480px) {
+    .admin-top-nav {
+        --nav-scale: 0.72;
     }
+}
 
-    /* Shrink profile picture to match */
-    .profile-image-border {
-        width: 32px;
-        height: 32px;
+@media (max-width: 479px) and (min-width: 425px) {
+    .admin-top-nav {
+        --nav-scale: 0.72;
+    }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+    .admin-top-nav {
+        --nav-scale: 0.68;
+    }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+    .admin-top-nav {
+        --nav-scale: 0.65;
+    }
+}
+
+@media (max-width: 320px) {
+    .admin-top-nav {
+        --nav-scale: 0.55;
+    }
+}
+
+@media (min-width: 1024px) {
+    .admin-top-nav {
+        --nav-scale: 1;
     }
 }

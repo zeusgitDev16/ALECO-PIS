@@ -84,15 +84,19 @@
 
 .recent-opened-advisories-kanban-strip {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding: 4px 0;
   min-height: 88px;
   margin-top: 4px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .recent-opened-advisories-kanban-strip::-webkit-scrollbar {
-  height: 4px;
+  height: 6px;
 }
 
 .recent-opened-advisory-kanban-card {

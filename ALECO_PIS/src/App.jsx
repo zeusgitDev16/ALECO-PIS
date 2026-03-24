@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { apiUrl } from './utils/api';
+import { clearLocalStoragePreservingPreferences } from './utils/clearLocalStoragePreservingPreferences';
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
 import AdminLayout from './components/AdminLayout.jsx';
@@ -11,6 +12,7 @@ import CookieBanner from './components/CookieBanner.jsx';
 import DarkLightButton from './components/buttons/darkLightButton.jsx'; 
 import ReportaProblem from './ReportaProblem.jsx';
 import AdminDashboard from './Dashboard.jsx';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import About from './About.jsx';
 import PrivacyNotice from './PrivacyNotice.jsx';
 import AdminUsers from './components/Users.jsx';
@@ -24,8 +26,9 @@ import PersonnelManagement from './components/PersonnelManagement.jsx';
 
 
 // --- UPDATED HELPER COMPONENT ---
-const NavigationWrapper = ({ theme, toggleTheme }) => {
+const NavigationWrapper = () => {
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   
   // 1. SESSION SECURITY CHECK
@@ -49,7 +52,7 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
         // If the server says 'invalid', it means a "Logout from all devices" was triggered elsewhere
         if (!response.ok || data.status === 'invalid') {
           console.log("--- [SECURITY] Session stale. Clearing local data. ---");
-          localStorage.clear();
+          clearLocalStoragePreservingPreferences();
           navigate('/'); // Kick to landing page
         }
       } catch (error) {
@@ -60,18 +63,52 @@ const NavigationWrapper = ({ theme, toggleTheme }) => {
     verifySession();
   }, [location.pathname, navigate]); // Runs on every navigation change
 
-  // This checks if we are currently looking at the admin dashboard
-const isAdminPage = location.pathname.startsWith('/admin-') 
+  const isAdminPage = location.pathname.startsWith('/admin-');
+  const isPublicHome = location.pathname === '/';
 
- return (
+  /* Public home only: smooth scroll + scroll-padding for fixed header */
+  useEffect(() => {
+    document.documentElement.classList.toggle('public-home-smooth-scroll', isPublicHome);
+    return () => document.documentElement.classList.remove('public-home-smooth-scroll');
+  }, [isPublicHome]);
+
+  /* Deep link e.g. /#report — scroll after content is mounted */
+  useEffect(() => {
+    if (!isPublicHome || !location.hash) return;
+    const id = location.hash.slice(1);
+    if (!id) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [isPublicHome, location.pathname, location.hash]);
+
+  /* Dashboard: no document scroll — only sidebar nav + main content panes scroll */
+  useEffect(() => {
+    const lock = 'admin-app-scroll-lock';
+    if (isAdminPage) {
+      document.documentElement.classList.add(lock);
+      document.body.classList.add(lock);
+    } else {
+      document.documentElement.classList.remove(lock);
+      document.body.classList.remove(lock);
+    }
+    return () => {
+      document.documentElement.classList.remove(lock);
+      document.body.classList.remove(lock);
+    };
+  }, [isAdminPage]);
+
+  return (
     <>
-      <div className="fix-container-nav" style={{ position: 'sticky', top: 0, zIndex: 1100, backgroundColor: 'var(--bg-body)' }}>
-        {/* LandingPage stays on every screen per your request */}
-        <LandingPage />
-        
-        {/* Navbar only shows if we are NOT on the admin page */}
-        {!isAdminPage && <Navbar />}
-      </div>
+      {/* Public only: fixed Albay strip + navbar. Admin strip lives inside AdminLayout (scroll-locked shell). */}
+      {!isAdminPage && (
+        <div className="fix-container-nav">
+          <LandingPage />
+          <Navbar />
+        </div>
+      )}
 
       <Routes>
         {/* HOME ROUTE */}
@@ -107,30 +144,20 @@ const isAdminPage = location.pathname.startsWith('/admin-')
       </Routes>
 
       <CookieBanner />
-      <DarkLightButton theme={theme} toggleTheme={toggleTheme} />
+      {/* Theme toggle: floating on landing page only; inline in dashboard (SearchBarGlobal) */}
+      {!isAdminPage && <DarkLightButton theme={theme} toggleTheme={toggleTheme} />}
     </>
   );
 };
 
 // --- YOUR ORIGINAL FUNCTION ---
 function App() {
-  const [theme, setTheme] = useState(
-    localStorage.getItem('app-theme') || 'light'
-  );
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('app-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
   return (
-    <Router>
-      <NavigationWrapper theme={theme} toggleTheme={toggleTheme} />
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <NavigationWrapper />
+      </Router>
+    </ThemeProvider>
   );
 }
 

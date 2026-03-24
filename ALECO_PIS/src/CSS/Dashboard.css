@@ -41,26 +41,70 @@
 
 /* =========================================
    ADMIN LAYOUT ARCHITECTURE
+   Dual pane: sidebar | (top bar + scrolling main). No document/body scroll.
    ========================================= */
+
+html.admin-app-scroll-lock {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.admin-app-scroll-lock {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Fills viewport under scroll lock; Albay strip + dual pane share this height */
+.admin-shell-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Albay Electric Cooperative, INC. + shine — fixed height strip at top of shell */
+.admin-landing-inline {
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .admin-dashboard-container {
   display: flex;
-  height: 100vh;
+  flex: 1 1 auto;
+  flex-direction: row;
+  width: 100%;
+  min-height: 0;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .admin-main-wrapper {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .admin-content {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0;
-  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Custom Scrollbar for Admin Content */

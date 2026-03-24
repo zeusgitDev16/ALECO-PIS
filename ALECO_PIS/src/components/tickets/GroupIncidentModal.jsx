@@ -191,6 +191,7 @@ const GroupIncidentModal = ({ isOpen, onClose, selectedTickets, onSubmit }) => {
             >
                 <button className="group-modal-close-btn" onClick={onClose} aria-label="Close">×</button>
 
+                {/* Header - fixed, never scrolls */}
                 <div
                     className="group-modal-header-handle"
                     onMouseDown={onStart}
@@ -203,80 +204,86 @@ const GroupIncidentModal = ({ isOpen, onClose, selectedTickets, onSubmit }) => {
                     </div>
                 </div>
 
-                <div className="group-modal-body">
-                    <div className="group-modal-section">
-                        <label className="group-modal-label">Group Type</label>
-                        <div className="group-modal-type-tabs">
-                            <button
-                                type="button"
-                                className={`group-modal-type-tab ${groupType === 'similar_incident' ? 'active' : ''}`}
-                                onClick={() => setGroupType('similar_incident')}
-                            >
-                                <span className="tab-title">Similar Incident</span>
-                                <span className="tab-desc">Same area, one crew</span>
-                            </button>
-                            <button
-                                type="button"
-                                className={`group-modal-type-tab ${groupType === 'routing_batch' ? 'active' : ''}`}
-                                onClick={() => setGroupType('routing_batch')}
-                            >
-                                <span className="tab-title">Routing Batch</span>
-                                <span className="tab-desc">Visit in order</span>
-                            </button>
+                {/* Scrollable middle only (same spine as Ticket Detail Pane) */}
+                <div className="group-modal-scroll-outer">
+                    <div className="group-modal-body-scroll">
+                        <div className="group-modal-body">
+                            <div className="group-modal-section">
+                                <label className="group-modal-label">Group Type</label>
+                                <div className="group-modal-type-tabs">
+                                    <button
+                                        type="button"
+                                        className={`group-modal-type-tab ${groupType === 'similar_incident' ? 'active' : ''}`}
+                                        onClick={() => setGroupType('similar_incident')}
+                                    >
+                                        <span className="tab-title">Similar Incident</span>
+                                        <span className="tab-desc">Same area, one crew</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`group-modal-type-tab ${groupType === 'routing_batch' ? 'active' : ''}`}
+                                        onClick={() => setGroupType('routing_batch')}
+                                    >
+                                        <span className="tab-title">Routing Batch</span>
+                                        <span className="tab-desc">Visit in order</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="group-modal-section">
+                                <label className="group-modal-label">
+                                    {groupType === 'routing_batch' ? 'Visit order — drag to reorder' : 'Selected tickets'}
+                                </label>
+                                <div className="group-modal-ticket-list">
+                                    {ticketListContent}
+                                </div>
+                            </div>
+
+                            <form id="group-modal-form" onSubmit={handleSubmit} className="group-modal-form">
+                                <div className="group-modal-field group-modal-category-field">
+                                    <label className="group-modal-label">Master Category</label>
+                                    <IssueCategoryDropdown
+                                        value={category}
+                                        onChange={(val) => setCategory(val)}
+                                        isFilter={false}
+                                        layoutMode="form"
+                                    />
+                                </div>
+
+                                <div className="group-modal-field">
+                                    <label className="group-modal-label">Incident Title / Location</label>
+                                    <input
+                                        type="text"
+                                        className="group-modal-input"
+                                        placeholder="e.g., Blown 50kVA Transformer - Brgy Rawis"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="group-modal-field">
+                                    <label className="group-modal-label">Remarks</label>
+                                    <textarea
+                                        className="group-modal-textarea"
+                                        placeholder="Optional notes"
+                                        value={remarks}
+                                        onChange={(e) => setRemarks(e.target.value)}
+                                    />
+                                </div>
+                            </form>
                         </div>
                     </div>
+                </div>
 
-                    <div className="group-modal-section">
-                        <label className="group-modal-label">
-                            {groupType === 'routing_batch' ? 'Visit order — drag to reorder' : 'Selected tickets'}
-                        </label>
-                        <div className="group-modal-ticket-list">
-                            {ticketListContent}
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="group-modal-form">
-                        <div className="group-modal-field group-modal-category-field">
-                            <label className="group-modal-label">Master Category</label>
-                            <IssueCategoryDropdown
-                                value={category}
-                                onChange={(val) => setCategory(val)}
-                                isFilter={false}
-                                layoutMode="form"
-                            />
-                        </div>
-
-                        <div className="group-modal-field">
-                            <label className="group-modal-label">Incident Title / Location</label>
-                            <input
-                                type="text"
-                                className="group-modal-input"
-                                placeholder="e.g., Blown 50kVA Transformer - Brgy Rawis"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        <div className="group-modal-field">
-                            <label className="group-modal-label">Remarks</label>
-                            <textarea
-                                className="group-modal-textarea"
-                                placeholder="Optional notes"
-                                value={remarks}
-                                onChange={(e) => setRemarks(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="group-modal-actions">
-                            <button type="button" className="group-modal-btn group-modal-btn-cancel" onClick={onClose}>
-                                Cancel
-                            </button>
-                            <button type="submit" className="group-modal-btn group-modal-btn-submit">
-                                Confirm & Group
-                            </button>
-                        </div>
-                    </form>
+                {/* Action footer - fixed, never scrolls (same as Ticket Detail Pane action-footer) */}
+                <div className="group-modal-actions">
+                    <button type="button" className="group-modal-btn group-modal-btn-cancel" onClick={onClose}>
+                        Cancel
+                    </button>
+                    <button type="submit" form="group-modal-form" className="group-modal-btn group-modal-btn-submit">
+                        Confirm & Group
+                    </button>
                 </div>
             </div>
         </div>

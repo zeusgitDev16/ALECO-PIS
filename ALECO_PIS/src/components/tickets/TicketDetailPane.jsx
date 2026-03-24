@@ -491,7 +491,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 message="All tickets will become standalone. Continue?"
                 confirmLabel="Dissolve"
                 cancelLabel="Cancel"
-                variant="danger"
+                variant="ungroup"
             />
 
             <ConfirmModal
@@ -521,7 +521,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 message={`Revert ticket ${ticket.ticket_id} to Pending? The ticket will be reopened and you can start resolution again. Use this if the ticket was closed by mistake or needs further action.`}
                 confirmLabel="Revert to Pending"
                 cancelLabel="Cancel"
-                variant="default"
+                variant="revert-pending"
             />
 
             <ConfirmModal
@@ -536,7 +536,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 message={`Mark ticket ${ticket.ticket_id} as Unresolved? The ticket will return to the queue for re-dispatch.`}
                 confirmLabel="Mark Unresolved"
                 cancelLabel="Cancel"
-                variant="default"
+                variant="unresolved"
             />
 
             <ConfirmModal
@@ -551,7 +551,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 message={`Mark ticket ${ticket.ticket_id} as No Fault Found? This will close the ticket. Only confirm if the field crew verified no fault at the location.`}
                 confirmLabel="No Fault Found"
                 cancelLabel="Cancel"
-                variant="default"
+                variant="nff"
             />
 
             <ConfirmModal
@@ -566,7 +566,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 message={`Mark ticket ${ticket.ticket_id} as Access Denied? This will close the ticket. Only confirm if the field crew could not access the service location.`}
                 confirmLabel="Access Denied"
                 cancelLabel="Cancel"
-                variant="default"
+                variant="access-denied"
             />
 
             {mainTicketId && (

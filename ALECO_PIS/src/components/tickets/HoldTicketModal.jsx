@@ -25,8 +25,8 @@ const HoldTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
     };
 
     return (
-        <div className="dispatch-modal-overlay" onClick={handleClose}>
-            <div className="dispatch-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="dispatch-modal-overlay hold-ticket-modal-overlay" onClick={handleClose}>
+            <div className="dispatch-modal-content hold-ticket-modal" onClick={(e) => e.stopPropagation()}>
                 <button className="dispatch-modal-close-btn" onClick={handleClose} aria-label="Close">
                     &times;
                 </button>
@@ -75,7 +75,7 @@ const HoldTicketModal = ({ isOpen, onClose, ticket, onSubmit }) => {
                         <button type="button" className="btn-action btn-cancel" onClick={handleClose}>
                             Cancel
                         </button>
-                        <button type="submit" className="btn-action btn-ongoing">
+                        <button type="submit" className="btn-action btn-hold">
                             Confirm Hold
                         </button>
                     </div>

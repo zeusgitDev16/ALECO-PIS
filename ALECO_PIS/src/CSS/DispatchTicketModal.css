@@ -21,6 +21,688 @@
     z-index: 100001;
 }
 
+/* ConfirmModal - Match Ticket Detail Pane action button design + modular sizing */
+.confirm-modal-content {
+    width: 94%;
+    max-width: 400px;
+}
+
+.confirm-modal-content .dispatch-modal-close-btn {
+    width: 24px;
+    height: 24px;
+    top: 10px;
+    right: 10px;
+    font-size: 14px;
+}
+
+.confirm-modal-content .dispatch-modal-header-container {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.confirm-modal-content .dispatch-modal-header {
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.confirm-modal-content .dispatch-modal-subtitle {
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.confirm-modal-content .dispatch-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Match Ticket Detail Pane btn-action exactly */
+.confirm-modal-content .dispatch-modal-actions .btn-action {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    min-height: 32px;
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-cancel {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-cancel:hover {
+    background: var(--bg-body);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-ongoing {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-ongoing:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-resolved {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-resolved:hover {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-delete {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-delete:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-hold {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-hold:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: rgba(245, 158, 11, 0.5);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-unresolved {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-unresolved:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-nff {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    border-color: rgba(139, 92, 246, 0.35);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-nff:hover {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.5);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-access-denied {
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+    border-color: rgba(249, 115, 22, 0.35);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-access-denied:hover {
+    background: rgba(249, 115, 22, 0.25);
+    border-color: rgba(249, 115, 22, 0.5);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-ungroup {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-ungroup:hover {
+    background: var(--bg-body);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-revert-pending {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+.confirm-modal-content .dispatch-modal-actions .btn-revert-pending:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* ConfirmModal modular sizing - 768–1023px (88%) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .confirm-modal-overlay .confirm-modal-content {
+        width: 92%;
+        max-width: 352px;
+        padding: 20px 18px 20px;
+    }
+
+    .confirm-modal-content .dispatch-modal-close-btn {
+        width: 21px;
+        height: 21px;
+        top: 9px;
+        right: 9px;
+        font-size: 12px;
+    }
+
+    .confirm-modal-content .dispatch-modal-header {
+        font-size: 0.88rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-subtitle {
+        font-size: 0.7rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions {
+        margin-top: 12px;
+        padding-top: 10px;
+        gap: 6px;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions .btn-action {
+        padding: 7px 14px;
+        font-size: 0.7rem;
+        min-height: 28px;
+    }
+}
+
+/* ConfirmModal modular sizing - 600–767px (72%) */
+@media (min-width: 600px) and (max-width: 767px) {
+    .confirm-modal-overlay .confirm-modal-content {
+        width: 92%;
+        max-width: 288px;
+        padding: 16px 14px 16px;
+    }
+
+    .confirm-modal-content .dispatch-modal-close-btn {
+        width: 17px;
+        height: 17px;
+        top: 7px;
+        right: 7px;
+        font-size: 10px;
+    }
+
+    .confirm-modal-content .dispatch-modal-header {
+        font-size: 0.72rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-subtitle {
+        font-size: 0.58rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions {
+        margin-top: 10px;
+        padding-top: 8px;
+        gap: 6px;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions .btn-action {
+        padding: 6px 12px;
+        font-size: 0.58rem;
+        min-height: 24px;
+    }
+}
+
+/* ConfirmModal modular sizing - 480–599px (72%) */
+@media (min-width: 480px) and (max-width: 599px) {
+    .confirm-modal-overlay .confirm-modal-content {
+        width: 92%;
+        max-width: 288px;
+        padding: 16px 14px 16px;
+    }
+
+    .confirm-modal-content .dispatch-modal-close-btn {
+        width: 17px;
+        height: 17px;
+        top: 7px;
+        right: 7px;
+        font-size: 10px;
+    }
+
+    .confirm-modal-content .dispatch-modal-header {
+        font-size: 0.72rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-subtitle {
+        font-size: 0.58rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions {
+        margin-top: 10px;
+        padding-top: 8px;
+        gap: 6px;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions .btn-action {
+        padding: 6px 12px;
+        font-size: 0.58rem;
+        min-height: 24px;
+    }
+}
+
+/* ConfirmModal modular sizing - 320–479px (65%) */
+@media (min-width: 320px) and (max-width: 479px) {
+    .confirm-modal-overlay .confirm-modal-content {
+        width: 94%;
+        max-width: 260px;
+        padding: 14px 13px 14px;
+    }
+
+    .confirm-modal-content .dispatch-modal-close-btn {
+        width: 16px;
+        height: 16px;
+        top: 6px;
+        right: 6px;
+        font-size: 9px;
+    }
+
+    .confirm-modal-content .dispatch-modal-header {
+        font-size: 0.65rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-subtitle {
+        font-size: 0.52rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions {
+        margin-top: 8px;
+        padding-top: 8px;
+        gap: 5px;
+        flex-direction: column;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions .btn-action {
+        padding: 6px 10px;
+        font-size: 0.52rem;
+        min-height: 22px;
+        width: 100%;
+    }
+}
+
+/* ConfirmModal modular sizing - 320px (55%) */
+@media (max-width: 320px) {
+    .confirm-modal-overlay .confirm-modal-content {
+        width: 96%;
+        max-width: 220px;
+        padding: 11px 11px 11px;
+    }
+
+    .confirm-modal-content .dispatch-modal-close-btn {
+        width: 14px;
+        height: 14px;
+        top: 4px;
+        right: 4px;
+        font-size: 8px;
+    }
+
+    .confirm-modal-content .dispatch-modal-header {
+        font-size: 0.55rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-subtitle {
+        font-size: 0.44rem;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions {
+        margin-top: 6px;
+        padding-top: 6px;
+        gap: 4px;
+        flex-direction: column;
+    }
+
+    .confirm-modal-content .dispatch-modal-actions .btn-action {
+        padding: 5px 8px;
+        font-size: 0.44rem;
+        min-height: 20px;
+        width: 100%;
+    }
+}
+
+/* =========================================
+   HOLD TICKET MODAL - Modular sizing (same as ConfirmModal)
+   ========================================= */
+
+.hold-ticket-modal {
+    width: 94%;
+    max-width: 400px;
+}
+
+.hold-ticket-modal .dispatch-modal-close-btn {
+    width: 24px;
+    height: 24px;
+    top: 10px;
+    right: 10px;
+    font-size: 14px;
+}
+
+.hold-ticket-modal .dispatch-modal-header {
+    font-size: 1rem;
+}
+
+.hold-ticket-modal .dispatch-modal-subtitle {
+    font-size: 0.8rem;
+}
+
+.hold-ticket-modal .dispatch-form-group label {
+    font-size: 0.65rem;
+}
+
+.hold-ticket-modal .dispatch-form-input {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+}
+
+.hold-ticket-modal .toggle-title {
+    font-size: 0.8rem;
+}
+
+.hold-ticket-modal .toggle-desc {
+    font-size: 0.65rem;
+}
+
+.hold-ticket-modal .dispatch-modal-actions .btn-action {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    min-height: 32px;
+}
+
+.hold-ticket-modal .dispatch-modal-actions .btn-cancel {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.hold-ticket-modal .dispatch-modal-actions .btn-cancel:hover {
+    background: var(--bg-body);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.hold-ticket-modal .dispatch-modal-actions .btn-hold {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.hold-ticket-modal .dispatch-modal-actions .btn-hold:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* Hold Ticket Modal - 768–1023px (88%) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .hold-ticket-modal-overlay .hold-ticket-modal {
+        width: 92%;
+        max-width: 352px;
+        padding: 20px 18px 20px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-close-btn {
+        width: 21px;
+        height: 21px;
+        top: 9px;
+        right: 9px;
+        font-size: 12px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-header {
+        font-size: 0.88rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-subtitle {
+        font-size: 0.7rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-group label {
+        font-size: 0.57rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-input {
+        padding: 9px 10px;
+        font-size: 0.7rem;
+    }
+
+    .hold-ticket-modal .toggle-title {
+        font-size: 0.7rem;
+    }
+
+    .hold-ticket-modal .toggle-desc {
+        font-size: 0.57rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-actions .btn-action {
+        padding: 7px 14px;
+        font-size: 0.7rem;
+        min-height: 28px;
+    }
+}
+
+/* Hold Ticket Modal - 600–767px (72%) */
+@media (min-width: 600px) and (max-width: 767px) {
+    .hold-ticket-modal-overlay .hold-ticket-modal {
+        width: 92%;
+        max-width: 288px;
+        padding: 16px 14px 16px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-close-btn {
+        width: 17px;
+        height: 17px;
+        top: 7px;
+        right: 7px;
+        font-size: 10px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-header {
+        font-size: 0.72rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-subtitle {
+        font-size: 0.58rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-group label {
+        font-size: 0.47rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-input {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .hold-ticket-modal .toggle-title {
+        font-size: 0.58rem;
+    }
+
+    .hold-ticket-modal .toggle-desc {
+        font-size: 0.47rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-actions .btn-action {
+        padding: 6px 12px;
+        font-size: 0.58rem;
+        min-height: 24px;
+    }
+}
+
+/* Hold Ticket Modal - 480–599px (72%) */
+@media (min-width: 480px) and (max-width: 599px) {
+    .hold-ticket-modal-overlay .hold-ticket-modal {
+        width: 92%;
+        max-width: 288px;
+        padding: 16px 14px 16px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-close-btn {
+        width: 17px;
+        height: 17px;
+        top: 7px;
+        right: 7px;
+        font-size: 10px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-header {
+        font-size: 0.72rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-subtitle {
+        font-size: 0.58rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-group label {
+        font-size: 0.47rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-input {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .hold-ticket-modal .toggle-title {
+        font-size: 0.58rem;
+    }
+
+    .hold-ticket-modal .toggle-desc {
+        font-size: 0.47rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-actions .btn-action {
+        padding: 6px 12px;
+        font-size: 0.58rem;
+        min-height: 24px;
+    }
+}
+
+/* Hold Ticket Modal - 320–479px (65%) */
+@media (min-width: 320px) and (max-width: 479px) {
+    .hold-ticket-modal-overlay .hold-ticket-modal {
+        width: 94%;
+        max-width: 260px;
+        padding: 14px 13px 14px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-close-btn {
+        width: 16px;
+        height: 16px;
+        top: 6px;
+        right: 6px;
+        font-size: 9px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-header {
+        font-size: 0.65rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-subtitle {
+        font-size: 0.52rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-group label {
+        font-size: 0.42rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-input {
+        padding: 6px 8px;
+        font-size: 0.52rem;
+    }
+
+    .hold-ticket-modal .toggle-title {
+        font-size: 0.52rem;
+    }
+
+    .hold-ticket-modal .toggle-desc {
+        font-size: 0.42rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-actions .btn-action {
+        padding: 6px 10px;
+        font-size: 0.52rem;
+        min-height: 22px;
+        width: 100%;
+    }
+}
+
+/* Hold Ticket Modal - 320px (55%) */
+@media (max-width: 320px) {
+    .hold-ticket-modal-overlay .hold-ticket-modal {
+        width: 96%;
+        max-width: 220px;
+        padding: 11px 11px 11px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-close-btn {
+        width: 14px;
+        height: 14px;
+        top: 4px;
+        right: 4px;
+        font-size: 8px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-header {
+        font-size: 0.55rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-subtitle {
+        font-size: 0.44rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-group label {
+        font-size: 0.36rem;
+    }
+
+    .hold-ticket-modal .dispatch-form-input {
+        padding: 5px 7px;
+        font-size: 0.44rem;
+    }
+
+    .hold-ticket-modal .toggle-title {
+        font-size: 0.44rem;
+    }
+
+    .hold-ticket-modal .toggle-desc {
+        font-size: 0.36rem;
+    }
+
+    .hold-ticket-modal .dispatch-modal-actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .hold-ticket-modal .dispatch-modal-actions .btn-action {
+        padding: 5px 8px;
+        font-size: 0.44rem;
+        min-height: 20px;
+        width: 100%;
+    }
+}
+
 .dispatch-modal-content {
     background: var(--bg-card);
     width: 92%;
@@ -595,6 +1277,41 @@ select.dispatch-form-input {
     min-height: 80px;
 }
 
+/* AlecoScopeDropdown (quick search, clear, district, municipality, location) - base 1024+ */
+.edit-ticket-modal .aleco-scope-container {
+    gap: 6px;
+}
+
+.edit-ticket-modal .search-box-wrapper {
+    width: 100%;
+}
+
+.edit-ticket-modal .location-search-input {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+}
+
+.edit-ticket-modal .clear-selection-btn {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+}
+
+.edit-ticket-modal .dropdown-grid-simple {
+    gap: 6px;
+}
+
+.edit-ticket-modal .location-select {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+}
+
+.edit-ticket-modal .selection-preview {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+}
+
 .edit-ticket-textarea {
     resize: vertical;
 }
@@ -694,6 +1411,34 @@ select.dispatch-form-input {
         padding: 9px 18px;
         font-size: 0.7rem;
     }
+
+    .edit-ticket-modal .aleco-scope-container {
+        gap: 5px;
+    }
+
+    .edit-ticket-modal .location-search-input {
+        padding: 9px 10px;
+        font-size: 0.7rem;
+    }
+
+    .edit-ticket-modal .clear-selection-btn {
+        padding: 5px 8px;
+        font-size: 0.57rem;
+    }
+
+    .edit-ticket-modal .dropdown-grid-simple {
+        gap: 5px;
+    }
+
+    .edit-ticket-modal .location-select {
+        padding: 9px 10px;
+        font-size: 0.7rem;
+    }
+
+    .edit-ticket-modal .selection-preview {
+        padding: 9px 10px;
+        font-size: 0.7rem;
+    }
 }
 
 /* 600–767px (72%) */
@@ -758,6 +1503,34 @@ select.dispatch-form-input {
 
     .edit-ticket-actions .btn-action {
         padding: 7px 14px;
+        font-size: 0.58rem;
+    }
+
+    .edit-ticket-modal .aleco-scope-container {
+        gap: 4px;
+    }
+
+    .edit-ticket-modal .location-search-input {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .edit-ticket-modal .clear-selection-btn {
+        padding: 4px 6px;
+        font-size: 0.47rem;
+    }
+
+    .edit-ticket-modal .dropdown-grid-simple {
+        gap: 4px;
+    }
+
+    .edit-ticket-modal .location-select {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .edit-ticket-modal .selection-preview {
+        padding: 7px 9px;
         font-size: 0.58rem;
     }
 }
@@ -826,6 +1599,34 @@ select.dispatch-form-input {
         padding: 7px 14px;
         font-size: 0.58rem;
     }
+
+    .edit-ticket-modal .aleco-scope-container {
+        gap: 4px;
+    }
+
+    .edit-ticket-modal .location-search-input {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .edit-ticket-modal .clear-selection-btn {
+        padding: 4px 6px;
+        font-size: 0.47rem;
+    }
+
+    .edit-ticket-modal .dropdown-grid-simple {
+        gap: 4px;
+    }
+
+    .edit-ticket-modal .location-select {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .edit-ticket-modal .selection-preview {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
 }
 
 /* 320–479px (65%) */
@@ -890,6 +1691,34 @@ select.dispatch-form-input {
 
     .edit-ticket-actions .btn-action {
         padding: 6px 12px;
+        font-size: 0.52rem;
+    }
+
+    .edit-ticket-modal .aleco-scope-container {
+        gap: 4px;
+    }
+
+    .edit-ticket-modal .location-search-input {
+        padding: 6px 8px;
+        font-size: 0.52rem;
+    }
+
+    .edit-ticket-modal .clear-selection-btn {
+        padding: 4px 5px;
+        font-size: 0.42rem;
+    }
+
+    .edit-ticket-modal .dropdown-grid-simple {
+        gap: 4px;
+    }
+
+    .edit-ticket-modal .location-select {
+        padding: 6px 8px;
+        font-size: 0.52rem;
+    }
+
+    .edit-ticket-modal .selection-preview {
+        padding: 6px 8px;
         font-size: 0.52rem;
     }
 }
@@ -958,6 +1787,34 @@ select.dispatch-form-input {
 
     .edit-ticket-actions .btn-action {
         padding: 5px 10px;
+        font-size: 0.44rem;
+    }
+
+    .edit-ticket-modal .aleco-scope-container {
+        gap: 3px;
+    }
+
+    .edit-ticket-modal .location-search-input {
+        padding: 5px 7px;
+        font-size: 0.44rem;
+    }
+
+    .edit-ticket-modal .clear-selection-btn {
+        padding: 3px 4px;
+        font-size: 0.36rem;
+    }
+
+    .edit-ticket-modal .dropdown-grid-simple {
+        gap: 3px;
+    }
+
+    .edit-ticket-modal .location-select {
+        padding: 5px 7px;
+        font-size: 0.44rem;
+    }
+
+    .edit-ticket-modal .selection-preview {
+        padding: 5px 7px;
         font-size: 0.44rem;
     }
 }

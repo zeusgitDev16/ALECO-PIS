@@ -88,20 +88,44 @@
     cursor: pointer;
 }
 
-/* Grid: original ticket card sizes */
-.recent-opened-grid {
+/* Grid: horizontal scroll strip (space saver) */
+.recent-opened-grid.ticket-grid-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 12px;
     margin-top: 8px;
+    padding: 8px 0;
+    min-height: 0;
+}
+
+.recent-opened-grid .recent-opened-card {
+    flex-shrink: 0;
+    min-width: 220px;
+    max-width: 280px;
+}
+
+.recent-opened-grid::-webkit-scrollbar {
+    height: 6px;
 }
 
 .recent-opened-card {
     border-left: 2px solid var(--accent-primary, #7c3aed);
 }
 
-/* Table: original sizing */
+/* Table: horizontal scroll (space saver) */
 .recent-opened-table-wrap {
     overflow-x: auto;
+    overflow-y: visible;
     border-radius: 8px;
     border: 1px solid var(--border-color);
+    margin-top: 8px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.recent-opened-table-wrap::-webkit-scrollbar {
+    height: 6px;
 }
 
 .recent-opened-table {
@@ -127,13 +151,17 @@
     background: var(--bg-hover);
 }
 
-/* Kanban strip: original sizing (220px cards, min-height 140px) */
+/* Kanban strip: horizontal scroll (space saver) */
 .recent-opened-kanban-strip {
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     gap: 12px;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 8px 0;
     min-height: 140px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .recent-opened-kanban-strip::-webkit-scrollbar {

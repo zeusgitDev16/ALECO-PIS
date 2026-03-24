@@ -1,18 +1,21 @@
-/* From Uiverse.io by felipesntr - Modified to Light Blue with Glow */
-.create-post-btn {
+/* From Uiverse.io by felipesntr — electric blue (light) / electric mango-amber (dark), paired glow intensity */
+
+/* Light / default: blue (html:not avoids flash before ThemeProvider sets data-theme) */
+html:not([data-theme="dark"]) .create-post-btn {
   border: none;
   background-color: #24b4fb;
   border-radius: 0.9em;
   cursor: pointer;
   padding: 0.8em 1.2em 0.8em 1em;
   transition: all ease-in-out 0.2s;
-  font-size: 0.85rem;
+  /* Inherits --sb-scale from .sidebar (modular admin sidebar) */
+  font-size: calc(0.85rem * var(--sb-scale, 1));
   width: 100%;
   box-shadow: 0 0 10px rgba(36, 180, 251, 0.6);
   overflow: hidden;
 }
 
-.create-post-btn span {
+html:not([data-theme="dark"]) .create-post-btn span {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -20,41 +23,86 @@
   font-weight: 600;
 }
 
-.create-post-btn svg {
-  margin-right: 8px;
+html:not([data-theme="dark"]) .create-post-btn svg {
+  margin-right: calc(8px * var(--sb-scale, 1));
+  width: calc(20px * var(--sb-scale, 1));
+  height: calc(20px * var(--sb-scale, 1));
 }
 
-.create-post-btn:hover {
+[data-theme="light"] .create-post-btn:hover {
   background-color: #0071e2;
   box-shadow: 0 0 20px rgba(36, 180, 251, 0.8), 0 0 40px rgba(36, 180, 251, 0.4);
   transform: scale(1.02);
 }
 
-/* Responsive: Icon only on small screens (matches Sidebar breakpoint) */
-@media (max-width: 1000px) {
-  .create-post-btn {
+/* Dark: bright mango-amber (not used elsewhere); same “hot” glow recipe as the blue */
+[data-theme="dark"] .create-post-btn {
+  border: none;
+  background-color: #ffa602;
+  border-radius: 0.9em;
+  cursor: pointer;
+  padding: 0.8em 1.2em 0.8em 1em;
+  transition: all ease-in-out 0.2s;
+  font-size: calc(0.85rem * var(--sb-scale, 1));
+  width: 100%;
+  box-shadow:
+    0 0 10px rgba(255, 166, 2, 0.72),
+    0 0 22px rgba(255, 200, 90, 0.38);
+  overflow: hidden;
+}
+
+[data-theme="dark"] .create-post-btn span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #140d04;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .create-post-btn svg {
+  margin-right: calc(8px * var(--sb-scale, 1));
+  width: calc(20px * var(--sb-scale, 1));
+  height: calc(20px * var(--sb-scale, 1));
+}
+
+[data-theme="dark"] .create-post-btn:hover {
+  background-color: #c97800;
+  box-shadow:
+    0 0 20px rgba(255, 176, 40, 0.88),
+    0 0 40px rgba(255, 150, 20, 0.48);
+  transform: scale(1.02);
+}
+
+/* Sliding sidebar / narrow admin (matches Sidebar max-width: 1023px) */
+@media (max-width: 1023px) {
+  html:not([data-theme="dark"]) .create-post-btn,
+  [data-theme="dark"] .create-post-btn {
     width: 100%;
     height: auto;
-    padding: 0.6em;
-    border-radius: 8px;
+    padding: calc(0.6em * var(--sb-scale, 1));
+    border-radius: calc(8px * var(--sb-scale, 1));
     display: flex;
     justify-content: center;
     align-items: center;
     margin: 0;
+    min-height: calc(32px * var(--sb-scale, 1));
   }
 
-  .create-post-btn .btn-text {
-    display: inline-block; /* Force text to show */
-    font-size: 0.7rem;    /* Compact font size */
+  html:not([data-theme="dark"]) .create-post-btn .btn-text,
+  [data-theme="dark"] .create-post-btn .btn-text {
+    display: inline-block;
+    font-size: calc(0.7rem * var(--sb-scale, 1));
   }
 
-  .create-post-btn svg {
-    margin-right: 6px;
-    width: 14px;
-    height: 14px;
+  html:not([data-theme="dark"]) .create-post-btn svg,
+  [data-theme="dark"] .create-post-btn svg {
+    margin-right: calc(6px * var(--sb-scale, 1));
+    width: calc(14px * var(--sb-scale, 1));
+    height: calc(14px * var(--sb-scale, 1));
   }
 
-  .create-post-btn span {
+  html:not([data-theme="dark"]) .create-post-btn span,
+  [data-theme="dark"] .create-post-btn span {
     width: auto;
     justify-content: flex-start;
   }

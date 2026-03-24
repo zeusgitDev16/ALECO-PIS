@@ -10,7 +10,7 @@ import '../../CSS/DispatchTicketModal.css';
  * @param {string} message
  * @param {string} confirmLabel - e.g. "Confirm", "Delete"
  * @param {string} cancelLabel - e.g. "Cancel"
- * @param {string} variant - 'danger' | 'default' | 'success' - affects confirm button style
+ * @param {string} variant - 'danger' | 'default' | 'success' | 'hold' | 'unresolved' | 'nff' | 'access-denied' | 'ungroup' | 'revert-pending' - affects confirm button style
  */
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', variant = 'default' }) => {
     if (!isOpen) return null;
@@ -20,9 +20,23 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel
         onClose?.();
     };
 
+    const getConfirmClass = () => {
+        const map = {
+            danger: 'btn-delete',
+            success: 'btn-resolved',
+            hold: 'btn-hold',
+            unresolved: 'btn-unresolved',
+            nff: 'btn-nff',
+            'access-denied': 'btn-access-denied',
+            ungroup: 'btn-ungroup',
+            'revert-pending': 'btn-revert-pending'
+        };
+        return map[variant] || 'btn-ongoing';
+    };
+
     return (
         <div className="dispatch-modal-overlay confirm-modal-overlay" onClick={onClose}>
-            <div className="dispatch-modal-content confirm-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="dispatch-modal-content confirm-modal-content" onClick={(e) => e.stopPropagation()}>
                 <button className="dispatch-modal-close-btn" onClick={onClose} aria-label="Close">&times;</button>
 
                 <div className="dispatch-modal-header-container">
@@ -36,7 +50,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel
                     </button>
                     <button
                         type="button"
-                        className={`btn-action ${variant === 'danger' ? 'btn-delete' : variant === 'success' ? 'btn-resolved' : 'btn-ongoing'}`}
+                        className={`btn-action ${getConfirmClass()}`}
                         onClick={handleConfirm}
                     >
                         {confirmLabel}

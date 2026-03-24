@@ -1,9 +1,91 @@
+/* Base: laptop / 1024px+ — clears fixed landing header + navbar above Power Outages section */
 .body-padding {
   padding-top: 130px;
   padding-bottom: 60px;
   max-width: 100%;
   overflow-x: hidden;
   min-width: 0;
+}
+
+/* =========================================
+   BODY PADDING — modular scale (public landing)
+   Matches navbar / header scale so top gap stays proportional
+   ========================================= */
+
+/* 768–1023px (88%) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .body-padding {
+    padding-top: 114px;
+    padding-bottom: 53px;
+  }
+}
+
+/* 600–767px (72%) */
+@media (min-width: 600px) and (max-width: 767px) {
+  .body-padding {
+    padding-top: 94px;
+    padding-bottom: 43px;
+  }
+}
+
+/* 480–599px (72%) */
+@media (min-width: 480px) and (max-width: 599px) {
+  .body-padding {
+    padding-top: 94px;
+    padding-bottom: 43px;
+  }
+}
+
+/* 320–479px (65%) */
+@media (min-width: 320px) and (max-width: 479px) {
+  .body-padding {
+    padding-top: 85px;
+    padding-bottom: 39px;
+  }
+}
+
+/* ≤320px (55%) */
+@media (max-width: 320px) {
+  .body-padding {
+    padding-top: 72px;
+    padding-bottom: 33px;
+  }
+}
+
+/* Public home only (class toggled in App.jsx) — smooth anchor scroll + offset for fixed header */
+html.public-home-smooth-scroll {
+  scroll-behavior: smooth;
+  scroll-padding-top: 130px;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  html.public-home-smooth-scroll {
+    scroll-padding-top: 114px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 767px) {
+  html.public-home-smooth-scroll {
+    scroll-padding-top: 94px;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 599px) {
+  html.public-home-smooth-scroll {
+    scroll-padding-top: 94px;
+  }
+}
+
+@media (min-width: 320px) and (max-width: 479px) {
+  html.public-home-smooth-scroll {
+    scroll-padding-top: 85px;
+  }
+}
+
+@media (max-width: 320px) {
+  html.public-home-smooth-scroll {
+    scroll-padding-top: 72px;
+  }
 }
 
 .interruption-list-container {

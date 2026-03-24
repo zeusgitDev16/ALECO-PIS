@@ -506,6 +506,15 @@ select.dispatch-form-input {
     padding: 24px 52px 16px 28px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(124, 58, 237, 0.05) 100%);
+    text-align: center;
+}
+
+.edit-ticket-modal .dispatch-modal-close-btn {
+    width: 32px;
+    height: 32px;
+    top: 12px;
+    right: 12px;
+    font-size: 20px;
 }
 
 .edit-ticket-title {
@@ -565,10 +574,28 @@ select.dispatch-form-input {
 
 .edit-ticket-grid .dispatch-form-group {
     margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.edit-ticket-grid .dispatch-form-group label {
+    font-size: 0.65rem;
+    margin-bottom: 0;
+}
+
+.edit-ticket-grid .dispatch-form-input {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+}
+
+.edit-ticket-grid .dispatch-form-textarea.edit-ticket-textarea {
+    padding: 14px;
+    font-size: 0.8rem;
+    min-height: 80px;
 }
 
 .edit-ticket-textarea {
-    min-height: 100px;
     resize: vertical;
 }
 
@@ -585,7 +612,7 @@ select.dispatch-form-input {
 .edit-ticket-actions .btn-action {
     padding: 10px 20px;
     border-radius: 10px;
-    font-size: 13px;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     border: 1px solid transparent;
@@ -609,48 +636,83 @@ select.dispatch-form-input {
     background: rgba(34, 197, 94, 0.3);
 }
 
-@media (max-width: 600px) {
+/* 768–1023px (88%) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .edit-ticket-modal .dispatch-modal-close-btn {
+        width: 32px;
+        height: 32px;
+        top: 12px;
+        right: 12px;
+        font-size: 20px;
+    }
+
+    .edit-ticket-header {
+        padding: 20px 52px 14px 18px;
+    }
+
+    .edit-ticket-title {
+        font-size: 1.1rem;
+    }
+
+    .edit-ticket-subtitle {
+        font-size: 0.7rem;
+    }
+
+    .edit-ticket-form-body {
+        padding: 18px 18px;
+    }
+
+    .edit-ticket-grid {
+        gap: 12px 18px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group {
+        gap: 5px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group label {
+        font-size: 0.57rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-input {
+        padding: 9px 10px;
+        font-size: 0.7rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-textarea.edit-ticket-textarea {
+        padding: 12px;
+        font-size: 0.7rem;
+        min-height: 70px;
+    }
+
+    .edit-ticket-actions {
+        padding: 14px 18px 20px;
+        gap: 10px;
+    }
+
+    .edit-ticket-actions .btn-action {
+        padding: 9px 18px;
+        font-size: 0.7rem;
+    }
+}
+
+/* 600–767px (72%) */
+@media (min-width: 600px) and (max-width: 767px) {
     .edit-ticket-modal {
         max-width: 96%;
         max-height: 92vh;
     }
 
-    .edit-ticket-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .edit-ticket-header,
-    .edit-ticket-form-body,
-    .edit-ticket-actions {
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-}
-
-@media (min-width: 321px) and (max-width: 480px) {
-    .edit-ticket-header {
-        padding: 18px 44px 12px 20px;
-    }
-
-    .edit-ticket-form-body {
-        padding: 14px 20px;
-    }
-
-    .edit-ticket-actions {
-        padding: 12px 20px 18px;
-    }
-}
-
-@media (max-width: 320px) {
-    .edit-ticket-modal {
-        max-width: 100%;
-        max-height: 95vh;
-        padding: 0;
+    .edit-ticket-modal .dispatch-modal-close-btn {
+        width: 32px;
+        height: 32px;
+        top: 12px;
+        right: 12px;
+        font-size: 20px;
     }
 
     .edit-ticket-header {
-        padding: 12px 40px 10px 12px;
+        padding: 16px 52px 12px 14px;
     }
 
     .edit-ticket-title {
@@ -658,30 +720,244 @@ select.dispatch-form-input {
     }
 
     .edit-ticket-subtitle {
-        font-size: 0.65rem;
+        font-size: 0.58rem;
     }
 
     .edit-ticket-form-body {
-        padding: 10px 12px;
+        padding: 14px 14px;
     }
 
     .edit-ticket-grid {
-        gap: 8px;
+        grid-template-columns: 1fr;
+        gap: 10px 14px;
     }
 
-    .edit-ticket-textarea {
-        min-height: 70px;
+    .edit-ticket-grid .dispatch-form-group {
+        gap: 4px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group label {
+        font-size: 0.47rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-input {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-textarea.edit-ticket-textarea {
+        padding: 10px;
+        font-size: 0.58rem;
+        min-height: 58px;
     }
 
     .edit-ticket-actions {
-        padding: 10px 12px 14px;
+        padding: 12px 14px 16px;
+        gap: 8px;
+    }
+
+    .edit-ticket-actions .btn-action {
+        padding: 7px 14px;
+        font-size: 0.58rem;
+    }
+}
+
+/* 480–599px (72%) */
+@media (min-width: 480px) and (max-width: 599px) {
+    .edit-ticket-modal {
+        max-width: 96%;
+        max-height: 92vh;
+    }
+
+    .edit-ticket-modal .dispatch-modal-close-btn {
+        width: 34px;
+        height: 34px;
+        top: 10px;
+        right: 10px;
+        font-size: 18px;
+    }
+
+    .edit-ticket-header {
+        padding: 16px 44px 12px 14px;
+    }
+
+    .edit-ticket-title {
+        font-size: 0.9rem;
+    }
+
+    .edit-ticket-subtitle {
+        font-size: 0.58rem;
+    }
+
+    .edit-ticket-form-body {
+        padding: 14px 14px;
+    }
+
+    .edit-ticket-grid {
+        grid-template-columns: 1fr;
+        gap: 10px 14px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group {
+        gap: 4px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group label {
+        font-size: 0.47rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-input {
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-textarea.edit-ticket-textarea {
+        padding: 10px;
+        font-size: 0.58rem;
+        min-height: 58px;
+    }
+
+    .edit-ticket-actions {
+        padding: 12px 14px 16px;
+        gap: 8px;
+    }
+
+    .edit-ticket-actions .btn-action {
+        padding: 7px 14px;
+        font-size: 0.58rem;
+    }
+}
+
+/* 320–479px (65%) */
+@media (min-width: 320px) and (max-width: 479px) {
+    .edit-ticket-modal {
+        max-width: 96%;
+        max-height: 92vh;
+    }
+
+    .edit-ticket-modal .dispatch-modal-close-btn {
+        width: 34px;
+        height: 34px;
+        top: 10px;
+        right: 10px;
+        font-size: 18px;
+    }
+
+    .edit-ticket-header {
+        padding: 14px 44px 10px 13px;
+    }
+
+    .edit-ticket-title {
+        font-size: 0.82rem;
+    }
+
+    .edit-ticket-subtitle {
+        font-size: 0.52rem;
+    }
+
+    .edit-ticket-form-body {
+        padding: 13px 13px;
+    }
+
+    .edit-ticket-grid {
+        grid-template-columns: 1fr;
+        gap: 9px 13px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group {
+        gap: 4px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group label {
+        font-size: 0.42rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-input {
+        padding: 6px 8px;
+        font-size: 0.52rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-textarea.edit-ticket-textarea {
+        padding: 9px;
+        font-size: 0.52rem;
+        min-height: 52px;
+    }
+
+    .edit-ticket-actions {
+        padding: 10px 13px 14px;
+        gap: 8px;
+    }
+
+    .edit-ticket-actions .btn-action {
+        padding: 6px 12px;
+        font-size: 0.52rem;
+    }
+}
+
+/* 320px (55%) */
+@media (max-width: 320px) {
+    .edit-ticket-modal {
+        max-width: 100%;
+        max-height: 95vh;
+        padding: 0;
+    }
+
+    .edit-ticket-modal .dispatch-modal-close-btn {
+        width: 28px;
+        height: 28px;
+        top: 4px;
+        right: 4px;
+        font-size: 14px;
+    }
+
+    .edit-ticket-header {
+        padding: 10px 40px 8px 11px;
+    }
+
+    .edit-ticket-title {
+        font-size: 0.7rem;
+    }
+
+    .edit-ticket-subtitle {
+        font-size: 0.44rem;
+    }
+
+    .edit-ticket-form-body {
+        padding: 11px 11px;
+    }
+
+    .edit-ticket-grid {
+        grid-template-columns: 1fr;
+        gap: 8px 11px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group {
+        gap: 3px;
+    }
+
+    .edit-ticket-grid .dispatch-form-group label {
+        font-size: 0.36rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-input {
+        padding: 5px 7px;
+        font-size: 0.44rem;
+    }
+
+    .edit-ticket-grid .dispatch-form-textarea.edit-ticket-textarea {
+        padding: 8px;
+        font-size: 0.44rem;
+        min-height: 44px;
+    }
+
+    .edit-ticket-actions {
+        padding: 8px 11px 12px;
         gap: 6px;
         flex-wrap: wrap;
     }
 
     .edit-ticket-actions .btn-action {
-        padding: 6px 10px;
-        min-height: 36px;
-        font-size: 11px;
+        padding: 5px 10px;
+        font-size: 0.44rem;
     }
 }

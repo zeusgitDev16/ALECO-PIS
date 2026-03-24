@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
 import AdminLayout from './AdminLayout';
@@ -23,7 +23,9 @@ import TicketListPane from './tickets/TicketListPane';
 import TicketDetailPane from './tickets/TicketDetailPane';
 import GroupIncidentModal from './tickets/GroupIncidentModal';
 import TicketLayoutPicker from './tickets/TicketLayoutPicker';
+import TicketScopeTabs from './tickets/TicketScopeTabs';
 import TicketDualPaneLayout from './tickets/TicketDualPaneLayout';
+import '../CSS/TicketScopeTabs.css';
 import TicketTableView from './tickets/TicketTableView';
 import TicketKanbanView from './tickets/TicketKanbanView';
 import ConfirmModal from './tickets/ConfirmModal';
@@ -43,7 +45,45 @@ const AdminTickets = () => {
         return saved === 'true';
     });
     const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+    const [ticketScope, setTicketScope] = useState(() => {
+        try {
+            const saved = localStorage.getItem('ticketScope');
+            if (saved && ['urgent', 'regular'].includes(saved)) return saved;
+        } catch {}
+        return 'regular';
+    });
     const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedTickets();
+
+    const urgentTickets = useMemo(() =>
+        (tickets || []).filter(t => t.is_urgent === 1 || t.is_urgent === true),
+        [tickets]
+    );
+    const regularTickets = useMemo(() =>
+        (tickets || []).filter(t => t.is_urgent !== 1 && t.is_urgent !== true),
+        [tickets]
+    );
+    const recentTickets = useMemo(() => {
+        if (!recentIds?.length || !tickets?.length) return [];
+        return recentIds.map(id => tickets.find(t => t.ticket_id === id)).filter(Boolean);
+    }, [tickets, recentIds]);
+
+    const scopeTickets = useMemo(() => {
+        if (ticketScope === 'urgent') return urgentTickets;
+        return regularTickets;
+    }, [ticketScope, urgentTickets, regularTickets]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('ticketScope', ticketScope);
+        } catch {}
+    }, [ticketScope]);
+
+    const handleScopeChange = (newScope) => {
+        if ((newScope === 'urgent' || newScope === 'regular') && newScope !== ticketScope) {
+            setTicketScope(newScope);
+            /* Selection persists across scope switch - selected IDs stay when switching Urgent ↔ Regular */
+        }
+    };
 
     useEffect(() => {
         localStorage.setItem('ticketFilterSidebarCollapsed', String(sidebarCollapsed));
@@ -361,105 +401,117 @@ const AdminTickets = () => {
                             }
                         />
                     }
+                    scopeTabs={
+                        <TicketScopeTabs
+                            scope={ticketScope}
+                            onScopeChange={handleScopeChange}
+                            urgentCount={urgentTickets.length}
+                            regularCount={regularTickets.length}
+                        />
+                    }
                     selectAllBar={
                         <TicketSelectAllBar
-                            tickets={tickets}
+                            tickets={scopeTickets}
                             selectedIds={selectedIds}
                             setSelectedIds={setSelectedIds}
                         />
                     }
+                    recentOpened={recentTickets.length > 0 ? (
+                        <RecentOpenedTickets
+                            layout={viewMode === 'map' ? 'card' : viewMode}
+                            tickets={tickets}
+                            recentIds={recentIds}
+                            timeRange={timeRange}
+                            onTimeRangeChange={setTimeRange}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                            isCollapsed={isCollapsed}
+                            onToggleCollapse={() => setIsCollapsed(v => !v)}
+                        />
+                    ) : null}
                     rightPane={
                 <>
-                    <div className="dashboard-widget main-content-card">
-                    {viewMode === 'card' && (
-                        <>
-                            <UrgentTickets 
-                                tickets={tickets} 
-                                onSelectTicket={handleSelectTicket} 
-                                selectedIds={selectedIds} 
-                                onToggleSelect={toggleTicketSelection}
-                            />
-
-                            <div className="separator">
-                                <p><span>📋</span> Regular Tickets:</p>
+                    <div className="dashboard-widget main-content-card" id="ticket-panel-urgent" role="tabpanel" aria-labelledby="ticket-tab-urgent" hidden={ticketScope !== 'urgent'}>
+                    {ticketScope === 'urgent' && viewMode === 'card' && (
+                        urgentTickets.length === 0 ? (
+                            <div className="ticket-scope-empty">
+                                <p>No urgent tickets. All clear!</p>
                             </div>
-
-                            <TicketListPane 
-                                tickets={tickets} 
-                                isLoading={isLoading}
-                                selectedTicket={selectedTicket} 
-                                onSelectTicket={handleSelectTicket} 
-                                selectedIds={selectedIds} 
-                                onToggleSelect={toggleTicketSelection}
-                            />
-
-                            <RecentOpenedTickets
-                                layout="card"
+                        ) : (
+                            <UrgentTickets
                                 tickets={tickets}
-                                recentIds={recentIds}
-                                timeRange={timeRange}
-                                onTimeRangeChange={setTimeRange}
-                                selectedTicket={selectedTicket}
                                 onSelectTicket={handleSelectTicket}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleTicketSelection}
-                                isCollapsed={isCollapsed}
-                                onToggleCollapse={() => setIsCollapsed(v => !v)}
                             />
-                        </>
+                        )
                     )}
-
-                    {viewMode === 'compact' && (
-                        <>
+                    {ticketScope === 'urgent' && viewMode === 'compact' && (
+                        urgentTickets.length === 0 ? (
+                            <div className="ticket-scope-empty">
+                                <p>No urgent tickets. All clear!</p>
+                            </div>
+                        ) : (
                             <TicketTableView
-                                tickets={tickets}
+                                tickets={urgentTickets}
                                 selectedTicket={selectedTicket}
                                 onSelectTicket={handleSelectTicket}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleTicketSelection}
                             />
-                            <RecentOpenedTickets
-                                layout="compact"
-                                tickets={tickets}
-                                recentIds={recentIds}
-                                timeRange={timeRange}
-                                onTimeRangeChange={setTimeRange}
-                                selectedTicket={selectedTicket}
-                                onSelectTicket={handleSelectTicket}
-                                selectedIds={selectedIds}
-                                onToggleSelect={toggleTicketSelection}
-                                isCollapsed={isCollapsed}
-                                onToggleCollapse={() => setIsCollapsed(v => !v)}
-                            />
-                        </>
+                        )
                     )}
-
-                    {viewMode === 'workflow' && (
-                        <>
+                    {ticketScope === 'urgent' && viewMode === 'workflow' && (
+                        urgentTickets.length === 0 ? (
+                            <div className="ticket-scope-empty">
+                                <p>No urgent tickets. All clear!</p>
+                            </div>
+                        ) : (
                             <TicketKanbanView
-                                tickets={tickets}
+                                tickets={urgentTickets}
                                 selectedTicket={selectedTicket}
                                 onSelectTicket={handleSelectTicket}
                                 onUpdateTicket={handleUpdateTicket}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleTicketSelection}
                             />
-                            <RecentOpenedTickets
-                                layout="workflow"
-                                tickets={tickets}
-                                recentIds={recentIds}
-                                timeRange={timeRange}
-                                onTimeRangeChange={setTimeRange}
-                                selectedTicket={selectedTicket}
-                                onSelectTicket={handleSelectTicket}
-                                selectedIds={selectedIds}
-                                onToggleSelect={toggleTicketSelection}
-                                isCollapsed={isCollapsed}
-                                onToggleCollapse={() => setIsCollapsed(v => !v)}
-                            />
-                        </>
+                        )
                     )}
-                </div>
+                    </div>
+
+                    <div className="dashboard-widget main-content-card" id="ticket-panel-regular" role="tabpanel" aria-labelledby="ticket-tab-regular" hidden={ticketScope !== 'regular'}>
+                    {ticketScope === 'regular' && viewMode === 'card' && (
+                        <TicketListPane
+                            tickets={tickets}
+                            isLoading={isLoading}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    {ticketScope === 'regular' && viewMode === 'compact' && (
+                        <TicketTableView
+                            tickets={regularTickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    {ticketScope === 'regular' && viewMode === 'workflow' && (
+                        <TicketKanbanView
+                            tickets={regularTickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            onUpdateTicket={handleUpdateTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    </div>
                 </>
                     }
                 />

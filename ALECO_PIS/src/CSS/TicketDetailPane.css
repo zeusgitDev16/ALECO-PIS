@@ -150,9 +150,9 @@
 .status-tag {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.65rem;
+    padding: 3px 7.5px;
+    border-radius: 9px;
+    font-size: 0.4875rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -163,38 +163,38 @@
 .status-tag.pending {
     background: rgba(255, 193, 7, 0.95);
     color: #000000;
-    border: 2px solid rgba(255, 193, 7, 1);
+    border: 1.5px solid rgba(255, 193, 7, 1);
 }
 
 .status-tag.ongoing {
     background: rgba(33, 150, 243, 0.95);
     color: #ffffff;
-    border: 2px solid rgba(33, 150, 243, 1);
+    border: 1.5px solid rgba(33, 150, 243, 1);
 }
 
 .status-tag.resolved,
 .status-tag.restored {
     background: rgba(76, 175, 80, 0.95);
     color: #ffffff;
-    border: 2px solid rgba(76, 175, 80, 1);
+    border: 1.5px solid rgba(76, 175, 80, 1);
 }
 
 .status-tag.unresolved {
     background: rgba(239, 68, 68, 0.95);
     color: #ffffff;
-    border: 2px solid rgba(239, 68, 68, 1);
+    border: 1.5px solid rgba(239, 68, 68, 1);
 }
 
 .status-tag.nofaultfound {
     background: rgba(139, 92, 246, 0.95);
     color: #ffffff;
-    border: 2px solid rgba(139, 92, 246, 1);
+    border: 1.5px solid rgba(139, 92, 246, 1);
 }
 
 .status-tag.accessdenied {
     background: rgba(249, 115, 22, 0.95);
     color: #ffffff;
-    border: 2px solid rgba(249, 115, 22, 1);
+    border: 1.5px solid rgba(249, 115, 22, 1);
 }
 
 .header-right {
@@ -782,8 +782,8 @@
     }
 
     .status-tag {
-        padding: 3px 8px;
-        font-size: 0.6rem;
+        padding: 2.25px 6px;
+        font-size: 0.45rem;
     }
 
     .reported-label {
@@ -815,28 +815,74 @@
     }
 
     .detail-grid {
-        padding: 16px;
+        padding: 18px;
         gap: 12px;
     }
 
+    .detail-group {
+        gap: 5px;
+    }
+
     .detail-group label {
-        font-size: 0.6rem;
+        font-size: 0.57rem;
     }
 
     .detail-value {
-        padding: 8px 10px;
-        font-size: 0.8rem;
+        padding: 9px 10px;
+        font-size: 0.7rem;
+    }
+
+    .district-sub {
+        font-size: 0.66rem;
+    }
+
+    .copy-indicator {
+        padding: 2.6px 7px;
+        font-size: 0.57rem;
     }
 
     .detail-content-section {
-        padding: 0 16px 16px 16px;
+        padding: 0 18px 18px 18px;
         gap: 14px;
     }
 
     .concern-box {
         padding: 12px;
         min-height: 70px;
-        font-size: 0.78rem;
+        font-size: 0.7rem;
+    }
+
+    .dispatch-info-box,
+    .lineman-remarks-box {
+        padding: 10px;
+        font-size: 0.75rem;
+    }
+
+    .dispatch-info-section,
+    .lineman-remarks-section {
+        margin-top: 10px;
+    }
+
+    .group-child-item {
+        padding: 7px 9px;
+    }
+
+    .group-child-item .child-id {
+        font-size: 0.65rem;
+    }
+
+    .group-child-item .child-category,
+    .group-child-item .child-location {
+        font-size: 0.6rem;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.6rem;
+    }
+
+    .image-hint {
+        padding: 10px;
+        font-size: 0.66rem;
     }
 
     .action-footer {
@@ -848,16 +894,6 @@
         padding: clamp(2px, 1.2vw, 5px) clamp(3px, 1.8vw, 8px);
         font-size: clamp(6px, 2vw, 8px);
         min-height: clamp(18px, 5vw, 28px);
-    }
-
-    .group-child-item {
-        padding: 8px 10px;
-        font-size: 0.82rem;
-        gap: 8px;
-    }
-
-    .group-child-item .child-status {
-        font-size: 0.7rem;
     }
 
     .group-children-list {
@@ -900,8 +936,8 @@
     }
 
     .status-tag {
-        padding: 3px 8px;
-        font-size: 0.6rem;
+        padding: 2.25px 6px;
+        font-size: 0.45rem;
     }
 
     .header-right {
@@ -940,27 +976,73 @@
     .detail-grid {
         grid-template-columns: 1fr;
         padding: 14px;
-        gap: 12px;
+        gap: 10px;
+    }
+
+    .detail-group {
+        gap: 4px;
     }
 
     .detail-group label {
-        font-size: 0.6rem;
+        font-size: 0.47rem;
     }
 
     .detail-value {
-        padding: 8px 10px;
-        font-size: 0.8rem;
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .district-sub {
+        font-size: 0.54rem;
+    }
+
+    .copy-indicator {
+        padding: 2px 6px;
+        font-size: 0.47rem;
     }
 
     .detail-content-section {
         padding: 0 14px 14px 14px;
-        gap: 14px;
+        gap: 11px;
     }
 
     .concern-box {
-        padding: 10px 12px;
-        min-height: 65px;
-        font-size: 0.78rem;
+        padding: 10px;
+        min-height: 58px;
+        font-size: 0.58rem;
+    }
+
+    .dispatch-info-box,
+    .lineman-remarks-box {
+        padding: 9px;
+        font-size: 0.61rem;
+    }
+
+    .dispatch-info-section,
+    .lineman-remarks-section {
+        margin-top: 9px;
+    }
+
+    .group-child-item {
+        padding: 6px 7px;
+    }
+
+    .group-child-item .child-id {
+        font-size: 0.54rem;
+    }
+
+    .group-child-item .child-category,
+    .group-child-item .child-location {
+        font-size: 0.52rem;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.52rem;
+    }
+
+    .image-hint {
+        padding: 9px;
+        font-size: 0.54rem;
     }
 
     .action-footer {
@@ -973,16 +1055,6 @@
         padding: clamp(2px, 1.2vw, 6px) clamp(3px, 1.8vw, 8px);
         font-size: clamp(6px, 2vw, 8px);
         min-height: clamp(18px, 5vw, 32px);
-    }
-
-    .group-child-item {
-        padding: 8px 10px;
-        font-size: 0.8rem;
-        gap: 8px;
-    }
-
-    .group-child-item .child-status {
-        font-size: 0.68rem;
     }
 
     .group-children-list {
@@ -1022,8 +1094,8 @@
     }
 
     .status-tag {
-        padding: 2px 6px;
-        font-size: 0.58rem;
+        padding: 1.5px 4.5px;
+        font-size: 0.435rem;
     }
 
     .reported-label {
@@ -1055,28 +1127,74 @@
     }
 
     .detail-grid {
-        padding: 12px;
+        padding: 14px;
         gap: 10px;
     }
 
+    .detail-group {
+        gap: 4px;
+    }
+
     .detail-group label {
-        font-size: 0.55rem;
+        font-size: 0.47rem;
     }
 
     .detail-value {
-        padding: 6px 8px;
-        font-size: 0.78rem;
+        padding: 7px 9px;
+        font-size: 0.58rem;
+    }
+
+    .district-sub {
+        font-size: 0.54rem;
+    }
+
+    .copy-indicator {
+        padding: 2px 6px;
+        font-size: 0.47rem;
     }
 
     .detail-content-section {
-        padding: 0 12px 12px 12px;
-        gap: 12px;
+        padding: 0 14px 14px 14px;
+        gap: 11px;
     }
 
     .concern-box {
         padding: 10px;
-        min-height: 60px;
-        font-size: 0.75rem;
+        min-height: 58px;
+        font-size: 0.58rem;
+    }
+
+    .dispatch-info-box,
+    .lineman-remarks-box {
+        padding: 9px;
+        font-size: 0.61rem;
+    }
+
+    .dispatch-info-section,
+    .lineman-remarks-section {
+        margin-top: 9px;
+    }
+
+    .group-child-item {
+        padding: 6px 7px;
+    }
+
+    .group-child-item .child-id {
+        font-size: 0.54rem;
+    }
+
+    .group-child-item .child-category,
+    .group-child-item .child-location {
+        font-size: 0.52rem;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.52rem;
+    }
+
+    .image-hint {
+        padding: 9px;
+        font-size: 0.54rem;
     }
 
     .action-footer {
@@ -1089,24 +1207,6 @@
         padding: clamp(2px, 1.2vw, 5px) clamp(3px, 1.8vw, 6px);
         font-size: clamp(6px, 2vw, 8px);
         min-height: clamp(18px, 5vw, 32px);
-    }
-
-    .group-child-item {
-        padding: 6px 8px;
-        font-size: 0.75rem;
-        gap: 6px;
-    }
-
-    .group-child-item .child-id {
-        font-size: 0.78rem;
-    }
-
-    .group-child-item .child-location {
-        font-size: 0.72rem;
-    }
-
-    .group-child-item .child-status {
-        font-size: 0.65rem;
     }
 
     .group-children-list {
@@ -1162,9 +1262,23 @@
         padding-top: 36px;
     }
 
+    /* Column ticket id + status, column reported on + date, both stacked and centered */
     .detail-header {
-        padding: 34px 10px 8px 10px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 6px 10px 8px 10px;
         gap: 6px;
+    }
+
+    .header-left {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .header-right {
+        flex-direction: column;
+        align-items: center;
     }
 
     .detail-header::before {
@@ -1177,8 +1291,8 @@
     }
 
     .status-tag {
-        padding: 2px 6px;
-        font-size: 0.55rem;
+        padding: 1.5px 4.5px;
+        font-size: 0.4125rem;
     }
 
     .reported-label {
@@ -1210,28 +1324,74 @@
     }
 
     .detail-grid {
-        padding: 10px;
-        gap: 8px;
+        padding: 13px;
+        gap: 9px;
+    }
+
+    .detail-group {
+        gap: 4px;
     }
 
     .detail-group label {
-        font-size: 0.5rem;
+        font-size: 0.42rem;
     }
 
     .detail-value {
-        padding: 5px 7px;
-        font-size: 0.72rem;
+        padding: 6px 8px;
+        font-size: 0.52rem;
+    }
+
+    .district-sub {
+        font-size: 0.49rem;
+    }
+
+    .copy-indicator {
+        padding: 2px 5px;
+        font-size: 0.42rem;
     }
 
     .detail-content-section {
-        padding: 0 10px 10px 10px;
+        padding: 0 13px 13px 13px;
         gap: 10px;
     }
 
     .concern-box {
-        padding: 8px 10px;
-        min-height: 55px;
-        font-size: 0.72rem;
+        padding: 9px;
+        min-height: 52px;
+        font-size: 0.52rem;
+    }
+
+    .dispatch-info-box,
+    .lineman-remarks-box {
+        padding: 8px;
+        font-size: 0.55rem;
+    }
+
+    .dispatch-info-section,
+    .lineman-remarks-section {
+        margin-top: 8px;
+    }
+
+    .group-child-item {
+        padding: 5px 6px;
+    }
+
+    .group-child-item .child-id {
+        font-size: 0.49rem;
+    }
+
+    .group-child-item .child-category,
+    .group-child-item .child-location {
+        font-size: 0.47rem;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.47rem;
+    }
+
+    .image-hint {
+        padding: 8px;
+        font-size: 0.49rem;
     }
 
     .action-footer {
@@ -1246,49 +1406,22 @@
         min-height: clamp(18px, 4.5vw, 34px);
     }
 
-    .copy-indicator {
-        font-size: 0.58rem;
-        padding: 2px 5px;
-    }
-
-    .group-child-item {
-        padding: 5px 6px;
-        font-size: 0.7rem;
-        gap: 4px 6px;
-    }
-
-    .group-child-item .child-id {
-        font-size: 0.72rem;
-    }
-
-    .group-child-item .child-category {
-        font-size: 0.68rem;
-    }
-
-    .group-child-item .child-location {
-        font-size: 0.65rem;
-    }
-
-    .group-child-item .child-status {
-        font-size: 0.6rem;
-    }
-
     .group-children-list {
         max-height: 100px;
     }
 }
 
-/* Extra Small (320px and below) - Fixed height, scrollable body, crisp */
+/* Extra Small (320px and below) - Compact gaps, padding, margins */
 @media (max-width: 320px) {
     .ticket-modal-overlay {
-        padding: 4px;
+        padding: 2px;
     }
 
     .ticket-modal-content {
-        height: calc(100vh - 8px);
-        max-height: calc(100vh - 8px);
+        height: calc(100vh - 4px);
+        max-height: calc(100vh - 4px);
         overflow: hidden;
-        border-radius: 8px;
+        border-radius: 6px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         animation: slideUpCompact 0.25s ease-out;
@@ -1301,7 +1434,7 @@
     @keyframes slideUpCompact {
         from {
             opacity: 0;
-            transform: translateY(16px);
+            transform: translateY(12px);
         }
         to {
             opacity: 1;
@@ -1310,20 +1443,28 @@
     }
 
     .ticket-modal-close-btn {
-        width: 32px;
-        height: 32px;
-        top: 6px;
-        right: 6px;
-        font-size: 16px;
+        width: 28px;
+        height: 28px;
+        top: 4px;
+        right: 4px;
+        font-size: 14px;
     }
 
     .ticket-modal-close-btn:hover {
         transform: none;
     }
 
+    .ticket-detail-flip-container {
+        padding: 4px;
+        padding-top: 32px;
+    }
+
     .detail-header {
-        padding: 28px 8px 8px 8px;
-        gap: 4px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 6px 6px;
+        gap: 6px;
     }
 
     .detail-header::before {
@@ -1331,44 +1472,64 @@
     }
 
     .header-left {
-        gap: 3px;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .header-right {
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
     }
 
     .detail-title {
-        font-size: 11px;
+        font-size: 10px;
         line-height: 1.2;
-        letter-spacing: -0.2px;
+        letter-spacing: 0;
+        text-align: center;
     }
 
     .status-tag {
-        padding: 2px 6px;
-        font-size: 9px;
+        padding: 1.3px 2.6px;
+        font-size: 5.3px;
+    }
+
+    .group-badge-detail {
+        margin-left: 0;
+        padding: 2px 3px;
+        font-size: 7px;
     }
 
     .reported-label {
-        font-size: 8px;
+        font-size: 7px;
     }
 
     .reported-date {
-        font-size: 9px;
-        padding: 3px 6px;
+        font-size: 8px;
+        padding: 2px 4px;
+        border-radius: 4px;
     }
 
-    /* Stepper: abbreviated labels, uniform layout, no wrap */
+    /* Stepper: 375px values × 0.92 (8% smaller) */
     .resolution-stepper {
-        padding: 4px 6px;
-        gap: 2px;
+        padding: 4.6px 7.4px;
+        gap: 3.7px;
         flex-wrap: nowrap;
         justify-content: space-between;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .stepper-step {
-        padding: 2px 4px;
-        gap: 2px;
-        flex: 1;
+        padding: 1.85px 3.7px;
+        gap: 5.5px;
+        flex: 0 1 auto;
         min-width: 0;
         justify-content: center;
         white-space: nowrap;
+        font-size: 0.506rem;
     }
 
     .stepper-label-full {
@@ -1377,90 +1538,110 @@
 
     .stepper-label-short {
         display: inline;
-        font-size: 9px;
+        font-size: 0.506rem;
         font-weight: 700;
+        letter-spacing: -0.2px;
     }
 
     .stepper-num {
         width: 12px;
         height: 12px;
-        font-size: 9px;
+        font-size: 0.46rem;
         flex-shrink: 0;
     }
 
     .stepper-connector {
-        width: 4px;
+        width: 5.5px;
+        min-width: 5.5px;
         flex-shrink: 0;
         align-self: center;
     }
 
     .detail-divider {
-        margin: 3px 0;
+        margin: 2px 0;
     }
 
     .detail-grid {
-        padding: 6px 8px;
-        gap: 6px;
+        padding: 11px;
+        gap: 8px;
     }
 
     .detail-group {
-        gap: 2px;
+        gap: 3px;
     }
 
     .detail-group label {
-        font-size: 8px;
+        font-size: 0.36rem;
     }
 
     .detail-value {
-        padding: 4px 6px;
-        font-size: 10px;
+        padding: 5px 7px;
+        font-size: 0.44rem;
+    }
+
+    .district-sub {
+        font-size: 0.41rem;
+    }
+
+    .copy-indicator {
+        padding: 2px 4px;
+        font-size: 0.36rem;
     }
 
     .detail-content-section {
-        padding: 0 8px 8px 8px;
-        gap: 6px;
+        padding: 0 11px 11px 11px;
+        gap: 9px;
     }
 
     .concern-box {
-        padding: 6px 8px;
-        min-height: 40px;
-        font-size: 10px;
+        padding: 8px;
+        min-height: 44px;
+        font-size: 0.44rem;
+    }
+
+    .dispatch-info-box,
+    .lineman-remarks-box {
+        padding: 7px;
+        font-size: 0.47rem;
+    }
+
+    .dispatch-info-section,
+    .lineman-remarks-section {
+        margin-top: 7px;
+    }
+
+    .group-child-item {
+        padding: 4px 5px;
+    }
+
+    .group-child-item .child-id {
+        font-size: 0.41rem;
+    }
+
+    .group-child-item .child-category,
+    .group-child-item .child-location {
+        font-size: 0.39rem;
+    }
+
+    .group-child-item .child-status {
+        font-size: 0.39rem;
+    }
+
+    .image-hint {
+        padding: 7px;
+        font-size: 0.41rem;
     }
 
     .action-footer {
-        padding: 3px 6px;
+        padding: 2px 4px;
         gap: 2px;
         grid-template-columns: repeat(2, 1fr);
     }
 
     .btn-action {
-        min-height: 20px;
+        min-height: 18px;
         font-size: 6px;
         padding: 2px 3px;
-    }
-
-    .copy-indicator {
-        font-size: 9px;
-        padding: 2px 4px;
-    }
-
-    .group-child-item {
-        padding: 4px 6px;
-        font-size: 0.65rem;
-        gap: 3px 4px;
-    }
-
-    .group-child-item .child-id {
-        font-size: 0.68rem;
-    }
-
-    .group-child-item .child-category,
-    .group-child-item .child-location {
-        font-size: 0.6rem;
-    }
-
-    .group-child-item .child-status {
-        font-size: 0.55rem;
     }
 
     .group-children-list {
@@ -1468,8 +1649,8 @@
     }
 
     .flip-toggle-btn {
-        margin: 4px 8px 8px;
-        padding: 5px 8px;
+        margin: 2px 4px 4px;
+        padding: 4px 6px;
         font-size: 8px;
     }
 }

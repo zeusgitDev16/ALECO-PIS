@@ -55,7 +55,6 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
         if (filters.municipality) count++;
         if (filters.datePreset) count++;
         if (filters.isNew) count++;
-        if (filters.isUrgent) count++;
         if (filters.status) count++;
         if (filters.groupFilter && filters.groupFilter !== 'all') count++;
         return count;
@@ -79,11 +78,6 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
     // 2. Toggle Handler for the "New (<48h)" filter
     const toggleUrgentNew = () => {
         setFilters(prev => ({ ...prev, isNew: !prev.isNew }));
-    };
-
-    // 3. Toggle Handler for the "Urgent" filter
-    const toggleUrgent = () => {
-        setFilters(prev => ({ ...prev, isUrgent: !prev.isUrgent }));
     };
 
     // 3. Location Handler (CLEANED: Only district & municipality)
@@ -143,15 +137,6 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
                     title="Show tickets submitted in the last 48 hours"
                 >
                     <span className="urgent-icon">⚡</span> New (48h)
-                </button>
-
-                {/* 🚨 The Urgent Filter Toggle */}
-                <button
-                    className={`urgent-toggle-btn ${filters.isUrgent ? 'active' : ''}`}
-                    onClick={toggleUrgent}
-                    title="Show only urgent tickets"
-                >
-                    <span className="urgent-icon">🚨</span> Urgent
                 </button>
 
                 {/* 📊 Status Filter Dropdown */}

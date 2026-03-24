@@ -135,7 +135,8 @@
 .backup-filter-pill.active {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
-    color: var(--bg-body);
+    color: var(--accent-primary-contrast);
+    box-shadow: 0 0 10px var(--accent-primary-glow);
 }
 
 .backup-filter-select {

@@ -7,12 +7,13 @@
   gap: 12px;
 }
 
-/* Filter strip — outside scrollable main card */
+/* Filter strip — EXACT ticket layout picker compact sizing */
 .interruptions-filter-strip-wrap {
-  padding: 8px 12px;
+  padding: 4px 8px;
   background: var(--bg-card);
-  border-radius: var(--border-radius-md, 8px);
+  border-radius: 6px;
   border: 1px solid var(--border-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 /* Scrollable list region (Lego brick from AdminPageLayout) */
@@ -133,13 +134,13 @@
   overflow-x: auto;
 }
 
-/* Toolbar: filters + search (inside filter strip) */
+/* Toolbar: filters + search — compact like ticket layout picker */
 .interruptions-admin-toolbar-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 16px;
+  gap: 4px 8px;
 }
 
 .interruptions-admin-toolbar-row .interruptions-admin-filters {
@@ -178,7 +179,7 @@
   min-width: 108px;
 }
 
-/* Icon-only buttons */
+/* Icon-only buttons (on cards - keep touch-friendly, filter bar uses text buttons) */
 .interruptions-admin-btn--icon {
   padding: 6px !important;
   min-width: 32px;
@@ -288,42 +289,52 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 16px;
+  gap: 4px 6px;
 }
 
 .interruptions-admin-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 2px;
 }
 
+/* All, Upcoming, Ongoing, Resolved — SAME size as Card/Compact/Workflow layout buttons */
 .interruptions-admin-chip {
-  padding: 6px 14px;
-  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  padding: 2px 6px;
+  min-height: 20px;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
   background: var(--bg-input, var(--bg-card));
   color: var(--text-primary);
-  font-size: 0.8rem;
+  font-size: 0.55rem;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .interruptions-admin-chip:hover {
-  border-color: var(--accent-purple, #7c3aed);
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
 }
 
 .interruptions-admin-chip.is-active {
-  background: var(--accent-purple, #7c3aed);
-  border-color: var(--accent-purple, #7c3aed);
-  color: #fff;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary-contrast);
+  box-shadow: 0 1px 4px var(--accent-primary-glow);
+  font-weight: 700;
 }
 
+/* Search bar: larger in laptop view for readability; mobile keeps compact (see media queries) */
 .interruptions-admin-search-input {
   flex: 1;
-  min-width: 200px;
+  min-width: 140px;
   max-width: 320px;
-  padding: 8px 12px;
-  border-radius: var(--border-radius-md, 8px);
+  padding: 6px 10px;
+  min-height: 28px;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
   background: var(--bg-input, var(--bg-card));
   color: var(--text-primary);
@@ -340,28 +351,33 @@
   text-align: center;
 }
 
-/* Interruptions header with layout picker (Data Management parity) */
+/* Interruptions header with layout picker (EXACT ticket sizing) */
 .interruptions-header-flex .interruptions-header-pickers {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
-/* New advisory button - Generate Code style (blue/yellow transition) */
+/* New advisory button - SAME size as Card/Compact/Workflow layout buttons */
 .btn-new-advisory {
-  font-size: 0.7rem !important;
-  padding: 6px 12px !important;
-  font-weight: 800 !important;
-  border-radius: var(--border-radius-md) !important;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  font-size: 0.55rem;
+  font-weight: 600;
+  min-height: 20px;
+  border-radius: 4px;
   border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   outline: none;
+  white-space: nowrap;
   /* Light: blue (matches main-login-btn / Generate Code) */
   background-color: #2563eb;
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.3);
 }
 
 .btn-new-advisory:hover:not(:disabled) {
@@ -394,6 +410,23 @@
 
 [data-theme='dark'] .btn-new-advisory:active:not(:disabled) {
   background-color: #ca8a04;
+}
+
+/* New advisory responsive - match layout picker breakpoints */
+@media (max-width: 800px) {
+  .btn-new-advisory {
+    padding: 2px 4px;
+    font-size: 0.5rem;
+    min-height: 18px;
+  }
+}
+
+@media (max-width: 500px) {
+  .btn-new-advisory {
+    padding: 2px 3px;
+    font-size: 0.5rem;
+    min-height: 16px;
+  }
 }
 
 .interruptions-admin-card-grid {
@@ -432,11 +465,7 @@
 }
 
 .interruptions-admin-card--feed-not-on-feed {
-  border-left: 3px solid var(--accent-primary, #7c3aed);
-}
-
-[data-theme='dark'] .interruptions-admin-card--feed-not-on-feed {
-  border-left-color: #a78bfa;
+  border-left: 3px solid var(--accent-feed-not-on-feed);
 }
 
 .interruptions-admin-card--feed-archived {
@@ -522,65 +551,178 @@
   gap: 4px;
 }
 
-/* 320px: tiny cards, hide buttons, whole card opens action modal */
-@media (max-width: 320px) {
+/* Tablet (768px–1023px): 15% smaller than laptop (5% + 10%); laptop (1024px+) uses base sizes */
+@media (min-width: 768px) and (max-width: 1023px) {
   .interruptions-admin-card-grid {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 0 4px;
+    grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+    gap: 6.84px;
   }
 
   .interruptions-admin-card--compact {
-    padding: 6px;
-    gap: 4px;
-    min-height: 72px;
+    padding: 6.84px;
+    gap: 5.13px;
+    min-height: 86px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-head {
-    gap: 2px;
+    gap: 3.42px;
+  }
+
+  .interruptions-admin-card-identity--compact {
+    padding-bottom: 3.42px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-status-chip {
-    padding: 1px 4px;
-    font-size: 0.5rem;
+    padding: 1.71px 5.13px;
+    font-size: 0.513rem;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-type-pill {
-    font-size: 0.5rem;
-    padding: 1px 4px;
+    font-size: 0.513rem;
+    padding: 1.71px 5.13px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-archived-chip,
   .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
-    font-size: 0.45rem;
-    padding: 1px 4px;
+    font-size: 0.47rem;
+    padding: 1.71px 4.28px;
   }
 
-  .interruptions-admin-card-feeder-value--compact {
-    font-size: 0.7rem;
+  .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
+    font-size: 0.556rem;
   }
 
-  .interruptions-admin-card-ref-id--compact {
-    padding: 1px 4px;
-    font-size: 0.5rem;
+  .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
+    font-size: 0.727rem;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
+    padding: 1.71px 5.13px;
+    font-size: 0.513rem;
   }
 
   .interruptions-admin-card-preview-text,
   .interruptions-admin-card-preview-areas {
-    font-size: 0.55rem;
-    -webkit-line-clamp: 1;
+    font-size: 0.599rem;
   }
 
   .interruptions-admin-card-preview-areas {
-    font-size: 0.5rem;
+    font-size: 0.556rem;
   }
 
   .interruptions-admin-card-meta {
-    font-size: 0.55rem;
-    gap: 4px;
+    gap: 5.13px;
+    font-size: 0.556rem;
   }
 
-  /* Hide card actions on 320px – actions moved to tap modal */
+  .interruptions-admin-card-meta-label,
+  .interruptions-admin-card-meta-value {
+    font-size: 0.556rem;
+  }
+
+  .interruptions-admin-card-actions--compact {
+    padding-top: 5.13px;
+    gap: 3.42px;
+  }
+
+  .interruptions-admin-card-actions--compact .interruptions-admin-btn {
+    padding: 3.42px 6.84px !important;
+    font-size: 0.513rem !important;
+  }
+
+  .interruptions-admin-card-actions--compact .interruptions-admin-btn--icon {
+    padding: 4.28px !important;
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  .interruptions-admin-btn--expand {
+    padding: 3.42px 5.13px !important;
+    min-width: 24px;
+  }
+
+  .interruptions-admin-btn-expand-icon {
+    font-size: 0.77rem;
+  }
+}
+
+/* Below 768px: 2 columns, compact card, no buttons (+15% from base) */
+@media (max-width: 767px) {
+  .interruptions-admin-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4.6px;
+  }
+
+  .interruptions-admin-card--compact {
+    padding: 3.45px;
+    gap: 2.3px;
+    min-height: 75px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-head {
+    gap: 1.15px;
+  }
+
+  .interruptions-admin-card-identity--compact {
+    padding-bottom: 2.3px;
+  }
+
+  /* Status + Type + Archived/Scheduled chips */
+  .interruptions-admin-card--compact .interruptions-admin-status-chip {
+    padding: 1.15px 3.45px;
+    font-size: 5.75px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-type-pill {
+    font-size: 5.75px;
+    padding: 1.15px 3.45px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-archived-chip,
+  .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
+    font-size: 5.75px;
+    padding: 1.15px 2.3px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
+    font-size: 5.75px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
+    font-size: 6.9px;
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
+    padding: 1.15px 2.3px;
+    font-size: 5.75px !important;
+  }
+
+  .interruptions-admin-card-preview-text,
+  .interruptions-admin-card-preview-areas {
+    font-size: 6.9px;
+    -webkit-line-clamp: 1;
+    line-height: 1.2;
+  }
+
+  .interruptions-admin-card-preview-areas {
+    font-size: 5.75px;
+  }
+
+  .interruptions-admin-card-meta {
+    font-size: 5.75px;
+    gap: 2.3px;
+  }
+
+  .interruptions-admin-card-meta-label,
+  .interruptions-admin-card-meta-value {
+    font-size: 5.75px;
+  }
+
+  /* Hide actions below 768px; whole card opens action modal */
   .interruptions-admin-card--mobile-clickable .interruptions-admin-card-actions--compact {
     display: none;
   }
@@ -592,6 +734,142 @@
 
   .interruptions-admin-card--mobile-clickable:active {
     background: var(--bg-muted, rgba(0, 0, 0, 0.04));
+  }
+}
+
+/* 375px: +12% from current tier */
+@media (max-width: 767px) and (min-width: 321px) {
+  .interruptions-admin-card-grid {
+    gap: 5.09px;
+  }
+
+  .interruptions-admin-card--compact {
+    padding: 3.81px;
+    gap: 2.54px;
+    min-height: 82px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-head {
+    gap: 1.27px;
+  }
+
+  .interruptions-admin-card-identity--compact {
+    padding-bottom: 2.54px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-status-chip {
+    padding: 1.27px 3.81px;
+    font-size: 6.35px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-type-pill {
+    font-size: 6.35px;
+    padding: 1.27px 3.81px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-archived-chip,
+  .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
+    font-size: 6.35px;
+    padding: 1.27px 2.54px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
+    font-size: 6.35px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
+    font-size: 7.62px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
+    padding: 1.27px 2.54px;
+    font-size: 6.35px !important;
+  }
+
+  .interruptions-admin-card-preview-text {
+    font-size: 7.62px;
+  }
+
+  .interruptions-admin-card-preview-areas {
+    font-size: 6.35px;
+  }
+
+  .interruptions-admin-card-meta {
+    font-size: 6.35px;
+    gap: 2.54px;
+  }
+
+  .interruptions-admin-card-meta-label,
+  .interruptions-admin-card-meta-value {
+    font-size: 6.35px;
+  }
+}
+
+/* 425px: +20% from current tier */
+@media (max-width: 767px) and (min-width: 376px) {
+  .interruptions-admin-card-grid {
+    gap: 5.83px;
+  }
+
+  .interruptions-admin-card--compact {
+    padding: 4.4px;
+    gap: 2.98px;
+    min-height: 95px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-head {
+    gap: 1.46px;
+  }
+
+  .interruptions-admin-card-identity--compact {
+    padding-bottom: 2.94px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-status-chip {
+    padding: 1.46px 4.4px;
+    font-size: 7.34px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-type-pill {
+    font-size: 7.34px;
+    padding: 1.46px 4.4px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-archived-chip,
+  .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
+    font-size: 7.34px;
+    padding: 1.46px 2.94px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
+    font-size: 7.34px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
+    font-size: 8.81px;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
+    padding: 1.46px 2.94px;
+    font-size: 7.34px !important;
+  }
+
+  .interruptions-admin-card-preview-text {
+    font-size: 8.81px;
+  }
+
+  .interruptions-admin-card-preview-areas {
+    font-size: 7.34px;
+  }
+
+  .interruptions-admin-card-meta {
+    font-size: 7.34px;
+    gap: 2.94px;
+  }
+
+  .interruptions-admin-card-meta-label,
+  .interruptions-admin-card-meta-value {
+    font-size: 7.34px;
   }
 }
 
@@ -770,6 +1048,29 @@
 .interruptions-admin-btn-expand-icon {
   font-size: 0.9rem;
   line-height: 1;
+}
+
+/* Tablet: reduce compact card buttons (base compact styles above apply to laptop) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .interruptions-admin-card-actions--compact .interruptions-admin-btn {
+    padding: 3.42px 6.84px !important;
+    font-size: 0.513rem !important;
+  }
+
+  .interruptions-admin-card-actions--compact .interruptions-admin-btn--icon {
+    padding: 4.28px !important;
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  .interruptions-admin-card-actions--compact .interruptions-admin-btn--expand {
+    padding: 3.42px 5.13px !important;
+    min-width: 24px;
+  }
+
+  .interruptions-admin-card-actions--compact .interruptions-admin-btn-expand-icon {
+    font-size: 0.77rem;
+  }
 }
 
 .interruptions-admin-card-head {
@@ -1386,13 +1687,16 @@
 }
 
 .interruptions-admin-btn--submit {
-  background: var(--accent-primary, var(--accent-purple, #7c3aed)) !important;
-  color: var(--bg-body, #fff) !important;
+  background: var(--accent-primary) !important;
+  color: var(--accent-primary-contrast) !important;
   border-color: transparent !important;
+  box-shadow: 0 0 12px var(--accent-primary-glow);
+  font-weight: 600;
 }
 
 .interruptions-admin-btn--submit:hover:not(:disabled) {
   filter: brightness(1.05);
+  box-shadow: 0 0 16px var(--accent-primary-glow);
 }
 
 .interruptions-admin-modal-header {
@@ -1548,6 +1852,69 @@
 
   .interruptions-admin-datetime-wrap {
     padding: 9px 12px;
+  }
+}
+
+/* Filter strip responsive — match layout picker breakpoints */
+@media (max-width: 800px) {
+  .interruptions-filter-strip-wrap {
+    padding: 3px 6px;
+  }
+
+  .interruptions-admin-toolbar-row {
+    gap: 3px 6px;
+  }
+
+  .interruptions-admin-chip,
+  .interruptions-admin-archive-chip {
+    padding: 2px 4px !important;
+    font-size: 0.5rem !important;
+    min-height: 18px;
+  }
+
+  .interruptions-admin-search-input {
+    padding: 2px 4px;
+    font-size: 0.5rem;
+    min-height: 18px;
+  }
+
+  .interruptions-admin-archive-scope-label {
+    font-size: 0.5rem;
+  }
+
+  .interruptions-admin-btn {
+    padding: 2px 4px !important;
+    font-size: 0.5rem !important;
+    min-height: 18px;
+  }
+}
+
+@media (max-width: 500px) {
+  .interruptions-filter-strip-wrap {
+    padding: 2px 4px;
+  }
+
+  .interruptions-admin-chip,
+  .interruptions-admin-archive-chip {
+    padding: 2px 3px !important;
+    font-size: 0.5rem !important;
+    min-height: 16px;
+  }
+
+  .interruptions-admin-search-input {
+    padding: 2px 3px;
+    font-size: 0.5rem;
+    min-height: 16px;
+  }
+
+  .interruptions-admin-archive-scope-label {
+    font-size: 0.5rem;
+  }
+
+  .interruptions-admin-btn {
+    padding: 2px 3px !important;
+    font-size: 0.5rem !important;
+    min-height: 16px;
   }
 }
 
@@ -1960,28 +2327,29 @@
   vertical-align: middle;
 }
 
-/* List scope: Active / All / Archived */
+/* List scope: Active / All / Archived — SAME size as layout buttons */
 .interruptions-admin-archive-scope {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
+  gap: 2px 4px;
 }
 
 .interruptions-admin-archive-scope-label {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.55rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--text-secondary);
-  margin-right: 4px;
+  margin-right: 2px;
 }
 
 .interruptions-admin-archive-chip {
-  font-size: 0.7rem !important;
-  font-weight: 700 !important;
-  padding: 6px 12px !important;
-  border-radius: 999px !important;
+  font-size: 0.55rem !important;
+  font-weight: 600 !important;
+  padding: 2px 6px !important;
+  min-height: 20px;
+  border-radius: 4px !important;
   border: 1px solid var(--border-color) !important;
   background: var(--bg-body, var(--bg-input)) !important;
   color: var(--text-primary) !important;
@@ -1992,13 +2360,16 @@
 }
 
 .interruptions-admin-archive-chip:hover:not(:disabled) {
-  border-color: var(--accent-purple, #7c3aed) !important;
+  border-color: var(--accent-primary) !important;
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent) !important;
 }
 
 .interruptions-admin-archive-chip--active {
-  border-color: var(--accent-purple, #7c3aed) !important;
-  background: rgba(124, 58, 237, 0.12) !important;
-  color: var(--text-primary) !important;
+  border-color: var(--accent-primary) !important;
+  background: var(--accent-primary) !important;
+  color: var(--accent-primary-contrast) !important;
+  box-shadow: 0 1px 4px var(--accent-primary-glow);
+  font-weight: 700;
 }
 
 .interruptions-admin-archive-chip:disabled {

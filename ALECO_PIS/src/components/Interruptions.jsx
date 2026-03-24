@@ -15,6 +15,8 @@ import InterruptionWorkflowView from './interruptions/InterruptionWorkflowView';
 import InterruptionLayoutPicker from './interruptions/InterruptionLayoutPicker';
 import InterruptionAdvisoryUpdates from './interruptions/InterruptionAdvisoryUpdates';
 import InterruptionFilterDrawer from './interruptions/InterruptionFilterDrawer';
+import { useRecentOpenedAdvisories } from '../utils/useRecentOpenedAdvisories';
+import RecentOpenedAdvisories from './containers/RecentOpenedAdvisories';
 import '../CSS/InterruptionLayoutPicker.css';
 import '../CSS/InterruptionWorkflowView.css';
 import '../CSS/InterruptionFilterDrawer.css';
@@ -58,6 +60,7 @@ const AdminInterruptions = () => {
   const [validationErrors, setValidationErrors] = useState([]);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('interruptionViewMode') || 'card');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedAdvisories();
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
@@ -153,6 +156,7 @@ const AdminInterruptions = () => {
   };
 
   const openEdit = (row) => {
+    if (row?.id != null) addOpened(row.id);
     setEditingId(row.id);
     setForm(emptyForm);
     setBaselineForm(null);
@@ -360,6 +364,24 @@ const AdminInterruptions = () => {
           </div>
         </div>
 
+        <RecentOpenedAdvisories
+          advisories={interruptions}
+          recentIds={recentIds}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          onSelectAdvisory={openEdit}
+          onPullFromFeed={pullFromFeedAdvisory}
+          onPushToFeed={pushToFeedAdvisory}
+          onDelete={handleArchiveRequest}
+          onPermanentDelete={(id) => {
+            const row = interruptions.find((i) => i.id === id);
+            setPermanentDeleteConfirm({ id, feeder: String(row?.feeder || '').trim() || `Advisory #${id}` });
+          }}
+          saving={saving}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => setIsCollapsed((v) => !v)}
+        />
+
         <div className="main-content-card interruptions-admin-content-card">
         {viewMode === 'card' && (
           <InterruptionAdvisoryBoard
@@ -368,6 +390,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -385,6 +408,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -402,6 +426,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);

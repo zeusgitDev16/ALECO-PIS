@@ -38,6 +38,7 @@ function truncate(s, max) {
  * @param {(id: number) => void} [props.onPermanentDelete]
  * @param {(id: number) => void} [props.onPullFromFeed]
  * @param {(id: number) => void} [props.onPushToFeed]
+ * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {boolean} props.saving
  */
@@ -50,12 +51,18 @@ export default function InterruptionWorkflowView({
   onPermanentDelete,
   onPullFromFeed,
   onPushToFeed,
+  onOpenAdvisory,
   listArchiveFilter = 'active',
   saving,
 }) {
   const grouped = useMemo(() => groupInterruptionsByStatus(items), [items]);
   const columnConfig = getInterruptionColumnConfig();
   const [detailItem, setDetailItem] = useState(null);
+
+  const openDetail = (item) => {
+    if (item?.id != null && onOpenAdvisory) onOpenAdvisory(item.id);
+    setDetailItem(item);
+  };
   const [actionModalItem, setActionModalItem] = useState(null);
   const isMobile = useMatchMedia('(max-width: 320px)');
   const isClickableLayout = useMatchMedia('(max-width: 767px)');
@@ -134,7 +141,7 @@ export default function InterruptionWorkflowView({
                     const bodyOrCause = hasBody ? item.body : item.cause || '—';
                     const bodyShort = truncate(bodyOrCause, 80);
                     const handleCardClick = isClickableLayout
-                      ? (isMobile ? () => setActionModalItem(item) : () => setDetailItem(item))
+                      ? (isMobile ? () => setActionModalItem(item) : () => openDetail(item))
                       : undefined;
                     return (
                       <div
@@ -200,7 +207,7 @@ export default function InterruptionWorkflowView({
                             className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--expand"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setDetailItem(item);
+                              openDetail(item);
                             }}
                             disabled={saving}
                             title="View full advisory"
@@ -281,8 +288,9 @@ export default function InterruptionWorkflowView({
           item={actionModalItem}
           onClose={() => setActionModalItem(null)}
           onViewFull={() => {
+            const it = actionModalItem;
             setActionModalItem(null);
-            setDetailItem(actionModalItem);
+            openDetail(it);
           }}
           onEdit={(it) => {
             setActionModalItem(null);

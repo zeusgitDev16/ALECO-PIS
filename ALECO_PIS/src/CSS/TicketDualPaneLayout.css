@@ -14,12 +14,16 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 4px;
+    padding: 4px 8px;
     background: var(--bg-card);
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.tickets-top-bar .ticket-scope-tabs {
     flex-shrink: 0;
 }
 
@@ -42,6 +46,11 @@
     box-sizing: border-box;
     justify-content: space-between;
     align-items: center;
+}
+
+.tickets-recent-strip {
+    flex-shrink: 0;
+    margin-bottom: 6px;
 }
 
 .tickets-panes-row {
@@ -79,6 +88,7 @@
 .tickets-right-pane {
     flex: 1 1 0;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -86,14 +96,21 @@
     align-self: stretch;
 }
 
+/* Main content fills full height like filter sidebar - override max-height from AdminPageLayout */
 .tickets-right-pane .main-content-card {
     flex: 1 1 0;
     min-height: 0;
+    max-height: none;
     overflow-y: auto;
     /* Match filter sidebar: 8px top and bottom for aligned edges */
     padding: 8px !important;
     /* Override dashboard-widget margin-top so list aligns with filter sidebar */
     margin-top: 0 !important;
+    /* Unified dual-pane: no left radius so it visually joins with the filter sidebar */
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
 }
 
 /* Align first list content with filter icons - 0 top so card padding (8px) matches filter offset */

@@ -27,6 +27,7 @@ function useMatchMedia(query) {
  * @param {(id: number) => void} [props.onPermanentDelete]
  * @param {(id: number) => void} [props.onPullFromFeed]
  * @param {(id: number) => void} [props.onPushToFeed]
+ * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {boolean} props.saving
  */
@@ -39,12 +40,18 @@ export default function InterruptionAdvisoryBoard({
   onPermanentDelete,
   onPullFromFeed,
   onPushToFeed,
+  onOpenAdvisory,
   listArchiveFilter = 'active',
   saving,
 }) {
   const [detailItem, setDetailItem] = useState(null);
+
+  const openDetail = (item) => {
+    if (item?.id != null && onOpenAdvisory) onOpenAdvisory(item.id);
+    setDetailItem(item);
+  };
   const [actionModalItem, setActionModalItem] = useState(null);
-  const isMobile = useMatchMedia('(max-width: 320px)');
+  const isMobile = useMatchMedia('(max-width: 767px)');
   const now = useNow([]);
 
   if (loading) {
@@ -96,7 +103,7 @@ export default function InterruptionAdvisoryBoard({
               onEdit={() => onEdit(item)}
               onDelete={() => onDelete(item.id)}
               onPermanentDelete={onPermanentDelete ? () => onPermanentDelete(item.id) : undefined}
-              onExpand={() => setDetailItem(item)}
+              onExpand={() => openDetail(item)}
               onCardClick={isMobile ? (it) => setActionModalItem(it) : undefined}
               feedIndicator={item.deletedAt ? 'archived' : isCurrentlyOnPublicFeed(item, now) ? 'on-feed' : 'not-on-feed'}
               onPullFromFeed={onPullFromFeed}
@@ -123,8 +130,9 @@ export default function InterruptionAdvisoryBoard({
           item={actionModalItem}
           onClose={() => setActionModalItem(null)}
           onViewFull={() => {
+            const it = actionModalItem;
             setActionModalItem(null);
-            setDetailItem(actionModalItem);
+            openDetail(it);
           }}
           onEdit={(it) => {
             setActionModalItem(null);

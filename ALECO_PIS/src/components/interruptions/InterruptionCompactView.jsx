@@ -35,6 +35,9 @@ function truncate(s, max) {
  * @param {(row: object) => void} props.onEdit
  * @param {(id: number) => void} props.onDelete
  * @param {(id: number) => void} [props.onPermanentDelete]
+ * @param {(id: number) => void} [props.onPullFromFeed]
+ * @param {(id: number) => void} [props.onPushToFeed]
+ * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {boolean} props.saving
  */
@@ -47,10 +50,16 @@ export default function InterruptionCompactView({
   onPermanentDelete,
   onPullFromFeed,
   onPushToFeed,
+  onOpenAdvisory,
   listArchiveFilter = 'active',
   saving,
 }) {
   const [detailItem, setDetailItem] = useState(null);
+
+  const openDetail = (item) => {
+    if (item?.id != null && onOpenAdvisory) onOpenAdvisory(item.id);
+    setDetailItem(item);
+  };
   const [sortConfig, setSortConfig] = useState({ key: 'dateTimeStart', direction: 'desc' });
   const now = useNow([]);
   const isClickableLayout = useMatchMedia('(max-width: 767px)');
@@ -163,10 +172,10 @@ export default function InterruptionCompactView({
                 <tr
                   key={item.id}
                   className={`interruptions-compact-row ${archived ? 'interruptions-compact-row--archived' : ''} interruptions-compact-row--feed-${feedIndicator} ${index % 2 === 0 ? 'even' : 'odd'}${isClickableLayout ? ' interruptions-compact-row--clickable' : ''}`}
-                  onClick={isClickableLayout ? () => setDetailItem(item) : undefined}
+                  onClick={isClickableLayout ? () => openDetail(item) : undefined}
                   role={isClickableLayout ? 'button' : undefined}
                   tabIndex={isClickableLayout ? 0 : undefined}
-                  onKeyDown={isClickableLayout ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetailItem(item); } } : undefined}
+                  onKeyDown={isClickableLayout ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } } : undefined}
                 >
                   <td className="col-feeder">{String(item.feeder || '').trim() || '—'}</td>
                   <td className="col-type">{item.type || '—'}</td>
@@ -208,7 +217,7 @@ export default function InterruptionCompactView({
                     <button
                       type="button"
                       className="interruptions-compact-btn interruptions-compact-btn--icon"
-                      onClick={() => setDetailItem(item)}
+                      onClick={() => openDetail(item)}
                       disabled={saving}
                       title="View full advisory"
                       aria-label="View full advisory"

@@ -35,8 +35,11 @@
   --border-radius-md: 6px;
   --border-radius-lg: 8px;
 
-  /* Accent Colors */
-  --accent-primary: #7c4dff;
+  /* Accent Colors - blue (light) / yellow (dark) for Interruptions & Data Management */
+  --accent-primary: #2563eb;
+  --accent-primary-glow: rgba(37, 99, 235, 0.35);
+  --accent-primary-contrast: #ffffff;
+  --accent-feed-not-on-feed: #a78bfa;  /* Semantic: purple = not on public feed */
   --accent-success: #2e7d32;
   --accent-danger: #d32f2f;
   --accent-warning: #ed6c02;
@@ -63,6 +66,11 @@
   /* Dark Mode Overrides */
   --border-color: rgba(255, 255, 255, 0.1);
   --bg-input: rgba(0, 0, 0, 0.3);
+
+  /* Accent: yellow in dark mode */
+  --accent-primary: #facc15;
+  --accent-primary-glow: rgba(250, 204, 21, 0.4);
+  --accent-primary-contrast: #1f2937;
 }
 
 /* 2. APPLY VARIABLES GLOBALLY */

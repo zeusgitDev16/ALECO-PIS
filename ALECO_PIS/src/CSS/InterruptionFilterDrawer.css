@@ -165,7 +165,7 @@
 
 .interruption-filter-drawer-clear-btn:hover {
   border-color: var(--accent-primary);
-  background: rgba(124, 77, 255, 0.08);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
 }
 
 .interruption-filter-drawer-reset-btn {
@@ -187,7 +187,7 @@
 .interruption-filter-drawer-reset-btn:hover {
   color: var(--text-main);
   border-color: var(--accent-primary);
-  background: rgba(124, 77, 255, 0.06);
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
 }
 
 .interruption-filter-drawer-refresh-btn {
@@ -208,7 +208,7 @@
 
 .interruption-filter-drawer-refresh-btn:hover:not(:disabled) {
   border-color: var(--accent-primary);
-  background: rgba(124, 77, 255, 0.08);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
   color: var(--accent-primary);
 }
 

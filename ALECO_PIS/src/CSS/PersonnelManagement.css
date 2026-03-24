@@ -76,40 +76,7 @@
     gap: 15px;
 }
 
-/* --- THE "+ ADD" BUTTON (Surgical Micro-Sizing) --- */
-.btn-add-purple {
-    font-size: 0.7rem !important;
-    padding: 6px 12px !important;
-    font-weight: 800 !important;
-    border-radius: 6px !important;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    background-color: var(--accent-primary, #7c4dff);
-    color: var(--bg-body);
-    box-shadow: 0 4px 10px rgba(124, 77, 255, 0.2);
-}
-
-.btn-add-purple:hover {
-    background-color: #1565c0; /* Dark Blue */
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(21, 101, 192, 0.4);
-}
-
-/* --- Dark Mode Hover (Darkens to Yellow) --- */
-[data-theme='dark'] .btn-add-purple:hover {
-    background-color: #f9a825; /* Darkened Yellow / Gold */
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(249, 168, 37, 0.4);
-}
-.btn-add-purple:active {
-    transform: scale(0.96);
-}
-
-[data-theme='dark'] .btn-add-purple {
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-}
+/* --- THE "+ ADD" BUTTON (Uses Buttons.css + theme vars: blue light / yellow dark) --- */
 
 /* --- THE SEARCH BAR (Theme Aware) --- */
 .table-search-input-compact {

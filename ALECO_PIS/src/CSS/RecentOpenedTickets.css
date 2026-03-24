@@ -1,40 +1,50 @@
 /**
  * RecentOpenedTickets.css
- * Lego brick: Recent opened tickets section
+ * Same SIZES as RecentOpenedAdvisories (compact), keeps ticket design distinct.
+ * Space-efficient: small header when collapsed, ~88px strip when expanded.
  */
 
+/* Wrapper: match advisory (margin 8px, padding 6px 0 8px 0) */
 .recent-opened-tickets-wrapper {
-    margin-bottom: 32px;
-    padding: 12px 0 24px 0;
+    margin-bottom: 8px;
+    padding: 6px 0 8px 0;
     border-bottom: 1px solid var(--border-color);
+}
+
+.recent-opened-tickets-wrapper.recent-opened-collapsed {
+    margin-bottom: 4px;
+    padding-bottom: 4px;
 }
 
 .recent-opened-tickets-wrapper.recent-opened-collapsed .recent-opened-header {
     margin-bottom: 0;
 }
 
+/* Header: match advisory (gap 8px, margin-bottom 6px, padding 2px 0) */
 .recent-opened-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 8px;
+    margin-bottom: 6px;
     flex-wrap: wrap;
     cursor: pointer;
     user-select: none;
+    padding: 2px 0;
 }
 
 .recent-opened-header:hover {
     opacity: 0.9;
 }
 
+/* Collapse btn: match advisory (padding 2px 6px, border-radius 4px, font 0.75rem) */
 .recent-opened-collapse-btn {
-    margin-left: 8px;
-    padding: 4px 10px;
+    margin-left: 4px;
+    padding: 2px 6px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 4px;
     background: var(--bg-card);
     color: var(--text-primary);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: background 0.2s;
 }
@@ -43,39 +53,42 @@
     background: var(--bg-hover, rgba(255,255,255,0.05));
 }
 
+/* Icon & title: match advisory (1rem, 0.8rem) */
 .recent-opened-icon {
-    font-size: 1.2rem;
+    font-size: 1rem;
 }
 
 .recent-opened-title {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
 }
 
+/* Time range: match advisory (gap 6px, label 0.7rem, select padding 2px 8px, 0.75rem) */
 .recent-opened-time-range {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-left: auto;
 }
 
 .recent-opened-time-range label {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
 }
 
 .recent-opened-time-range select {
-    padding: 4px 10px;
-    border-radius: 6px;
+    padding: 2px 8px;
+    border-radius: 4px;
     border: 1px solid var(--border-color);
     background: var(--bg-card);
     color: var(--text-primary);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     cursor: pointer;
 }
 
+/* Grid: original ticket card sizes */
 .recent-opened-grid {
     margin-top: 8px;
 }
@@ -84,6 +97,7 @@
     border-left: 2px solid var(--accent-primary, #7c3aed);
 }
 
+/* Table: original sizing */
 .recent-opened-table-wrap {
     overflow-x: auto;
     border-radius: 8px;
@@ -113,6 +127,7 @@
     background: var(--bg-hover);
 }
 
+/* Kanban strip: original sizing (220px cards, min-height 140px) */
 .recent-opened-kanban-strip {
     display: flex;
     gap: 12px;
@@ -129,7 +144,49 @@
     flex-shrink: 0;
 }
 
+.recent-opened-kanban-card-wrap .recent-opened-kanban-card,
 .recent-opened-kanban-card-wrap .kanban-ticket-card {
     min-width: 220px;
     max-width: 220px;
+}
+
+/* 320px and small phones: shrink header so main content dominates */
+@media (max-width: 480px) {
+    .recent-opened-tickets-wrapper {
+        margin-bottom: 2px;
+        padding: 2px 0 4px 0;
+    }
+
+    .recent-opened-header {
+        gap: 2px;
+        margin-bottom: 2px;
+        padding: 0;
+    }
+
+    .recent-opened-icon {
+        font-size: 0.6rem;
+    }
+
+    .recent-opened-title {
+        font-size: 0.5rem;
+    }
+
+    .recent-opened-time-range {
+        gap: 2px;
+    }
+
+    .recent-opened-time-range label {
+        font-size: 0.45rem;
+    }
+
+    .recent-opened-time-range select {
+        padding: 0 3px;
+        font-size: 0.45rem;
+    }
+
+    .recent-opened-collapse-btn {
+        padding: 0 2px;
+        margin-left: 1px;
+        font-size: 0.45rem;
+    }
 }

@@ -58,11 +58,6 @@ function InterruptionList() {
     <div className="interruption-list-container">
       <h2 className="section-title">Power Outages Updates (Brownout)</h2>
 
-      <div className="feed-controls">
-        <VerticalProgressIndicator scrollProgress={scrollProgress} />
-        <AsOfDateTracker />
-      </div>
-
       <div
         className="interruption-feed"
         ref={feedRef}
@@ -144,6 +139,11 @@ function InterruptionList() {
           visibleInterruptions.map((item) => (
             <InterruptionFeedPost key={item.id} item={item} now={now} />
           ))}
+      </div>
+
+      <div className="feed-controls">
+        <VerticalProgressIndicator scrollProgress={scrollProgress} />
+        <AsOfDateTracker />
       </div>
 
       <hr className="section-separator" aria-hidden="true" />

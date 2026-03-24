@@ -828,7 +828,29 @@
 
 @media (min-width: 1024px) {
   .interruption-feed {
-    max-width: 600px;
+    max-width: 100%;
     margin: 0 auto;
+  }
+
+  .interruption-feed-post {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 0 40px;
+    align-items: start;
+  }
+
+  .feed-post-header {
+    grid-column: 1 / -1;
+    margin-bottom: 24px;
+  }
+
+  .feed-post-body {
+    grid-column: 1;
+    margin-bottom: 0;
+  }
+
+  .feed-advisory-infographic {
+    grid-column: 2;
+    margin-top: 0;
   }
 }

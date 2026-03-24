@@ -1,17 +1,18 @@
-/* --- Interruption Feed (Facebook-style vertical) --- */
+/* --- Interruption Feed (Horizontal Scroll) --- */
 .interruption-feed {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 20px;
-  overflow-y: auto;
-  max-height: 70vh;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 20px 10px;
   scroll-behavior: smooth;
-  scroll-snap-type: y proximity;
+  scroll-snap-type: x proximity;
+  align-items: flex-start;
 }
 
 .interruption-feed::-webkit-scrollbar {
-  width: 8px;
+  height: 8px;
 }
 
 .interruption-feed::-webkit-scrollbar-track {
@@ -32,7 +33,11 @@
   padding: 20px;
   scroll-snap-align: start;
   flex-shrink: 0;
-  min-width: 0;
+  min-width: 300px;
+  width: 85vw;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- Feed Post Header --- */
@@ -356,11 +361,14 @@
 .feed-infographic-image {
   padding: 12px 16px;
   border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  display: flex;
+  justify-content: center;
 }
 
 .feed-infographic-image img {
   max-width: 100%;
-  max-height: 200px;
+  max-height: 260px; /* Further reduced image height */
+  width: auto;
   object-fit: contain;
   border-radius: 8px;
 }
@@ -410,17 +418,18 @@
 
 /* --- Bulletin cards in feed (loading, empty, unavailable) --- */
 .interruption-card.interruption-card--feed {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  height: auto;
-  min-height: 180px;
+  /* Match the sizing and flex behavior of .interruption-feed-post */
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  min-width: 300px;
+  width: 85vw;
+  max-width: 450px;
+  margin: 0;
 }
 
 /* --- Mobile --- */
 @media (max-width: 600px) {
   .interruption-feed {
-    max-height: 65vh;
     padding: 12px 8px;
   }
 
@@ -445,7 +454,6 @@
 /* --- 320px and below: ultra-compact --- */
 @media (max-width: 320px) {
   .interruption-feed {
-    max-height: 65vh;
     padding: 8px 6px;
     gap: 12px;
   }
@@ -837,6 +845,8 @@
     grid-template-columns: 0.9fr 1.1fr;
     gap: 0 40px;
     align-items: start;
+    min-width: 750px;
+    max-width: 900px;
   }
 
   .feed-post-header {

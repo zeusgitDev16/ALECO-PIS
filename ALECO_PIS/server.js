@@ -23,7 +23,8 @@ dotenv.config();
 process.env.TZ = 'Asia/Manila';
 
 const app = express();
-const PORT = 5000;
+// Render (and most hosts) assign PORT via env; local dev uses 5000
+const PORT = Number(process.env.PORT) || 5000;
 
 /** Browser origins allowed to call this API (localhost + production frontend). */
 const DEFAULT_CORS_ORIGINS = [
@@ -84,8 +85,8 @@ app.get('/api/debug/routes', (req, res) => {
 });
 
 // 4. Start the Office
-app.listen(PORT, () => {
-  console.log(`Server running automatically on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server listening on port ${PORT}`);
 
   const runScheduledInterruptionTransition = () => {
     transitionScheduledStarts(pool).catch((err) =>

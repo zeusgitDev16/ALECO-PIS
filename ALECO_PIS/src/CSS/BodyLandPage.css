@@ -1,5 +1,8 @@
 /* Base: laptop / 1024px+ — clears fixed landing header + navbar above Power Outages section */
 .body-padding {
+  /* One scale for public section titles, gaps, and report wizard (inherits to #report) */
+  --public-section-scale: 1;
+  --report-scale: 1;
   padding-top: 130px;
   padding-bottom: 60px;
   max-width: 100%;
@@ -88,10 +91,67 @@ html.public-home-smooth-scroll {
   }
 }
 
+/* --- Modular scale tiers (match admin nav / SearchBar): public titles + report flow --- */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .body-padding {
+    --public-section-scale: 0.88;
+    --report-scale: 0.88;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+  .body-padding {
+    --public-section-scale: 0.72;
+    --report-scale: 0.72;
+  }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+  .body-padding {
+    --public-section-scale: 0.72;
+    --report-scale: 0.72;
+  }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+  .body-padding {
+    --public-section-scale: 0.72;
+    --report-scale: 0.72;
+  }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+  .body-padding {
+    --public-section-scale: 0.68;
+    --report-scale: 0.68;
+  }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+  .body-padding {
+    --public-section-scale: 0.65;
+    --report-scale: 0.65;
+  }
+}
+
+@media (max-width: 320px) {
+  .body-padding {
+    --public-section-scale: 0.55;
+    --report-scale: 0.55;
+  }
+}
+
+@media (min-width: 1024px) {
+  .body-padding {
+    --public-section-scale: 1;
+    --report-scale: 1;
+  }
+}
+
 .interruption-list-container {
   max-width: 1400px;
-  margin: 0 auto 60px auto;
-  padding: 0 20px;
+  margin: 0 auto calc(60px * var(--public-section-scale, 1)) auto;
+  padding: 0 calc(20px * var(--public-section-scale, 1));
   overflow: hidden; /* Prevents full page horizontal scroll */
 }
 
@@ -103,19 +163,37 @@ html.public-home-smooth-scroll {
 }
 
 .about-aleco {
-  font-size: 1.9rem;
+  font-size: calc(1.9rem * var(--public-section-scale, 1));
   font-family: var(--font-header);
-
 }
 
+/* Public landing H2s: Power Outages, About ALECO, Privacy — same size + rhythm as Report a Problem */
 .section-title {
-  font-size: 1.8rem;
-  /* UPDATED: Uses variable for dark mode text */
+  font-size: calc(2.2rem * var(--public-section-scale, 1));
   color: var(--text-header);
-  margin-bottom: 30px;
-  border-bottom: 3px solid var(--text-secondary); /* UPDATED: Dynamic border color */
-  padding-bottom: 10px;
+  margin-top: 0;
+  margin-bottom: calc(30px * var(--public-section-scale, 1));
+  border-bottom: max(2px, calc(3px * var(--public-section-scale, 1))) solid var(--text-secondary);
+  padding-bottom: calc(10px * var(--public-section-scale, 1));
   font-family: var(--font-header);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Report / Track card — same H2 rhythm as Power Outages & About (inherits --public-section-scale from .body-padding) */
+.body-padding .report-problem-container .report-header-section {
+  margin-bottom: calc(30px * var(--public-section-scale, 1));
+  border-bottom: max(2px, calc(3px * var(--public-section-scale, 1))) solid var(--text-secondary);
+  padding-bottom: calc(10px * var(--public-section-scale, 1));
+  opacity: 0.9;
+}
+
+.body-padding .report-problem-container .report-title {
+  font-family: var(--font-header);
+  font-size: calc(2.2rem * var(--public-section-scale, 1));
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-header);
 }
 
 /* --- The Card Container (bulletin states: loading, empty, unavailable) --- */
@@ -427,53 +505,10 @@ html.public-home-smooth-scroll {
     min-width: 260px;
     max-width: min(100%, 320px);
   }
-
-  .section-title {
-    font-size: 1.5rem; 
-  }
-}
-
-/* --- 320px to 599px: Progressive mobile scaling --- */
-/* 480px - 599px: large mobile */
-@media (min-width: 480px) and (max-width: 599px) {
-  .interruption-list-container {
-    padding: 0 16px;
-  }
-  .section-title {
-    font-size: 1.4rem;
-    margin-bottom: 24px;
-  }
-}
-
-/* 321px - 479px: small mobile */
-@media (min-width: 321px) and (max-width: 479px) {
-  .interruption-list-container {
-    padding: 0 12px;
-  }
-  .section-title {
-    font-size: 1.25rem;
-    margin-bottom: 20px;
-  }
-}
-
-/* 320px and below: ultra-compact */
-@media (max-width: 320px) {
-  .interruption-list-container {
-    padding: 0 8px;
-  }
-  .section-title {
-    font-size: 1.1rem;
-    margin-bottom: 16px;
-    padding-bottom: 6px;
-  }
 }
 
 /* --- Desktop Scaling --- */
 @media (min-width: 1024px) {
-  .section-title {
-    font-size: 2.2rem;
-  }
-
   .interruption-card {
     width: 260px;
     height: 340px;

@@ -1,3 +1,8 @@
+/* Default scale for shared class names (e.g. .report-main-card on About/Visit Us); tier rules override on .report-problem-container */
+:root {
+    --report-scale: 1;
+}
+
 /* --- WIZARD LAYOUT --- */
 /* Fixed height based on Contact Information step - height never changes, width responsive */
 .report-wizard-form {
@@ -54,7 +59,7 @@
 }
 
 .report-wizard-form .wizard-body::-webkit-scrollbar {
-    width: 6px;
+    width: calc(6px * var(--report-scale, 1));
 }
 
 .report-wizard-form .wizard-body::-webkit-scrollbar-track {
@@ -66,11 +71,20 @@
     border-radius: 3px;
 }
 
-/* Stepper container: FIXED height - only text shrinks, container does not move */
+/* Stepper: --report-scale on .report-problem-container; layout row/column split stays at 900px */
 .report-wizard-stepper {
-    height: 44px;
-    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: calc(4px * var(--report-scale, 1));
+    height: calc(44px * var(--report-scale, 1));
+    min-height: calc(44px * var(--report-scale, 1));
     flex-shrink: 0;
+    padding: calc(13px * var(--report-scale, 1)) calc(25px * var(--report-scale, 1));
+    background: var(--bg-body);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: calc(8px * var(--report-scale, 1)) calc(8px * var(--report-scale, 1)) 0 0;
 }
 
 /* Row layout: stepper + content side-by-side on desktop */
@@ -84,14 +98,14 @@
     .report-wizard-stepper {
         flex-direction: column;
         flex-wrap: nowrap;
-        width: 160px;
-        min-width: 160px;
-        height: 240px;
-        min-height: 240px;
-        padding: 20px 12px;
+        width: calc(160px * var(--report-scale, 1));
+        min-width: calc(160px * var(--report-scale, 1));
+        height: calc(240px * var(--report-scale, 1));
+        min-height: calc(240px * var(--report-scale, 1));
+        padding: calc(20px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1));
         border-bottom: none;
         border-right: 1px solid var(--border-color);
-        border-radius: 12px 0 0 12px;
+        border-radius: calc(12px * var(--report-scale, 1)) 0 0 calc(12px * var(--report-scale, 1));
         justify-content: flex-start;
         align-items: stretch;
     }
@@ -99,16 +113,16 @@
     .report-wizard-stepper .stepper-step {
         flex-direction: row;
         width: 100%;
-        padding: 8px 10px;
-        font-size: 0.7rem;
+        padding: calc(8px * var(--report-scale, 1)) calc(10px * var(--report-scale, 1));
+        font-size: calc(0.7rem * var(--report-scale, 1));
         justify-content: flex-start;
-        gap: 8px;
+        gap: calc(8px * var(--report-scale, 1));
     }
 
     .report-wizard-stepper .stepper-connector {
-        width: 2px;
-        height: 10px;
-        margin-left: 19px;
+        width: max(1px, calc(2px * var(--report-scale, 1)));
+        height: calc(10px * var(--report-scale, 1));
+        margin-left: calc(19px * var(--report-scale, 1));
         align-self: flex-start;
         flex-shrink: 0;
     }
@@ -122,434 +136,73 @@
 
     .report-wizard-form .wizard-step-content {
         flex: 1;
-        padding: 20px 24px;
+        padding: calc(20px * var(--report-scale, 1)) calc(24px * var(--report-scale, 1));
     }
 
     .report-wizard-form .wizard-actions {
-        padding: 16px 24px;
+        padding: calc(16px * var(--report-scale, 1)) calc(24px * var(--report-scale, 1));
         border-top: 1px solid var(--border-color);
         flex-shrink: 0;
     }
 }
 
-/* Desktop (1024px+) */
 @media (min-width: 1024px) {
     .report-wizard-stepper {
-        width: 180px;
-        min-width: 180px;
-        padding: 24px 16px;
+        width: calc(180px * var(--report-scale, 1));
+        min-width: calc(180px * var(--report-scale, 1));
+        padding: calc(24px * var(--report-scale, 1)) calc(16px * var(--report-scale, 1));
     }
 
     .report-wizard-stepper .stepper-step {
-        font-size: 0.75rem;
-        padding: 10px 12px;
-        gap: 10px;
+        font-size: calc(0.75rem * var(--report-scale, 1));
+        padding: calc(10px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1));
+        gap: calc(10px * var(--report-scale, 1));
     }
 
     .report-wizard-stepper .stepper-num {
-        width: 20px;
-        height: 20px;
-        font-size: 0.65rem;
+        width: calc(20px * var(--report-scale, 1));
+        height: calc(20px * var(--report-scale, 1));
+        font-size: calc(0.65rem * var(--report-scale, 1));
     }
 
     .report-wizard-stepper .stepper-connector {
-        margin-left: 22px;
+        margin-left: calc(22px * var(--report-scale, 1));
     }
 
     .report-wizard-form .wizard-step-content {
-        padding: 24px 28px;
+        padding: calc(24px * var(--report-scale, 1)) calc(28px * var(--report-scale, 1));
     }
 
     .report-wizard-form .wizard-actions {
-        padding: 20px 28px;
+        padding: calc(20px * var(--report-scale, 1)) calc(28px * var(--report-scale, 1));
     }
 }
 
-/* ========== STEPPER RESPONSIVE (320px → tablet) ========== */
-
-/* 320px and below: numbers only, ultra-compact - no overlap */
-@media (max-width: 320px) {
-    .report-wizard-stepper {
-        padding: 8px 10px;
-        gap: 2px;
-        justify-content: center;
-    }
-
-    .report-wizard-stepper .stepper-step {
-        padding: 2px 3px;
-        gap: 0;
+/* Horizontal stepper: hide labels on narrow widths (row layout is below 900px) */
+@media (max-width: 400px) {
+    .report-problem-container .report-wizard-stepper .stepper-step {
         font-size: 0;
+        gap: 0;
     }
 
-    .report-wizard-stepper .stepper-label-short {
+    .report-problem-container .report-wizard-stepper .stepper-label-short {
         display: none !important;
     }
-
-    .report-wizard-stepper .stepper-num {
-        width: 12px;
-        height: 12px;
-        font-size: 0.5rem;
-    }
-
-    .report-wizard-stepper .stepper-connector {
-        width: 3px;
-        height: 2px;
-    }
-
-    .wizard-step-content {
-        padding: 10px 12px;
-    }
-
-    .wizard-actions {
-        padding: 10px 12px;
-    }
-
-    .column-section-title {
-        font-size: 0.9rem !important;
-    }
-
-    .btn-wizard-back,
-    .btn-wizard-next {
-        padding: 8px 12px;
-        font-size: 0.75rem;
-    }
-
-    /* Container & form adapt to 320px - no overflow */
-    .report-problem-container {
-        padding: 0 6px;
-    }
-
-    .report-main-card {
-        padding: 8px 10px;
-        gap: 12px;
-        border-radius: 8px;
-    }
-
-    .wizard-step-content {
-        padding: 8px 6px;
-    }
-
-    .wizard-actions {
-        padding: 8px 6px;
-    }
-
-    .column-section-title {
-        overflow-wrap: break-word;
-        word-break: break-word;
-    }
 }
 
-/* 321px - 359px: numbers only, slightly larger */
-@media (min-width: 321px) and (max-width: 359px) {
-    .report-wizard-stepper {
-        padding: 8px 12px;
-        gap: 3px;
-        justify-content: center;
-    }
-
-    .report-wizard-stepper .stepper-step {
-        padding: 2px 4px;
-        gap: 0;
-        font-size: 0;
-    }
-
-    .report-wizard-stepper .stepper-label-short {
+@media (min-width: 401px) and (max-width: 480px) {
+    .report-problem-container .report-wizard-stepper .stepper-label-short {
         display: none !important;
     }
-
-    .report-wizard-stepper .stepper-num {
-        width: 14px;
-        height: 14px;
-        font-size: 0.5rem;
-    }
-
-    .report-wizard-stepper .stepper-connector {
-        width: 4px;
-        height: 2px;
-    }
-
-    .wizard-step-content {
-        padding: 10px 12px;
-    }
-
-    .wizard-actions {
-        padding: 10px 12px;
-    }
-
-    .column-section-title {
-        font-size: 0.9rem !important;
-    }
-
-    .btn-wizard-back,
-    .btn-wizard-next {
-        padding: 8px 14px;
-        font-size: 0.8rem;
-    }
-
-    .report-problem-container {
-        padding: 0 10px;
-    }
-
-    .report-main-card {
-        padding: 12px 14px;
-    }
-
-    .wizard-step-content {
-        padding: 10px 10px;
-    }
-
-    .wizard-actions {
-        padding: 10px 10px;
-    }
-}
-
-/* 360px - 399px: numbers only (labels still hidden for fit) */
-@media (min-width: 360px) and (max-width: 399px) {
-    .report-wizard-stepper {
-        padding: 9px 14px;
-        gap: 4px;
-    }
-
-    .report-wizard-stepper .stepper-step {
-        padding: 3px 5px;
-        gap: 0;
-        font-size: 0;
-    }
-
-    .report-wizard-stepper .stepper-label-short {
-        display: none !important;
-    }
-
-    .report-wizard-stepper .stepper-num {
-        width: 16px;
-        height: 16px;
-        font-size: 0.55rem;
-    }
-
-    .report-wizard-stepper .stepper-connector {
-        width: 5px;
-        height: 2px;
-    }
-
-    .wizard-step-content {
-        padding: 11px 13px;
-    }
-
-    .wizard-actions {
-        padding: 11px 13px;
-    }
-
-    .column-section-title {
-        font-size: 0.92rem !important;
-    }
-
-    .btn-wizard-back,
-    .btn-wizard-next {
-        padding: 8px 14px;
-        font-size: 0.82rem;
-    }
-
-    .report-problem-container {
-        padding: 0 12px;
-    }
-
-    .report-main-card {
-        padding: 12px 16px;
-    }
-
-    .wizard-step-content {
-        padding: 11px 12px;
-    }
-
-    .wizard-actions {
-        padding: 11px 12px;
-    }
-}
-
-/* 400px - 479px: numbers only (labels hidden to prevent overlap) */
-@media (min-width: 400px) and (max-width: 479px) {
-    .report-wizard-stepper {
-        padding: 10px 14px;
-        gap: 4px;
-    }
-
-    .report-wizard-stepper .stepper-step {
-        padding: 3px 6px;
-        gap: 0;
-        font-size: 0;
-    }
-
-    .report-wizard-stepper .stepper-label-short {
-        display: none !important;
-    }
-
-    .report-wizard-stepper .stepper-num {
-        width: 16px;
-        height: 16px;
-        font-size: 0.55rem;
-    }
-
-    .report-wizard-stepper .stepper-connector {
-        width: 6px;
-        height: 2px;
-    }
-
-    .report-problem-container {
-        padding: 0 14px;
-    }
-
-    .report-main-card {
-        padding: 14px 16px;
-    }
-
-    .wizard-step-content {
-        padding: 12px 14px;
-    }
-
-    .wizard-actions {
-        padding: 12px 14px;
-    }
-
-    .column-section-title {
-        font-size: 0.95rem !important;
-    }
-
-    .btn-wizard-back,
-    .btn-wizard-next {
-        padding: 9px 16px;
-        font-size: 0.85rem;
-    }
-}
-
-/* 481px - 600px: large mobile */
-@media (min-width: 481px) and (max-width: 600px) {
-    .report-wizard-stepper {
-        padding: 10px 16px;
-        gap: 4px;
-    }
-
-    .report-wizard-stepper .stepper-step {
-        padding: 4px 8px;
-        gap: 5px;
-        font-size: 0.55rem;
-    }
-
-    .report-wizard-stepper .stepper-label-short {
-        font-size: 0.55rem;
-    }
-
-    .report-wizard-stepper .stepper-num {
-        width: 18px;
-        height: 18px;
-        font-size: 0.6rem;
-    }
-
-    .report-wizard-stepper .stepper-connector {
-        width: 8px;
-        height: 2px;
-    }
-
-    .report-problem-container {
-        padding: 0 16px;
-    }
-
-    .report-main-card {
-        padding: 16px 18px;
-    }
-
-    .wizard-step-content {
-        padding: 14px 16px;
-    }
-
-    .wizard-actions {
-        padding: 14px 16px;
-    }
-
-    .column-section-title {
-        font-size: 1rem !important;
-    }
-
-    .btn-wizard-back,
-    .btn-wizard-next {
-        padding: 9px 18px;
-        font-size: 0.88rem;
-    }
-}
-
-/* 601px - 899px: tablet */
-@media (min-width: 601px) and (max-width: 899px) {
-    .report-wizard-stepper {
-        padding: 12px 18px;
-        gap: 4px;
-    }
-
-    .report-wizard-stepper .stepper-step {
-        padding: 5px 8px;
-        gap: 6px;
-        font-size: 0.6rem;
-    }
-
-    .report-wizard-stepper .stepper-label-short {
-        font-size: 0.6rem;
-    }
-
-    .report-wizard-stepper .stepper-num {
-        width: 18px;
-        height: 18px;
-        font-size: 0.6rem;
-    }
-
-    .report-wizard-stepper .stepper-connector {
-        width: 10px;
-        height: 2px;
-    }
-
-    .report-problem-container {
-        padding: 0 18px;
-    }
-
-    .report-main-card {
-        padding: 18px 20px;
-    }
-
-    .wizard-step-content {
-        padding: 16px 18px;
-    }
-
-    .wizard-actions {
-        padding: 16px 18px;
-    }
-
-    .column-section-title {
-        font-size: 1.05rem !important;
-    }
-
-    .btn-wizard-back,
-    .btn-wizard-next {
-        padding: 10px 20px;
-        font-size: 0.9rem;
-    }
-}
-
-.report-wizard-stepper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: nowrap;
-    gap: 4px;
-    padding: 13px 25px;
-    background: var(--bg-body);
-    border-bottom: 1px solid var(--border-color);
-    border-radius: 8px 8px 0 0;
 }
 
 .report-wizard-stepper .stepper-step {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 0.65rem;
+    gap: calc(6px * var(--report-scale, 1));
+    padding: calc(4px * var(--report-scale, 1)) calc(10px * var(--report-scale, 1));
+    border-radius: calc(8px * var(--report-scale, 1));
+    font-size: calc(0.65rem * var(--report-scale, 1));
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -557,7 +210,6 @@
     opacity: 0.6;
     flex-shrink: 0;
 }
-
 
 .report-wizard-stepper .stepper-step.done {
     opacity: 0.9;
@@ -579,14 +231,14 @@
 }
 
 .report-wizard-stepper .stepper-num {
-    width: 18px;
-    height: 18px;
+    width: calc(18px * var(--report-scale, 1));
+    height: calc(18px * var(--report-scale, 1));
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     background: var(--bg-card);
-    font-size: 0.6rem;
+    font-size: calc(0.6rem * var(--report-scale, 1));
     font-weight: 800;
 }
 
@@ -602,8 +254,8 @@
 
 /* Colored connectors (sleek, minimalist) */
 .report-wizard-stepper .stepper-connector {
-    width: 16px;
-    height: 2px;
+    width: calc(16px * var(--report-scale, 1));
+    height: max(1px, calc(2px * var(--report-scale, 1)));
     background: var(--border-color);
     opacity: 0.4;
     transition: all 0.25s ease;
@@ -645,45 +297,45 @@
 }
 
 .wizard-step-content {
-    min-height: 200px;
-    padding: 16px 20px;
+    min-height: calc(200px * var(--report-scale, 1));
+    padding: calc(16px * var(--report-scale, 1)) calc(20px * var(--report-scale, 1));
 }
 
 .wizard-step-block {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: calc(16px * var(--report-scale, 1));
 }
 
 .wizard-summary .summary-grid {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: calc(12px * var(--report-scale, 1));
+    padding: calc(16px * var(--report-scale, 1));
     background: var(--bg-body);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--report-scale, 1));
     border: 1px solid var(--border-color);
 }
 
 .wizard-summary .summary-item {
-    font-size: 14px;
+    font-size: calc(14px * var(--report-scale, 1));
     color: var(--text-main);
 }
 
 .aleco-scope-manual {
-    margin-top: 12px;
+    margin-top: calc(12px * var(--report-scale, 1));
 }
 
 .aleco-scope-manual label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: calc(8px * var(--report-scale, 1));
 }
 
 .wizard-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: calc(16px * var(--report-scale, 1)) calc(20px * var(--report-scale, 1));
     border-top: 1px solid var(--border-color);
 }
 
@@ -692,11 +344,12 @@
 }
 
 .btn-wizard-back {
-    padding: 10px 20px;
+    padding: calc(10px * var(--report-scale, 1)) calc(20px * var(--report-scale, 1));
     background: var(--bg-body);
     color: var(--text-main);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--report-scale, 1));
+    font-size: calc(0.875rem * var(--report-scale, 1));
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -707,11 +360,12 @@
 }
 
 .btn-wizard-next {
-    padding: 10px 24px;
+    padding: calc(10px * var(--report-scale, 1)) calc(24px * var(--report-scale, 1));
     background: var(--primary-color, #006bb3);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: calc(8px * var(--report-scale, 1));
+    font-size: calc(0.875rem * var(--report-scale, 1));
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -732,8 +386,8 @@
 /* Main Wrapper (matches interruption-list-container responsiveness) */
 .report-problem-container {
     max-width: 1400px;
-    margin: 0 auto 60px auto;
-    padding: 0 20px;
+    margin: 0 auto calc(60px * var(--report-scale, 1)) auto;
+    padding: 0 calc(20px * var(--report-scale, 1));
     font-family: var(--font-body);
     box-sizing: border-box;
     width: 100%;
@@ -742,35 +396,46 @@
     perspective: 1500px; /* Essential for the 3D flip */
 }
 
-/* Header Section */
+/* Header Section — spacing on public home overridden in BodyLandPage.css (.body-padding …) */
 .report-header-section {
-    margin-bottom: 25px;
+    margin-bottom: calc(25px * var(--report-scale, 1));
     border-bottom: 2px solid var(--text-secondary);
-    padding-bottom: 15px; 
+    padding-bottom: calc(15px * var(--report-scale, 1));
     opacity: 0.9;
 }
 
 .report-title {
     color: var(--text-header);
     margin: 0;
-    font-size: 1.5rem;
+    font-size: calc(2.2rem * var(--report-scale, 1));
+    font-weight: 700;
+    line-height: 1.2;
+    font-family: var(--font-header);
 }
 
 .report-description {
     color: var(--text-secondary);
-    margin: 8px 0 0 0;
-    font-size: 14px;
+    margin: calc(8px * var(--report-scale, 1)) 0 0 0;
+    font-size: calc(14px * var(--report-scale, 1));
+}
+
+.report-problem-container .column-section-title {
+    font-size: calc(1.25rem * var(--report-scale, 1)) !important;
+    margin-top: calc(8px * var(--report-scale, 1));
+    margin-bottom: calc(18px * var(--report-scale, 1)) !important;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 /* THE TWO-COLUMN GRID */
 .report-main-card {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 30px;
+    gap: calc(30px * var(--report-scale, 1));
     background-color: var(--bg-card);
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px var(--shadow-color-dark);
+    padding: calc(20px * var(--report-scale, 1));
+    border-radius: calc(12px * var(--report-scale, 1));
+    box-shadow: 0 calc(4px * var(--report-scale, 1)) calc(15px * var(--report-scale, 1)) var(--shadow-color-dark);
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
     box-sizing: border-box;
     width: 100%;
@@ -818,9 +483,9 @@
 .flip-button-style {
     position: relative;
     transition: all 0.3s ease-in-out;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-    padding-block: 0.25rem;
-    padding-inline: 0.75rem;
+    box-shadow: 0 calc(4px * var(--report-scale, 1)) calc(10px * var(--report-scale, 1)) rgba(0, 0, 0, 0.2);
+    padding-block: calc(0.25rem * var(--report-scale, 1));
+    padding-inline: calc(0.75rem * var(--report-scale, 1));
     background: linear-gradient(135deg, #ff4d4d 0%, #f73b6b 100%);
     border-radius: 9999px;
     display: flex;
@@ -828,24 +493,24 @@
     justify-content: center;
     cursor: pointer;
     color: #ffffff;
-    gap: 6px;
+    gap: calc(6px * var(--report-scale, 1));
     font-weight: 600;
-    border: 2px solid #ffffff33;
+    border: max(1px, calc(2px * var(--report-scale, 1))) solid #ffffff33;
     outline: none;
     overflow: hidden;
-    font-size: 11px;
+    font-size: calc(11px * var(--report-scale, 1));
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: calc(0.5px * var(--report-scale, 1));
 }
 
 .flip-icon {
-    width: 14px;
-    height: 14px;
+    width: calc(14px * var(--report-scale, 1));
+    height: calc(14px * var(--report-scale, 1));
     transition: all 0.3s ease-in-out;
     background: white;
     color: #ff4d4d;
     border-radius: 50%;
-    padding: 1px;
+    padding: max(0px, calc(1px * var(--report-scale, 1)));
 }
 
 .flip-button-style:hover {
@@ -866,19 +531,20 @@
 
 /* --- NEW TRACKING RESULTS UI (Step 3 & 4) --- */
 
-.track-input-container {
+.report-problem-container .track-input-container {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-bottom: 30px;
+    gap: calc(15px * var(--report-scale, 1));
+    margin-bottom: calc(30px * var(--report-scale, 1));
 }
 
-.btn-track-submit {
-    padding: 12px;
+.report-problem-container .btn-track-submit {
+    padding: calc(12px * var(--report-scale, 1));
     background-color: #006bb3;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: calc(8px * var(--report-scale, 1));
+    font-size: calc(0.9375rem * var(--report-scale, 1));
     font-weight: bold;
     cursor: pointer;
     transition: background 0.3s;
@@ -890,53 +556,48 @@
     transition: background 0.3s ease, color 0.3s ease;
 }
 
-.btn-track-submit:hover {
+.report-problem-container .btn-track-submit:hover {
     background-color: #005a96;
 }
 
 /* --- THEME-AWARE STATUS CONTAINER --- */
-.status-results-container {
-    margin-top: 20px;
-    padding: 20px;
+.report-problem-container .status-results-container {
+    margin-top: calc(20px * var(--report-scale, 1));
+    padding: calc(20px * var(--report-scale, 1));
     background: var(--bg-body);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--report-scale, 1));
     border: 1px solid var(--border-color);
 }
 
-/* --- THE MAIN STEPPER WRAPPER --- */
-.status-stepper {
+/* --- THE MAIN STEPPER WRAPPER (track card back) --- */
+.report-problem-container .status-stepper {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* Aligns the tops of the steps (the circles) */
-    position: relative; /* Essential for absolute positioning of the line */
-    margin-bottom: 30px;
+    align-items: flex-start;
+    position: relative;
+    margin-bottom: calc(30px * var(--report-scale, 1));
     width: 100%;
     isolation: isolate;
 }
 
-/* --- INDIVIDUAL STEPS --- */
-.status-stepper .step {
+.report-problem-container .status-stepper .step {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: calc(8px * var(--report-scale, 1));
     color: var(--text-secondary);
-    font-size: 10px;
+    font-size: calc(10px * var(--report-scale, 1));
     font-weight: bold;
-    width: 60px;
+    width: calc(60px * var(--report-scale, 1));
     z-index: 2;
 }
 
-/* --- THE CIRCLES --- */
-.status-stepper .circle {
-    width: 30px;
-    height: 30px;
+.report-problem-container .status-stepper .circle {
+    width: calc(30px * var(--report-scale, 1));
+    height: calc(30px * var(--report-scale, 1));
     border-radius: 50%;
-    
-    /* CRITICAL FIX: Forces a solid background so the line doesn't bleed through */
-    background-color: var(--bg-card) !important; 
-    
-    border: 2px solid var(--border-color);
+    background-color: var(--bg-card) !important;
+    border: max(1px, calc(2px * var(--report-scale, 1))) solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -944,71 +605,59 @@
     color: var(--text-secondary);
 }
 
-/* --- THE SINGLE CONNECTING LINE --- */
-.status-stepper .line {
-    /* THE FIX: Absolute positioning makes top, left, and right actually work */
-    position: absolute; 
-    
-    top: 15px; /* Exactly half of your 30px circle height */
-    height: 2px;
-    
-    /* THE THEME FIX: Uses your text color (Dark in light mode, White in dark mode) */
+.report-problem-container .status-stepper .line {
+    position: absolute;
+    top: calc(15px * var(--report-scale, 1));
+    height: max(1px, calc(2px * var(--report-scale, 1)));
     background-color: var(--text-main);
-    opacity: 0.3; /* Keeps it subtle */
-    
-    z-index: 1; /* Sits behind circles */
-    
-    /* This connects the center of the first circle to the center of the last */
-    left: 15px; 
-    right: 15px;
+    opacity: 0.3;
+    z-index: 1;
+    left: calc(15px * var(--report-scale, 1));
+    right: calc(15px * var(--report-scale, 1));
 }
 
-/* --- SPECIFIC ACTIVE COLORS --- */
-/* 1. Pending: Orange */
-.yellow-glow.active { 
-    border-color: #ff9800 !important; 
-    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5); 
-    background: rgba(255, 152, 0, 0.1); 
-    color: #ff9800; 
+/* --- SPECIFIC ACTIVE COLORS (track status circles) --- */
+.report-problem-container .yellow-glow.active {
+    border-color: #ff9800 !important;
+    box-shadow: 0 0 calc(10px * var(--report-scale, 1)) rgba(255, 152, 0, 0.5);
+    background: rgba(255, 152, 0, 0.1);
+    color: #ff9800;
 }
 
-/* 2. Ongoing: Blue */
-.blue-glow.active { 
-    border-color: #3b82f6 !important; 
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); 
-    background: rgba(59, 130, 246, 0.1); 
-    color: #3b82f6; 
+.report-problem-container .blue-glow.active {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 calc(10px * var(--report-scale, 1)) rgba(59, 130, 246, 0.5);
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
 }
 
-/* 3. Restored: Green */
-.green-glow.active { 
-    border-color: #22c55e !important; 
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); 
-    background: rgba(34, 197, 94, 0.1); 
-    color: #22c55e; 
+.report-problem-container .green-glow.active {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 calc(10px * var(--report-scale, 1)) rgba(34, 197, 94, 0.5);
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
 }
 
-/* 4. Unresolved: Red */
-.red-glow.active { 
-    border-color: #ef4444 !important; 
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); 
-    background: rgba(239, 68, 68, 0.1); 
-    color: #ef4444; 
+.report-problem-container .red-glow.active {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 calc(10px * var(--report-scale, 1)) rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
 }
 
 /* --- STATUS TEXT DETAILS --- */
-.status-details-card {
+.report-problem-container .status-details-card {
     text-align: left;
-    font-size: 13px;
+    font-size: calc(13px * var(--report-scale, 1));
     color: var(--text-main);
 }
 
-.status-tag {
-    padding: 2px 8px;
-    border-radius: 4px;
+.report-problem-container .status-tag {
+    padding: calc(2px * var(--report-scale, 1)) calc(8px * var(--report-scale, 1));
+    border-radius: calc(4px * var(--report-scale, 1));
     font-weight: bold;
     text-transform: uppercase;
-    font-size: 11px;
+    font-size: calc(11px * var(--report-scale, 1));
 }
 
 .status-tag.pending { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
@@ -1018,168 +667,159 @@
 .status-tag.nofaultfound { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
 .status-tag.accessdenied { background: rgba(249, 115, 22, 0.15); color: #f97316; }
 
-.crew-eta-info {
-    margin: 12px 0;
-    padding: 12px;
+.report-problem-container .crew-eta-info {
+    margin: calc(12px * var(--report-scale, 1)) 0;
+    padding: calc(12px * var(--report-scale, 1));
     background: rgba(59, 130, 246, 0.08);
-    border-radius: 8px;
-    border-left: 4px solid #3b82f6;
+    border-radius: calc(8px * var(--report-scale, 1));
+    border-left: calc(4px * var(--report-scale, 1)) solid #3b82f6;
 }
-.crew-eta-info p { margin: 6px 0; }
+.report-problem-container .crew-eta-info p { margin: calc(6px * var(--report-scale, 1)) 0; }
 
-.restored-message {
+.report-problem-container .restored-message {
     color: #22c55e;
     font-weight: 600;
-    margin: 12px 0;
+    margin: calc(12px * var(--report-scale, 1)) 0;
 }
 
-.unresolved-message {
+.report-problem-container .unresolved-message {
     color: #ef4444;
-    margin: 12px 0;
-    padding: 12px;
+    margin: calc(12px * var(--report-scale, 1)) 0;
+    padding: calc(12px * var(--report-scale, 1));
     background: rgba(239, 68, 68, 0.08);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--report-scale, 1));
 }
 
-.nff-message {
+.report-problem-container .nff-message {
     color: #8b5cf6;
-    margin: 12px 0;
-    padding: 12px;
+    margin: calc(12px * var(--report-scale, 1)) 0;
+    padding: calc(12px * var(--report-scale, 1));
     background: rgba(139, 92, 246, 0.08);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--report-scale, 1));
 }
 
-.access-denied-message {
+.report-problem-container .access-denied-message {
     color: #f97316;
-    margin: 12px 0;
-    padding: 12px;
+    margin: calc(12px * var(--report-scale, 1)) 0;
+    padding: calc(12px * var(--report-scale, 1));
     background: rgba(249, 115, 22, 0.08);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--report-scale, 1));
 }
 
-.lineman-remarks-preview {
-    margin-top: 12px;
-    padding: 10px;
+.report-problem-container .lineman-remarks-preview {
+    margin-top: calc(12px * var(--report-scale, 1));
+    padding: calc(10px * var(--report-scale, 1));
     background: rgba(128, 128, 128, 0.08);
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: calc(6px * var(--report-scale, 1));
+    font-size: calc(12px * var(--report-scale, 1));
 }
-.lineman-remarks-preview label { display: block; font-weight: 600; margin-bottom: 4px; }
+.report-problem-container .lineman-remarks-preview label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: calc(4px * var(--report-scale, 1));
+}
 
-.btn-report-again {
-    margin-top: 16px;
-    padding: 10px 20px;
+.report-problem-container .btn-report-again {
+    margin-top: calc(16px * var(--report-scale, 1));
+    padding: calc(10px * var(--report-scale, 1)) calc(20px * var(--report-scale, 1));
     background: var(--primary-color, #006bb3);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: calc(6px * var(--report-scale, 1));
+    font-size: calc(0.875rem * var(--report-scale, 1));
     font-weight: 600;
     cursor: pointer;
 }
-.btn-report-again:hover { opacity: 0.9; }
+.report-problem-container .btn-report-again:hover { opacity: 0.9; }
 
-.concern-preview {
-    margin-top: 15px;
-    padding-top: 10px;
+.report-problem-container .concern-preview {
+    margin-top: calc(15px * var(--report-scale, 1));
+    padding-top: calc(10px * var(--report-scale, 1));
     border-top: 1px solid var(--border-color);
 }
 
-/* --- DESKTOP SCALING --- */
+/* --- DESKTOP: wider card grid + larger type (still multiplied by --report-scale) --- */
 @media (min-width: 1024px) {
-    .report-title { font-size: 2.2rem; }
-    .report-main-card {
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 50px;
-        padding: 35px;
+    .report-problem-container .report-title {
+        font-size: calc(2.2rem * var(--report-scale, 1));
     }
-    .btn-submit-report { width: auto; padding: 14px 35px; }
-    .status-stepper .step { font-size: 12px; }
-    .status-stepper .circle { width: 35px; height: 35px; }
+
+    .report-problem-container .report-main-card {
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: calc(50px * var(--report-scale, 1));
+        padding: calc(35px * var(--report-scale, 1));
+    }
+
+    .report-problem-container .status-stepper .step {
+        font-size: calc(12px * var(--report-scale, 1));
+    }
+
+    .report-problem-container .status-stepper .circle {
+        width: calc(35px * var(--report-scale, 1));
+        height: calc(35px * var(--report-scale, 1));
+    }
+
+    .report-problem-container .status-stepper .line {
+        top: calc(17.5px * var(--report-scale, 1));
+    }
+
+    .report-problem-container .btn-submit-report {
+        width: auto;
+        padding: calc(14px * var(--report-scale, 1)) calc(35px * var(--report-scale, 1));
+        font-size: calc(16px * var(--report-scale, 1));
+        min-height: calc(52px * var(--report-scale, 1));
+    }
 }
 
 /* --- THEME-AWARE SUBMIT BUTTON --- */
-.form-submit-row {
-    margin-top: 25px;
+.report-problem-container .form-submit-row {
+    margin-top: calc(25px * var(--report-scale, 1));
     display: flex;
     justify-content: flex-end;
 }
 
-.btn-submit-report {
-    padding: 12px 20px;
-    font-size: 14px;
+.report-problem-container .btn-submit-report {
+    padding: calc(12px * var(--report-scale, 1)) calc(20px * var(--report-scale, 1));
+    min-height: calc(48px * var(--report-scale, 1));
+    font-size: calc(15px * var(--report-scale, 1));
+    line-height: 1.35;
     font-weight: 700;
-    color: #ffffff; /* Text stays white for contrast on green */
-    background-color: #1cc972; 
-    
-    /* Theme-Aware Border: Light/Dark compatibility */
-    border: 2px solid var(--bg-card); 
-    border-radius: 8px;
-    
+    color: #ffffff;
+    background-color: #1cc972;
+    border: max(1px, calc(2px * var(--report-scale, 1))) solid var(--bg-card);
+    border-radius: calc(8px * var(--report-scale, 1));
     cursor: pointer;
     transition: all 0.3s ease;
     width: 100%;
-    
-    /* Dynamic Shadow: Uses your theme's shadow variable */
-    box-shadow: 0 4px 10px var(--shadow-color-dark);
+    box-shadow: 0 calc(4px * var(--report-scale, 1)) calc(10px * var(--report-scale, 1)) var(--shadow-color-dark);
+    box-sizing: border-box;
 }
 
-.btn-submit-report:hover {
-    background-color: #17a65e;
-    transform: translateY(-2px);
-    
-    /* Highlight border on hover using theme text color */
-    border-color: var(--text-secondary);
-    
-    /* Glow effect that works in both modes */
-    box-shadow: 0 6px 15px rgba(28, 201, 114, 0.4);
-}
-
-/* --- DESKTOP SCALING --- */
-@media (min-width: 1024px) {
-    .btn-submit-report {
-        width: auto;
-        padding: 14px 35px;
-        font-size: 16px;
+@media (pointer: coarse) and (max-width: 899px) {
+    .report-problem-container .btn-submit-report {
+        font-size: max(16px, calc(15px * var(--report-scale, 1)));
     }
 }
 
-/* --- MOBILE OPTIMIZATION (480px and below) --- */
-/* Strictly scoped to preserve desktop/tablet integrity */
+.report-problem-container .btn-submit-report:hover {
+    background-color: #17a65e;
+    transform: translateY(calc(-2px * var(--report-scale, 1)));
+    border-color: var(--text-secondary);
+    box-shadow: 0 calc(6px * var(--report-scale, 1)) calc(15px * var(--report-scale, 1)) rgba(28, 201, 114, 0.4);
+}
+
+/* --- MOBILE (480px): layout-only; sizing uses --report-scale --- */
 @media (max-width: 480px) {
     .report-problem-container {
-        padding: 20px 10px; /* Reduced outer padding to maximize usable space */
+        padding: calc(20px * var(--report-scale, 1)) calc(10px * var(--report-scale, 1));
     }
 
-    /* Header Section: Scaled down for readability without crowding */
-    .report-header-section {
-        margin-bottom: 15px;
-        padding-bottom: 10px;
+    .report-problem-container .flip-button-style {
+        width: 100%;
+        padding-block: calc(0.5rem * var(--report-scale, 1));
     }
 
-    .report-title {
-        font-size: 1.25rem; /* Shrunk from 1.5rem */
-    }
-
-    .report-description {
-        font-size: 12px; /* Shrunk from 14px */
-    }
-
-    /* Main Card: Ensuring 100% parent-dependent width */
-    .report-main-card {
-        padding: 15px; /* Shrunk from 20px to prevent squeezing content */
-        gap: 20px;     /* Tighter gap between sections */
-        border-radius: 8px;
-    }
-
-    /* Contact & Location Titles: Shrunk to keep vertical flow tight */
-    .column-section-title {
-        font-size: 1rem !important;
-        margin-bottom: 12px !important;
-        margin-top: 20px !important;
-    }
-
-    /* Ensure all Inputs/Lego Bricks are 100% width and box-border aware */
-    .report-form-column, 
+    .report-form-column,
     .report-details-column,
     .dropdown-location-wrapper,
     .upload-wrapper {
@@ -1187,153 +827,142 @@
         box-sizing: border-box;
     }
 
-    /* Flip Button Scaling */
-    .flip-button-style {
-        width: 100%; /* Full width on mobile for easier thumb access */
-        padding-block: 0.5rem;
-        font-size: 10px;
-    }
-
-    /* Stepper: Scaled for small screens to prevent clipping */
-    .status-stepper .step {
-        width: 50px; /* Reduced from 60px */
-        font-size: 9px;
-    }
-
-    .status-stepper .circle {
-        width: 26px;  /* Reduced from 30px */
-        height: 26px;
-    }
-
-    .status-stepper .line {
-        top: 13px; /* Re-centered to match 26px circle */
-    }
-
-    /* Results UI: Ensure text doesn't overflow */
-    .status-results-container {
-        padding: 12px;
-    }
-
-    .status-details-card {
-        font-size: 12px;
-    }
-
-    /* Submit Button: Full width for touch ergonomics */
-    .btn-submit-report {
-        padding: 14px;
-        font-size: 14px;
+    .report-problem-container .btn-submit-report {
         width: 100% !important;
     }
 }
 
-/* =========================================
-   FIND MY LOCATION BUTTON (Compact Design)
-   ========================================= */
-.find-location-btn {
-    padding: 10px 16px;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s ease;
-    width: 100%;
-    max-width: 280px; /* Compact width even on desktop */
-}
-
-.find-location-btn:hover:not(:disabled) {
-    background-color: #2563eb;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.find-location-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    background-color: #10b981;
-}
-
-/* Spinner Animation */
-.spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid white;
+/* Spinner (GPS locating) */
+.report-problem-container .spinner {
+    width: calc(14px * var(--report-scale, 1));
+    height: calc(14px * var(--report-scale, 1));
+    border: max(1px, calc(2px * var(--report-scale, 1))) solid white;
     border-top-color: transparent;
     border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+    animation: report-spin 0.6s linear infinite;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+@keyframes report-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-/* =========================================
-   LOCATION STATUS BOXES (Compact Design)
-   ========================================= */
-.location-error-box {
-    padding: 10px 12px;
+/* GPS / location (report flow only) */
+.report-problem-container .gps-location-section {
+    margin: calc(20px * var(--report-scale, 1)) 0;
+}
+
+.report-problem-container .btn-find-location {
+    width: 100%;
+    padding: calc(14px * var(--report-scale, 1));
+    min-height: calc(48px * var(--report-scale, 1));
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: calc(8px * var(--report-scale, 1));
+    font-size: calc(16px * var(--report-scale, 1));
+    line-height: 1.35;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 calc(4px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1)) rgba(59, 130, 246, 0.3);
+    box-sizing: border-box;
+}
+
+@media (pointer: coarse) and (max-width: 899px) {
+    .report-problem-container .btn-find-location {
+        font-size: max(16px, calc(16px * var(--report-scale, 1)));
+    }
+}
+
+.report-problem-container .btn-find-location:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(calc(-2px * var(--report-scale, 1)));
+    box-shadow: 0 calc(6px * var(--report-scale, 1)) calc(16px * var(--report-scale, 1)) rgba(59, 130, 246, 0.4);
+}
+
+.report-problem-container .btn-find-location:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.report-problem-container .location-error-box {
+    margin-top: calc(12px * var(--report-scale, 1));
+    padding: calc(12px * var(--report-scale, 1));
     background-color: #fee2e2;
+    border: 1px solid #ef4444;
+    border-radius: calc(6px * var(--report-scale, 1));
     color: #991b1b;
-    border-radius: 6px;
-    font-size: 12px;
-    line-height: 1.4;
-}
-
-/* =========================================
-   GPS LOCK SUCCESS BOX (Enhanced Design)
-   ========================================= */
-.location-success-box {
-    padding: 12px;
-    background-color: #d1fae5;
-    border: 1px solid #10b981;
-    border-radius: 8px;
-    font-size: 13px;
-}
-
-.gps-lock-info {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    margin-bottom: 10px;
-}
-
-.gps-lock-icon {
-    font-size: 20px;
-    flex-shrink: 0;
-}
-
-.gps-lock-details {
-    margin: 4px 0 0 0;
-    color: #065f46;
+    font-size: calc(14px * var(--report-scale, 1));
     line-height: 1.5;
 }
 
-.gps-lock-actions {
-    display: flex;
-    justify-content: flex-end;
+.report-problem-container .location-success-box {
+    margin: calc(16px * var(--report-scale, 1)) 0;
+    padding: calc(16px * var(--report-scale, 1));
+    background-color: #d1fae5;
+    border: max(1px, calc(2px * var(--report-scale, 1))) solid #10b981;
+    border-radius: calc(8px * var(--report-scale, 1));
 }
 
-.location-clear-btn {
-    padding: 6px 12px;
+.report-problem-container .gps-lock-info {
+    display: flex;
+    gap: calc(12px * var(--report-scale, 1));
+    align-items: flex-start;
+    margin-bottom: calc(12px * var(--report-scale, 1));
+}
+
+.report-problem-container .gps-lock-icon {
+    font-size: calc(24px * var(--report-scale, 1));
+    flex-shrink: 0;
+}
+
+.report-problem-container .gps-lock-details {
+    margin: calc(4px * var(--report-scale, 1)) 0;
+    color: #065f46;
+    line-height: 1.6;
+    font-size: calc(14px * var(--report-scale, 1));
+}
+
+.report-problem-container .gps-accuracy {
+    margin-top: calc(6px * var(--report-scale, 1));
+    font-size: calc(12px * var(--report-scale, 1));
+    color: #047857;
+    font-style: italic;
+}
+
+.report-problem-container .location-clear-btn {
+    width: 100%;
+    padding: calc(8px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1));
     background-color: #ef4444;
     color: white;
     border: none;
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: calc(6px * var(--report-scale, 1));
+    font-size: calc(13px * var(--report-scale, 1));
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.location-clear-btn:hover {
+.report-problem-container .location-clear-btn:hover {
     background-color: #dc2626;
-    transform: translateY(-1px);
+    transform: translateY(calc(-1px * var(--report-scale, 1)));
+}
+
+@media (max-width: 480px) {
+    .report-problem-container .location-success-box {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: calc(8px * var(--report-scale, 1));
+    }
+
+    .report-problem-container .location-clear-btn {
+        align-self: flex-end;
+        width: auto;
+    }
 }
 
 /* Disabled Field Styling */
@@ -1344,127 +973,368 @@ select:disabled {
     opacity: 0.7;
 }
 
-/* =========================================
-   RESPONSIVE SCALING (Mobile & Desktop)
-   ========================================= */
+/* --- Report-only overrides: shared bricks (admin routes unchanged) --- */
+.report-problem-container .report-wizard-form .issue-dropdown-container.layout-form {
+    margin-bottom: calc(20px * var(--report-scale, 1));
+    gap: calc(6px * var(--report-scale, 1));
+}
 
-/* Desktop: Keep button compact */
-@media (min-width: 1024px) {
-    .find-location-btn {
-        max-width: 300px; /* Slightly wider on desktop but still compact */
-        font-size: 14px;
-        padding: 11px 18px;
+.report-problem-container .report-wizard-form .issue-select {
+    padding: calc(12px * var(--report-scale, 1)) calc(14px * var(--report-scale, 1)) !important;
+    border-radius: calc(8px * var(--report-scale, 1)) !important;
+    font-size: calc(15px * var(--report-scale, 1)) !important;
+    min-height: calc(44px * var(--report-scale, 1)) !important;
+}
+
+@media (pointer: coarse) and (max-width: 899px) {
+    .report-problem-container .report-wizard-form .issue-select {
+        font-size: max(16px, calc(15px * var(--report-scale, 1))) !important;
     }
 }
 
-/* Mobile: Full width for easier tapping */
-@media (max-width: 480px) {
-    .find-location-btn {
+.report-problem-container .concern-group {
+    margin-bottom: calc(20px * var(--report-scale, 1));
+}
+
+.report-problem-container .concern-label {
+    margin-bottom: calc(8px * var(--report-scale, 1));
+    font-size: calc(14px * var(--report-scale, 1)) !important;
+    line-height: 1.35;
+}
+
+/* !important beats ExplainTheProblem.css breakpoint rules (load order) */
+.report-problem-container .concern-field.textarea-large {
+    min-height: calc(180px * var(--report-scale, 1)) !important;
+    padding: calc(15px * var(--report-scale, 1)) !important;
+    border-radius: calc(8px * var(--report-scale, 1)) !important;
+    border-width: max(1px, calc(1px * var(--report-scale, 1))) !important;
+    font-size: calc(15px * var(--report-scale, 1)) !important;
+    line-height: 1.45;
+    box-sizing: border-box !important;
+}
+
+.report-problem-container .concern-field.textarea-large::placeholder {
+    font-size: calc(14px * var(--report-scale, 1)) !important;
+}
+
+.report-problem-container .concern-field.textarea-large:focus {
+    box-shadow: 0 0 0 calc(3px * var(--report-scale, 1)) rgba(28, 201, 114, 0.15) !important;
+}
+
+@media (pointer: coarse) and (max-width: 899px) {
+    .report-problem-container .concern-field.textarea-large {
+        font-size: max(16px, calc(15px * var(--report-scale, 1))) !important;
+    }
+}
+
+.report-problem-container .upload-modal {
+    padding: calc(20px * var(--report-scale, 1)) !important;
+    border-radius: calc(8px * var(--report-scale, 1)) !important;
+    box-shadow: 0 calc(4px * var(--report-scale, 1)) calc(6px * var(--report-scale, 1)) var(--shadow-color-dark);
+}
+
+.report-problem-container .upload-modal-title {
+    font-size: calc(16px * var(--report-scale, 1));
+    margin: 0 0 calc(5px * var(--report-scale, 1)) 0;
+}
+
+.report-problem-container .upload-modal-description {
+    font-size: calc(13px * var(--report-scale, 1));
+    margin: 0 0 calc(15px * var(--report-scale, 1)) 0;
+}
+
+.report-problem-container .upload-area {
+    min-height: calc(200px * var(--report-scale, 1)) !important;
+    border-radius: calc(8px * var(--report-scale, 1)) !important;
+    border-width: max(1px, calc(2px * var(--report-scale, 1)));
+}
+
+.report-problem-container .upload-area-icon {
+    margin-bottom: calc(15px * var(--report-scale, 1));
+}
+
+.report-problem-container .upload-area-icon svg {
+    width: calc(35px * var(--report-scale, 1)) !important;
+    height: calc(35px * var(--report-scale, 1)) !important;
+}
+
+.report-problem-container .upload-area-title {
+    font-size: calc(14px * var(--report-scale, 1));
+    margin-bottom: calc(5px * var(--report-scale, 1));
+}
+
+.report-problem-container .upload-area-description {
+    font-size: calc(12px * var(--report-scale, 1));
+}
+
+.report-problem-container .upload-modal-footer {
+    gap: calc(10px * var(--report-scale, 1));
+    margin-top: calc(20px * var(--report-scale, 1));
+}
+
+.report-problem-container .upload-modal-footer .btn-secondary,
+.report-problem-container .upload-modal-footer .btn-primary {
+    padding: calc(8px * var(--report-scale, 1)) calc(16px * var(--report-scale, 1));
+    font-size: calc(14px * var(--report-scale, 1));
+    border-radius: calc(6px * var(--report-scale, 1));
+}
+
+.report-problem-container .textfield-group,
+.report-problem-container .phone-input-group {
+    margin-bottom: calc(20px * var(--report-scale, 1));
+}
+
+.report-problem-container .textfield-label {
+    margin-bottom: calc(8px * var(--report-scale, 1)) !important;
+    font-size: calc(14px * var(--report-scale, 1)) !important;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.report-problem-container .textfield-input-wrapper {
+    min-height: calc(44px * var(--report-scale, 1));
+}
+
+/* Inputs scale with --report-scale; coarse touch keeps 16px floor (iOS zoom) */
+.report-problem-container .textfield-input,
+.report-problem-container .phone-input-input {
+    padding: calc(12px * var(--report-scale, 1)) calc(15px * var(--report-scale, 1)) !important;
+    border-radius: calc(8px * var(--report-scale, 1)) !important;
+    border-width: max(1px, calc(1px * var(--report-scale, 1))) !important;
+    font-size: calc(15px * var(--report-scale, 1)) !important;
+    line-height: 1.45;
+    min-height: calc(44px * var(--report-scale, 1)) !important;
+    box-sizing: border-box !important;
+}
+
+@media (pointer: coarse) and (max-width: 899px) {
+    .report-problem-container .textfield-input,
+    .report-problem-container .phone-input-input {
+        font-size: max(16px, calc(15px * var(--report-scale, 1))) !important;
+    }
+}
+
+.report-problem-container .textfield-input::placeholder,
+.report-problem-container .phone-input-input::placeholder {
+    font-size: calc(14px * var(--report-scale, 1)) !important;
+    opacity: 0.7;
+}
+
+.report-problem-container .textfield-input:focus,
+.report-problem-container .phone-input-input:focus {
+    box-shadow: 0 0 0 calc(3px * var(--report-scale, 1)) rgba(28, 201, 114, 0.15) !important;
+}
+
+.report-problem-container .textfield-input.error:focus,
+.report-problem-container .phone-input-input.error:focus {
+    box-shadow: 0 0 0 calc(3px * var(--report-scale, 1)) rgba(255, 77, 77, 0.15) !important;
+}
+
+.report-problem-container .phone-input-input {
+    letter-spacing: 0.02em;
+}
+
+.report-problem-container .textfield-error-msg,
+.report-problem-container .phone-input-error {
+    font-size: calc(12px * var(--report-scale, 1)) !important;
+    right: calc(12px * var(--report-scale, 1)) !important;
+    top: calc(14px * var(--report-scale, 1)) !important;
+    font-weight: 600;
+}
+
+/* Issue category <select> — match textfield modular scale */
+.report-problem-container .issue-dropdown-container.layout-form {
+    gap: calc(6px * var(--report-scale, 1));
+    margin-bottom: calc(20px * var(--report-scale, 1)) !important;
+}
+
+.report-problem-container .issue-dropdown-container.layout-form .issue-select {
+    padding: calc(12px * var(--report-scale, 1)) calc(14px * var(--report-scale, 1)) !important;
+    border-radius: calc(8px * var(--report-scale, 1)) !important;
+    border-width: max(1px, calc(1px * var(--report-scale, 1))) !important;
+    border-style: solid !important;
+    font-size: calc(15px * var(--report-scale, 1)) !important;
+    line-height: 1.45;
+    min-height: calc(44px * var(--report-scale, 1)) !important;
+    box-sizing: border-box !important;
+}
+
+@media (pointer: coarse) and (max-width: 899px) {
+    .report-problem-container .issue-dropdown-container.layout-form .issue-select {
+        font-size: max(16px, calc(15px * var(--report-scale, 1))) !important;
+    }
+}
+
+.report-problem-container .issue-dropdown-container.layout-form .issue-select:focus {
+    box-shadow: 0 0 0 calc(3px * var(--report-scale, 1)) rgba(0, 86, 179, 0.15) !important;
+}
+
+.report-problem-container .issue-dropdown-container.layout-form .issue-select optgroup {
+    padding: calc(4px * var(--report-scale, 1));
+    font-size: calc(13px * var(--report-scale, 1));
+}
+
+.report-problem-container .issue-dropdown-container.layout-form .issue-select option {
+    padding: calc(8px * var(--report-scale, 1));
+    font-size: calc(14px * var(--report-scale, 1));
+}
+
+.report-problem-container .hotlines-display {
+    margin-bottom: calc(1rem * var(--report-scale, 1));
+    padding: calc(0.75rem * var(--report-scale, 1)) calc(1rem * var(--report-scale, 1));
+    border-radius: calc(8px * var(--report-scale, 1));
+}
+
+.report-problem-container .hotlines-intro,
+.report-problem-container .hotlines-item {
+    font-size: calc(0.875rem * var(--report-scale, 1));
+}
+
+.report-problem-container .hotlines-desc {
+    font-size: calc(0.8125rem * var(--report-scale, 1));
+}
+
+.report-problem-container .aleco-scope-container {
+    gap: calc(12px * var(--report-scale, 1));
+}
+
+.report-problem-container .search-box-wrapper {
+    gap: calc(8px * var(--report-scale, 1));
+}
+
+.report-problem-container .location-search-input,
+.report-problem-container .location-select {
+    padding: calc(12px * var(--report-scale, 1)) calc(15px * var(--report-scale, 1)) !important;
+    border-radius: calc(8px * var(--report-scale, 1)) !important;
+    border-width: max(1px, calc(1px * var(--report-scale, 1))) !important;
+    border-style: solid !important;
+    font-size: calc(15px * var(--report-scale, 1)) !important;
+    line-height: 1.45;
+    min-height: calc(44px * var(--report-scale, 1)) !important;
+    box-sizing: border-box !important;
+}
+
+@media (pointer: coarse) and (max-width: 899px) {
+    .report-problem-container .location-search-input,
+    .report-problem-container .location-select {
+        font-size: max(16px, calc(15px * var(--report-scale, 1))) !important;
+    }
+}
+
+.report-problem-container .location-search-input:focus,
+.report-problem-container .location-select:focus {
+    box-shadow: 0 0 0 calc(3px * var(--report-scale, 1)) rgba(41, 121, 255, 0.15) !important;
+}
+
+[data-theme='dark'] .report-problem-container .location-search-input:focus,
+[data-theme='dark'] .report-problem-container .location-select:focus {
+    box-shadow: 0 0 0 calc(3px * var(--report-scale, 1)) rgba(250, 204, 21, 0.15) !important;
+}
+
+.report-problem-container .clear-selection-btn {
+    padding: calc(12px * var(--report-scale, 1)) calc(16px * var(--report-scale, 1));
+    border-radius: calc(8px * var(--report-scale, 1));
+    font-size: calc(14px * var(--report-scale, 1));
+    min-height: calc(44px * var(--report-scale, 1));
+    line-height: 1.35;
+    box-sizing: border-box;
+}
+
+@media (pointer: coarse) and (max-width: 899px) {
+    .report-problem-container .clear-selection-btn {
+        font-size: max(16px, calc(14px * var(--report-scale, 1)));
+    }
+}
+
+.report-problem-container .dropdown-grid-simple {
+    gap: calc(12px * var(--report-scale, 1));
+}
+
+.report-problem-container .selection-preview {
+    padding: calc(12px * var(--report-scale, 1)) calc(15px * var(--report-scale, 1));
+    border-radius: calc(8px * var(--report-scale, 1));
+    font-size: calc(14px * var(--report-scale, 1));
+}
+
+.report-problem-container .location-preview-container {
+    margin-top: calc(20px * var(--report-scale, 1));
+    border-radius: calc(16px * var(--report-scale, 1));
+    box-shadow: 0 calc(4px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1)) rgba(0, 0, 0, 0.08);
+}
+
+.report-problem-container .location-preview-header {
+    padding: calc(16px * var(--report-scale, 1)) calc(20px * var(--report-scale, 1));
+    gap: calc(10px * var(--report-scale, 1));
+}
+
+.report-problem-container .location-preview-header h4 {
+    font-size: calc(16px * var(--report-scale, 1));
+    gap: calc(8px * var(--report-scale, 1));
+}
+
+.report-problem-container .location-metadata {
+    gap: calc(8px * var(--report-scale, 1));
+}
+
+.report-problem-container .municipality-badge,
+.report-problem-container .district-badge,
+.report-problem-container .accuracy-badge {
+    padding: calc(6px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1));
+    border-radius: calc(6px * var(--report-scale, 1));
+    font-size: calc(12px * var(--report-scale, 1));
+}
+
+.report-problem-container .map-preview-wrapper {
+    height: calc(240px * var(--report-scale, 1));
+    max-width: calc(500px * var(--report-scale, 1));
+    border-radius: calc(12px * var(--report-scale, 1));
+}
+
+@media (max-width: 768px) {
+    .report-problem-container .map-preview-wrapper {
+        height: calc(200px * var(--report-scale, 1));
         max-width: 100%;
-        font-size: 12px;
-        padding: 12px 16px;
-    }
-
-    .location-success-box {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-    .location-clear-btn {
-        align-self: flex-end;
     }
 }
 
-/* GPS Location Section */
-.gps-location-section {
-    margin: 20px 0;
+@media (min-width: 1024px) {
+    .report-problem-container .map-preview-wrapper {
+        height: calc(260px * var(--report-scale, 1));
+        max-width: calc(550px * var(--report-scale, 1));
+    }
 }
 
-.btn-find-location {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+/* Leaflet map surface + zoom — scale with report tier */
+.report-problem-container .map-preview-wrapper .leaflet-container {
+    border-radius: calc(12px * var(--report-scale, 1)) !important;
+    font-size: calc(14px * var(--report-scale, 1));
 }
 
-.btn-find-location:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+.report-problem-container .map-preview-wrapper .leaflet-bar {
+    border-radius: calc(4px * var(--report-scale, 1)) !important;
+    border-width: max(1px, calc(2px * var(--report-scale, 1))) !important;
 }
 
-.btn-find-location:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-    box-shadow: none;
+.report-problem-container .map-preview-wrapper .leaflet-bar a {
+    width: calc(30px * var(--report-scale, 1)) !important;
+    height: calc(30px * var(--report-scale, 1)) !important;
+    line-height: calc(30px * var(--report-scale, 1)) !important;
+    font-size: calc(22px * var(--report-scale, 1)) !important;
 }
 
-.location-error-box {
-    margin-top: 12px;
-    padding: 12px;
-    background-color: #fee2e2;
-    border: 1px solid #ef4444;
-    border-radius: 6px;
-    color: #991b1b;
-    font-size: 14px;
+/* Scale marker inside fixed icon box (avoids clipping vs widening .pulse-ring) */
+.report-problem-container .map-preview-wrapper .user-location-marker {
+    transform: scale(var(--report-scale, 1));
+    transform-origin: center center;
 }
 
-.location-success-box {
-    margin: 16px 0;
-    padding: 16px;
-    background-color: #d1fae5;
-    border: 2px solid #10b981;
-    border-radius: 8px;
+.report-problem-container .location-preview-footer {
+    padding: calc(14px * var(--report-scale, 1)) calc(20px * var(--report-scale, 1));
 }
 
-.gps-lock-info {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    margin-bottom: 12px;
+.report-problem-container .location-hint,
+.report-problem-container .location-confirmation {
+    font-size: calc(13px * var(--report-scale, 1));
 }
 
-.gps-lock-icon {
-    font-size: 24px;
-    flex-shrink: 0;
-}
-
-.gps-lock-details {
-    margin: 4px 0;
-    color: #065f46;
-    line-height: 1.6;
-    font-size: 14px;
-}
-
-.gps-accuracy {
-    margin-top: 6px;
-    font-size: 12px;
-    color: #047857;
-    font-style: italic;
-}
-
-.location-clear-btn {
-    width: 100%;
-    padding: 8px 12px;
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.location-clear-btn:hover {
-    background-color: #dc2626;
-    transform: translateY(-1px);
-}
+/* --report-scale tiers: set on .body-padding in BodyLandPage.css (public home); :root fallback for standalone use */

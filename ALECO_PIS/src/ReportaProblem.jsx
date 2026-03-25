@@ -13,6 +13,7 @@ import TextFieldProblem from './components/textfields/TextFieldProblem';
 import PhoneInputProblem from './components/textfields/PhoneInputProblem';
 import ExplainTheProblem from './components/textfields/ExplainTheProblem';
 import UploadTheProblem from './components/buckets/UploadTheProblem';
+/* Portals (TicketPopUp, ConfirmModal) render under document.body — not inside #report; they do not inherit --report-scale unless styled separately */
 import TicketPopUp from './components/containers/TicketPopUp'; 
 import IssueCategoryDropdown from './components/dropdowns/IssueCategoryDropdown';
 import LocationPreviewMap from './components/LocationPreviewMap';

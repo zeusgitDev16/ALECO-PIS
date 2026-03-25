@@ -25,35 +25,35 @@
 }
 
 @media (max-width: 320px) {
-    .report-upload-column,
-    .upload-modal {
+    body:not(:has(#report)) .report-upload-column,
+    body:not(:has(#report)) .upload-modal {
         width: 100%;
         min-width: 0;
         max-width: 100%;
     }
 
-    .upload-modal {
+    body:not(:has(#report)) .upload-modal {
         padding: 10px;
     }
 
-    .upload-modal-title {
+    body:not(:has(#report)) .upload-modal-title {
         font-size: 14px;
     }
 
-    .upload-modal-description {
+    body:not(:has(#report)) .upload-modal-description {
         font-size: 12px;
         margin-bottom: 10px;
     }
 
-    .upload-area {
+    body:not(:has(#report)) .upload-area {
         min-height: 140px;
     }
 
-    .upload-area-title {
+    body:not(:has(#report)) .upload-area-title {
         font-size: 12px;
     }
 
-    .upload-area-description {
+    body:not(:has(#report)) .upload-area-description {
         font-size: 11px;
     }
 }

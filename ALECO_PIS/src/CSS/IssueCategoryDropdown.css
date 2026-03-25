@@ -94,15 +94,15 @@
     padding: 8px;
 }
 
-/* --- 320px: Ultra-compact, no overflow --- */
+/* --- 320px: Ultra-compact (not on public Report — modular scale in ReportaProblem.css) --- */
 @media (max-width: 320px) {
-    .issue-dropdown-container {
+    body:not(:has(#report)) .issue-dropdown-container {
         margin-bottom: 10px;
         min-width: 0;
         max-width: 100%;
     }
 
-    .issue-dropdown-container.layout-form .issue-select {
+    body:not(:has(#report)) .issue-dropdown-container.layout-form .issue-select {
         padding: 8px 10px;
         font-size: 12px;
         border-radius: 6px;
@@ -133,8 +133,8 @@
         text-overflow: ellipsis; /* Adds "..." if the category text is too long for the tiny box */
     }
 
-    /* Shrinks the form select for mobile screens (Kept safe from inline) */
-    .issue-dropdown-container.layout-form .issue-select {
+    /* Shrinks the form select for mobile (not on public Report) */
+    body:not(:has(#report)) .issue-dropdown-container.layout-form .issue-select {
         width: 100% !important;
         padding: 8px 10px;
         font-size: 13px;

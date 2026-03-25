@@ -56,7 +56,7 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, distr
                     zoom={16} 
                     scrollWheelZoom={false}
                     zoomControl={true}
-                    style={{ height: '100%', width: '100%', borderRadius: '12px' }}
+                    style={{ height: '100%', width: '100%' }}
                 >
                     <TileLayer 
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 

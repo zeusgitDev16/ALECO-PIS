@@ -25,8 +25,39 @@ process.env.TZ = 'Asia/Manila';
 const app = express();
 const PORT = 5000;
 
+/** Browser origins allowed to call this API (localhost + production frontend). */
+const DEFAULT_CORS_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:4173',
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+    'https://aleco-pis-x6zo.vercel.app',
+    process.env.VITE_API_URL_PRODUCTION,
+];
+
+const extraOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const allowedOrigins = [...new Set([...DEFAULT_CORS_ORIGINS, ...extraOrigins])];
+console.log(`[cors] ${allowedOrigins.length} allowed origin(s) (set CORS_ALLOWED_ORIGINS to add more)`);
+
+const corsOptions = {
+    origin(origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        console.warn(`[cors] blocked origin: ${origin}`);
+        return callback(null, false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
 // 2. Middleware (The Guards)
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // 3. Mount the Lego Bricks

@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 // Removed mysql, nodemailer, bcrypt, and cloudinary - they are all handled by the bricks now!
 
+import { buildAllowedCorsOrigins, normalizeOrigin } from './backend/config/corsOrigins.js';
+
 // 1. Initialize environment variables & Lego Bricks
 import authRoutes from './backend/routes/auth.js';
 import ticketRoutes from './backend/routes/tickets.js';
@@ -26,29 +28,16 @@ const app = express();
 // Render (and most hosts) assign PORT via env; local dev uses 5000
 const PORT = Number(process.env.PORT) || 5000;
 
-/** Browser origins allowed to call this API (localhost + production frontend). */
-const DEFAULT_CORS_ORIGINS = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:4173',
-    'http://127.0.0.1:4173',
-    'http://localhost:5000',
-    'http://127.0.0.1:5000',
-    'https://aleco-pis-x6zo.vercel.app',
-];
+// Behind Render / reverse proxies — correct client IP for any future rate limiting / logs
+app.set('trust proxy', 1);
 
-const extraOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-const allowedOrigins = [...new Set([...DEFAULT_CORS_ORIGINS, ...extraOrigins])];
-console.log(`[cors] ${allowedOrigins.length} allowed origin(s) (set CORS_ALLOWED_ORIGINS to add more)`);
+const allowedOrigins = buildAllowedCorsOrigins();
+console.log(`[cors] ${allowedOrigins.length} allowed origin(s) (CORS_ALLOWED_ORIGINS, PUBLIC_APP_URL / FRONTEND_ORIGIN)`);
 
 const corsOptions = {
     origin(origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
+        if (allowedOrigins.includes(normalizeOrigin(origin))) return callback(null, true);
         console.warn(`[cors] blocked origin: ${origin}`);
         return callback(null, false);
     },
@@ -71,16 +60,73 @@ app.use('/api', ticketGroupingRoutes); // <-- NEW: Ticket Grouping System
 app.use('/api', interruptionsRoutes); // Power advisory / aleco_interruptions
 app.use('/api', contactNumbersRoutes);
 
+/** Uptime / load balancer — no DB (Render health checks can target this). */
+app.get('/api/health', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, service: 'aleco-pis-api', ts: new Date().toISOString() });
+});
+
 app.get('/api/debug/routes', (req, res) => {
     res.json({
-        message: "All routes are mounted correctly!",
-        availableRoutes: [
-            "POST /api/tickets/submit",
-            "GET /api/tickets/track/:ticketId",
-            "GET /api/filtered-tickets",
-            "GET /api/crews/list",
-            "GET /api/pool/list"
-        ]
+        message: 'Route inventory (Express mounts at /api/*). Auth is stateless JSON + localStorage on client.',
+        health: 'GET /api/health',
+        auth: [
+            'POST /api/setup-account',
+            'POST /api/login',
+            'POST /api/google-login',
+            'POST /api/setup-google-account',
+            'POST /api/logout-all',
+            'POST /api/forgot-password',
+            'POST /api/reset-password',
+            'POST /api/verify-session',
+        ],
+        ticketsPublic: [
+            'POST /api/tickets/submit',
+            'GET /api/tickets/track/:ticketId',
+            'POST /api/check-duplicates',
+            'POST /api/tickets/send-copy',
+        ],
+        ticketsAdmin: [
+            'GET /api/filtered-tickets',
+            'PUT /api/tickets/:ticketId',
+            'DELETE /api/tickets/:ticketId',
+            'GET /api/tickets/logs',
+            'GET /api/tickets/:ticketId/logs',
+            'PUT /api/tickets/:ticketId/status',
+            'GET /api/crews/list',
+            'POST /api/crews/add',
+            'PUT /api/crews/update/:id',
+            'DELETE /api/crews/delete/:id',
+            'GET /api/pool/list',
+            'POST /api/pool/add',
+            'PUT /api/pool/update/:id',
+            '…grouping / dispatch / hold / SMS webhook — see tickets.js & ticket-grouping.js',
+        ],
+        users: [
+            'POST /api/invite',
+            'POST /api/send-email',
+            'POST /api/check-email',
+            'GET /api/users',
+            'PUT /api/users/profile',
+            'POST /api/users/toggle-status',
+        ],
+        interruptions: [
+            'GET /api/interruptions',
+            'POST /api/interruptions',
+            'GET /api/interruptions/:id',
+            'PUT /api/interruptions/:id',
+            'DELETE /api/interruptions/:id',
+            '…updates, archive, feed — see interruptions.js',
+        ],
+        other: [
+            'GET /api/contact-numbers',
+            'GET|POST … /api/tickets/export, import, archive — backup.js',
+        ],
+        deployment: {
+            frontend: 'Vercel (VITE_API_URL → this API origin)',
+            api: 'Render or any Node host; CORS must allow Vercel origin',
+            envHints: ['CORS_ALLOWED_ORIGINS', 'PUBLIC_APP_URL or FRONTEND_ORIGIN'],
+        },
     });
 });
 

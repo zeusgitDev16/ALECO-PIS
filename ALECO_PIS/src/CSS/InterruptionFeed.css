@@ -6,6 +6,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding: 4px 10px 20px 10px;
+  padding: 10px 4px 20px 4px; /* Adjust padding for a cleaner look */
   scroll-behavior: smooth;
   scroll-snap-type: x proximity;
   align-items: stretch;
@@ -17,11 +18,13 @@
 
 .interruption-feed::-webkit-scrollbar-track {
   background: var(--bg-card, #f1f1f1);
+  background: transparent; /* Cleaner track */
   border-radius: 4px;
 }
 
 .interruption-feed::-webkit-scrollbar-thumb {
   background: var(--text-secondary, #888);
+  background: var(--border-color); /* More subtle thumb color */
   border-radius: 4px;
 }
 
@@ -31,14 +34,24 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 16px;
+  border-radius: 16px; /* Slightly larger radius for a softer, modern look */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+  border: 1px solid var(--border-color);
+  padding: 20px; /* Increased padding for more internal whitespace */
   scroll-snap-align: start;
   flex-shrink: 0;
-  min-width: 300px;
-  width: 85vw;
-  max-width: 450px;
+  width: 380px; /* Resized wider card */
+  min-height: 420px; /* Added height for consistency */
   display: flex;
   flex-direction: column;
   gap: 16px; /* Use gap for consistent spacing between header, body, etc. */
+  gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effect */
+}
+
+.interruption-feed-post:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 /* --- Feed Post Header --- */
@@ -167,7 +180,7 @@
 
 /* Text-only card: Body is the last child, so let it fill the card height */
 .interruption-feed-post > .feed-post-body:last-child {
-  flex-grow: 1;
+  flex-grow: 0; /* Prevents the body from stretching to fill empty vertical space */
   margin-bottom: 0;
 }
 
@@ -186,6 +199,7 @@
   line-height: 1.55;
   color: var(--text-main);
   margin: 0;
+  /* Removed the inner box styling for a cleaner, more minimal look */
   word-break: break-word;
   overflow-wrap: break-word;
   /* Create a container box for the details */
@@ -193,7 +207,7 @@
   border: 1px solid var(--border-color);
   padding: 12px;
   border-radius: 8px;
-  flex-grow: 1;
+  flex-grow: 0; /* Prevents the inner details box from stretching vertically */
   /* Ensure content aligns to the top ("upward") instead of centering */
   display: flex;
   flex-direction: column;
@@ -438,10 +452,10 @@
   /* Match the sizing and flex behavior of .interruption-feed-post */
   scroll-snap-align: start;
   flex-shrink: 0;
-  min-width: 300px;
-  width: 85vw;
-  max-width: 450px;
+  width: 380px; /* Match new card width */
+  min-height: 420px; /* Match new card height */
   margin: 0;
+  height: auto; /* Allow bulletin cards to size their height based on content */
 }
 
 /* --- Mobile --- */
@@ -481,7 +495,7 @@
 
   .feed-post-header {
     gap: 6px;
-    margin-bottom: 10px;
+    /* margin-bottom is removed to rely on the parent's 'gap' property for consistent spacing */
   }
 
   .feed-post-header-avatar {
@@ -509,7 +523,7 @@
   }
 
   .feed-post-body {
-    margin-bottom: 10px;
+    /* margin-bottom is removed to rely on the parent's 'gap' property */
   }
 
   .feed-post-headline {
@@ -613,7 +627,7 @@
 
   .feed-post-header {
     gap: 8px;
-    margin-bottom: 12px;
+    /* margin-bottom is removed to rely on the parent's 'gap' property for consistent spacing */
   }
 
   .feed-post-header-avatar {
@@ -868,7 +882,7 @@
 
   .feed-post-header {
     grid-column: 1 / -1;
-    margin-bottom: 24px;
+    margin-bottom: 0; /* Rely on parent grid-gap instead of margin */
   }
 
   .feed-post-body {

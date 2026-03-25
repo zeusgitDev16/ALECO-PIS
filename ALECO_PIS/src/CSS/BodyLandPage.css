@@ -28,10 +28,9 @@
 
 .section-title {
   font-size: 1.8rem;
-  /* UPDATED: Uses variable for dark mode text */
   color: var(--text-header);
-  margin-bottom: 5px;
-  border-bottom: 3px solid var(--text-secondary); /* UPDATED: Dynamic border color */
+  margin: 0 0 24px 0; /* Reverted to left-alignment */
+  border-bottom: 3px solid var(--text-secondary);
   padding-bottom: 10px;
   font-family: var(--font-header);
 }

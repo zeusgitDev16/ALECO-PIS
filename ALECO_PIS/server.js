@@ -34,7 +34,6 @@ const DEFAULT_CORS_ORIGINS = [
     'http://localhost:5000',
     'http://127.0.0.1:5000',
     'https://aleco-pis-x6zo.vercel.app',
-    process.env.VITE_API_URL_PRODUCTION,
 ];
 
 const extraOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')

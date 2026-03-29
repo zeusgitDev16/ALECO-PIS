@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 // Removed mysql, nodemailer, bcrypt, and cloudinary - they are all handled by the bricks now!
 
-import { buildAllowedCorsOrigins, normalizeOrigin } from './backend/config/corsOrigins.js';
+import { buildAllowedCorsOrigins, normalizeOrigin, hasExplicitPublicCorsEnv } from './backend/config/corsOrigins.js';
 
 // 1. Initialize environment variables & Lego Bricks
 import authRoutes from './backend/routes/auth.js';
@@ -33,6 +33,12 @@ app.set('trust proxy', 1);
 
 const allowedOrigins = buildAllowedCorsOrigins();
 console.log(`[cors] ${allowedOrigins.length} allowed origin(s) (CORS_ALLOWED_ORIGINS, PUBLIC_APP_URL / FRONTEND_ORIGIN)`);
+if (process.env.NODE_ENV === 'production' && !hasExplicitPublicCorsEnv()) {
+    console.warn(
+        '[cors] WARNING: No PUBLIC_APP_URL, FRONTEND_ORIGIN, or CORS_ALLOWED_ORIGINS set. ' +
+            'Browser clients loading your deployed SPA from an HTTPS origin will be blocked by CORS until at least one is set on this API host.'
+    );
+}
 
 const corsOptions = {
     origin(origin, callback) {

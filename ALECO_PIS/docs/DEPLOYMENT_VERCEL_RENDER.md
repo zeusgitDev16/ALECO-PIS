@@ -110,7 +110,7 @@ User phone / browser
 | **`VITE_API_URL`** | **HTTPS URL of the Render API** (no trailing slash), e.g. `https://<name>.onrender.com` |
 | **`VITE_GOOGLE_CLIENT_ID`** | Google Sign-In (must match Google Cloud OAuth client) |
 | **`VITE_GOOGLE_MAPS_API_KEY`** | Geocoding / maps from the browser |
-| **`VITE_API_URL_PRODUCTION`** | Optional fallback if `VITE_API_URL` is unset in a prod build (see `apiBase.js`) |
+| **`VITE_API_URL_PRODUCTION`** | Optional fallback if `VITE_API_URL` is unset in a prod build; **at least one** of `VITE_API_URL` or `VITE_API_URL_PRODUCTION` must be set or the production bundle **throws** on load (`apiBase.js`) |
 
 7. **Redeploy** after changing any `VITE_*` value (values are **inlined at build time**).
 
@@ -122,7 +122,7 @@ User phone / browser
 |---------------|--------|--------|
 | `VITE_API_URL`, `VITE_GOOGLE_*`, `VITE_*` | Yes | No (ignored by Express; does not fix the SPA) |
 | `DB_*`, `EMAIL_*`, `CLOUDINARY_*`, `PHILSMS_*`, etc. | No | Yes |
-| `CORS_ALLOWED_ORIGINS`, `PUBLIC_APP_URL`, `FRONTEND_ORIGIN` | No | Yes |
+| `CORS_ALLOWED_ORIGINS`, `PUBLIC_APP_URL`, `FRONTEND_ORIGIN` | No | **Yes** — set `PUBLIC_APP_URL` (or `CORS_ALLOWED_ORIGINS`) to your live Vercel URL so the browser can call the API; also enables optional link in forgot-password email |
 | `PORT` | N/A | Set by Render (do not override unless you know why) |
 
 ---

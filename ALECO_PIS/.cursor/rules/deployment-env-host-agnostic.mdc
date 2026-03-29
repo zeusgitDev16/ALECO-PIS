@@ -18,7 +18,8 @@ alwaysApply: true
 
 ## Backend (Express)
 
-- **CORS:** `backend/config/corsOrigins.js` — `PUBLIC_APP_URL`, `FRONTEND_ORIGIN`, `CORS_ALLOWED_ORIGINS`. If the SPA moves to a new domain, env must be updated; avoid assuming a single hardcoded production origin in new code.
+- **CORS:** `backend/config/corsOrigins.js` — localhost defaults for dev + `PUBLIC_APP_URL`, `FRONTEND_ORIGIN`, `CORS_ALLOWED_ORIGINS` for deployed SPA origins (no vendor URL baked in). Production API should set at least one of those env vars; `server.js` may log a warning if `NODE_ENV=production` and none are set.
+- **Production SPA build:** `getApiBaseUrl()` throws if neither `VITE_API_URL` nor `VITE_API_URL_PRODUCTION` is set—do not ship a prod bundle without them.
 
 ## Before finishing a task
 

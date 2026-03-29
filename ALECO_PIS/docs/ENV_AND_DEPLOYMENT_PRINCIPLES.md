@@ -48,16 +48,16 @@ See also: [`DEPLOYMENT_VERCEL_RENDER.md`](./DEPLOYMENT_VERCEL_RENDER.md) for ste
 
 ### Aligned with these principles
 
-- **`src/config/apiBase.js`** — Single resolver: `VITE_API_URL` → optional `VITE_API_URL_PRODUCTION` in prod → fallback `http://localhost:5000` for dev.
+- **`src/config/apiBase.js`** — `VITE_API_URL` → optional `VITE_API_URL_PRODUCTION` in **production** builds; **throws** if both missing in prod. Dev (`import.meta.env.DEV`) falls back to `http://localhost:5000`.
 - **`src/utils/api.js`** — `apiUrl(path)` uses `getApiBaseUrl()` for all full URLs.
 - **`src/api/axiosConfig.js`** — Axios uses `getApiBaseUrl()` (same source of truth).
 - **`server.js`** — `PORT` from env; works on Render and locally.
 - **`backend/config/db.js`** — Database from `DB_*` env vars.
-- **`backend/config/corsOrigins.js`** — Builds allowlist from defaults + `CORS_ALLOWED_ORIGINS` + `PUBLIC_APP_URL` / `FRONTEND_ORIGIN`.
+- **`backend/config/corsOrigins.js`** — Localhost dev defaults + `CORS_ALLOWED_ORIGINS` + `PUBLIC_APP_URL` / `FRONTEND_ORIGIN` (no hardcoded third-party production URL). If `NODE_ENV=production` and none of those env vars are set, **`server.js` logs a CORS warning** at startup.
 
-### Gap to be aware of (host replace friendly)
+### Password reset email
 
-- **`backend/config/corsOrigins.js`** includes a **default** origin `https://aleco-pis-x6zo.vercel.app`. That is convenient for the current deployment but **not** vendor-neutral. When you move the SPA to another URL, set **`PUBLIC_APP_URL`** (and/or **`CORS_ALLOWED_ORIGINS`**) on the API so the correct origin is allowed; consider removing or replacing the hardcoded default in a future cleanup so **env alone** defines production origins.
+- **`PUBLIC_APP_URL`** or **`FRONTEND_ORIGIN`** on the API host adds an optional “open the app” link in the forgot-password email (same vars as CORS primary SPA).
 
 ---
 
@@ -75,6 +75,7 @@ See also: [`DEPLOYMENT_VERCEL_RENDER.md`](./DEPLOYMENT_VERCEL_RENDER.md) for ste
 
 | Doc | Topic |
 |-----|--------|
+| [`LOCAL_VS_DEPLOYED_RISKS.md`](./LOCAL_VS_DEPLOYED_RISKS.md) | **Scan:** what can work locally but fail on deploy (CORS, `VITE_*`, webhooks, Google, geolocation, etc.) |
 | [`DEPLOYMENT_VERCEL_RENDER.md`](./DEPLOYMENT_VERCEL_RENDER.md) | Concrete Vercel + Render setup |
 | [`MODULAR_SCALE_AND_DESIGN_PATTERNS.md`](./MODULAR_SCALE_AND_DESIGN_PATTERNS.md) | UI scale; mentions `VITE_*` build behavior |
 | [`FULL_CODEBASE_MAP.md`](./FULL_CODEBASE_MAP.md) | High-level architecture |

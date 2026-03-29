@@ -263,7 +263,12 @@ router.post('/forgot-password', async (req, res) => {
       [cleanEmail, resetCode, expiresAt]
     );
 
-    // 5. EMAIL: Send using functional Nodemailer template
+    // 5. EMAIL: Send using functional Nodemailer template (optional PUBLIC_APP_URL = public SPA link for users)
+    const publicApp = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_ORIGIN || '').trim().replace(/\/$/, '');
+    const appLinkHtml = publicApp
+      ? `<p style="font-size: 14px; color: #555;">Open the app to enter this code: <a href="${publicApp}">${publicApp}</a></p>`
+      : '';
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: cleanEmail, 
@@ -277,6 +282,7 @@ router.post('/forgot-password', async (req, res) => {
               ${resetCode}
             </span>
           </div>
+          ${appLinkHtml}
           <p style="font-size: 14px; color: #888;">Valid for 15 minutes. If this wasn't you, ignore this email.</p>
         </div>`
     };

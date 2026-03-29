@@ -150,6 +150,7 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
                     <option value="">📊 All Status</option>
                     <option value="Pending">⏳ Pending</option>
                     <option value="Ongoing">🔧 Ongoing</option>
+                    <option value="OnHold">⏸️ On Hold</option>
                     <option value="Restored">✅ Restored</option>
                     <option value="Unresolved">❌ Unresolved</option>
                     <option value="NoFaultFound">○ No Fault Found</option>

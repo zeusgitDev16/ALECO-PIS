@@ -5,6 +5,7 @@ import './CSS/ReportaProblem.css';
 import { apiUrl } from './utils/api';
 import { formatPhoneDisplay, INVALID_PHONE_HINT } from './utils/phoneUtils';
 import { formatToPhilippineTime, formatToPhilippineTimeShort } from './utils/dateUtils';
+import { formatTicketStatusLabel } from './utils/ticketStatusDisplay';
 import { ALECO_SCOPE } from '../alecoScope';
 import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsLocationMatcher';
 
@@ -747,10 +748,10 @@ const ReportaProblem = () => {
             <span>Pending</span>
         </div>
         
-        {/* STEP 2: Ongoing or Unresolved */}
-        <div className={`step ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
-            <div className={`circle ${ticketData.status === 'Unresolved' ? 'red-glow' : 'blue-glow'} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
-            <span>{ticketData.status === 'Unresolved' ? 'Unresolved' : 'Ongoing'}</span>
+        {/* STEP 2: Ongoing, On Hold, or Unresolved */}
+        <div className={`step ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
+            <div className={`circle ${ticketData.status === 'Unresolved' ? 'red-glow' : 'blue-glow'} ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
+            <span>{ticketData.status === 'Unresolved' ? 'Unresolved' : ticketData.status === 'OnHold' ? 'On Hold' : 'Ongoing'}</span>
         </div>
         
         {/* STEP 3: Closed (Restored, NoFaultFound, AccessDenied) */}
@@ -763,10 +764,10 @@ const ReportaProblem = () => {
     <div className="status-details-card">
         <p>
             <strong>Current Status:</strong> 
-            <span className={`status-tag ${(ticketData.status || '').toLowerCase()}`}>{ticketData.status}</span>
+            <span className={`status-tag ${(ticketData.status || '').toLowerCase()}`}>{formatTicketStatusLabel(ticketData.status)}</span>
         </p>
         
-        {ticketData.status === 'Ongoing' && (ticketData.assigned_crew || ticketData.eta || ticketData.hold_reason) && (
+        {['Ongoing', 'OnHold'].includes(ticketData.status) && (ticketData.assigned_crew || ticketData.eta || ticketData.hold_reason) && (
             <div className="crew-eta-info">
                 {ticketData.assigned_crew && <p><strong>Crew dispatched:</strong> {ticketData.assigned_crew}</p>}
                 {ticketData.eta && <p><strong>ETA:</strong> {ticketData.eta}</p>}

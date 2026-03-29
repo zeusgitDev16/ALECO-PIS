@@ -89,6 +89,12 @@ const AdminTickets = () => {
         localStorage.setItem('ticketFilterSidebarCollapsed', String(sidebarCollapsed));
     }, [sidebarCollapsed]);
 
+    useEffect(() => {
+        if (!selectedTicket?.ticket_id || !tickets?.length) return;
+        const updated = tickets.find(t => t.ticket_id === selectedTicket.ticket_id);
+        if (updated) setSelectedTicket(updated);
+    }, [tickets, selectedTicket?.ticket_id]);
+
     const handleSelectTicket = (ticket) => {
         setSelectedTicket(ticket);
         if (ticket?.ticket_id) addOpened(ticket.ticket_id);
@@ -198,6 +204,26 @@ const AdminTickets = () => {
         } catch (error) {
             console.error('Delete ticket error:', error);
             toast.error('Failed to delete ticket. Please try again.');
+        }
+    };
+
+    const handleResumeFromHold = async (ticketId) => {
+        try {
+            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getActor())
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                toast.success(`ALECO System: ${data.message || `Ticket ${ticketId} resumed.`}`);
+                refetch();
+            } else {
+                toast.error(data.message || 'Could not resume ticket.');
+            }
+        } catch (error) {
+            console.error('Resume from hold error:', error);
+            toast.error('Failed to resume ticket. Please try again.');
         }
     };
 
@@ -523,6 +549,7 @@ const AdminTickets = () => {
                 onClose={() => setSelectedTicket(null)}
                 onUpdateTicket={handleUpdateTicket}
                 onPutHold={handlePutHold}
+                onResumeFromHold={handleResumeFromHold}
                 onDispatchGroup={handleDispatchGroup}
                 onUngroup={executeUngroup}
                 onDeleteTicket={handleDeleteTicket}

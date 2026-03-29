@@ -256,6 +256,13 @@ body.modal-open .ticket-table-header {
     border-color: rgba(59, 130, 246, 0.35);
 }
 
+/* On Hold - Slate, paused */
+.status-badge.onhold {
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.28) 0%, rgba(71, 85, 105, 0.18) 100%);
+    color: #64748b;
+    border-color: rgba(100, 116, 139, 0.4);
+}
+
 /* Restored - Green, success */
 .status-badge.restored {
     background: linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(22, 163, 74, 0.15) 100%);
@@ -302,6 +309,12 @@ body.modal-open .ticket-table-header {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.35) 0%, rgba(37, 99, 235, 0.2) 100%);
     color: #2563eb;
     border-color: rgba(37, 99, 235, 0.4);
+}
+
+[data-theme="light"] .status-badge.onhold {
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.3) 0%, rgba(71, 85, 105, 0.2) 100%);
+    color: #475569;
+    border-color: rgba(71, 85, 105, 0.45);
 }
 
 [data-theme="light"] .status-badge.restored,

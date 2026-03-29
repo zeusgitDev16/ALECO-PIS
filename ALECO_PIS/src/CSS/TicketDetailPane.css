@@ -172,6 +172,12 @@
     border: 1.5px solid rgba(33, 150, 243, 1);
 }
 
+.status-tag.onhold {
+    background: rgba(100, 116, 139, 0.95);
+    color: #ffffff;
+    border: 1.5px solid rgba(100, 116, 139, 1);
+}
+
 .status-tag.resolved,
 .status-tag.restored {
     background: rgba(76, 175, 80, 0.95);

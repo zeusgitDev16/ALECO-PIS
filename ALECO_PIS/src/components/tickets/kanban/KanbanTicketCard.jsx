@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
+import { formatTicketStatusLabel } from '../../../utils/ticketStatusDisplay';
 import { CSS } from '@dnd-kit/utilities';
 import '../../../CSS/TicketKanban.css';
 
@@ -112,7 +113,7 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
                 </div>
                 <div className="kanban-card-footer-right">
                     <span className={`status-badge ${(ticket.status || 'pending').toLowerCase().replace(/\s/g, '')}`}>
-                        {ticket.status || 'Pending'}
+                        {formatTicketStatusLabel(ticket.status) || 'Pending'}
                     </span>
                     <span className="kanban-card-time">⏰ {timeAgo}</span>
                 </div>

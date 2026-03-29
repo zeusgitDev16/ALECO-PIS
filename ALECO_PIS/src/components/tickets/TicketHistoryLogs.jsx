@@ -47,6 +47,7 @@ const TicketHistoryLogs = ({ ticketId, isVisible }) => {
         if (action === 'dispatch') return 'Started resolution / Dispatched';
         if (action === 'group_dispatch') return 'Group dispatched';
         if (action === 'hold') return 'Put on hold';
+        if (action === 'resume_hold') return 'Resumed from hold';
         if (action === 'bulk_restore') return 'Marked as Restored (bulk)';
         if (action === 'status_change') {
             if (from_status === 'Pending' && to_status === 'Ongoing') return 'Dispatched';
@@ -54,6 +55,7 @@ const TicketHistoryLogs = ({ ticketId, isVisible }) => {
             if (to_status === 'Unresolved') return 'Marked Unresolved';
             if (to_status === 'NoFaultFound') return 'No Fault Found';
             if (to_status === 'AccessDenied') return 'Access Denied';
+            if (to_status === 'OnHold') return 'Put on hold';
             return `Status: ${from_status || '—'} → ${to_status}`;
         }
         return action;

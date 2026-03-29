@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatToPhilippineDate } from '../../utils/dateUtils';
+import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
 import '../../CSS/RecentOpenedTickets.css';
 import '../../CSS/TicketDashboard.css';
 import '../../CSS/TicketTableView.css';
@@ -125,7 +126,7 @@ const RecentOpenedTickets = ({
                                     {ticket.municipality ? `${ticket.municipality}, ${ticket.district || 'Albay'}` : ticket.address || '—'}
                                 </span>
                             </div>
-                            <span className={`status-pill-solid ${(ticket.status || 'pending').toLowerCase().replace(/\s/g, '')}`}>{ticket.status || 'Pending'}</span>
+                            <span className={`status-pill-solid ${(ticket.status || 'pending').toLowerCase().replace(/\s/g, '')}`}>{formatTicketStatusLabel(ticket.status) || 'Pending'}</span>
                         </div>
                     </div>
                 );
@@ -181,7 +182,7 @@ const RecentOpenedTickets = ({
                                 <td className="col-concern" title={concern}>{concernShort}</td>
                                 <td>{location}</td>
                                 <td>
-                                    <span className={`status-badge ${(ticket.status || 'pending').toLowerCase().replace(/\s/g, '')}`}>{ticket.status || 'Pending'}</span>
+                                    <span className={`status-badge ${(ticket.status || 'pending').toLowerCase().replace(/\s/g, '')}`}>{formatTicketStatusLabel(ticket.status) || 'Pending'}</span>
                                 </td>
                             </tr>
                         );

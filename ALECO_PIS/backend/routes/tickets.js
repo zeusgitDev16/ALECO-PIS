@@ -450,6 +450,12 @@ ${ticket_id}`;
 
         // --- PHASE 3: DATABASE UPDATE ---
         console.log("➡️ Phase 3 (DB Update) Starting...");
+
+        const [dispatchStatusRows] = await pool.execute(
+            'SELECT status FROM aleco_tickets WHERE ticket_id = ?',
+            [ticket_id]
+        );
+        const dispatchFromStatus = dispatchStatusRows[0]?.status || 'Pending';
         
         const phNow = nowPhilippineForMysql();
         const updateQuery = `
@@ -459,7 +465,9 @@ ${ticket_id}`;
                 eta = ?, 
                 is_consumer_notified = ?, 
                 dispatch_notes = ?,
-                dispatched_at = ?
+                dispatched_at = ?,
+                hold_reason = NULL,
+                hold_since = NULL
             WHERE ticket_id = ?
         `;
 
@@ -478,7 +486,7 @@ ${ticket_id}`;
             await insertTicketLog(pool, {
                 ticket_id,
                 action: 'dispatch',
-                from_status: 'Pending',
+                from_status: dispatchFromStatus,
                 to_status: 'Ongoing',
                 actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
                 actor_email: actorEmail || null,
@@ -529,7 +537,7 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
 
     try {
         const [dbResult] = await pool.execute(
-            `UPDATE aleco_tickets SET hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
+            `UPDATE aleco_tickets SET status = 'OnHold', hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
             [hold_reason.trim(), nowPhilippineForMysql(), ticket_id]
         );
 
@@ -562,7 +570,7 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
             ticket_id,
             action: 'hold',
             from_status: 'Ongoing',
-            to_status: 'Ongoing',
+            to_status: 'OnHold',
             actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
             actor_email: actorEmail || null,
             actor_name: actorName || 'System',
@@ -589,6 +597,41 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
         });
     } catch (error) {
         console.error("❌ HOLD ERROR:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// --- RESUME FROM HOLD (Dispatcher) — clears hold fields and returns ticket to Ongoing ---
+router.put('/tickets/:ticket_id/resume-hold', async (req, res) => {
+    const { ticket_id } = req.params;
+
+    try {
+        const [dbResult] = await pool.execute(
+            `UPDATE aleco_tickets SET status = 'Ongoing', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'OnHold'`,
+            [ticket_id]
+        );
+
+        if (dbResult.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found or not On Hold.' });
+        }
+
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+        await insertTicketLog(pool, {
+            ticket_id,
+            action: 'resume_hold',
+            from_status: 'OnHold',
+            to_status: 'Ongoing',
+            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+            actor_email: actorEmail || null,
+            actor_name: actorName || 'System',
+            metadata: null
+        });
+
+        console.log(`✅ Ticket ${ticket_id} resumed from hold.`);
+        res.status(200).json({ success: true, message: `Ticket ${ticket_id} is back in progress.` });
+    } catch (error) {
+        console.error('❌ RESUME HOLD ERROR:', error.message);
         res.status(500).json({ success: false, message: error.message });
     }
 });
@@ -633,7 +676,7 @@ router.get('/tickets/sms/receive', async (req, res) => {
             if (crewRows.length > 0) {
                 const crewName = crewRows[0].crew_name;
                 const [ongoingTickets] = await pool.execute(
-                    `SELECT ticket_id, parent_ticket_id FROM aleco_tickets WHERE assigned_crew = ? AND status = 'Ongoing' ORDER BY dispatched_at DESC`,
+                    `SELECT ticket_id, parent_ticket_id, status FROM aleco_tickets WHERE assigned_crew = ? AND status IN ('Ongoing', 'OnHold') ORDER BY dispatched_at DESC`,
                     [crewName]
                 );
                 if (ongoingTickets.length > 0) {
@@ -648,10 +691,12 @@ router.get('/tickets/sms/receive', async (req, res) => {
                         );
                         const affectedIds = [parentId, ...ongoingTickets.map(t => t.ticket_id).filter(id => id !== parentId)];
                         for (const tid of affectedIds) {
+                            const row = ongoingTickets.find(t => t.ticket_id === tid);
+                            const fromSt = row?.status || 'Ongoing';
                             await insertTicketLog(pool, {
                                 ticket_id: tid,
                                 action: 'status_change',
-                                from_status: 'Ongoing',
+                                from_status: fromSt,
                                 to_status: newStatus,
                                 actor_type: 'sms_lineman',
                                 metadata: { source_phone_last4: sourcePhoneLast4, keyword, bulk: true }
@@ -666,10 +711,12 @@ router.get('/tickets/sms/receive', async (req, res) => {
                             [newStatus, ...ticketIds]
                         );
                         for (const tid of ticketIds) {
+                            const row = ongoingTickets.find(t => t.ticket_id === tid);
+                            const fromSt = row?.status || 'Ongoing';
                             await insertTicketLog(pool, {
                                 ticket_id: tid,
                                 action: 'status_change',
-                                from_status: 'Ongoing',
+                                from_status: fromSt,
                                 to_status: newStatus,
                                 actor_type: 'sms_lineman',
                                 metadata: { source_phone_last4: sourcePhoneLast4, keyword, bulk: true }
@@ -691,7 +738,7 @@ router.get('/tickets/sms/receive', async (req, res) => {
             );
             if (crewRows.length === 0) return null;
             const [tickets] = await pool.execute(
-                `SELECT ticket_id FROM aleco_tickets WHERE assigned_crew = ? AND status = 'Ongoing' ORDER BY dispatched_at DESC LIMIT 1`,
+                `SELECT ticket_id FROM aleco_tickets WHERE assigned_crew = ? AND status IN ('Ongoing', 'OnHold') ORDER BY dispatched_at DESC LIMIT 1`,
                 [crewRows[0].crew_name]
             );
             return tickets.length > 0 ? tickets[0].ticket_id : null;
@@ -739,70 +786,95 @@ router.get('/tickets/sms/receive', async (req, res) => {
             const ticketId = unresolvedMatch[1].toUpperCase();
             console.log(`🔍 Extracted Ticket ID (Unresolved): ${ticketId}`);
 
-            const [dbResult] = await pool.execute(
-                `UPDATE aleco_tickets SET status = 'Unresolved', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`,
+            const [prevRows] = await pool.execute(
+                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
                 [ticketId]
             );
-
-            if (dbResult.affectedRows > 0) {
-                const sourcePhoneLast4 = (senderNumber || '').slice(-4);
-                await insertTicketLog(pool, {
-                    ticket_id: ticketId,
-                    action: 'status_change',
-                    from_status: 'Ongoing',
-                    to_status: 'Unresolved',
-                    actor_type: 'sms_lineman',
-                    metadata: { source_phone_last4: sourcePhoneLast4, keyword: 'unfixed' }
-                });
-                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as Unresolved.`);
+            if (prevRows.length === 0) {
+                console.log(`⚠️ Ticket ${ticketId} not found or is not currently active (Ongoing/On Hold).`);
             } else {
-                console.log(`⚠️ Ticket ${ticketId} not found or is not currently 'Ongoing'.`);
+                const fromStatus = prevRows[0].status;
+                const [dbResult] = await pool.execute(
+                    `UPDATE aleco_tickets SET status = 'Unresolved', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                    [ticketId]
+                );
+
+                if (dbResult.affectedRows > 0) {
+                    const sourcePhoneLast4 = (senderNumber || '').slice(-4);
+                    await insertTicketLog(pool, {
+                        ticket_id: ticketId,
+                        action: 'status_change',
+                        from_status: fromStatus,
+                        to_status: 'Unresolved',
+                        actor_type: 'sms_lineman',
+                        metadata: { source_phone_last4: sourcePhoneLast4, keyword: 'unfixed' }
+                    });
+                    console.log(`✅ SUCCESS: Ticket ${ticketId} marked as Unresolved.`);
+                }
             }
         } else if (nffMatch) {
             const ticketId = nffMatch[1].toUpperCase();
             const remarks = nffMatch[2] ? nffMatch[2].trim() : null;
             console.log(`🔍 Extracted Ticket ID (No Fault Found): ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
 
-            const updateQuery = remarks
-                ? `UPDATE aleco_tickets SET status = 'NoFaultFound', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
-                : `UPDATE aleco_tickets SET status = 'NoFaultFound', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
-            const updateParams = remarks ? [remarks, ticketId] : [ticketId];
-            const [dbResult] = await pool.execute(updateQuery, updateParams);
+            const [prevNff] = await pool.execute(
+                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                [ticketId]
+            );
+            if (prevNff.length === 0) {
+                console.log(`⚠️ Ticket ${ticketId} not found or is not currently active (Ongoing/On Hold).`);
+            } else {
+                const fromStatusNff = prevNff[0].status;
+                const updateQuery = remarks
+                    ? `UPDATE aleco_tickets SET status = 'NoFaultFound', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`
+                    : `UPDATE aleco_tickets SET status = 'NoFaultFound', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`;
+                const updateParams = remarks ? [remarks, ticketId] : [ticketId];
+                const [dbResult] = await pool.execute(updateQuery, updateParams);
 
-            if (dbResult.affectedRows > 0) {
-                const sourcePhoneLast4 = (senderNumber || '').slice(-4);
-                await insertTicketLog(pool, {
-                    ticket_id: ticketId,
-                    action: 'status_change',
-                    from_status: 'Ongoing',
-                    to_status: 'NoFaultFound',
-                    actor_type: 'sms_lineman',
-                    metadata: { source_phone_last4: sourcePhoneLast4, keyword: 'nofault', lineman_remarks: remarks || null }
-                });
-                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as NoFaultFound.`);
+                if (dbResult.affectedRows > 0) {
+                    const sourcePhoneLast4 = (senderNumber || '').slice(-4);
+                    await insertTicketLog(pool, {
+                        ticket_id: ticketId,
+                        action: 'status_change',
+                        from_status: fromStatusNff,
+                        to_status: 'NoFaultFound',
+                        actor_type: 'sms_lineman',
+                        metadata: { source_phone_last4: sourcePhoneLast4, keyword: 'nofault', lineman_remarks: remarks || null }
+                    });
+                    console.log(`✅ SUCCESS: Ticket ${ticketId} marked as NoFaultFound.`);
+                }
             }
         } else if (accessDeniedMatch) {
             const ticketId = accessDeniedMatch[1].toUpperCase();
             const remarks = accessDeniedMatch[2] ? accessDeniedMatch[2].trim() : null;
             console.log(`🔍 Extracted Ticket ID (Access Denied): ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
 
-            const updateQuery = remarks
-                ? `UPDATE aleco_tickets SET status = 'AccessDenied', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
-                : `UPDATE aleco_tickets SET status = 'AccessDenied', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
-            const updateParams = remarks ? [remarks, ticketId] : [ticketId];
-            const [dbResult] = await pool.execute(updateQuery, updateParams);
+            const [prevAd] = await pool.execute(
+                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                [ticketId]
+            );
+            if (prevAd.length === 0) {
+                console.log(`⚠️ Ticket ${ticketId} not found or is not currently active (Ongoing/On Hold).`);
+            } else {
+                const fromStatusAd = prevAd[0].status;
+                const updateQuery = remarks
+                    ? `UPDATE aleco_tickets SET status = 'AccessDenied', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`
+                    : `UPDATE aleco_tickets SET status = 'AccessDenied', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`;
+                const updateParams = remarks ? [remarks, ticketId] : [ticketId];
+                const [dbResult] = await pool.execute(updateQuery, updateParams);
 
-            if (dbResult.affectedRows > 0) {
-                const sourcePhoneLast4 = (senderNumber || '').slice(-4);
-                await insertTicketLog(pool, {
-                    ticket_id: ticketId,
-                    action: 'status_change',
-                    from_status: 'Ongoing',
-                    to_status: 'AccessDenied',
-                    actor_type: 'sms_lineman',
-                    metadata: { source_phone_last4: sourcePhoneLast4, keyword: 'nores', lineman_remarks: remarks || null }
-                });
-                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as AccessDenied.`);
+                if (dbResult.affectedRows > 0) {
+                    const sourcePhoneLast4 = (senderNumber || '').slice(-4);
+                    await insertTicketLog(pool, {
+                        ticket_id: ticketId,
+                        action: 'status_change',
+                        from_status: fromStatusAd,
+                        to_status: 'AccessDenied',
+                        actor_type: 'sms_lineman',
+                        metadata: { source_phone_last4: sourcePhoneLast4, keyword: 'nores', lineman_remarks: remarks || null }
+                    });
+                    console.log(`✅ SUCCESS: Ticket ${ticketId} marked as AccessDenied.`);
+                }
             }
         } else if (holdMatch) {
             const ticketId = holdMatch[1].toUpperCase();
@@ -810,7 +882,7 @@ router.get('/tickets/sms/receive', async (req, res) => {
             console.log(`🔍 Extracted Ticket ID (Hold): ${ticketId} | Reason: ${reason}`);
 
             const [dbResult] = await pool.execute(
-                `UPDATE aleco_tickets SET hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
+                `UPDATE aleco_tickets SET status = 'OnHold', hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
                 [reason, nowPhilippineForMysql(), ticketId]
             );
 
@@ -824,8 +896,8 @@ router.get('/tickets/sms/receive', async (req, res) => {
 
             const phNow = nowPhilippineForMysql();
             const updateQuery = etaUpdate
-                ? `UPDATE aleco_tickets SET eta = ? WHERE ticket_id = ? AND status = 'Ongoing'`
-                : `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status = 'Ongoing'`;
+                ? `UPDATE aleco_tickets SET eta = ? WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`
+                : `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`;
             const updateParams = etaUpdate ? [etaUpdate, ticketId] : [phNow, ticketId];
             const [dbResult] = await pool.execute(updateQuery, updateParams);
 
@@ -837,7 +909,7 @@ router.get('/tickets/sms/receive', async (req, res) => {
             console.log(`🔍 Extracted Ticket ID (Arrived): ${ticketId}`);
 
             const [dbResult] = await pool.execute(
-                `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
+                `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
                 [nowPhilippineForMysql(), ticketId]
             );
 
@@ -862,25 +934,32 @@ router.get('/tickets/sms/receive', async (req, res) => {
             if (ticketId) {
                 console.log(`🔍 Extracted Ticket ID (Fixed): ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
 
-                const updateQuery = remarks
-                    ? `UPDATE aleco_tickets SET status = 'Restored', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
-                    : `UPDATE aleco_tickets SET status = 'Restored', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
-                const updateParams = remarks ? [remarks, ticketId] : [ticketId];
-                const [dbResult] = await pool.execute(updateQuery, updateParams);
-
-                if (dbResult.affectedRows > 0) {
-                    const sourcePhoneLast4 = (senderNumber || '').slice(-4);
-                    await insertTicketLog(pool, {
-                        ticket_id: ticketId,
-                        action: 'status_change',
-                        from_status: 'Ongoing',
-                        to_status: 'Restored',
-                        actor_type: 'sms_lineman',
-                        metadata: { source_phone_last4: sourcePhoneLast4, keyword: 'fixed', lineman_remarks: remarks || null }
-                    });
-                    console.log(`✅ SUCCESS: Ticket ${ticketId} automatically marked as Restored!`);
+                const [prevFixed] = await pool.execute(
+                    `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                    [ticketId]
+                );
+                if (prevFixed.length === 0) {
+                    console.log(`⚠️ Ticket ${ticketId} not found or is not currently active (Ongoing/On Hold).`);
                 } else {
-                    console.log(`⚠️ Ticket ${ticketId} not found or is not currently 'Ongoing'.`);
+                    const fromStatusFixed = prevFixed[0].status;
+                    const updateQuery = remarks
+                        ? `UPDATE aleco_tickets SET status = 'Restored', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`
+                        : `UPDATE aleco_tickets SET status = 'Restored', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`;
+                    const updateParams = remarks ? [remarks, ticketId] : [ticketId];
+                    const [dbResult] = await pool.execute(updateQuery, updateParams);
+
+                    if (dbResult.affectedRows > 0) {
+                        const sourcePhoneLast4 = (senderNumber || '').slice(-4);
+                        await insertTicketLog(pool, {
+                            ticket_id: ticketId,
+                            action: 'status_change',
+                            from_status: fromStatusFixed,
+                            to_status: 'Restored',
+                            actor_type: 'sms_lineman',
+                            metadata: { source_phone_last4: sourcePhoneLast4, keyword: 'fixed', lineman_remarks: remarks || null }
+                        });
+                        console.log(`✅ SUCCESS: Ticket ${ticketId} automatically marked as Restored!`);
+                    }
                 }
             } else {
                 console.log(`ℹ️ SMS Ignored: Did not match known keyword format.`);
@@ -919,7 +998,7 @@ router.post('/check-duplicates', async (req, res) => {
             FROM aleco_tickets
             WHERE phone_number = ?
             AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-            AND status IN ('Pending', 'Ongoing', 'Unresolved')
+            AND status IN ('Pending', 'Ongoing', 'Unresolved', 'OnHold')
             ORDER BY created_at DESC
             LIMIT 5
         `;
@@ -1129,7 +1208,7 @@ const statusUpdateHandler = async (req, res) => {
         console.log(`📊 Manual Status Update Request: ${ticketId} → ${status}`);
 
         // Validate status - Match the actual database enum
-        const validStatuses = ['Pending', 'Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
+        const validStatuses = ['Pending', 'Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { formatToPhilippineDate } from '../../utils/dateUtils';
+import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
 import '../../CSS/TicketTableView.css';
 
 /**
@@ -182,7 +183,7 @@ const TicketTableView = ({
                                     <span className="status-cell">
                                         {isUrgent && <span className="urgent-dot">🔴</span>}
                                         <span className={`status-badge ${(ticket.status || 'pending').toLowerCase().replace(/\s/g, '')}`}>
-                                            {ticket.status || 'Pending'}
+                                            {formatTicketStatusLabel(ticket.status) || 'Pending'}
                                         </span>
                                     </span>
                                 </td>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
+import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
 import '../../CSS/TicketDetailPane.css';
 import DispatchTicketModal from './DispatchTicketModal';
 import HoldTicketModal from './HoldTicketModal';
@@ -11,7 +12,7 @@ import TicketHistoryLogs from './TicketHistoryLogs';
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
-const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
+const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
     const [copiedField, setCopiedField] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
     const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
@@ -104,13 +105,13 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
 
                 {/* Resolution stepper: 1) Dispatch → 2) In Progress → 3) Resolved */}
                 <div className="resolution-stepper">
-                    <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
+                    <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
                         <span className="stepper-num">1</span>
                         <span className="stepper-label stepper-label-full">Dispatch</span>
                         <span className="stepper-label stepper-label-short" aria-hidden="true">Disp</span>
                     </div>
                     <div className="stepper-connector" />
-                    <div className={`stepper-step ${ticket.status === 'Ongoing' ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
+                    <div className={`stepper-step ${['Ongoing', 'OnHold'].includes(ticket.status) ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
                         <span className="stepper-num">2</span>
                         <span className="stepper-label stepper-label-full">In Progress</span>
                         <span className="stepper-label stepper-label-short" aria-hidden="true">Prog</span>
@@ -211,7 +212,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                                         <span className="child-id">{c.ticket_id}</span>
                                         <span className="child-category">{c.category}</span>
                                         <span className="child-location">{c.municipality || c.address || '—'}</span>
-                                        <span className={`child-status status-tag ${c.status?.toLowerCase()}`}>{c.status}</span>
+                                        <span className={`child-status status-tag ${c.status?.toLowerCase()}`}>{formatTicketStatusLabel(c.status)}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -233,7 +234,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </div>
                     )}
 
-                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes) && ['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
+                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes) && ['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
                         <div className="detail-group dispatch-info-section">
                             <label>Dispatch Info</label>
                             <div className="dispatch-info-box">
@@ -318,7 +319,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </>
                     )}
 
-                    {ticket.status === 'Unresolved' && (
+                    {['Unresolved', 'OnHold'].includes(ticket.status) && (
                         <>
                             {isGroupMaster ? (
                                 onDispatchGroup && (
@@ -363,7 +364,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </button>
                     )}
 
-                    {['Pending', 'Ongoing', 'Unresolved'].includes(ticket.status) && (
+                    {['Pending', 'Ongoing', 'OnHold', 'Unresolved'].includes(ticket.status) && (
                         <button
                             className="btn-action btn-resolved"
                             onClick={() => setIsRestoreConfirmOpen(true)}
@@ -383,17 +384,29 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </button>
                     )}
 
-                    {ticket.status === 'Ongoing' && (
+                    {ticket.status === 'Ongoing' && !isGroupMaster && (
+                        <button
+                            className="btn-action btn-hold"
+                            onClick={() => setIsHoldModalOpen(true)}
+                            title="Put on Hold"
+                        >
+                            Put on Hold
+                        </button>
+                    )}
+
+                    {ticket.status === 'OnHold' && onResumeFromHold && (
+                        <button
+                            type="button"
+                            className="btn-action btn-ongoing"
+                            onClick={() => onResumeFromHold(ticket.ticket_id)}
+                            title="Clear hold and continue work"
+                        >
+                            Resume work
+                        </button>
+                    )}
+
+                    {['Ongoing', 'OnHold'].includes(ticket.status) && (
                         <>
-                            {!isGroupMaster && (
-                                <button
-                                    className="btn-action btn-hold"
-                                    onClick={() => setIsHoldModalOpen(true)}
-                                    title="Put on Hold"
-                                >
-                                    Put on Hold
-                                </button>
-                            )}
                             <button
                                 className="btn-action btn-unresolved"
                                 onClick={() => setIsUnresolvedConfirmOpen(true)}

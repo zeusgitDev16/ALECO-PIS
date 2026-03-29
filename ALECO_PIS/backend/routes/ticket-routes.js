@@ -34,7 +34,7 @@ router.get('/filtered-tickets', async (req, res) => {
 
         // --- Status Tabs ---
         if (tab === 'Open') {
-            query += ` AND (t.status IN ('Pending', 'Ongoing', 'Unresolved') OR t.status IS NULL OR t.status = '')`;
+            query += ` AND (t.status IN ('Pending', 'Ongoing', 'Unresolved', 'OnHold') OR t.status IS NULL OR t.status = '')`;
         } else if (tab === 'Closed') {
             query += ` AND t.status IN ('Restored', 'NoFaultFound', 'AccessDenied')`;
         }

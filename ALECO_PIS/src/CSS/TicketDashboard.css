@@ -234,6 +234,12 @@
     border: 1px solid rgba(33, 150, 243, 0.3);
 }
 
+.status-pill-solid.onhold {
+    background: rgba(100, 116, 139, 0.15);
+    color: #64748b;
+    border: 1px solid rgba(100, 116, 139, 0.35);
+}
+
 .status-pill-solid.restored {
     background: rgba(76, 175, 80, 0.15);
     color: #4caf50;

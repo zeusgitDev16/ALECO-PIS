@@ -459,10 +459,10 @@ router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
         const { status } = req.body;
 
         // Match the actual enum values in the database
-        if (!['Pending', 'Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(status)) {
+        if (!['Pending', 'Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid status. Must be Pending, Ongoing, Restored, Unresolved, NoFaultFound, or AccessDenied'
+                message: 'Invalid status. Must be Pending, Ongoing, On Hold, Restored, Unresolved, NoFaultFound, or AccessDenied'
             });
         }
 

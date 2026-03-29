@@ -662,6 +662,7 @@
 
 .status-tag.pending { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
 .status-tag.ongoing { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.status-tag.onhold { background: rgba(100, 116, 139, 0.15); color: #64748b; }
 .status-tag.restored { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
 .status-tag.unresolved { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .status-tag.nofaultfound { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }

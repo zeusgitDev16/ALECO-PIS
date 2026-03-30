@@ -2,11 +2,10 @@
 .interruption-feed {
   display: flex;
   flex-direction: row;
-  gap: 20px;
+  gap: 32px; /* Increased gap for better card separation */
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 4px 10px 20px 10px;
-  padding: 10px 4px 20px 4px; /* Adjust padding for a cleaner look */
+  padding: 15px 40px 25px 40px; /* Added room for navigation arrows at the ends */
   scroll-behavior: smooth;
   scroll-snap-type: x proximity;
   align-items: stretch;
@@ -28,25 +27,106 @@
   border-radius: 4px;
 }
 
+/* --- Feed Navigation Wrapper & Arrows --- */
+.feed-nav-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.feed-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-header);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 30;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.feed-nav-arrow:hover {
+  background: var(--bg-body);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.feed-nav-arrow.left { left: 0; }
+.feed-nav-arrow.right { right: 0; }
+
 /* --- Feed Post Card --- */
 .interruption-feed-post {
   background: var(--bg-card);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 16px;
   border-radius: 16px; /* Slightly larger radius for a softer, modern look */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
   border: 1px solid var(--border-color);
-  padding: 20px; /* Increased padding for more internal whitespace */
   scroll-snap-align: start;
   flex-shrink: 0;
   width: 380px; /* Resized wider card */
-  min-height: 420px; /* Added height for consistency */
+  height: 400px; /* Set fixed height to 400px */
+  box-sizing: border-box;
+  padding: 0; /* Padding moved to internal elements to prevent content leaking on scroll */
+  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal jitter */
   display: flex;
   flex-direction: column;
-  gap: 16px; /* Use gap for consistent spacing between header, body, etc. */
-  gap: 16px;
+  gap: 0; 
   transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effect */
+  isolation: isolate; /* Prevents internal content from bleeding into sub-pixel sub-layers */
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Strictly forces clipping of content during scroll */
+}
+
+/* Standardized scrollbar for individual cards to match landing page consistency */
+.interruption-feed-post::-webkit-scrollbar {
+  width: 16px; /* Increased width to accommodate internal spacing */
+}
+.interruption-feed-post::-webkit-scrollbar-track {
+  background: var(--bg-body);
+  border-left: 1px solid var(--border-color);
+  border-right: 6px solid transparent; /* Creates space between scrollbar and card edge */
+  background-clip: padding-box;
+}
+.interruption-feed-post::-webkit-scrollbar-thumb {
+  background-color: var(--text-secondary);
+  border-radius: 10px;
+  border-left: 2px solid transparent;
+  border-right: 8px solid transparent; /* Keeps thumb away from the edge */
+  background-clip: padding-box;
+}
+
+/* Scrollbar Buttons (Arrows) for each card */
+.interruption-feed-post::-webkit-scrollbar-button:single-button {
+  background-color: var(--bg-body);
+  display: block;
+  border-left: 1px solid var(--border-color); /* Existing left border */
+  border-right: 6px solid transparent; /* Existing right spacing */
+  border-top: 6px solid transparent; /* Added top spacing */
+  border-bottom: 6px solid transparent; /* Added bottom spacing */
+  background-clip: padding-box;
+  height: 26px; /* Adjusted height to accommodate new top/bottom borders */
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.interruption-feed-post::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6l3-3 3 3'/%3E%3C/svg%3E");
+}
+
+.interruption-feed-post::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 4l3 3 3-3'/%3E%3C/svg%3E");
 }
 
 .interruption-feed-post:hover {
@@ -57,13 +137,24 @@
 /* --- Feed Post Header --- */
 .feed-post-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Aligns icons to the top of the header text */
+  position: sticky;
+  top: -1px; /* Creates a slight overlap to seal the top edge against leaks */
+  z-index: 10;
+  background: var(--bg-card);
+  padding: 17px 20px 12px 16px; /* Increased right padding for space from scrollbar */
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 16px 16px 0 0; /* Matches card radius to prevent corner leakage */
+  flex-shrink: 0; /* Header won't shrink if text gets long */
+  border-bottom: 1px solid transparent; /* Keeps layout stable */
 }
 
 .feed-post-header-avatar {
-  width: 40px;
-  height: 40px;
+  margin-top: 2px; /* Precision offset to align with the name baseline */
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
@@ -74,8 +165,8 @@
 }
 
 .feed-post-header-avatar svg {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
 }
 
 .feed-post-header-meta {
@@ -115,7 +206,7 @@
 
 .feed-post-header-name {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-header);
 }
 
@@ -169,13 +260,19 @@
 
 .feed-post-header-globe {
   opacity: 0.7;
+  position: relative;
+  top: 1px; /* Subtle adjustment to center the globe with the timestamp text */
 }
 
 /* --- Feed Post Body (Typography) --- */
 .feed-post-body {
   display: flex;
   flex-direction: column;
-  gap: 16px; /* Use gap for consistent spacing between headline and details */
+  gap: 10px;
+  padding: 0 20px 16px 16px; /* Increased right padding for space from scrollbar */
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0; /* Keep text section stable */
 }
 
 /* Text-only card: Body is the last child, so let it fill the card height */
@@ -186,35 +283,33 @@
 
 .feed-post-headline {
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.92rem; /* Balanced size for readability */
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  line-height: 1.4;
+  line-height: 1.3;
   color: var(--text-header);
   margin: 0; /* Remove margin, as parent gap now handles spacing */
 }
 
 .feed-post-body-text {
-  font-size: 0.85rem;
-  line-height: 1.55;
+  font-size: 0.88rem; /* Standard readable font size */
+  line-height: 1.5;
   color: var(--text-main);
   margin: 0;
-  /* Removed the inner box styling for a cleaner, more minimal look */
   word-break: break-word;
   overflow-wrap: break-word;
   /* Create a container box for the details */
+  box-sizing: border-box;
   background: var(--bg-body);
   border: 1px solid var(--border-color);
-  padding: 12px;
+  padding: 10px;
   border-radius: 8px;
-  flex-grow: 0; /* Prevents the inner details box from stretching vertically */
-  /* Ensure content aligns to the top ("upward") instead of centering */
-  display: flex;
-  flex-direction: column;
+  flex-shrink: 0;
+  height: auto; /* Allow box to grow with content */
 }
 
 .feed-post-body-text p {
-  margin: 6px 0;
+  margin: 0; /* Removed internal margins to keep text in the container box */
 }
 
 .feed-post-body p {
@@ -266,13 +361,17 @@
 .feed-advisory-infographic {
   border-radius: 8px;
   overflow: hidden;
+  margin: 0 20px 16px 16px; /* Balanced spacing around infographic */
+  width: calc(100% - 36px); /* Ensures it stays within card padding */
+  box-sizing: border-box;
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  flex-shrink: 0; /* Prevents infographic from being squashed */
 }
 
 .feed-infographic-header-bar {
-  background: #1e3a5f;
-  color: white;
-  padding: 8px 12px;
+  background: #dc2626; /* Changed to red for unscheduled/emergency outages */
+  color: rgb(244, 243, 243);
+  padding: 4px 8px; /* Compacted header bar */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -324,13 +423,13 @@
 .feed-infographic-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 4px 10px;
   background: var(--bg-body);
 }
 
 .feed-infographic-pill {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   padding: 6px 12px;
   border-radius: 999px;
@@ -350,7 +449,7 @@
 }
 
 .feed-infographic-schedule {
-  padding: 8px 12px;
+  padding: 4px 10px;
   background: var(--bg-body);
   border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
   font-size: 0.8rem;
@@ -361,9 +460,10 @@
 }
 
 .feed-infographic-areas {
-  padding: 8px 12px;
+  padding: 4px 10px;
   background: rgba(0, 0, 0, 0.03);
   border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  height: auto;
 }
 
 .feed-infographic-areas-title {
@@ -381,15 +481,15 @@
 }
 
 .feed-infographic-areas li {
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.75rem;
+  line-height: 1.3;
   margin: 4px 0;
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
 .feed-infographic-image {
-  padding: 4px 12px;
+  padding: 0 10px 4px;
   border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
   display: flex;
   justify-content: center;
@@ -397,7 +497,7 @@
 
 .feed-infographic-image img {
   width: 100%;
-  height: 140px;
+  height: 110px; /* Restored proportional height */
   object-fit: contain;
   border-radius: 8px;
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
@@ -453,9 +553,66 @@
   scroll-snap-align: start;
   flex-shrink: 0;
   width: 380px; /* Match new card width */
-  min-height: 420px; /* Match new card height */
+  height: 400px; /* Match new card height */
+  box-sizing: border-box;
+  overflow: hidden; /* Strictly clip any internal exceeding content */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  padding: 0;
+  overflow-y: auto; /* Support scrolling in bulletin cards */
+  overflow-x: hidden;
   margin: 0;
-  height: auto; /* Allow bulletin cards to size their height based on content */
+}
+
+.interruption-card--feed::-webkit-scrollbar {
+  width: 16px;
+}
+.interruption-card--feed::-webkit-scrollbar-track {
+  background: var(--bg-body);
+  border-left: 1px solid var(--border-color);
+  border-right: 6px solid transparent;
+  background-clip: padding-box;
+}
+.interruption-card--feed::-webkit-scrollbar-thumb {
+  background-color: var(--text-secondary);
+  border-radius: 10px;
+  border-left: 2px solid transparent;
+  border-right: 8px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Scrollbar Buttons (Arrows) for bulletin cards */
+.interruption-card--feed::-webkit-scrollbar-button:single-button {
+  background-color: var(--bg-body);
+  display: block;
+  border-left: 1px solid var(--border-color); /* Existing left border */
+  border-right: 6px solid transparent; /* Existing right spacing */
+  border-top: 6px solid transparent; /* Added top spacing */
+  border-bottom: 6px solid transparent; /* Added bottom spacing */
+  background-clip: padding-box;
+  height: 26px; /* Adjusted height to accommodate new top/bottom borders */
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.interruption-card--feed::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6l3-3 3 3'/%3E%3C/svg%3E");
+}
+
+.interruption-card--feed::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 4l3 3 3-3'/%3E%3C/svg%3E");
+}
+
+/* Ensures bulletin headers (Loading/Empty) are sticky and contained within the feed */
+.interruption-card--feed .status-header {
+  position: sticky;
+  top: -1px;
+  z-index: 10;
+  background: var(--bg-card);
+  padding: 17px 20px 16px 16px;
+  margin: 0;
+  border-radius: 16px 16px 0 0; /* Synchronized with card radius */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* --- Mobile --- */
@@ -465,7 +622,8 @@
   }
 
   .interruption-feed-post {
-    padding: 16px;
+    width: 360px;
+    height: 390px;
   }
 
   .feed-infographic-header-bar {
@@ -477,8 +635,15 @@
     align-items: flex-start;
   }
 
-  .feed-progress-track {
-    width: 50%;
+  .interruption-card.interruption-card--feed {
+    width: 260px;
+    height: 320px;
+    padding: 0;
+  }
+
+  .interruption-card--feed .status-header {
+    padding: 12px;
+    border-radius: 12px 12px 0 0;
   }
 }
 
@@ -490,7 +655,11 @@
   }
 
   .interruption-feed-post {
-    padding: 10px;
+    width: 280px;
+    height: 340px;
+    padding: 0;
+    gap: 8px;
+    border-radius: 12px;
   }
 
   .feed-post-header {
@@ -509,11 +678,11 @@
   }
 
   .feed-post-header-name {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
   .feed-post-status-chip {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     padding: 2px 6px;
   }
 
@@ -599,6 +768,10 @@
     padding: 8px 10px;
   }
 
+  .feed-infographic-image img {
+    height: 70px; /* Compacted image for smaller box */
+  }
+
   .feed-controls {
     padding: 0 6px;
     gap: 8px;
@@ -622,7 +795,10 @@
   }
 
   .interruption-feed-post {
-    padding: 12px;
+    width: 280px;
+    height: 340px;
+    padding: 12px 10px 12px 12px;
+    gap: 10px;
   }
 
   .feed-post-header {
@@ -641,21 +817,21 @@
   }
 
   .feed-post-header-name {
-    font-size: 0.82rem;
+    font-size: 0.75rem;
   }
 
   .feed-post-header-timestamp {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
   }
 
-  .feed-post-headline {
-    font-size: 0.82rem;
-  }
+  .feed-post-headline { font-size: 0.82rem; }
+  .feed-post-body-text, .feed-post-body p { font-size: 0.75rem; }
 
-  .feed-post-body-text,
-  .feed-post-body p {
-    font-size: 0.82rem;
-  }
+  /* Bulletin cards scaling */
+  .interruption-card--feed .status-header { font-size: 0.9rem; }
+  .interruption-card--feed .card-details p,
+  .interruption-card--feed .interruption-good-news-headline,
+  .interruption-card--feed .interruption-good-news-body { font-size: 0.78rem !important; }
 
   .feed-infographic-header-bar {
     padding: 10px 12px;
@@ -697,6 +873,10 @@
     font-size: 0.8rem;
   }
 
+  .feed-infographic-image img {
+    height: 80px;
+  }
+
   .feed-controls {
     padding: 0 8px;
   }
@@ -718,7 +898,14 @@
   }
 
   .interruption-feed-post {
-    padding: 14px;
+    width: 330px;
+    height: 380px;
+    border-radius: 14px; /* Synchronized with header radius */
+  }
+
+  .feed-post-header {
+    padding: 16px 16px 12px 16px;
+    border-radius: 14px 14px 0 0;
   }
 
   .feed-post-header {
@@ -736,21 +923,21 @@
   }
 
   .feed-post-header-name {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .feed-post-header-timestamp {
     font-size: 0.75rem;
   }
 
-  .feed-post-headline {
-    font-size: 0.88rem;
-  }
+  .feed-post-headline { font-size: 0.88rem; }
+  .feed-post-body-text, .feed-post-body p { font-size: 0.8rem; }
 
-  .feed-post-body-text,
-  .feed-post-body p {
-    font-size: 0.88rem;
-  }
+  /* Bulletin cards scaling */
+  .interruption-card--feed .status-header { font-size: 1rem; }
+  .interruption-card--feed .card-details p,
+  .interruption-card--feed .interruption-good-news-headline,
+  .interruption-card--feed .interruption-good-news-body { font-size: 0.82rem !important; }
 
   .feed-infographic-header-bar {
     padding: 10px 14px;
@@ -785,6 +972,10 @@
     font-size: 0.85rem;
   }
 
+  .feed-infographic-image img {
+    height: 90px;
+  }
+
   .feed-progress-track {
     max-width: 65%;
   }
@@ -816,21 +1007,21 @@
   }
 
   .feed-post-header-name {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
 
   .feed-post-header-timestamp {
     font-size: 0.78rem;
   }
 
-  .feed-post-headline {
-    font-size: 0.92rem;
-  }
+  .feed-post-headline { font-size: 0.9rem; }
+  .feed-post-body-text, .feed-post-body p { font-size: 0.82rem; }
 
-  .feed-post-body-text,
-  .feed-post-body p {
-    font-size: 0.92rem;
-  }
+  /* Bulletin cards scaling */
+  .interruption-card--feed .status-header { font-size: 1.05rem; }
+  .interruption-card--feed .card-details p,
+  .interruption-card--feed .interruption-good-news-headline,
+  .interruption-card--feed .interruption-good-news-body { font-size: 0.85rem !important; }
 
   .feed-infographic-pill {
     font-size: 0.78rem;
@@ -842,6 +1033,10 @@
 
   .feed-infographic-areas li {
     font-size: 0.88rem;
+  }
+
+  .feed-infographic-image img {
+    height: 100px;
   }
 
   .feed-progress-track {
@@ -861,37 +1056,27 @@
   }
 
   .interruption-feed-post {
-    padding: 18px;
+    width: 380px;
+    height: 400px;
+    padding: 0;
+  }
+
+  .interruption-card.interruption-card--feed {
+    width: 380px;
+    height: 400px;
+    padding: 0;
+  }
+
+  .interruption-card--feed .status-header {
+    padding: 14px;
+    border-radius: 14px 14px 0 0;
   }
 }
 
+/* Removed Grid layout to maintain the 380x400 card integrity on desktop */
 @media (min-width: 1024px) {
   .interruption-feed {
     max-width: 100%;
     margin: 0 auto;
-  }
-
-  .interruption-feed-post {
-    display: grid;
-    grid-template-columns: 0.9fr 1.1fr;
-    gap: 0 40px;
-    align-items: start;
-    min-width: 750px;
-    max-width: 900px;
-  }
-
-  .feed-post-header {
-    grid-column: 1 / -1;
-    margin-bottom: 0; /* Rely on parent grid-gap instead of margin */
-  }
-
-  .feed-post-body {
-    grid-column: 1;
-    margin-bottom: 0;
-  }
-
-  .feed-advisory-infographic {
-    grid-column: 2;
-    margin-top: 0;
   }
 }

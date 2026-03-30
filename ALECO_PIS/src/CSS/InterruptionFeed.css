@@ -12,19 +12,50 @@
 }
 
 .interruption-feed::-webkit-scrollbar {
-  height: 8px;
+  height: 16px; /* Increased height to match card scrollbar consistency */
 }
 
 .interruption-feed::-webkit-scrollbar-track {
-  background: var(--bg-card, #f1f1f1);
-  background: transparent; /* Cleaner track */
-  border-radius: 4px;
+  background: var(--bg-body);
+  border-radius: 10px;
+  border-top: 1px solid var(--border-color); /* Separator from content */
+  border-bottom: none;
+  background-clip: padding-box;
 }
 
 .interruption-feed::-webkit-scrollbar-thumb {
-  background: var(--text-secondary, #888);
-  background: var(--border-color); /* More subtle thumb color */
-  border-radius: 4px;
+  background-color: var(--text-secondary);
+  border-radius: 10px;
+  border-top: 4px solid transparent; /* Centered spacing for grey bar */
+  border-bottom: 4px solid transparent; /* Centered spacing for grey bar */
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Scrollbar Buttons (Arrows) for the main horizontal feed scrollbar */
+.interruption-feed::-webkit-scrollbar-button:single-button {
+  background-color: var(--bg-body);
+  display: block;
+  border-top: 1px solid var(--border-color);
+  background-clip: padding-box;
+  width: 38px; /* Standard width for horizontal arrow buttons */
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.interruption-feed::-webkit-scrollbar-button:single-button:horizontal:decrement {
+  border-radius: 10px 0 0 10px; /* Rounds the left of the scroll container */
+  border-left: 14px solid transparent; /* Spacing from left edge */
+  border-right: 4px solid transparent;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 2l-3 3 3 3'/%3E%3C/svg%3E");
+}
+
+.interruption-feed::-webkit-scrollbar-button:single-button:horizontal:increment {
+  border-radius: 0 10px 10px 0; /* Rounds the right of the scroll container */
+  border-left: 4px solid transparent;
+  border-right: 14px solid transparent; /* Spacing from right edge */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 2l3 3-3 3'/%3E%3C/svg%3E");
 }
 
 /* --- Feed Navigation Wrapper & Arrows --- */
@@ -95,15 +126,20 @@
 }
 .interruption-feed-post::-webkit-scrollbar-track {
   background: var(--bg-body);
-  border-left: 1px solid var(--border-color);
-  border-right: 6px solid transparent; /* Creates space between scrollbar and card edge */
+  border-radius: 10px;
+  border-left: 1px solid var(--border-color); /* Separator from content */
+  border-right: 1px solid transparent; /* Matches container alignment */
+  border-top: none; /* Combined with button container */
+  border-bottom: none; /* Combined with button container */
   background-clip: padding-box;
 }
 .interruption-feed-post::-webkit-scrollbar-thumb {
   background-color: var(--text-secondary);
   border-radius: 10px;
-  border-left: 2px solid transparent;
-  border-right: 8px solid transparent; /* Keeps thumb away from the edge */
+  border-left: 4px solid transparent; /* Centered spacing for grey bar */
+  border-right: 4px solid transparent; /* Centered spacing for grey bar */
+  border-top: 6px solid transparent; /* Prevents thumb from touching the top of the track */
+  border-bottom: 6px solid transparent; /* Prevents thumb from touching the bottom of the track */
   background-clip: padding-box;
 }
 
@@ -112,20 +148,24 @@
   background-color: var(--bg-body);
   display: block;
   border-left: 1px solid var(--border-color); /* Existing left border */
-  border-right: 6px solid transparent; /* Existing right spacing */
-  border-top: 6px solid transparent; /* Added top spacing */
-  border-bottom: 6px solid transparent; /* Added bottom spacing */
+  border-right: 1px solid transparent;
   background-clip: padding-box;
-  height: 26px; /* Adjusted height to accommodate new top/bottom borders */
+  height: 38px; /* Increased height to allow centering within rounded container */
   background-repeat: no-repeat;
   background-position: center;
 }
 
 .interruption-feed-post::-webkit-scrollbar-button:single-button:vertical:decrement {
+  border-radius: 10px 10px 0 0; /* Rounds the top of the combined container */
+  border-top: 14px solid transparent; /* Spacing from top card edge */
+  border-bottom: 4px solid transparent;
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6l3-3 3 3'/%3E%3C/svg%3E");
 }
 
 .interruption-feed-post::-webkit-scrollbar-button:single-button:vertical:increment {
+  border-radius: 0 0 10px 10px; /* Rounds the bottom of the combined container */
+  border-top: 4px solid transparent;
+  border-bottom: 14px solid transparent; /* Spacing from bottom card edge */
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 4l3 3 3-3'/%3E%3C/svg%3E");
 }
 
@@ -156,15 +196,18 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: #fff url('../assets/Aleco-logo.jpg') center/cover no-repeat;
+  border: 1px solid var(--border-color);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .feed-post-header-avatar svg {
+  display: none; /* Hide placeholder icon to show logo background */
   width: 18px;
   height: 18px;
 }
@@ -371,17 +414,17 @@
 .feed-infographic-header-bar {
   background: #dc2626; /* Changed to red for unscheduled/emergency outages */
   color: rgb(244, 243, 243);
-  padding: 4px 8px; /* Compacted header bar */
+  padding: 3px 10px; /* Even more compact vertical padding as requested */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-wrap: nowrap;
+  gap: 4px; /* Tighter gap for better space utilization */
 }
 
 .feed-infographic-header-bar > span {
   font-weight: 800;
-  font-size: 0.8rem;
+  font-size: 0.75rem; /* Smaller, readable title */
   letter-spacing: 0.05em;
 }
 
@@ -406,8 +449,8 @@
   background: rgba(255, 255, 255, 0.95);
   color: #b91c1c;
   font-weight: 700;
-  font-size: 0.75rem;
-  padding: 4px 10px;
+  font-size: 0.68rem; /* Compact badge font */
+  padding: 1px 6px; /* Tighter badge padding */
   border-radius: 6px;
 }
 
@@ -415,8 +458,8 @@
   background: rgba(255, 255, 255, 0.9);
   color: #1e3a5f;
   font-weight: 600;
-  font-size: 0.7rem;
-  padding: 3px 8px;
+  font-size: 0.62rem; /* Compact badge font */
+  padding: 1px 5px; /* Tighter badge padding */
   border-radius: 4px;
 }
 
@@ -519,18 +562,18 @@
   flex: 1;
   min-width: 0;
   max-width: 70%;
-  height: 4px;
+  height: 6px; /* Increased height for better visibility of the yellow indicator */
   background-color: var(--bg-card);
-  border-radius: 2px;
+  border-radius: 10px; /* Pill-shaped track to match the modern "round box" style */
   overflow: hidden;
-  border: 1px solid var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .feed-progress-indicator {
   height: 100%;
   background-color: #3b82f6;
-  border-radius: 2px;
-  transition: width 0.3s ease-out;
+  border-radius: 10px;
+  transition: width 0.25s ease-out; /* Smoother transition for the progress bar */
 }
 
 [data-theme='dark'] .feed-progress-indicator {
@@ -568,15 +611,20 @@
 }
 .interruption-card--feed::-webkit-scrollbar-track {
   background: var(--bg-body);
-  border-left: 1px solid var(--border-color);
-  border-right: 6px solid transparent;
+  border-radius: 10px;
+  border-left: 1px solid var(--border-color); /* Separator from content */
+  border-right: 1px solid transparent; /* Matches container alignment */
+  border-top: none; /* Combined with button container */
+  border-bottom: none; /* Combined with button container */
   background-clip: padding-box;
 }
 .interruption-card--feed::-webkit-scrollbar-thumb {
   background-color: var(--text-secondary);
   border-radius: 10px;
-  border-left: 2px solid transparent;
-  border-right: 8px solid transparent;
+  border-left: 4px solid transparent; /* Centered spacing for grey bar */
+  border-right: 4px solid transparent; /* Centered spacing for grey bar */
+  border-top: 6px solid transparent; /* Prevents thumb from touching the top of the track */
+  border-bottom: 6px solid transparent; /* Prevents thumb from touching the bottom of the track */
   background-clip: padding-box;
 }
 
@@ -585,20 +633,24 @@
   background-color: var(--bg-body);
   display: block;
   border-left: 1px solid var(--border-color); /* Existing left border */
-  border-right: 6px solid transparent; /* Existing right spacing */
-  border-top: 6px solid transparent; /* Added top spacing */
-  border-bottom: 6px solid transparent; /* Added bottom spacing */
+  border-right: 1px solid transparent;
   background-clip: padding-box;
-  height: 26px; /* Adjusted height to accommodate new top/bottom borders */
+  height: 38px; /* Increased height to allow centering within rounded container */
   background-repeat: no-repeat;
   background-position: center;
 }
 
 .interruption-card--feed::-webkit-scrollbar-button:single-button:vertical:decrement {
+  border-radius: 10px 10px 0 0; /* Rounds the top of the combined container */
+  border-top: 14px solid transparent; /* Spacing from top card edge */
+  border-bottom: 4px solid transparent;
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6l3-3 3 3'/%3E%3C/svg%3E");
 }
 
 .interruption-card--feed::-webkit-scrollbar-button:single-button:vertical:increment {
+  border-radius: 0 0 10px 10px; /* Rounds the bottom of the combined container */
+  border-top: 4px solid transparent;
+  border-bottom: 14px solid transparent; /* Spacing from bottom card edge */
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 4l3 3 3-3'/%3E%3C/svg%3E");
 }
 
@@ -627,12 +679,12 @@
   }
 
   .feed-infographic-header-bar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
   }
 
   .feed-infographic-badges {
-    align-items: flex-start;
+    align-items: flex-end;
   }
 
   .interruption-card.interruption-card--feed {
@@ -714,12 +766,13 @@
   }
 
   .feed-infographic-header-bar {
-    padding: 8px 10px;
-    gap: 6px;
+    padding: 2px 6px; /* Tightest padding for 320px screens */
+    gap: 4px;
   }
 
   .feed-infographic-header-bar > span {
-    font-size: 0.7rem;
+    font-size: 0.65rem; /* Readable but very compact for tiny screens */
+    letter-spacing: 0.03em;
   }
 
   .feed-infographic-date-badge {
@@ -797,7 +850,6 @@
   .interruption-feed-post {
     width: 280px;
     height: 340px;
-    padding: 12px 10px 12px 12px;
     gap: 10px;
   }
 
@@ -993,7 +1045,6 @@
   }
 
   .interruption-feed-post {
-    padding: 16px;
   }
 
   .feed-post-header-avatar {

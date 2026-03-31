@@ -42,10 +42,18 @@ function InterruptionList() {
   const handleScroll = () => {
     const el = feedRef.current;
     if (!el) return;
-    const { scrollTop, scrollHeight, clientHeight } = el;
-    const totalScroll = scrollHeight - clientHeight;
-    const progress = totalScroll > 0 ? (scrollTop / totalScroll) * 100 : 0;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const totalScroll = scrollWidth - clientWidth;
+    const progress = totalScroll > 0 ? (scrollLeft / totalScroll) * 100 : 0;
     setScrollProgress(progress);
+  };
+
+  const scroll = (direction) => {
+    const el = feedRef.current;
+    if (!el) return;
+    const scrollAmount = 412; // Card width (380) + Gap (32)
+    const amount = direction === 'left' ? -scrollAmount : scrollAmount;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -143,6 +151,26 @@ function InterruptionList() {
 
       <div className="feed-controls">
         <VerticalProgressIndicator scrollProgress={scrollProgress} />
+        {hasAdvisoryCards && (
+          <div className="feed-nav-buttons-bottom">
+            <button
+              type="button"
+              className="feed-nav-btn-bottom"
+              onClick={() => scroll('left')}
+              aria-label="Scroll feed left"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="feed-nav-btn-bottom"
+              onClick={() => scroll('right')}
+              aria-label="Scroll feed right"
+            >
+              ›
+            </button>
+          </div>
+        )}
         <AsOfDateTracker />
       </div>
 

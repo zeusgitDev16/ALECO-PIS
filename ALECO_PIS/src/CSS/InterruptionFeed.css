@@ -58,46 +58,6 @@
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 2l3 3-3 3'/%3E%3C/svg%3E");
 }
 
-/* --- Feed Navigation Wrapper & Arrows --- */
-.feed-nav-wrapper {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.feed-nav-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--text-header);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 30;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transition: all 0.2s ease;
-  font-size: 1.8rem;
-  line-height: 1;
-}
-
-.feed-nav-arrow:hover {
-  background: var(--bg-body);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  transform: translateY(-50%) scale(1.1);
-}
-
-.feed-nav-arrow.left { left: 0; }
-.feed-nav-arrow.right { right: 0; }
-
 /* --- Feed Post Card --- */
 .interruption-feed-post {
   background: var(--bg-card);
@@ -188,7 +148,8 @@
   box-sizing: border-box;
   border-radius: 16px 16px 0 0; /* Matches card radius to prevent corner leakage */
   flex-shrink: 0; /* Header won't shrink if text gets long */
-  border-bottom: 1px solid transparent; /* Keeps layout stable */
+  border-bottom: 1px solid var(--border-color); /* Enhanced visual seal for sticky header */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .feed-post-header-avatar {
@@ -412,7 +373,7 @@
 }
 
 .feed-infographic-header-bar {
-  background: #dc2626; /* Changed to red for unscheduled/emergency outages */
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%); /* High-urgency gradient */
   color: rgb(244, 243, 243);
   padding: 3px 10px; /* Even more compact vertical padding as requested */
   display: flex;
@@ -561,7 +522,7 @@
 .feed-progress-track {
   flex: 1;
   min-width: 0;
-  max-width: 70%;
+  /* Removed max-width to allow flexible growth */
   height: 6px; /* Increased height for better visibility of the yellow indicator */
   background-color: var(--bg-card);
   border-radius: 10px; /* Pill-shaped track to match the modern "round box" style */
@@ -588,6 +549,38 @@
   color: var(--text-secondary);
   font-style: italic;
   flex-shrink: 0;
+}
+
+/* --- Bottom Navigation (Outside Cards) --- */
+.feed-nav-buttons-bottom {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.feed-nav-btn-bottom {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-header);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.2rem;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.feed-nav-btn-bottom:hover {
+  background: var(--bg-body);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: scale(1.1);
 }
 
 /* --- Bulletin cards in feed (loading, empty, unavailable) --- */
@@ -934,7 +927,7 @@
   }
 
   .feed-progress-track {
-    max-width: 60%;
+    /* Removed max-width to allow flexible growth */
   }
 
   .feed-date-tracker {
@@ -1029,7 +1022,7 @@
   }
 
   .feed-progress-track {
-    max-width: 65%;
+    /* Removed max-width to allow flexible growth */
   }
 
   .feed-date-tracker {
@@ -1091,7 +1084,7 @@
   }
 
   .feed-progress-track {
-    max-width: 68%;
+    /* Removed max-width to allow flexible growth */
   }
 
   .feed-date-tracker {

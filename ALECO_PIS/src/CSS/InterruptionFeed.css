@@ -230,8 +230,8 @@
 }
 
 .feed-post-status-chip--ongoing {
-  background: rgba(220, 38, 38, 0.18);
-  color: #b91c1c;
+  background: rgba(67, 56, 202, 0.12); /* Muted Indigo Background */
+  color: #4338ca; /* Distinctive Indigo */
 }
 
 .feed-post-status-chip--restored {
@@ -245,8 +245,8 @@
 }
 
 [data-theme='dark'] .feed-post-status-chip--ongoing {
-  background: rgba(239, 68, 68, 0.22);
-  color: #f87171;
+  background: rgba(129, 140, 248, 0.15); /* Soft Indigo for Dark Mode */
+  color: #818cf8; /* Soft Indigo Text */
 }
 
 [data-theme='dark'] .feed-post-status-chip--restored {
@@ -373,7 +373,7 @@
 }
 
 .feed-infographic-header-bar {
-  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%); /* High-urgency gradient */
+  background: linear-gradient(90deg, #3730a3 0%, #1e1b4b 100%); /* Deep Indigo to Midnight - Noticeable but calm */
   color: rgb(244, 243, 243);
   padding: 3px 10px; /* Even more compact vertical padding as requested */
   display: flex;
@@ -408,7 +408,7 @@
 
 .feed-infographic-date-badge {
   background: rgba(255, 255, 255, 0.95);
-  color: #b91c1c;
+  color: #3730a3; /* Matches the new Indigo theme */
   font-weight: 700;
   font-size: 0.68rem; /* Compact badge font */
   padding: 1px 6px; /* Tighter badge padding */

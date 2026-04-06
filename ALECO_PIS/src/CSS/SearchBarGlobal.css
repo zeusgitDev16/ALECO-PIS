@@ -121,13 +121,6 @@
     opacity: 0.85;
 }
 
-/* Touch phones: avoid iOS input zoom */
-@media (pointer: coarse) and (max-width: 480px) {
-    #aleco-admin-header-search.admin-nav-search__input {
-        font-size: max(16px, calc(1rem * var(--ns, var(--nav-scale, 1)))) !important;
-    }
-}
-
 .action-icons {
     display: flex;
     align-items: center;

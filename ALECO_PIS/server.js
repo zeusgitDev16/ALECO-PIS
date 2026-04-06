@@ -40,6 +40,8 @@ if (process.env.NODE_ENV === 'production' && !hasExplicitPublicCorsEnv()) {
     );
 }
 
+// Backup/export GETs send X-User-Email / X-User-Name — browsers preflight unless these are allowed.
+// Expose Content-Disposition so cross-origin fetch() can read the download filename (see Backup.jsx).
 const corsOptions = {
     origin(origin, callback) {
         if (!origin) return callback(null, true);
@@ -48,7 +50,8 @@ const corsOptions = {
         return callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Email', 'X-User-Name'],
+    exposedHeaders: ['Content-Disposition'],
 };
 
 // 2. Middleware (The Guards)

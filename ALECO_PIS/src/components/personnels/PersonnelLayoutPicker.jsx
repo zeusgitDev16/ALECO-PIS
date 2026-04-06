@@ -14,11 +14,12 @@ const PersonnelLayoutPicker = ({ activeLayout, onLayoutChange }) => {
     ];
 
     return (
-        <div className="layout-picker-container personnel-layout-picker">
+        <div className="layout-picker-container">
             <div className="layout-buttons">
-                {layouts.map(layout => (
+                {layouts.map((layout) => (
                     <button
                         key={layout.id}
+                        type="button"
                         className={`layout-btn ${activeLayout === layout.id ? 'active' : ''}`}
                         onClick={() => onLayoutChange(layout.id)}
                         title={layout.tooltip}

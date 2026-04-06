@@ -1,69 +1,121 @@
-/* Backup Layout Picker - Compact pill buttons */
-.backup-layout-picker {
+/* =========================================
+   DATA MANAGEMENT — layout picker
+   Sized to match .entity-picker / .entity-picker-btn (same padding, gaps, type scale).
+   Active state: outline style (accent border + accent text on bg-body) vs entity solid fill.
+   Global .layout-btn defaults from TicketLayoutPicker.css are overridden below with higher specificity.
+   ========================================= */
+
+.backup-page-container .layout-picker-container {
     display: flex;
     align-items: center;
-    padding: 6px 12px;
+    justify-content: center;
+    gap: calc(6px * var(--backup-ui-scale, 1));
+    padding: calc(6px * var(--backup-ui-scale, 1)) calc(12px * var(--backup-ui-scale, 1));
     background: var(--bg-card);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--backup-ui-scale, 1));
     border: 1px solid var(--border-color);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    margin-bottom: 0;
 }
 
-.backup-layout-buttons {
+.backup-page-container .layout-buttons {
     display: flex;
-    gap: 6px;
     flex-wrap: wrap;
+    gap: calc(6px * var(--backup-ui-scale, 1));
 }
 
-.backup-layout-btn {
+.backup-page-container .layout-btn {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    gap: calc(5px * var(--backup-ui-scale, 1));
+    padding: calc(4px * var(--backup-ui-scale, 1)) calc(10px * var(--backup-ui-scale, 1));
     background: var(--bg-body);
     border: 1.5px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: calc(6px * var(--backup-ui-scale, 1));
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.65rem;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    font-size: calc(0.65rem * var(--backup-ui-scale, 1));
     font-weight: 600;
     color: var(--text-main);
     white-space: nowrap;
+    min-height: auto;
 }
 
-.backup-layout-btn:hover:not(:disabled):not(.active) {
+.backup-page-container .layout-btn:hover:not(:disabled):not(.active) {
     background: var(--bg-card);
     border-color: var(--accent-primary);
     transform: translateY(-1px);
 }
 
-.backup-layout-btn.active {
-    background: var(--accent-primary);
+/* Outline active — distinct from entity picker solid fill */
+.backup-page-container .layout-btn.active {
+    background: var(--bg-body);
     border-color: var(--accent-primary);
-    color: var(--accent-primary-contrast);
-    box-shadow: 0 2px 8px var(--accent-primary-glow);
-    font-weight: 700;
+    color: var(--accent-primary);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    font-weight: 800;
 }
 
-.backup-layout-icon {
-    font-size: 14px;
+[data-theme="light"] .backup-page-container .layout-btn.active {
+    color: var(--accent-primary);
+}
+
+[data-theme="dark"] .backup-page-container .layout-btn.active {
+    color: var(--accent-primary);
+}
+
+.backup-page-container .layout-icon {
+    font-size: calc(14px * var(--backup-ui-scale, 1));
     line-height: 1;
 }
 
-.backup-layout-label {
-    font-size: 0.75rem;
+.backup-page-container .layout-label {
+    font-size: calc(0.75rem * var(--backup-ui-scale, 1));
     font-weight: 600;
 }
 
+/* Filter chip: align visually with layout buttons */
+.backup-page-container .ticket-filter-inline-btn {
+    width: calc(28px * var(--backup-ui-scale, 1));
+    height: calc(28px * var(--backup-ui-scale, 1));
+    min-width: calc(28px * var(--backup-ui-scale, 1));
+    border-radius: calc(6px * var(--backup-ui-scale, 1));
+    border-width: 1.5px;
+}
+
+.backup-page-container .ticket-filter-inline-btn svg {
+    width: calc(14px * var(--backup-ui-scale, 1));
+    height: calc(14px * var(--backup-ui-scale, 1));
+}
+
+@media (max-width: 767px) {
+    .backup-page-container .layout-picker-container {
+        gap: calc(8px * var(--backup-ui-scale, 1));
+    }
+
+    .backup-page-container .layout-buttons {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
 @media (max-width: 600px) {
-    .backup-layout-picker {
-        padding: 4px 8px;
+    .backup-page-container .layout-picker-container {
+        padding: calc(4px * var(--backup-ui-scale, 1)) calc(8px * var(--backup-ui-scale, 1));
     }
-    .backup-layout-btn {
-        padding: 3px 6px;
-        font-size: 0.6rem;
+
+    .backup-page-container .layout-btn {
+        padding: calc(3px * var(--backup-ui-scale, 1)) calc(6px * var(--backup-ui-scale, 1));
+        font-size: calc(0.6rem * var(--backup-ui-scale, 1));
     }
-    .backup-layout-label {
-        font-size: 0.65rem;
+
+    .backup-page-container .layout-label {
+        font-size: calc(0.65rem * var(--backup-ui-scale, 1));
+    }
+
+    .backup-page-container .ticket-filter-inline-btn {
+        width: calc(26px * var(--backup-ui-scale, 1));
+        height: calc(26px * var(--backup-ui-scale, 1));
+        min-width: calc(26px * var(--backup-ui-scale, 1));
     }
 }

@@ -1,0 +1,56 @@
+/**
+ * Data Management (Admin Backup) page — modular UI scale (mirrors public .body-padding tiers in BodyLandPage.css).
+ * Set on .backup-page-container; descendants inherit --backup-ui-scale for calc(... * var(--backup-ui-scale, 1)).
+ */
+
+.backup-page-container {
+  --backup-ui-scale: 1;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .backup-page-container {
+    --backup-ui-scale: 0.88;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+  .backup-page-container {
+    --backup-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+  .backup-page-container {
+    --backup-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+  .backup-page-container {
+    --backup-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+  .backup-page-container {
+    --backup-ui-scale: 0.68;
+  }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+  .backup-page-container {
+    --backup-ui-scale: 0.65;
+  }
+}
+
+@media (max-width: 320px) {
+  .backup-page-container {
+    --backup-ui-scale: 0.55;
+  }
+}
+
+@media (min-width: 1024px) {
+  .backup-page-container {
+    --backup-ui-scale: 1;
+  }
+}

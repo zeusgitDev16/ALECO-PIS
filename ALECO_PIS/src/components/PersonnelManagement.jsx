@@ -17,7 +17,7 @@ import '../CSS/PersonnelLayoutPicker.css';
 const PersonnelManagement = () => {
     // --- 1. VIEW & DATA STATE ---
     const [activeTab, setActiveTab] = useState('crews'); // 'crews' or 'pool'
-    const [viewMode, setViewMode] = useState('compact'); // 'card' | 'compact' | 'workflow'
+    const [viewMode, setViewMode] = useState('compact'); // 'card' | 'compact' | 'workflow' (must match PersonnelLayoutPicker ids)
     const [crews, setCrews] = useState([]);
     const [linemenPool, setLinemenPool] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -191,7 +191,7 @@ const PersonnelManagement = () => {
                     {/* --- DYNAMIC VIEWS (Lego Bricks) --- */}
                     {activeTab === 'crews' && (
                         <>
-                            {viewMode === 'grid' && (
+                            {viewMode === 'card' && (
                                 <CrewGrid
                                     crews={filteredCrews}
                                     isLoading={isLoading}
@@ -216,7 +216,7 @@ const PersonnelManagement = () => {
                     )}
                     {activeTab === 'pool' && (
                         <>
-                            {viewMode === 'grid' && (
+                            {viewMode === 'card' && (
                                 <LinemanGrid
                                     linemen={filteredPool}
                                     isLoading={isLoading}

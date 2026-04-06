@@ -5,15 +5,22 @@
  * TicketModalUIScale.css (confirm, filter drawer, layout picker patterns).
  */
 
-/* Field density inside modals: cap scale so wide viewports (≥1024, --interruption-ui-scale: 1) match
-   the same control/label sizing as narrow tiers. Without this, opening DevTools narrows the viewport,
-   drops the tier scale, and makes fields look "correct" — full-width desktop kept scale at 1 and looked oversized. */
+/* Field density: mobile (≤425px) keeps the 0.65 cap so controls stay compact; tablet/laptop (≥426px)
+   use full --interruption-ui-scale (1 → 0.88 → …) so new/edit advisory modals match original desktop sizing.
+   Existing @media blocks for 425 / 375 / 320 elsewhere in this file are unchanged. */
 .interruptions-page-container .interruptions-admin-modal {
   --im-field-scale: min(var(--interruption-ui-scale, 1), 0.65);
 }
 
 .interruptions-page-container .interruption-detail-modal {
   --im-field-scale: min(var(--interruption-ui-scale, 1), 0.65);
+}
+
+@media (min-width: 426px) {
+  .interruptions-page-container .interruptions-admin-modal,
+  .interruptions-page-container .interruption-detail-modal {
+    --im-field-scale: var(--interruption-ui-scale, 1);
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -264,18 +271,42 @@
   }
 }
 
+/* Hour/minute selects: do not shrink width with im-field-scale — too-narrow boxes + symmetric padding
+   hid digits behind the native arrow. Use em-based padding + min-width in ch/em so text stays visible. */
 .interruptions-page-container .interruptions-admin-inmodal-time-select {
-  width: calc(4rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  min-width: calc(3.25rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   box-sizing: border-box;
-  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  width: auto;
+  min-width: max(3.25rem, 3.25ch);
+  max-width: 100%;
+  flex: 0 1 auto;
+  padding: 0.35em 1.75rem 0.35em 0.5em;
   font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   font-weight: 600;
+  line-height: 1.25;
   border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   border: 1px solid var(--border-color);
   background: var(--bg-body);
   color: var(--text-primary);
-  min-height: max(2em, calc(28px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  min-height: 0;
+}
+
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-inmodal-time-select {
+  background: #374151;
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-inmodal-time-select option {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.interruptions-page-container .interruptions-admin-inmodal-time-sep {
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.25;
+  flex-shrink: 0;
 }
 
 .interruptions-page-container .interruptions-admin-preset-chip {
@@ -287,7 +318,24 @@
 
 .interruptions-page-container .interruptions-admin-radio-line {
   gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  font-size: max(0.65rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Public bulletin + Resolve helper copy — same tier as .detail-value body text, not fixed 0.8–0.9rem */
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-bull-unscheduled-note,
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-resolve-placeholder {
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
 }
 
 .interruptions-page-container .interruptions-admin-lifecycle-dropdown {
@@ -714,22 +762,6 @@
   font-size: max(0.55rem, calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
 }
 
-/* Coarse pointer: after rem ladder — iOS zoom-on-focus floor (TicketModalUIScale §7 parity) */
-@media (pointer: coarse) and (max-width: 899px) {
-  .interruptions-page-container .interruptions-admin-modal-form input[type='text'],
-  .interruptions-page-container .interruptions-admin-modal-form input[type='number'],
-  .interruptions-page-container .interruptions-admin-modal-form input[type='email'],
-  .interruptions-page-container .interruptions-admin-modal-form input[type='tel'],
-  .interruptions-page-container .interruptions-admin-modal-form input[type='search'],
-  .interruptions-page-container .interruptions-admin-modal-form select,
-  .interruptions-page-container .interruptions-admin-modal-form textarea,
-  .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-textarea,
-  .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-status-remark-input,
-  .interruptions-page-container .interruptions-admin-datetime-input,
-  .interruptions-page-container .interruptions-admin-lifecycle-dropdown,
-  .interruptions-page-container .interruptions-admin-inmodal-time-select,
-  .interruptions-page-container .interruption-filter-drawer-content select,
-  .interruptions-page-container .interruption-filter-drawer-content input[type='text'] {
-    font-size: max(16px, calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
-  }
-}
+/* No @media (pointer: coarse) font-size floor here: max(16px, …) fought modular scale and
+   DevTools flips pointer: coarse vs fine when toggling device mode / inspect / clicks, so sizes
+   jumped between “big” (16px floor) and small. Base rules above already set scaled font-size. */

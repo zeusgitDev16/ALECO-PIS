@@ -1,0 +1,56 @@
+/**
+ * Admin User Management page — modular UI scale (mirrors TicketUIScale.css / InterruptionUIScale.css tiers).
+ * Set on .users-page-container; descendants inherit --users-ui-scale for calc(... * var(--users-ui-scale, 1)).
+ */
+
+.users-page-container {
+  --users-ui-scale: 1;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .users-page-container {
+    --users-ui-scale: 0.88;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+  .users-page-container {
+    --users-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+  .users-page-container {
+    --users-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+  .users-page-container {
+    --users-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+  .users-page-container {
+    --users-ui-scale: 0.68;
+  }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+  .users-page-container {
+    --users-ui-scale: 0.65;
+  }
+}
+
+@media (max-width: 320px) {
+  .users-page-container {
+    --users-ui-scale: 0.55;
+  }
+}
+
+@media (min-width: 1024px) {
+  .users-page-container {
+    --users-ui-scale: 1;
+  }
+}

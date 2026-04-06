@@ -154,3 +154,8 @@ body.admin-app-scroll-lock {
 .widget-text {
     color: var(--text-secondary);
 }
+
+/* Data Management: last workflow step (import) stays reachable when scrolling */
+.admin-content:has(.backup-page-container) {
+    scroll-padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+}

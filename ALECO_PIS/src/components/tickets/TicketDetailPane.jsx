@@ -3,6 +3,7 @@ import { apiUrl } from '../../utils/api';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
 import '../../CSS/TicketDetailPane.css';
+import '../../CSS/TicketDashboard.css';
 import DispatchTicketModal from './DispatchTicketModal';
 import HoldTicketModal from './HoldTicketModal';
 import EditTicketModal from './EditTicketModal';
@@ -207,14 +208,28 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         <div className="detail-group full-width group-children-section">
                             <label>Child Tickets ({children.length})</label>
                             <ul className="group-children-list">
-                                {children.map((c) => (
-                                    <li key={c.ticket_id} className="group-child-item">
-                                        <span className="child-id">{c.ticket_id}</span>
-                                        <span className="child-category">{c.category}</span>
-                                        <span className="child-location">{c.municipality || c.address || '—'}</span>
-                                        <span className={`child-status status-tag ${c.status?.toLowerCase()}`}>{formatTicketStatusLabel(c.status)}</span>
-                                    </li>
-                                ))}
+                                {children.map((c) => {
+                                    const childLocation = c.municipality
+                                        ? `${c.municipality}, ${c.district || 'Albay'}`
+                                        : (c.address || '—');
+                                    const statusKey = c.status ? c.status.toLowerCase().replace(/\s/g, '') : 'pending';
+                                    return (
+                                        <li key={c.ticket_id} className="group-child-item">
+                                            <div className="group-child-top">
+                                                <span className="child-id">{c.ticket_id}</span>
+                                                <span className="child-category">{c.category}</span>
+                                            </div>
+                                            <div className="card-footer-metadata group-child-foot">
+                                                <div className="location-scroll-wrapper">
+                                                    <span className="location-text-full">{childLocation}</span>
+                                                </div>
+                                                <span className={`status-pill-solid ${statusKey}`}>
+                                                    {formatTicketStatusLabel(c.status)}
+                                                </span>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
                     )}

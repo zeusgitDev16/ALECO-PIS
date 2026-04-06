@@ -9,7 +9,9 @@ import '../../CSS/SearchBarGlobal.css';
 // 1. Accept the toggleSidebar prop from AdminLayout
 const SearchBarGlobal = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
-  const [profilePic, setProfilePic] = useState('');
+  const defaultAvatar =
+    'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
+  const [profilePic, setProfilePic] = useState(defaultAvatar);
   const [role, setRole] = useState('employee');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -27,7 +29,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       if (storedPic && storedPic !== 'null' && storedPic !== 'undefined') {
         setProfilePic(storedPic);
       } else {
-        setProfilePic('https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'); 
+        setProfilePic(defaultAvatar);
       }
 
       if (storedRole) {

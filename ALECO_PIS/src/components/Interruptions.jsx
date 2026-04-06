@@ -3,6 +3,7 @@ import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/Buttons.css';
 import '../CSS/InterruptionsAdmin.css';
+import '../CSS/InterruptionUIScale.css';
 import { FILTER_CHIPS } from '../utils/interruptionLabels';
 import { emptyForm, buildInterruptionPayload, rowToFormState, validateInterruptionForm } from '../utils/interruptionFormUtils';
 import { useAdminInterruptions } from '../hooks/useAdminInterruptions';
@@ -20,6 +21,7 @@ import RecentOpenedAdvisories from './containers/RecentOpenedAdvisories';
 import '../CSS/InterruptionLayoutPicker.css';
 import '../CSS/InterruptionWorkflowView.css';
 import '../CSS/InterruptionFilterDrawer.css';
+import '../CSS/InterruptionModalUIScale.css';
 
 const AdminInterruptions = () => {
   const {

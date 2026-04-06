@@ -1173,12 +1173,14 @@ select.dispatch-form-input {
    EDIT TICKET MODAL - Dedicated styling
    ========================================= */
 
+/* Height caps aligned with TicketDetailPane .ticket-modal-content */
 .edit-ticket-modal {
     display: flex;
     flex-direction: column;
     width: 94%;
     max-width: 540px;
-    max-height: 88vh;
+    height: auto;
+    max-height: min(88dvh, 90vh, calc(100dvh - calc(24px * var(--ticket-ui-scale, 1))));
     padding: 0;
     overflow: hidden;
 }
@@ -1355,6 +1357,11 @@ select.dispatch-form-input {
 
 /* 768–1023px (88%) */
 @media (min-width: 768px) and (max-width: 1023px) {
+    .edit-ticket-modal {
+        height: auto;
+        max-height: min(92dvh, calc(100dvh - 32px));
+    }
+
     .edit-ticket-modal .dispatch-modal-close-btn {
         width: 32px;
         height: 32px;
@@ -1445,7 +1452,8 @@ select.dispatch-form-input {
 @media (min-width: 600px) and (max-width: 767px) {
     .edit-ticket-modal {
         max-width: 96%;
-        max-height: 92vh;
+        height: auto;
+        max-height: min(88dvh, calc(100dvh - 24px));
     }
 
     .edit-ticket-modal .dispatch-modal-close-btn {
@@ -1539,7 +1547,8 @@ select.dispatch-form-input {
 @media (min-width: 480px) and (max-width: 599px) {
     .edit-ticket-modal {
         max-width: 96%;
-        max-height: 92vh;
+        height: auto;
+        max-height: min(88dvh, calc(100dvh - 20px));
     }
 
     .edit-ticket-modal .dispatch-modal-close-btn {
@@ -1629,11 +1638,12 @@ select.dispatch-form-input {
     }
 }
 
-/* 320–479px (65%) */
+/* 320–479px (65%) — match ticket detail small-mobile cap */
 @media (min-width: 320px) and (max-width: 479px) {
     .edit-ticket-modal {
         max-width: 96%;
-        max-height: 92vh;
+        height: auto;
+        max-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
     }
 
     .edit-ticket-modal .dispatch-modal-close-btn {
@@ -1727,7 +1737,8 @@ select.dispatch-form-input {
 @media (max-width: 320px) {
     .edit-ticket-modal {
         max-width: 100%;
-        max-height: 95vh;
+        height: auto;
+        max-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
         padding: 0;
     }
 

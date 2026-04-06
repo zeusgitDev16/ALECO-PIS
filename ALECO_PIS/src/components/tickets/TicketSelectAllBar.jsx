@@ -1,17 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import '../../CSS/TicketSelectAllBar.css';
+import { visibleIdsFromTickets, isAllVisibleSelected, toggleSelectAllVisible } from '../../utils/ticketSelection';
 
 const TicketSelectAllBar = ({ tickets, selectedIds, setSelectedIds }) => {
     if (!tickets || tickets.length === 0) return null;
 
-    const isAllVisibleSelected = selectedIds.length === tickets.length;
+    const visibleIds = useMemo(() => visibleIdsFromTickets(tickets), [tickets]);
+    const allVisibleSelected = isAllVisibleSelected(visibleIds, selectedIds);
 
     const toggleSelectAll = () => {
-        if (isAllVisibleSelected) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(tickets.map(t => t.ticket_id));
-        }
+        toggleSelectAllVisible(visibleIds, selectedIds, setSelectedIds);
     };
 
     return (
@@ -20,7 +18,7 @@ const TicketSelectAllBar = ({ tickets, selectedIds, setSelectedIds }) => {
                 <input
                     type="checkbox"
                     className="ticket-select-all-checkbox"
-                    checked={isAllVisibleSelected}
+                    checked={allVisibleSelected}
                     onChange={toggleSelectAll}
                 />
                 <span className="ticket-select-all-text">

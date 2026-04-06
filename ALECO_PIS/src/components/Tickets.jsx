@@ -9,6 +9,8 @@ import '../CSS/TicketFilterSidebar.css';
 import '../CSS/TicketSelectAllBar.css';
 import '../CSS/TicketFilterDrawer.css';
 import '../CSS/TicketMain.css';
+import '../CSS/TicketUIScale.css';
+import '../CSS/TicketModalUIScale.css';
 import useTickets from '../utils/useTickets';
 import { useRecentOpenedTickets } from '../utils/useRecentOpenedTickets';
 import UrgentTickets from './containers/UrgentTickets';

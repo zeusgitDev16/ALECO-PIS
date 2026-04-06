@@ -1,0 +1,735 @@
+/**
+ * Power advisories modals under admin — inherits --interruption-ui-scale from .interruptions-page-container.
+ * Loaded after InterruptionsAdmin.css / InterruptionFilterDrawer.css / InterruptionLayoutPicker.css / RecentOpenedAdvisories.css
+ * so these overrides win. Sizing references: TicketDetailPane.css (.ticket-modal-overlay / .ticket-modal-content caps),
+ * TicketModalUIScale.css (confirm, filter drawer, layout picker patterns).
+ */
+
+/* Field density inside modals: cap scale so wide viewports (≥1024, --interruption-ui-scale: 1) match
+   the same control/label sizing as narrow tiers. Without this, opening DevTools narrows the viewport,
+   drops the tier scale, and makes fields look "correct" — full-width desktop kept scale at 1 and looked oversized. */
+.interruptions-page-container .interruptions-admin-modal {
+  --im-field-scale: min(var(--interruption-ui-scale, 1), 0.65);
+}
+
+.interruptions-page-container .interruption-detail-modal {
+  --im-field-scale: min(var(--interruption-ui-scale, 1), 0.65);
+}
+
+/* --------------------------------------------------------------------------
+   Main modal backdrop (create/edit/view) — ticket detail overlay pattern
+   -------------------------------------------------------------------------- */
+.interruptions-page-container .interruptions-admin-modal-backdrop:not(.interruptions-admin-modal-backdrop--confirm) {
+  align-items: center;
+  justify-content: center;
+  padding: max(calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-top, 0px))
+    max(calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-right, 0px))
+    max(calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-bottom, 0px))
+    max(calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-left, 0px));
+}
+
+.interruptions-page-container .interruptions-admin-modal.interruptions-admin-modal--flexcol {
+  height: auto;
+  max-height: min(88dvh, 90vh, calc(100dvh - calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
+  max-width: min(640px, calc(100vw - calc(40px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
+  border-radius: calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  box-shadow: 0 calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(48px * var(--im-field-scale, var(--interruption-ui-scale, 1))) rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .interruptions-page-container .interruptions-admin-modal.interruptions-admin-modal--flexcol {
+    max-height: min(92dvh, calc(100dvh - 32px));
+  }
+}
+
+@media (min-width: 600px) and (max-width: 767px) {
+  .interruptions-page-container .interruptions-admin-modal.interruptions-admin-modal--flexcol {
+    max-height: min(88dvh, calc(100dvh - 24px));
+  }
+}
+
+@media (min-width: 480px) and (max-width: 599px) {
+  .interruptions-page-container .interruptions-admin-modal.interruptions-admin-modal--flexcol {
+    max-height: min(88dvh, calc(100dvh - 20px));
+  }
+}
+
+@media (min-width: 320px) and (max-width: 479px) {
+  .interruptions-page-container .interruptions-admin-modal-backdrop:not(.interruptions-admin-modal-backdrop--confirm) {
+    padding: max(calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-top, 0px))
+      max(calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-right, 0px))
+      max(10px, env(safe-area-inset-bottom, 0px))
+      max(calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-left, 0px));
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  .interruptions-page-container .interruptions-admin-modal.interruptions-admin-modal--flexcol {
+    max-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
+    border-radius: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  }
+}
+
+@media (max-width: 320px) {
+  .interruptions-page-container .interruptions-admin-modal.interruptions-admin-modal--flexcol {
+    max-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
+    border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  }
+}
+
+/* Header / title / close / scroll / footer — ticket modal close + dispatch-type rhythm */
+.interruptions-page-container .interruptions-admin-modal-header {
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal-title {
+  font-size: max(0.75rem, calc(0.9rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  line-height: 1.2;
+}
+
+.interruptions-page-container .interruptions-admin-modal-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max(28px, calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  height: max(28px, calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  min-width: max(28px, calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  min-height: max(28px, calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: 0;
+  margin: 0;
+  font-size: max(16px, calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  line-height: 1;
+  border-radius: 50%;
+}
+
+/* No vw in padding — avoids oversized horizontal padding on 320–425px */
+.interruptions-page-container .interruptions-admin-modal-body-scroll {
+  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal-body-scroll::-webkit-scrollbar {
+  width: max(4px, calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-modal-footer {
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal-footer .interruptions-admin-btn,
+.interruptions-page-container .interruptions-admin-modal-footer .interruptions-admin-btn--submit {
+  min-height: max(34px, calc(40px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.75rem, calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+/* --------------------------------------------------------------------------
+   Edit advisory form — TicketDetailPane .detail-group label + .detail-value parity
+   Coarse pointer (end of file) adds 16px floor for iOS after this rem ladder.
+   -------------------------------------------------------------------------- */
+.interruptions-page-container .interruptions-admin-modal-form label:not(.interruptions-admin-radio-line) {
+  gap: 6px;
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+}
+
+.interruptions-page-container .interruptions-admin-modal-form input[type='text'],
+.interruptions-page-container .interruptions-admin-modal-form input[type='number'],
+.interruptions-page-container .interruptions-admin-modal-form input[type='email'],
+.interruptions-page-container .interruptions-admin-modal-form input[type='tel'],
+.interruptions-page-container .interruptions-admin-modal-form input[type='search'],
+.interruptions-page-container .interruptions-admin-modal-form select,
+.interruptions-page-container .interruptions-admin-modal-form textarea:not(.interruptions-admin-body-textarea),
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-status-remark-input {
+  box-sizing: border-box;
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  min-height: max(2em, calc(28px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-modal-form textarea:not(.interruptions-admin-body-textarea) {
+  min-height: calc(48px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-textarea {
+  box-sizing: border-box;
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  line-height: 1.45;
+  min-height: max(72px, calc(100px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-field-hint {
+  margin: 0 0 calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.interruptions-page-container .interruptions-admin-form-grid--modal {
+  gap: calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+@media (max-width: 767px) {
+  .interruptions-page-container .interruptions-admin-form-grid--modal .interruptions-admin-datetime-field {
+    grid-column: 1 / -1;
+  }
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-fieldset {
+  margin: 0 0 calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-fieldset legend {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0 calc(5px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-datetime-wrap {
+  box-sizing: border-box;
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+}
+
+.interruptions-page-container .interruptions-admin-datetime-input {
+  box-sizing: border-box;
+  min-height: max(2em, calc(28px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  background: var(--bg-input, var(--bg-card));
+  color: var(--text-primary);
+}
+
+.interruptions-page-container .interruptions-admin-datetime-preview {
+  margin: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0 0;
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+}
+
+.interruptions-page-container .interruptions-admin-countdown {
+  margin: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0 0;
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-inmodal-datetime {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-inmodal-time-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-inmodal-ampm {
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-left: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+@media (max-width: 425px) {
+  .interruptions-page-container .interruptions-admin-inmodal-ampm {
+    flex-basis: 100%;
+    margin-left: 0;
+    margin-top: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  }
+}
+
+.interruptions-page-container .interruptions-admin-inmodal-time-select {
+  width: calc(4rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  min-width: calc(3.25rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  box-sizing: border-box;
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  min-height: max(2em, calc(28px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-preset-chip {
+  font-size: max(0.6rem, calc(0.7rem * var(--im-field-scale, var(--interruption-ui-scale, 1)))) !important;
+  padding: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))) !important;
+  border-radius: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) !important;
+  min-height: max(32px, calc(36px * var(--im-field-scale, var(--interruption-ui-scale, 1)))) !important;
+}
+
+.interruptions-page-container .interruptions-admin-radio-line {
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.65rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-lifecycle-dropdown {
+  box-sizing: border-box;
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  min-height: max(2em, calc(28px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-conflict-banner .interruptions-admin-btn--submit {
+  min-height: max(32px, calc(36px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.75rem, calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-lifecycle-stepper {
+  gap: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-top: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-stepper-step {
+  gap: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.58rem, calc(0.7rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  border-radius: 999px;
+}
+
+.interruptions-page-container .interruptions-admin-stepper-dot {
+  width: max(4px, calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  height: max(4px, calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-stepper-connector {
+  width: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  height: max(1px, calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-stepper-select-wrap {
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-top: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.6rem, calc(0.7rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-lifecycle-preview-title {
+  font-size: max(0.65rem, calc(0.75rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-btn--secondary,
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-btn--small {
+  font-size: max(0.65rem, calc(0.75rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  min-height: max(28px, calc(30px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-actions {
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+/* View-only advisory + full-card detail modal — TicketDetailPane label / value (base; narrow overlays follow) */
+.interruptions-page-container .interruptions-admin-view-section-title {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  margin: 0 0 calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-view-dl dt {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+}
+
+.interruptions-page-container .interruptions-admin-view-dl dd {
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+}
+
+.interruptions-page-container .interruptions-admin-view-body-text,
+.interruptions-page-container .interruptions-admin-view-text {
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-feeder-label {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-feeder-value {
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 700;
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-ref-id,
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-control-no {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-body-text--full,
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-cause {
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+@media (max-width: 425px) {
+  .interruptions-page-container .interruptions-admin-view-dl > div {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  }
+}
+
+/* Viewport-only @media overlays removed: field sizing now follows --im-field-scale (capped) + page
+   --interruption-ui-scale tiers, so full-width desktop matches narrow-DevTools without viewport tricks. */
+
+/* --------------------------------------------------------------------------
+   Confirm dialogs
+   -------------------------------------------------------------------------- */
+.interruptions-page-container .interruptions-admin-modal-backdrop--confirm {
+  align-items: center;
+  justify-content: center;
+  padding: max(calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-top, 0px))
+    max(calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-right, 0px))
+    max(calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-bottom, 0px))
+    max(calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-left, 0px));
+}
+
+.interruptions-page-container .interruptions-admin-confirm-dialog {
+  max-width: min(420px, calc(100vw - calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
+  padding: calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(22px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-confirm-title {
+  font-size: max(0.95rem, calc(1.1rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  margin: 0 0 calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-confirm-lead {
+  margin: 0 0 calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-confirm-bullets {
+  margin: 0 0 calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding-left: calc(1.25rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.8rem, calc(0.875rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-confirm-actions {
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-confirm-actions .interruptions-admin-btn {
+  min-height: max(32px, calc(36px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.75rem, calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+/* --------------------------------------------------------------------------
+   View-full advisory detail modal (read-only card)
+   -------------------------------------------------------------------------- */
+.interruptions-page-container .interruption-detail-modal-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: max(calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-top, 0px))
+    max(calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-right, 0px))
+    max(calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-bottom, 0px))
+    max(calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-left, 0px));
+}
+
+.interruptions-page-container .interruption-detail-modal {
+  width: min(100%, 560px);
+  max-height: min(88dvh, 90vh, calc(100dvh - calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
+  border-radius: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  box-shadow: 0 calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(48px * var(--im-field-scale, var(--interruption-ui-scale, 1))) rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .interruptions-page-container .interruption-detail-modal {
+    max-height: min(92dvh, calc(100dvh - 32px));
+  }
+}
+
+@media (min-width: 600px) and (max-width: 767px) {
+  .interruptions-page-container .interruption-detail-modal {
+    max-height: min(88dvh, calc(100dvh - 24px));
+  }
+}
+
+@media (min-width: 480px) and (max-width: 599px) {
+  .interruptions-page-container .interruption-detail-modal {
+    max-height: min(88dvh, calc(100dvh - 20px));
+  }
+}
+
+@media (min-width: 320px) and (max-width: 479px) {
+  .interruptions-page-container .interruption-detail-modal {
+    max-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
+  }
+}
+
+@media (max-width: 320px) {
+  .interruptions-page-container .interruption-detail-modal {
+    max-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
+  }
+}
+
+.interruptions-page-container .interruption-detail-modal-close {
+  top: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  right: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  width: calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  height: calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-detail-modal-inner {
+  padding: calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-card--detail-modal {
+  padding: calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+/* --------------------------------------------------------------------------
+   Mobile bottom action sheet (InterruptionCardActionModal)
+   -------------------------------------------------------------------------- */
+.interruptions-page-container .interruption-card-action-modal-backdrop {
+  padding: 0 max(calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-left, 0px))
+    max(calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-bottom, 0px))
+    max(calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))), env(safe-area-inset-right, 0px));
+}
+
+.interruptions-page-container .interruption-card-action-modal {
+  width: min(100%, 360px);
+  max-width: min(360px, calc(100vw - calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
+  max-height: min(
+    42dvh,
+    calc(100dvh - calc(48px * var(--im-field-scale, var(--interruption-ui-scale, 1))) - env(safe-area-inset-bottom, 0px))
+  );
+  border-radius: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0 0;
+  box-shadow: 0 calc(-6px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1))) rgba(0, 0, 0, 0.18);
+}
+
+.interruptions-page-container .interruption-card-action-modal-header {
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-card-action-modal-title {
+  font-size: max(0.85rem, calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruption-card-action-modal-ref {
+  font-size: max(0.65rem, calc(0.75rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruption-card-action-modal-close {
+  width: calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  height: calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(1.35rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-card-action-modal-body {
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-card-action-btn {
+  min-height: max(38px, calc(40px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.85rem, calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruption-card-action-btn--icon {
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+/* --------------------------------------------------------------------------
+   Filter drawer — TicketModalUIScale filter drawer parity
+   -------------------------------------------------------------------------- */
+.interruptions-page-container .interruption-filter-drawer-overlay {
+  padding: calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-filter-drawer-panel {
+  width: min(calc(260px * var(--im-field-scale, var(--interruption-ui-scale, 1))), calc(100vw - calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
+  max-width: min(260px, calc(100vw - calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
+  border-radius: 0 calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0;
+}
+
+.interruptions-page-container .interruption-filter-drawer-header {
+  padding: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-filter-drawer-title {
+  font-size: calc(1rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-filter-drawer-close {
+  width: calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  height: calc(32px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(1.5rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-filter-drawer-content {
+  padding: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+/* --------------------------------------------------------------------------
+   Layout picker + inline filter — TicketModalUIScale layout parity
+   -------------------------------------------------------------------------- */
+.interruptions-page-container .interruption-layout-picker {
+  gap: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-layout-buttons {
+  gap: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-layout-btn {
+  gap: calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.5rem, calc(0.55rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  border-radius: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  min-height: max(20px, calc(22px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruption-layout-icon {
+  font-size: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-layout-label {
+  font-size: calc(0.6rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-filter-inline-btn {
+  width: calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  height: calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  min-width: calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+/* --------------------------------------------------------------------------
+   Recent Opened Advisories strip
+   -------------------------------------------------------------------------- */
+.interruptions-page-container .recent-opened-advisories-wrapper {
+  margin-bottom: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0 calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0;
+}
+
+.interruptions-page-container .recent-opened-advisories-wrapper.recent-opened-advisories-collapsed {
+  margin-bottom: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding-bottom: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .recent-opened-advisories-header {
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-bottom: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0;
+}
+
+.interruptions-page-container .recent-opened-advisories-collapse-btn {
+  margin-left: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.65rem, calc(0.75rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .recent-opened-advisories-icon {
+  font-size: calc(1rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .recent-opened-advisories-title {
+  font-size: max(0.7rem, calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .recent-opened-advisories-time-range {
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .recent-opened-advisories-time-range label {
+  font-size: max(0.6rem, calc(0.7rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .recent-opened-advisories-time-range select {
+  padding: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.65rem, calc(0.75rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .recent-opened-advisories-kanban-strip {
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0;
+  min-height: calc(88px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-top: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .recent-opened-advisories-kanban-strip::-webkit-scrollbar {
+  height: max(4px, calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .recent-opened-advisory-kanban-card {
+  min-width: calc(150px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  max-width: calc(150px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .recent-opened-advisory-preview {
+  font-size: max(0.55rem, calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+/* Coarse pointer: after rem ladder — iOS zoom-on-focus floor (TicketModalUIScale §7 parity) */
+@media (pointer: coarse) and (max-width: 899px) {
+  .interruptions-page-container .interruptions-admin-modal-form input[type='text'],
+  .interruptions-page-container .interruptions-admin-modal-form input[type='number'],
+  .interruptions-page-container .interruptions-admin-modal-form input[type='email'],
+  .interruptions-page-container .interruptions-admin-modal-form input[type='tel'],
+  .interruptions-page-container .interruptions-admin-modal-form input[type='search'],
+  .interruptions-page-container .interruptions-admin-modal-form select,
+  .interruptions-page-container .interruptions-admin-modal-form textarea,
+  .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-textarea,
+  .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-status-remark-input,
+  .interruptions-page-container .interruptions-admin-datetime-input,
+  .interruptions-page-container .interruptions-admin-lifecycle-dropdown,
+  .interruptions-page-container .interruptions-admin-inmodal-time-select,
+  .interruptions-page-container .interruption-filter-drawer-content select,
+  .interruptions-page-container .interruption-filter-drawer-content input[type='text'] {
+    font-size: max(16px, calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  }
+}

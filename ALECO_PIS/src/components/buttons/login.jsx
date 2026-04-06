@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google'; 
-import { jwtDecode } from "jwt-decode"; 
 import '../../CSS/LoginContainer.css'; 
 import API from '../../api/axiosConfig'; 
 
@@ -73,24 +72,22 @@ const Login = () => {
     // HANDLER: The "Gatekeeper" for Google Auth
     // Always try google-login first; only fall back to setup when user is not found (401)
     const handleGoogleSuccess = async (credentialResponse) => {
-        try {
-            const decoded = jwtDecode(credentialResponse.credential);
-            const userEmail = decoded.email;
-            const profilePicUrl = decoded.picture;
-            const userName = decoded.name;
+        const idToken = credentialResponse?.credential;
+        if (!idToken) {
+            alert('Google did not return a credential. Please try again.');
+            return;
+        }
 
+        try {
             try {
-                const response = await API.post('/api/google-login', { 
-                    email: userEmail,
-                    profilePic: profilePicUrl, 
-                    name: userName
-                });
+                const response = await API.post('/api/google-login', { idToken });
                 if (response.status === 200) {
-                    localStorage.setItem('userRole', response.data.user.role);
-                    localStorage.setItem('googleProfilePic', profilePicUrl); 
-                    localStorage.setItem('userName', userName);
-                    localStorage.setItem('userEmail', userEmail); 
-                    localStorage.setItem('tokenVersion', response.data.user.tokenVersion);
+                    const u = response.data.user;
+                    localStorage.setItem('userRole', u.role);
+                    localStorage.setItem('googleProfilePic', u.profilePic || '');
+                    localStorage.setItem('userName', u.name || 'User');
+                    localStorage.setItem('userEmail', u.email);
+                    localStorage.setItem('tokenVersion', u.tokenVersion);
                     setShowModal(false);
                     navigate('/admin-dashboard');
                     return;
@@ -99,11 +96,9 @@ const Login = () => {
                 if (loginError.response?.status === 401) {
                     if (isFirstTimeSetup && inviteCode?.trim().length === 12) {
                         try {
-                            const setupResponse = await API.post('/api/setup-google-account', { 
-                                email: userEmail,
+                            const setupResponse = await API.post('/api/setup-google-account', {
+                                idToken,
                                 inviteCode: inviteCode.trim(),
-                                profilePic: profilePicUrl,
-                                name: userName
                             });
                             if (setupResponse.status === 200) {
                                 alert("Google account successfully linked!");

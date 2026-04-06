@@ -266,7 +266,7 @@ export default function InterruptionAdvisoryForm({
                 placeholder="e.g. SIMAR2026-037"
               />
             </label>
-            <label>
+            <label className="interruptions-admin-datetime-field">
               Start
               <div className="interruptions-admin-datetime-wrap">
                 <InModalDateTimePicker
@@ -278,7 +278,7 @@ export default function InterruptionAdvisoryForm({
               </div>
               <DatetimePreview value={form.dateTimeStart} />
             </label>
-            <label>
+            <label className="interruptions-admin-datetime-field">
               Estimated restoration (ERT)
               <div className="interruptions-admin-datetime-wrap">
                 <InModalDateTimePicker
@@ -519,7 +519,7 @@ export default function InterruptionAdvisoryForm({
 
               {form.schedulePublicLater && (
             <div className="interruptions-admin-bull-schedule">
-              <label className="interruptions-admin-span2 interruptions-admin-label-tight">
+              <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
                 Goes live at
                 <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
                   <InModalDateTimePicker
@@ -563,7 +563,7 @@ export default function InterruptionAdvisoryForm({
           <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--resolve">
             <legend>Resolve</legend>
             {form.status === 'Restored' ? (
-              <label className="interruptions-admin-span2">
+              <label className="interruptions-admin-span2 interruptions-admin-datetime-field">
                 Actual restoration date and time
                 <div className="interruptions-admin-datetime-wrap">
                   <InModalDateTimePicker

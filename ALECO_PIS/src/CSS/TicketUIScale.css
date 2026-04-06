@@ -1,0 +1,56 @@
+/**
+ * Admin Support Tickets page — modular UI scale (mirrors public .body-padding tiers in BodyLandPage.css).
+ * Set on .tickets-page-container; descendants inherit --ticket-ui-scale for calc(... * var(--ticket-ui-scale, 1)).
+ */
+
+.tickets-page-container {
+  --ticket-ui-scale: 1;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .tickets-page-container {
+    --ticket-ui-scale: 0.88;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+  .tickets-page-container {
+    --ticket-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+  .tickets-page-container {
+    --ticket-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+  .tickets-page-container {
+    --ticket-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+  .tickets-page-container {
+    --ticket-ui-scale: 0.68;
+  }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+  .tickets-page-container {
+    --ticket-ui-scale: 0.65;
+  }
+}
+
+@media (max-width: 320px) {
+  .tickets-page-container {
+    --ticket-ui-scale: 0.55;
+  }
+}
+
+@media (min-width: 1024px) {
+  .tickets-page-container {
+    --ticket-ui-scale: 1;
+  }
+}

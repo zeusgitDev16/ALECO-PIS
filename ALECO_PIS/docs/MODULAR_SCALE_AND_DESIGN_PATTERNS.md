@@ -112,8 +112,23 @@ Apply the same idea when adding new report-scoped inputs.
 ## 8. Known gaps / not scaled by `--report-scale`
 
 - **React portals** (e.g. modals rendered with `createPortal` under `document.body`) **do not** sit under `#report`; they **do not inherit** `--report-scale` unless separately styled. `ReportaProblem.jsx` notes this for TicketPopUp / ConfirmModal-style UI.
-- **Admin dashboard** and **filter bars** use different layouts (`layout-inline`, Tailwind, etc.); they are **not** unified on `--report-scale`.
 - **Third-party widgets** (e.g. Google button iframe) only partially follow CSS.
+
+### Admin Support Tickets (`--ticket-ui-scale`)
+
+The **Support Tickets** admin route (`/admin-tickets`) sets **`--ticket-ui-scale`** on **`.tickets-page-container`** using the **same numeric tiers and breakpoints** as `.body-padding` in `BodyLandPage.css` (see §3). The variable is defined in `src/CSS/TicketUIScale.css` and imported from `Tickets.jsx`.
+
+- **Inheritance:** Ticket detail pane, dispatch/hold/edit/confirm modals, group modal, filter drawer, scope tabs, layout picker, bulk bar, and related UI inherit the scale when rendered **inside** `.tickets-page-container` (current ticket modals under `src/components/tickets/` are **not** portaled to `document.body`, so they receive the variable normally).
+- **Overrides:** `src/CSS/TicketModalUIScale.css` (loaded after base modal CSS) applies scoped rules under `.tickets-page-container` so typography, padding, and actions track `calc(... * var(--ticket-ui-scale, 1))` on narrow viewports (320–425px and up).
+- **Coarse pointers:** `TicketModalUIScale.css` includes `pointer: coarse` rules for native inputs in ticket modals and the ticket filter bar so effective font size stays at least **16px** where needed to reduce iOS zoom-on-focus (aligned with §7).
+
+### Admin Power advisories (`--interruption-ui-scale`)
+
+The **Power advisories** admin route sets **`--interruption-ui-scale`** on **`.interruptions-page-container`** using the **same numeric tiers and breakpoints** as `TicketUIScale.css` / `.body-padding` (see §3). Defined in `src/CSS/InterruptionUIScale.css` and imported from `Interruptions.jsx`.
+
+- **Inheritance:** Main advisory modal (create/edit/view), confirm dialogs, view-full detail modal, mobile bottom action sheet (`InterruptionCardActionModal`), filter drawer, layout picker, and Recent Opened advisories strip inherit the scale when rendered **inside** `.interruptions-page-container` (all of these are in-tree under that wrapper on the advisories page).
+- **Overrides:** `src/CSS/InterruptionModalUIScale.css` (loaded after `InterruptionsAdmin.css` and related interruption CSS) applies scoped rules under `.interruptions-page-container` so modal shells follow the same **`dvh` max-height ladder** as `TicketDetailPane.css`, with proportional padding and controls via `calc(... * var(--interruption-ui-scale, 1))`.
+- **Coarse pointers:** `InterruptionModalUIScale.css` includes `pointer: coarse` rules for native inputs in the advisory modal form and filter drawer (aligned with §7).
 
 ---
 
@@ -147,6 +162,8 @@ Not part of CSS scaling, but affects **real device** behavior:
 | Area | Files |
 |------|--------|
 | Scale tiers + public layout | `src/CSS/BodyLandPage.css` |
+| Admin tickets UI scale | `src/CSS/TicketUIScale.css`, `src/CSS/TicketModalUIScale.css`, `src/components/Tickets.jsx` |
+| Admin power advisories UI scale | `src/CSS/InterruptionUIScale.css`, `src/CSS/InterruptionModalUIScale.css`, `src/components/Interruptions.jsx` |
 | Report / Track wizard UI | `src/CSS/ReportaProblem.css`, `src/ReportaProblem.jsx` |
 | Brick guards (`:has(#report)`) | `TextFieldProblem.css`, `IssueCategoryDropdown.css`, `ExplainTheProblem.css`, `UploadTheProblem.css` |
 | Privacy / public cards | `src/CSS/PrivacyNotice.css` |

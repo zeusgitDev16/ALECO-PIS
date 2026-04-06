@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { visibleIdsFromTickets, isAllVisibleSelected, toggleSelectAllVisible } from '../../utils/ticketSelection';
 import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown'; 
 import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';      
 import '../../CSS/TicketDashboard.css';
@@ -113,14 +114,11 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
         setFilters(prev => ({ ...prev, status: value }));
     };
 
-    const isAllVisibleSelected = tickets?.length > 0 && selectedIds?.length === tickets?.length;
+    const visibleIds = useMemo(() => visibleIdsFromTickets(tickets || []), [tickets]);
+    const allVisibleSelected = isAllVisibleSelected(visibleIds, selectedIds);
 
     const toggleSelectAll = () => {
-        if (isAllVisibleSelected) {
-            setSelectedIds([]); 
-        } else {
-            setSelectedIds(tickets.map(ticket => ticket.ticket_id)); 
-        }
+        toggleSelectAllVisible(visibleIds, selectedIds, setSelectedIds);
     };
 
     return (
@@ -251,7 +249,7 @@ const TicketFilterBar = ({ filters, setFilters, tickets, selectedIds, setSelecte
                         <input 
                             type="checkbox" 
                             className="select-all-checkbox"
-                            checked={isAllVisibleSelected}
+                            checked={allVisibleSelected}
                             onChange={toggleSelectAll}
                         />
                         <span className="select-all-text">

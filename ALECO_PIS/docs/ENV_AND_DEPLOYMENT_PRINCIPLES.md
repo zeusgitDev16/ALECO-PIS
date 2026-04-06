@@ -59,6 +59,10 @@ See also: [`DEPLOYMENT_VERCEL_RENDER.md`](./DEPLOYMENT_VERCEL_RENDER.md) for ste
 
 - **`PUBLIC_APP_URL`** or **`FRONTEND_ORIGIN`** on the API host adds an optional “open the app” link in the forgot-password email (same vars as CORS primary SPA).
 
+### Google Sign-In (server)
+
+- **`POST /api/google-login`** and **`POST /api/setup-google-account`** expect **`idToken`** (Google credential JWT). The API verifies it with **`google-auth-library`** using **`GOOGLE_CLIENT_ID`** or **`VITE_GOOGLE_CLIENT_ID`** (same Web client ID as the SPA). Set **`GOOGLE_CLIENT_ID`** on the API host if the server process does not load `VITE_*` from `.env`.
+
 ---
 
 ## 5. Pre-merge / pre-release checklist

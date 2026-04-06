@@ -56,7 +56,8 @@
 
 /* Global admin search (beside menu): --ns mirrors --nav-scale so the field always picks up tiers */
 .admin-top-nav .search-container.admin-nav-search {
-    --ns: var(--nav-scale, 1);
+    /* Cap so wide viewports (≥1024, --nav-scale: 1) stay aligned with modular tiers; same DevTools vs full-width issue as advisories */
+    --ns: min(var(--nav-scale, 1), 0.88);
     position: relative;
     width: calc(300px * var(--ns));
     min-width: 0;

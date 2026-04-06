@@ -77,7 +77,8 @@
   gap: 0; 
   transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effect */
   isolation: isolate; /* Prevents internal content from bleeding into sub-pixel sub-layers */
-  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Strictly forces clipping of content during scroll */
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Strictly forces clipping of content during scroll */ 
+  position: relative; /* Added for absolute positioning of expand button */
 }
 
 /* Standardized scrollbar for individual cards to match landing page consistency */
@@ -134,10 +135,43 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
+/* --- Expand Button (Anchored to Sticky Header) --- */
+.feed-post-expand-btn {
+  position: absolute;
+  top: 12px !important; 
+  right: 12px !important; 
+  z-index: 100 !important; /* Maximum priority to stay above headers and content */
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color);
+  color: var(--text-header) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.3rem; /* Increased size for better visibility */
+  line-height: 1; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+.feed-post-expand-btn:hover {
+  transform: scale(1.1) translateY(-2px);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
 /* --- Feed Post Header --- */
 .feed-post-header {
   display: flex;
   align-items: flex-start; /* Aligns icons to the top of the header text */
+  position: relative; /* Positioning context for expand button */
   position: sticky;
   top: -1px; /* Creates a slight overlap to seal the top edge against leaks */
   z-index: 10;
@@ -654,6 +688,7 @@
 /* Ensures bulletin headers (Loading/Empty) are sticky and contained within the feed */
 .interruption-card--feed .status-header {
   position: sticky;
+  position: relative; /* Ensures absolute children like the expand button anchor correctly */
   top: -1px;
   z-index: 10;
   background: var(--bg-card);
@@ -688,6 +723,15 @@
     width: 260px;
     height: 320px;
     padding: 0;
+  }
+
+  /* Expand button for mobile */
+  .feed-post-expand-btn {
+    top: 10px !important;
+    right: 10px !important;
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
   }
 
   .interruption-card--feed .status-header {
@@ -835,6 +879,15 @@
   .feed-date-tracker {
     font-size: 0.75rem;
   }
+
+  /* Expand button for ultra-compact mobile */
+  .feed-post-expand-btn {
+    top: 8px !important;
+    right: 8px !important;
+    width: 26px;
+    height: 26px;
+    font-size: 0.9rem;
+  }
 }
 
 /* --- 321px - 359px: small mobile --- */
@@ -937,6 +990,15 @@
   .feed-date-tracker {
     font-size: 0.8rem;
   }
+
+  /* Expand button for small mobile */
+  .feed-post-expand-btn {
+    top: 10px !important;
+    right: 10px !important;
+    width: 28px;
+    height: 28px;
+    font-size: 0.95rem;
+  }
 }
 
 /* --- 360px - 479px: mid-mobile --- */
@@ -1032,6 +1094,15 @@
   .feed-date-tracker {
     font-size: 0.85rem;
   }
+
+  /* Expand button for mid-mobile */
+  .feed-post-expand-btn {
+    top: 12px !important;
+    right: 12px !important;
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+  }
 }
 
 /* --- 480px - 599px: large mobile --- */
@@ -1094,6 +1165,15 @@
   .feed-date-tracker {
     font-size: 0.88rem;
   }
+
+  /* Expand button for large mobile */
+  .feed-post-expand-btn {
+    top: 12px !important;
+    right: 12px !important;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
 }
 
 /* --- 768px - 1023px: tablet landscape --- */
@@ -1115,6 +1195,15 @@
     padding: 0;
   }
 
+  /* Expand button for tablet landscape */
+  .feed-post-expand-btn {
+    top: 14px !important;
+    right: 14px !important;
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+  }
+
   .interruption-card--feed .status-header {
     padding: 14px;
     border-radius: 14px 14px 0 0;
@@ -1127,4 +1216,58 @@
     max-width: 100%;
     margin: 0 auto;
   }
+}
+
+/* --- Full Screen Modal Expansion Styles --- */
+.interruption-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.interruption-modal-container {
+  position: relative;
+  width: 100%;
+  max-width: 550px;
+  max-height: 90vh;
+  background: var(--bg-card);
+  border-radius: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Force the card content to expand fully within the modal */
+.interruption-modal-container .interruption-feed-post {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100%;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0;
+}
+
+/* Hide the expand button when the card is already in the modal view */
+.interruption-modal-container .feed-post-expand-btn {
+  display: none !important;
+}
+
+.interruption-modal-close-btn {
+  position: absolute;
+  top: -50px;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 36px;
+  cursor: pointer;
+  line-height: 1;
+  transition: transform 0.2s ease;
 }

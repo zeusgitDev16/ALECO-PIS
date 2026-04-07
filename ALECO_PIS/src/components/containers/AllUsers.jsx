@@ -9,24 +9,32 @@ const isActiveStatus = (user) => user.status === 'Active';
 
 const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
   const [users, setUsers] = useState([]);
+  const [pendingInvites, setPendingInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [accountActionUser, setAccountActionUser] = useState(null);
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch(apiUrl('/api/users'));
-      const data = await response.json();
-      setUsers(data);
+      const [usersRes, invitesRes] = await Promise.all([
+        fetch(apiUrl('/api/users')),
+        fetch(apiUrl('/api/invites/pending'))
+      ]);
+      const [usersData, invitesData] = await Promise.all([
+        usersRes.json(),
+        invitesRes.json()
+      ]);
+      setUsers(usersData);
+      setPendingInvites(invitesData);
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('Error loading user data:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, [refreshKey]);
 
   const filteredUsers = users.filter((user) => {
@@ -71,12 +79,79 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
       }
       throw new Error(message);
     }
-    await fetchUsers();
+    await fetchData();
   };
 
   const emptyMessage = searchQuery
     ? `No users matching "${searchQuery}"`
     : 'No registered users found in the database.';
+
+  const filteredPendingInvites = pendingInvites.filter((invite) => {
+    return invite.email && invite.email.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const renderPendingSection = () => (
+    <div className="dashboard-widget users-pending-widget">
+      <div className="users-widget-header">
+        <h4 className="users-widget-title">Pending Account Invitations</h4>
+      </div>
+      <div className="widget-text">
+        <div className="users-table-container users-table-container--compact">
+          <table className="users-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Role Assigned</th>
+                <th>Invitation Code</th>
+                <th>Sent At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredPendingInvites.length > 0 ? (
+                filteredPendingInvites.map((invite, index) => (
+                  <tr key={index}>
+                    <td className="user-email">{invite.email}</td>
+                    <td>
+                      <span className={`role-badge ${invite.role_assigned === USER_ROLES.ADMIN ? 'admin' : 'employee'}`}>
+                        {invite.role_assigned}
+                      </span>
+                    </td>
+                    <td className="user-code">
+                      <code className="invite-code-pill">{invite.code}</code>
+                    </td>
+                    <td className="sent-at">
+                      {(() => {
+                        const d = new Date(invite.created_at);
+                        const datePart = d.toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          day: 'numeric', 
+                          year: 'numeric',
+                          timeZone: 'Asia/Manila' 
+                        });
+                        const timePart = d.toLocaleTimeString('en-US', { 
+                          hour: 'numeric', 
+                          minute: '2-digit', 
+                          hour12: true,
+                          timeZone: 'Asia/Manila' 
+                        });
+                        return `${datePart} at ${timePart.toLowerCase()}`;
+                      })()}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="users-table-empty">
+                    {searchQuery ? `No pending invitations matching "${searchQuery}"` : 'No pending invitations found.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderRoleStatus = (user) => (
     <div className="users-user-card-badges">
@@ -235,6 +310,8 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
           {layout === 'workflow' && renderWorkflow()}
         </div>
       </div>
+
+      {renderPendingSection()}
 
       <UserAccountActionModal
         isOpen={!!accountActionUser}

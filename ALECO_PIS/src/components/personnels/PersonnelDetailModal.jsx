@@ -5,6 +5,7 @@ import { IconPencil } from '../interruptions/AdvisoryActionIcons';
 
 /**
  * Read-only detail modal for crew or lineman (mirrors interruption detail modal pattern).
+ * Version 2.1: Robust member display
  */
 export default function PersonnelDetailModal({ variant, crew, lineman, onClose, onEdit, saving }) {
   const row = variant === 'crew' ? crew : lineman;
@@ -37,9 +38,10 @@ export default function PersonnelDetailModal({ variant, crew, lineman, onClose, 
 
         <div className="interruption-detail-modal-inner">
           <article className="interruptions-admin-card interruptions-admin-card--detail-modal">
-            <div className="interruptions-admin-card-head">
-              <span className={`interruptions-admin-status-chip status-${statusSlug}`}>{statusLabel}</span>
-              <span className="interruptions-admin-type-pill">{variant === 'crew' ? 'Crew' : 'Linemen pool'}</span>
+            <div className="personnel-modal-header-centered">
+              <span className={`interruptions-admin-status-chip status-${statusSlug} personnel-modal-status-chip`}>
+                {statusLabel}
+              </span>
             </div>
 
             <div className="interruptions-admin-card-identity">
@@ -47,9 +49,6 @@ export default function PersonnelDetailModal({ variant, crew, lineman, onClose, 
                 <span className="interruptions-admin-card-feeder-label">{variant === 'crew' ? 'Crew name' : 'Name'}</span>
                 <h3 className="interruptions-admin-card-feeder-value">{title}</h3>
               </div>
-              <span className="interruptions-admin-card-ref-id" title="Record id">
-                #{row.id}
-              </span>
             </div>
 
             {variant === 'crew' ? (
@@ -58,11 +57,22 @@ export default function PersonnelDetailModal({ variant, crew, lineman, onClose, 
                   <span className="interruptions-admin-card-meta-label">Lead</span>
                   <span className="interruptions-admin-card-meta-value">{crew.lead_lineman_name || '—'}</span>
                 </div>
-                <div className="interruptions-admin-card-meta">
-                  <span className="interruptions-admin-card-meta-label">Members</span>
-                  <span className="interruptions-admin-card-meta-value">
-                    {crew.members?.length ?? crew.member_count ?? 0}
-                  </span>
+                <div className="interruptions-admin-card-meta personnel-detail-members-section">
+                  <span className="interruptions-admin-card-meta-label">Members ({crew.member_count || 0})</span>
+                  <div className="personnel-detail-members-scroll-container">
+                    {crew.member_names && crew.member_names.length > 0 ? (
+                      <ul className="personnel-detail-members-list-styled">
+                        {crew.member_names.map((name, i) => (
+                          <li key={i} className="personnel-detail-member-item">
+                            <span className="personnel-detail-member-bullet">•</span>
+                            <span className="personnel-detail-member-name-text">{name || 'Unnamed Lineman'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="personnel-detail-no-members">No members found in this crew</div>
+                    )}
+                  </div>
                 </div>
                 <div className="interruptions-admin-card-meta">
                   <span className="interruptions-admin-card-meta-label">Phone</span>

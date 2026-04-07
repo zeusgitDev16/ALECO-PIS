@@ -259,6 +259,49 @@
     border: 1px solid var(--border-color);
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .backup-compact-view {
+        max-width: 900px; /* Tablet view: maintain original larger width */
+    }
+
+    .backup-compact-tab {
+        padding: 12px 24px !important;
+        font-size: 0.9rem !important;
+    }
+
+    .backup-compact-panel {
+        padding: 32px 40px !important;
+    }
+
+    .backup-compact-desc {
+        font-size: 0.95rem !important;
+        margin-bottom: 24px !important;
+    }
+
+    .backup-compact-row {
+        gap: 20px !important;
+        margin-bottom: 24px !important;
+    }
+
+    .backup-compact-row > span:first-child {
+        font-size: 1rem !important;
+        min-width: 6rem !important;
+    }
+
+    .backup-compact-row label {
+        font-size: 0.95rem !important;
+        gap: 8px !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .backup-compact-view {
+        max-width: 100% !important; /* Laptop and above: occupy full available width */
+    }
 }
 
 .backup-compact-tabs {
@@ -810,44 +853,29 @@
 }
 
 /* Data Management — advisory-scale buttons (parity with .btn-new-advisory, InterruptionsAdmin.css) */
+/* DESKTOP (1024+) & TABLET (768+) DEFAULT: Bigger sizing */
 .backup-page-container .btn-add-purple {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 3px;
-    padding: 2px 6px !important;
-    font-size: 0.55rem !important;
+    gap: 6px;
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
     font-weight: 600 !important;
-    border-radius: 4px !important;
-    min-height: 20px !important;
-    box-shadow: 0 1px 4px color-mix(in srgb, var(--accent-primary) 35%, transparent) !important;
-}
-
-@media (max-width: 800px) {
-    .backup-page-container .btn-add-purple {
-        padding: 2px 4px !important;
-        font-size: 0.5rem !important;
-        min-height: 18px !important;
-    }
-}
-
-@media (max-width: 500px) {
-    .backup-page-container .btn-add-purple {
-        padding: 2px 3px !important;
-        font-size: 0.5rem !important;
-        min-height: 16px !important;
-    }
+    border-radius: 6px !important;
+    min-height: 38px !important;
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--accent-primary) 25%, transparent) !important;
 }
 
 .backup-page-container .btn-action {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 2px 6px !important;
-    font-size: 0.55rem !important;
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
     font-weight: 600 !important;
-    border-radius: 4px !important;
-    min-height: 20px !important;
+    border-radius: 6px !important;
+    min-height: 38px !important;
     width: auto !important;
     min-width: 0 !important;
     text-transform: none !important;
@@ -855,7 +883,31 @@
     line-height: 1.2 !important;
 }
 
-@media (max-width: 800px) {
+/* MOBILE VIEWS (Below 768px): Keep the compact "advisory-style" sizing */
+@media (max-width: 767px) {
+    .backup-page-container .btn-add-purple {
+        gap: 3px;
+        padding: 2px 6px !important;
+        font-size: 0.55rem !important;
+        min-height: 20px !important;
+        border-radius: 4px !important;
+    }
+
+    .backup-page-container .btn-action {
+        padding: 2px 6px !important;
+        font-size: 0.55rem !important;
+        min-height: 20px !important;
+        border-radius: 4px !important;
+    }
+}
+
+@media (max-width: 500px) {
+    .backup-page-container .btn-add-purple {
+        padding: 2px 4px !important;
+        font-size: 0.5rem !important;
+        min-height: 18px !important;
+    }
+
     .backup-page-container .btn-action {
         padding: 2px 4px !important;
         font-size: 0.5rem !important;
@@ -863,10 +915,16 @@
     }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 350px) {
+    .backup-page-container .btn-add-purple {
+        padding: 2px 3px !important;
+        font-size: 0.45rem !important;
+        min-height: 16px !important;
+    }
+
     .backup-page-container .btn-action {
         padding: 2px 3px !important;
-        font-size: 0.5rem !important;
+        font-size: 0.45rem !important;
         min-height: 16px !important;
     }
 }

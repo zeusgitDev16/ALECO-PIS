@@ -1294,16 +1294,23 @@ router.get('/crews/list', async (req, res) => {
             });
         }
 
-        const [memberships] = await pool.execute('SELECT crew_id, lineman_id FROM aleco_crew_members');
+        const [memberships] = await pool.execute(`
+            SELECT 
+                cm.crew_id, 
+                cm.lineman_id,
+                l.full_name AS lineman_name
+            FROM aleco_crew_members cm
+            LEFT JOIN aleco_linemen_pool l ON cm.lineman_id = l.id
+        `);
 
         const formattedCrews = crews.map(crew => {
             const crewMembers = memberships
-                .filter(m => m.crew_id === crew.id)
-                .map(m => m.lineman_id);
+                .filter(m => String(m.crew_id) === String(crew.id));
                 
             return {
                 ...crew,
-                members: crewMembers,
+                members: crewMembers.map(m => m.lineman_id),
+                member_names: crewMembers.map(m => m.lineman_name || 'Unnamed Lineman'),
                 member_count: crewMembers.length
             };
         });

@@ -1,0 +1,1 @@
+mandatory stick with our correct modular scales in sizing for the elements which is 320px, 375px, 425px, 768px and 1024px. make sure to make the elements occupy the available space when 1024px above is reached so that the elements will look good in higher width screens.

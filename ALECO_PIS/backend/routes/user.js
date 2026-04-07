@@ -165,6 +165,19 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// Fetch all pending invitations
+router.get('/invites/pending', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      "SELECT email, role_assigned, code, created_at FROM access_codes WHERE status = 'pending' ORDER BY created_at DESC"
+    );
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching pending invites:", error.message);
+    res.status(500).json({ error: "Failed to fetch pending invitations." });
+  }
+});
+
 // Update profile name — persists the name field from ProfilePage to the DB
 router.put('/users/profile', async (req, res) => {
   const { email, name } = req.body;

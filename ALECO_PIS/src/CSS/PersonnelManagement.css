@@ -74,33 +74,65 @@
     align-items: center;
     margin-bottom: 20px;
     gap: 15px;
+    flex-wrap: wrap; /* Prevent overflow on small screens */
 }
 
 /* --- THE "+ ADD" BUTTON (Uses Buttons.css + theme vars: blue light / yellow dark) --- */
 
 /* --- THE SEARCH BAR (Theme Aware) --- */
+.search-container-mini {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: calc(280px * var(--personnel-ui-scale, 1));
+    max-width: 100%;
+    min-width: 0;
+    transition: width 0.3s ease;
+    box-sizing: border-box;
+}
+
+.search-container-mini .search-icon {
+    position: absolute;
+    left: calc(10px * var(--personnel-ui-scale, 1));
+    width: calc(14px * var(--personnel-ui-scale, 1));
+    height: calc(14px * var(--personnel-ui-scale, 1));
+    color: var(--text-secondary);
+    pointer-events: none;
+    opacity: 0.6;
+}
+
 .table-search-input-compact {
-    padding: 6px 12px !important;
-    border-radius: 6px;
-    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.2)); 
-    background-color: var(--bg-input, rgba(255, 255, 255, 0.9)); 
+    padding: calc(8px * var(--personnel-ui-scale, 1)) calc(12px * var(--personnel-ui-scale, 1)) calc(8px * var(--personnel-ui-scale, 1)) calc(32px * var(--personnel-ui-scale, 1)) !important; /* Proper padding with space for icon */
+    border-radius: calc(8px * var(--personnel-ui-scale, 1));
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.15)); 
+    background-color: var(--bg-input, rgba(255, 255, 255, 0.95)); 
     color: var(--text-header, #333);
-    width: 250px;
+    width: 100%;
+    min-width: 0;
     outline: none;
     transition: all 0.2s ease;
-    font-size: 0.7rem !important;
+    font-size: max(0.65rem, calc(0.75rem * var(--personnel-ui-scale, 1))) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .table-search-input-compact:focus {
     border-color: var(--accent-primary, #7c4dff) !important;
-    box-shadow: 0 0 8px rgba(124, 77, 255, 0.2);
-    width: 280px; 
+    box-shadow: 0 0 10px rgba(124, 77, 255, 0.15);
+    background-color: #fff;
+}
+
+.search-container-mini:focus-within {
+    width: calc(320px * var(--personnel-ui-scale, 1));
 }
 
 [data-theme='dark'] .table-search-input-compact {
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.25);
     border-color: rgba(255, 255, 255, 0.1);
     color: #ffffff;
+}
+
+[data-theme='dark'] .table-search-input-compact:focus {
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 /* ==========================================================================

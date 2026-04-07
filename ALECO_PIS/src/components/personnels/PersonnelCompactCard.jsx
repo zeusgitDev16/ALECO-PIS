@@ -111,8 +111,10 @@ export default function PersonnelCompactCard({
         className={`interruptions-admin-card-identity interruptions-admin-card-identity--compact personnel-card-identity--centered`}
       >
         <div className="interruptions-admin-card-identity-main">
-          <span className="interruptions-admin-card-feeder-label">{primaryLabel}</span>
-          <h3 className="interruptions-admin-card-feeder-value interruptions-admin-card-feeder-value--compact">{title}</h3>
+          <span className="interruptions-admin-card-feeder-label">{variant === 'crew' ? 'Lead' : 'Designation'}</span>
+          <h3 className="interruptions-admin-card-feeder-value interruptions-admin-card-feeder-value--compact">
+            {variant === 'crew' ? leadName : preview}
+          </h3>
         </div>
         {variant !== 'crew' && (
           <span className="interruptions-admin-card-ref-id interruptions-admin-card-ref-id--compact">#{row.id}</span>
@@ -122,12 +124,9 @@ export default function PersonnelCompactCard({
       {variant === 'crew' ? (
         <div className="personnel-card-crew-body">
           <div className="personnel-card-stat personnel-card-stat--lead">
-            <span className="personnel-card-stat-label">Lead</span>
-            <div className="personnel-card-lead-banner">
-              <span className="personnel-card-lead-star" aria-hidden>
-                ★
-              </span>
-              <span className="personnel-card-lead-name">{leadName}</span>
+            <span className="personnel-card-stat-label">Crew Name</span>
+            <div className="personnel-card-crew-banner">
+              <span className="personnel-card-crew-name">{title}</span>
             </div>
           </div>
           <div className="personnel-card-members-pill" title={`${memberCount} ${memberCount === 1 ? 'member' : 'members'}`}>
@@ -136,10 +135,13 @@ export default function PersonnelCompactCard({
           </div>
         </div>
       ) : (
-        <div className="interruptions-admin-card-preview personnel-card-preview--centered">
-          <p className="interruptions-admin-card-preview-text" title={preview}>
-            {preview}
-          </p>
+        <div className="personnel-card-lineman-body">
+          <div className="personnel-card-stat">
+            <span className="personnel-card-stat-label">Full Name</span>
+            <div className="personnel-card-lineman-banner">
+              <span className="personnel-card-lineman-name">{title}</span>
+            </div>
+          </div>
         </div>
       )}
 

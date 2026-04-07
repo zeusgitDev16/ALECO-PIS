@@ -163,8 +163,26 @@ html.public-home-smooth-scroll {
 }
 
 .about-aleco {
-  font-size: calc(1.9rem * var(--public-section-scale, 1));
+  font-size: calc(1.75rem * var(--public-section-scale, 1));
   font-family: var(--font-header);
+  margin-bottom: calc(16px * var(--public-section-scale, 1));
+}
+
+.about-text-section p {
+  font-size: calc(1rem * var(--public-section-scale, 1));
+  line-height: 1.6;
+  margin-bottom: calc(16px * var(--public-section-scale, 1));
+  text-align: justify;
+}
+
+@media (min-width: 1024px) {
+  .about-aleco {
+    font-size: calc(2.2rem * var(--public-section-scale, 1));
+  }
+  .about-text-section p {
+    font-size: calc(1.1rem * var(--public-section-scale, 1));
+    line-height: 1.8;
+  }
 }
 
 /* Public landing H2s: Power Outages, About ALECO, Privacy — same size + rhythm as Report a Problem */
@@ -586,5 +604,32 @@ html.public-home-smooth-scroll {
   .about-image {
     height: auto;
     max-height: 400px;
+  }
+}
+
+/* --- FOOTER STYLING --- */
+.footer-container {
+  width: 100%;
+  padding: calc(24px * var(--public-section-scale, 1)) 0;
+  text-align: center;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  margin-top: calc(40px * var(--public-section-scale, 1));
+}
+
+.footer-text {
+  font-size: calc(13px * var(--public-section-scale, 1));
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  margin: 0;
+  opacity: 0.8;
+}
+
+@media (min-width: 1024px) {
+  .footer-container {
+    padding: calc(32px * var(--public-section-scale, 1)) 0;
+  }
+  .footer-text {
+    font-size: calc(14px * var(--public-section-scale, 1));
   }
 }

@@ -4,34 +4,225 @@
    Modular scale: --pg-card-scale (mobile cap mirrors PersonnelModalUIScale --pm-field-scale).
    ========================================================================== */
 
-/* Tighter than page scale on narrow phones so card text matches 320 / 375 / 425 tiers */
+/* Keep personnel cards visually aligned with advisory cards while preserving narrow-phone safety. */
 .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
-  --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.65);
+  --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.92);
   min-width: 0;
   overflow-x: clip;
+  gap: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  min-height: calc(124px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
 }
 
 @media (max-width: 425px) {
   .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
-    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.58);
+    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.82);
   }
 }
 
 @media (max-width: 375px) {
   .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
-    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.52);
+    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.76);
   }
 }
 
 @media (max-width: 320px) {
   .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
-    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.46);
+    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.68);
   }
 }
 
 @media (min-width: 426px) {
   .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
     --pg-card-scale: var(--personnel-ui-scale, 1);
+  }
+}
+
+@media (max-width: 767px) {
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+    gap: 2px;
+    min-height: 72px;
+  }
+
+  .personnel-management-container .personnel-card-identity--centered {
+    gap: 2px;
+  }
+
+  .personnel-management-container .personnel-card-crew-body {
+    gap: 3.45px;
+  }
+
+  .personnel-management-container .personnel-card-stat {
+    gap: 2px;
+  }
+
+  .personnel-management-container .personnel-card-stat-label,
+  .personnel-management-container .personnel-card-members-pill-label,
+  .personnel-management-container .personnel-card-phone-block-label,
+  .personnel-management-container .personnel-card-phone-copied-hint {
+    font-size: 5.35px;
+  }
+
+  .personnel-management-container .personnel-card-crew-name,
+  .personnel-management-container .personnel-card-lineman-name,
+  .personnel-management-container .personnel-card-members-pill-count,
+  .personnel-management-container .personnel-card-phone-highlight-value {
+    font-size: 5.8px;
+  }
+
+  .personnel-management-container .personnel-card-crew-banner,
+  .personnel-management-container .personnel-card-lineman-banner,
+  .personnel-management-container .personnel-card-members-pill {
+    gap: 1.5px;
+    padding: 1.5px 3px;
+    border-radius: 3px;
+  }
+
+  .personnel-management-container .personnel-card-phone-block {
+    gap: 2px;
+    margin-top: 1px;
+  }
+
+  .personnel-management-container .personnel-card-phone-highlight {
+    gap: 1.5px;
+    padding: 1.5px 3px;
+    border-radius: 3px;
+  }
+
+  .personnel-management-container .personnel-card-phone-copy {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+  }
+
+  .personnel-management-container .personnel-card-phone-copy svg {
+    width: 7px;
+    height: 7px;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 321px) {
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+    gap: 2.3px;
+    min-height: 78px;
+  }
+
+  .personnel-management-container .personnel-card-identity--centered {
+    gap: 2.3px;
+  }
+
+  .personnel-management-container .personnel-card-crew-body {
+    gap: 4.4px;
+  }
+
+  .personnel-management-container .personnel-card-stat {
+    gap: 2.3px;
+  }
+
+  .personnel-management-container .personnel-card-stat-label,
+  .personnel-management-container .personnel-card-members-pill-label,
+  .personnel-management-container .personnel-card-phone-block-label,
+  .personnel-management-container .personnel-card-phone-copied-hint {
+    font-size: 5.75px;
+  }
+
+  .personnel-management-container .personnel-card-crew-name,
+  .personnel-management-container .personnel-card-lineman-name,
+  .personnel-management-container .personnel-card-members-pill-count,
+  .personnel-management-container .personnel-card-phone-highlight-value {
+    font-size: 6.5px;
+  }
+
+  .personnel-management-container .personnel-card-crew-banner,
+  .personnel-management-container .personnel-card-lineman-banner,
+  .personnel-management-container .personnel-card-members-pill {
+    gap: 2px;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+
+  .personnel-management-container .personnel-card-phone-block {
+    gap: 2.3px;
+    margin-top: 1.15px;
+  }
+
+  .personnel-management-container .personnel-card-phone-highlight {
+    gap: 2px;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+
+  .personnel-management-container .personnel-card-phone-copy {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+  }
+
+  .personnel-management-container .personnel-card-phone-copy svg {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 376px) {
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+    gap: 2.54px;
+    min-height: 88px;
+  }
+
+  .personnel-management-container .personnel-card-identity--centered {
+    gap: 2.54px;
+  }
+
+  .personnel-management-container .personnel-card-crew-body {
+    gap: 5.09px;
+  }
+
+  .personnel-management-container .personnel-card-stat {
+    gap: 2.54px;
+  }
+
+  .personnel-management-container .personnel-card-stat-label,
+  .personnel-management-container .personnel-card-members-pill-label,
+  .personnel-management-container .personnel-card-phone-block-label,
+  .personnel-management-container .personnel-card-phone-copied-hint {
+    font-size: 6.35px;
+  }
+
+  .personnel-management-container .personnel-card-crew-name,
+  .personnel-management-container .personnel-card-lineman-name,
+  .personnel-management-container .personnel-card-members-pill-count,
+  .personnel-management-container .personnel-card-phone-highlight-value {
+    font-size: 7.2px;
+  }
+
+  .personnel-management-container .personnel-card-crew-banner,
+  .personnel-management-container .personnel-card-lineman-banner,
+  .personnel-management-container .personnel-card-members-pill {
+    gap: 2.5px;
+    padding: 2.5px 5px;
+    border-radius: 5px;
+  }
+
+  .personnel-management-container .personnel-card-phone-block {
+    gap: 2.54px;
+    margin-top: 1.27px;
+  }
+
+  .personnel-management-container .personnel-card-phone-highlight {
+    gap: 2.5px;
+    padding: 2.5px 5px;
+    border-radius: 5px;
+  }
+
+  .personnel-management-container .personnel-card-phone-copy {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+  }
+
+  .personnel-management-container .personnel-card-phone-copy svg {
+    width: 9px;
+    height: 9px;
   }
 }
 
@@ -156,7 +347,7 @@
 }
 
 .personnel-management-container .personnel-card-stat-label {
-  font-size: max(0.42rem, calc(0.52rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(0.52rem, calc(0.62rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -164,61 +355,130 @@
 }
 
 .personnel-management-container .personnel-card-stat-value {
-  font-size: max(0.48rem, calc(0.66rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(0.62rem, calc(0.74rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
   font-weight: 600;
   line-height: 1.35;
   color: var(--text-primary);
   word-break: break-word;
 }
 
-/* Lead: yellow banner + star */
-.personnel-management-container .personnel-card-lead-banner {
+/* Detail Modal Overrides */
+.personnel-modal-header-centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding-bottom: calc(12px * var(--personnel-ui-scale, 1));
+}
+
+.personnel-modal-status-chip {
+  transform: scale(calc(0.82 * var(--personnel-ui-scale, 1)));
+  transform-origin: center center;
+  margin-bottom: 0;
+  font-size: max(0.6rem, calc(0.65rem * var(--personnel-ui-scale, 1))) !important;
+  padding: 2px 10px !important;
+}
+
+.personnel-detail-members-section {
+  display: flex;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: calc(8px * var(--personnel-ui-scale, 1)) !important;
+}
+
+.personnel-detail-members-scroll-container {
+  width: 100%;
+  max-height: calc(120px * var(--personnel-ui-scale, 1));
+  overflow-y: auto;
+  border-radius: calc(8px * var(--personnel-ui-scale, 1));
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  background: var(--bg-input, rgba(0, 0, 0, 0.02));
+  padding: calc(10px * var(--personnel-ui-scale, 1));
+  box-sizing: border-box;
+}
+
+.personnel-detail-members-list-styled {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(6px * var(--personnel-ui-scale, 1));
+}
+
+.personnel-detail-member-item {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--personnel-ui-scale, 1));
+  color: var(--text-header);
+  font-size: max(0.7rem, calc(0.8rem * var(--personnel-ui-scale, 1)));
+  font-weight: 500;
+}
+
+.personnel-detail-member-bullet {
+  color: var(--accent-primary, #7c4dff);
+  font-size: 1.2rem;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.personnel-detail-no-members {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-style: italic;
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* Custom scrollbar for members list */
+.personnel-detail-members-scroll-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.personnel-detail-members-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.personnel-detail-members-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--border-color, rgba(0, 0, 0, 0.1));
+  border-radius: 10px;
+}
+.personnel-management-container .personnel-card-crew-banner,
+.personnel-management-container .personnel-card-lineman-banner {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: calc(5px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
   max-width: 100%;
-  padding: calc(5px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
-    calc(10px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
-  border-radius: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
-  border: 1px solid rgba(202, 138, 4, 0.55);
+  padding: calc(4px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border: 1px solid rgba(202, 138, 4, 0.4);
   background: linear-gradient(
     180deg,
-    rgba(253, 224, 71, 0.55) 0%,
-    rgba(250, 204, 21, 0.38) 100%
+    rgba(253, 224, 71, 0.4) 0%,
+    rgba(250, 204, 21, 0.25) 100%
   );
-  box-shadow: 0 calc(1px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) 0 rgba(161, 98, 7, 0.12);
 }
 
-.personnel-management-container .personnel-card-lead-star {
-  flex-shrink: 0;
-  font-size: max(0.55rem, calc(0.72rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
-  line-height: 1;
-  color: #ca8a04;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-
-.personnel-management-container .personnel-card-lead-name {
-  font-size: max(0.48rem, calc(0.66rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+.personnel-management-container .personnel-card-crew-name,
+.personnel-management-container .personnel-card-lineman-name {
+  font-size: max(0.58rem, calc(0.72rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.3;
   color: #713f12;
   word-break: break-word;
   text-align: center;
 }
 
-[data-theme='dark'] .personnel-management-container .personnel-card-lead-banner {
-  border-color: rgba(234, 179, 8, 0.45);
-  background: linear-gradient(180deg, rgba(161, 98, 7, 0.45) 0%, rgba(113, 63, 18, 0.55) 100%);
-  box-shadow: none;
+[data-theme='dark'] .personnel-management-container .personnel-card-crew-banner,
+[data-theme='dark'] .personnel-management-container .personnel-card-lineman-banner {
+  border-color: rgba(234, 179, 8, 0.35);
+  background: linear-gradient(180deg, rgba(161, 98, 7, 0.35) 0%, rgba(113, 63, 18, 0.45) 100%);
 }
 
-[data-theme='dark'] .personnel-management-container .personnel-card-lead-star {
-  color: #facc15;
-  text-shadow: none;
-}
-
-[data-theme='dark'] .personnel-management-container .personnel-card-lead-name {
+[data-theme='dark'] .personnel-management-container .personnel-card-crew-name,
+[data-theme='dark'] .personnel-management-container .personnel-card-lineman-name {
   color: #fef9c3;
 }
 
@@ -226,11 +486,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  gap: calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
   margin-left: auto;
   margin-right: auto;
-  padding: calc(5px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
-    calc(10px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  padding: calc(3px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
   border-radius: 999px;
   width: fit-content;
   max-width: 100%;
@@ -241,7 +501,7 @@
 }
 
 .personnel-management-container .personnel-card-members-pill-label {
-  font-size: max(0.42rem, calc(0.52rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(0.52rem, calc(0.62rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -249,7 +509,7 @@
 }
 
 .personnel-management-container .personnel-card-members-pill-count {
-  font-size: max(0.48rem, calc(0.78rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(0.66rem, calc(0.88rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
@@ -278,7 +538,7 @@
 }
 
 .personnel-management-container .personnel-card-phone-block-label {
-  font-size: max(0.42rem, calc(0.52rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(0.52rem, calc(0.62rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -295,18 +555,18 @@
   min-width: 0;
   margin-left: 0;
   margin-right: 0;
-  padding: calc(7px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
-    calc(9px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
-  border-radius: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  background: rgba(59, 130, 246, 0.1);
+  padding: calc(4px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.08);
   justify-content: space-between;
 }
 
 .personnel-management-container .personnel-card-phone-highlight-value {
   flex: 1;
   min-width: 0;
-  font-size: max(0.5rem, calc(0.82rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(0.64rem, calc(0.88rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
   font-weight: 600;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
@@ -349,7 +609,7 @@
 }
 
 .personnel-management-container .personnel-card-phone-copied-hint {
-  font-size: max(0.4rem, calc(0.56rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(0.5rem, calc(0.62rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
   font-weight: 600;
   color: #15803d;
 }

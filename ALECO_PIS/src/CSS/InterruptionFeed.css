@@ -75,9 +75,7 @@
   display: flex;
   flex-direction: column;
   gap: 0; 
-  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effect */
-  isolation: isolate; /* Prevents internal content from bleeding into sub-pixel sub-layers */
-  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Strictly forces clipping of content during scroll */ 
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Restored original hover effect */
   position: relative; /* Added for absolute positioning of expand button */
 }
 
@@ -131,8 +129,8 @@
 }
 
 .interruption-feed-post:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  border-color: var(--accent-primary);
 }
 
 /* --- Expand Button (Anchored to Sticky Header) --- */
@@ -173,14 +171,15 @@
   align-items: flex-start; /* Aligns icons to the top of the header text */
   position: relative; /* Positioning context for expand button */
   position: sticky;
-  top: -1px; /* Creates a slight overlap to seal the top edge against leaks */
+  top: 0; /* Reset to 0 to prevent header color from bleeding outside the top container */
   z-index: 10;
   background: var(--bg-card);
   padding: 17px 20px 12px 16px; /* Increased right padding for space from scrollbar */
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
-  border-radius: 16px 16px 0 0; /* Matches card radius to prevent corner leakage */
+  border-radius: 14px 14px 0 0; /* Reduced radius to ensure header color stays strictly inside the card curve */
+  background-clip: padding-box; /* Ensures background color doesn't leak into the border area */
   flex-shrink: 0; /* Header won't shrink if text gets long */
   border-bottom: 1px solid var(--border-color); /* Enhanced visual seal for sticky header */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
@@ -264,7 +263,7 @@
 }
 
 .feed-post-status-chip--ongoing {
-  background: #4338ca; /* Upgraded to solid Indigo for maximum visibility */
+  background: #dc2626; /* Solid Red for high visibility of active outages */
   color: #ffffff; /* White text for clear internal contrast */
   padding: 3px 10px; /* Slightly wider padding to support the solid background style */
 }
@@ -280,7 +279,7 @@
 }
 
 [data-theme='dark'] .feed-post-status-chip--ongoing {
-  background: #6366f1; /* Vibrant Indigo that pops against dark mode cards */
+  background: #ef4444; /* Vibrant Red that pops against dark mode cards */
   color: #ffffff; /* High-contrast text for low-light environments */
 }
 
@@ -545,9 +544,7 @@
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
   background-color: var(--bg-body);
   cursor: zoom-in;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, z-index 0s;
-  position: relative;
-  z-index: 1;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .feed-infographic-image img:hover {
@@ -555,13 +552,48 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* --- Magnification View on Click --- */
-.feed-infographic-image img:active {
-  transform: scale(2.6); /* Significant zoom to "view" technical details on click */
-  z-index: 1000; /* Pops the image above header and text layers */
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  border-color: var(--accent-primary);
-  cursor: zoom-out;
+/* --- PERSISTENT FULL-SCREEN VIEW (Technical Images) --- */
+.feed-infographic-image img.is-magnified {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: contain !important;
+  z-index: 2147483647 !important; /* Maximum priority to sit above everything else */
+  background-color: rgba(0, 0, 0, 0.95) !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  transform: none !important; /* Resets any parent coordinate system context */
+  cursor: zoom-out !important;
+}
+
+/* --- NEW: Dedicated Full-Screen Image Overlay --- */
+/* This div or component would be rendered conditionally at the root of your app */
+.full-screen-image-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.9); /* Dark, semi-transparent backdrop */
+  backdrop-filter: blur(8px); /* Optional blur for background content */
+  z-index: 2147483647; /* Absolute highest z-index to ensure it's always on top */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: zoom-out; /* Indicates it can be clicked to close */
+}
+
+.full-screen-image-overlay img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain; /* Ensures the entire image is visible within the screen */
+  border: 4px solid var(--bg-card); /* Subtle border for the image */
+  border-radius: 8px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.7); /* Stronger shadow to make it pop */
 }
 
 /* --- Enhanced Image Visibility in Expanded Modal --- */
@@ -654,9 +686,9 @@
   flex-shrink: 0;
   width: 380px; /* Match new card width */
   height: 400px; /* Match new card height */
+  border-radius: 16px; /* Harmonized with feed post cards to prevent clipping mismatches */
+  border: 1px solid var(--border-color); /* Container border to match feed post cards */
   box-sizing: border-box;
-  overflow: hidden; /* Strictly clip any internal exceeding content */
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
   padding: 0;
   overflow-y: auto; /* Support scrolling in bulletin cards */
   overflow-x: hidden;
@@ -714,13 +746,13 @@
 /* Ensures bulletin headers (Loading/Empty) are sticky and contained within the feed */
 .interruption-card--feed .status-header {
   position: sticky;
-  position: relative; /* Ensures absolute children like the expand button anchor correctly */
-  top: -1px;
+  top: 0; /* Reset to 0 to match card header consistency */
   z-index: 10;
   background: var(--bg-card);
   padding: 17px 20px 16px 16px;
   margin: 0;
-  border-radius: 16px 16px 0 0; /* Synchronized with card radius */
+  border-radius: 14px 14px 0 0; /* Synchronized with card header radius to prevent corner leakage */
+  background-clip: padding-box;
   width: 100%;
   box-sizing: border-box;
 }

@@ -399,7 +399,7 @@
 /* --- Advisory Infographic --- */
 .feed-advisory-infographic {
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible; /* Allows the image to scale beyond the infographic box during interaction */
   margin: 0 20px 16px 16px; /* Balanced spacing around infographic */
   width: calc(100% - 36px); /* Ensures it stays within card padding */
   box-sizing: border-box;
@@ -544,6 +544,32 @@
   border-radius: 8px;
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
   background-color: var(--bg-body);
+  cursor: zoom-in;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, z-index 0s;
+  position: relative;
+  z-index: 1;
+}
+
+.feed-infographic-image img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* --- Magnification View on Click --- */
+.feed-infographic-image img:active {
+  transform: scale(2.6); /* Significant zoom to "view" technical details on click */
+  z-index: 1000; /* Pops the image above header and text layers */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border-color: var(--accent-primary);
+  cursor: zoom-out;
+}
+
+/* --- Enhanced Image Visibility in Expanded Modal --- */
+.interruption-modal-container .feed-infographic-image img {
+  height: auto;
+  max-height: 450px; /* Larger image view when expanded */
+  cursor: default;
+  transform: none !important;
 }
 
 /* --- Feed Controls (Progress + Date) --- */

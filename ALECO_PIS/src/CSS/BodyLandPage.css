@@ -164,6 +164,13 @@
   object-fit: contain;
   border-radius: 8px;
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  cursor: zoom-in;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.card-details-image img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Wider “bulletin” cards: good news / loading / refresh — same blob + glass as advisory cards */

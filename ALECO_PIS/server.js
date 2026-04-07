@@ -109,6 +109,7 @@ app.get('/api/debug/routes', (req, res) => {
             'GET /api/pool/list',
             'POST /api/pool/add',
             'PUT /api/pool/update/:id',
+            'DELETE /api/pool/delete/:id',
             '…grouping / dispatch / hold / SMS webhook — see tickets.js & ticket-grouping.js',
         ],
         users: [

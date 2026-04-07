@@ -396,7 +396,7 @@
   gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
-/* View-only advisory + full-card detail modal — TicketDetailPane label / value (base; narrow overlays follow) */
+/* View-only advisory: dl + prose — value size aligned with Schedule row values (full-card detail modal). */
 .interruptions-page-container .interruptions-admin-view-section-title {
   font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   font-weight: 800;
@@ -407,7 +407,7 @@
 }
 
 .interruptions-page-container .interruptions-admin-view-dl dt {
-  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.68rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -415,8 +415,8 @@
 }
 
 .interruptions-page-container .interruptions-admin-view-dl dd {
-  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  font-weight: 600;
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 700;
   color: var(--text-primary);
   padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
@@ -426,28 +426,89 @@
 
 .interruptions-page-container .interruptions-admin-view-body-text,
 .interruptions-page-container .interruptions-admin-view-text {
-  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  line-height: 1.5;
 }
 
+/* Full-card “View full” modal: feeder, narrative, areas, Schedule/Record, meta — same value scale as card-dates dd */
 .interruptions-page-container .interruption-detail-modal .interruptions-admin-card-feeder-label {
-  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.68rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   font-weight: 800;
   letter-spacing: 0.3px;
 }
 
 .interruptions-page-container .interruption-detail-modal .interruptions-admin-card-feeder-value {
-  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .interruptions-page-container .interruption-detail-modal .interruptions-admin-card-ref-id,
 .interruptions-page-container .interruption-detail-modal .interruptions-admin-card-control-no {
-  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.7rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
 .interruptions-page-container .interruption-detail-modal .interruptions-admin-card-body-text--full,
 .interruptions-page-container .interruption-detail-modal .interruptions-admin-card-cause {
-  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-areas-label {
+  font-size: calc(0.68rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-areas-value {
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-section-label {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin: 0 0 calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-dates dt {
+  font-size: calc(0.68rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-dates dd {
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-pubvis {
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  line-height: 1.45;
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-meta {
+  font-size: inherit;
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-meta-label {
+  font-size: calc(0.68rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card-meta-value {
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 700;
 }
 
 @media (max-width: 425px) {
@@ -518,6 +579,11 @@
 
 .interruptions-page-container .interruption-detail-modal {
   width: min(100%, 560px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Same band for min + max so View full (advisory + personnel) shares one consistent viewport height */
+  min-height: min(88dvh, 90vh, calc(100dvh - calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
   max-height: min(88dvh, 90vh, calc(100dvh - calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)))));
   border-radius: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   box-shadow: 0 calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(48px * var(--im-field-scale, var(--interruption-ui-scale, 1))) rgba(0, 0, 0, 0.25);
@@ -525,30 +591,35 @@
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .interruptions-page-container .interruption-detail-modal {
+    min-height: min(92dvh, calc(100dvh - 32px));
     max-height: min(92dvh, calc(100dvh - 32px));
   }
 }
 
 @media (min-width: 600px) and (max-width: 767px) {
   .interruptions-page-container .interruption-detail-modal {
+    min-height: min(88dvh, calc(100dvh - 24px));
     max-height: min(88dvh, calc(100dvh - 24px));
   }
 }
 
 @media (min-width: 480px) and (max-width: 599px) {
   .interruptions-page-container .interruption-detail-modal {
+    min-height: min(88dvh, calc(100dvh - 20px));
     max-height: min(88dvh, calc(100dvh - 20px));
   }
 }
 
 @media (min-width: 320px) and (max-width: 479px) {
   .interruptions-page-container .interruption-detail-modal {
+    min-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
     max-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
   }
 }
 
 @media (max-width: 320px) {
   .interruptions-page-container .interruption-detail-modal {
+    min-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
     max-height: min(84dvh, calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)));
   }
 }
@@ -562,10 +633,16 @@
 }
 
 .interruptions-page-container .interruption-detail-modal-inner {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding: calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
-.interruptions-page-container .interruptions-admin-card--detail-modal {
+.interruptions-page-container .interruption-detail-modal .interruptions-admin-card--detail-modal {
+  flex: 1;
   padding: calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
@@ -657,40 +734,7 @@
     calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
-/* --------------------------------------------------------------------------
-   Layout picker + inline filter — TicketModalUIScale layout parity
-   -------------------------------------------------------------------------- */
-.interruptions-page-container .interruption-layout-picker {
-  gap: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  padding: calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-}
-
-.interruptions-page-container .interruption-layout-buttons {
-  gap: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-}
-
-.interruptions-page-container .interruption-layout-btn {
-  gap: calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  padding: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  font-size: max(0.5rem, calc(0.55rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
-  border-radius: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  min-height: max(20px, calc(22px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
-}
-
-.interruptions-page-container .interruption-layout-icon {
-  font-size: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-}
-
-.interruptions-page-container .interruption-layout-label {
-  font-size: calc(0.6rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-}
-
-.interruptions-page-container .interruption-filter-inline-btn {
-  width: calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  height: calc(20px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  min-width: calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-}
+/* Layout picker + inline filter: sizes come only from InterruptionLayoutPicker.css (User Management parity). */
 
 /* --------------------------------------------------------------------------
    Recent Opened Advisories strip

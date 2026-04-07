@@ -1,106 +1,373 @@
 /* ==========================================================================
-   PERSONNEL GRID - Card view for Crews & Linemen
+   PERSONNEL — Card grid using Interruptions compact card classes
+   (interruptions-admin-card-grid + PersonnelCompactCard). Scoped overrides only.
+   Modular scale: --pg-card-scale (mobile cap mirrors PersonnelModalUIScale --pm-field-scale).
    ========================================================================== */
-.personnel-grid-wrapper {
-    padding-bottom: 24px;
+
+/* Tighter than page scale on narrow phones so card text matches 320 / 375 / 425 tiers */
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+  --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.65);
+  min-width: 0;
+  overflow-x: clip;
+}
+
+@media (max-width: 425px) {
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.58);
+  }
+}
+
+@media (max-width: 375px) {
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.52);
+  }
+}
+
+@media (max-width: 320px) {
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+    --pg-card-scale: min(var(--personnel-ui-scale, 1), 0.46);
+  }
+}
+
+@media (min-width: 426px) {
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+    --pg-card-scale: var(--personnel-ui-scale, 1);
+  }
+}
+
+.personnel-management-container .personnel-grid-wrapper {
+  margin-top: calc(12px * var(--personnel-ui-scale, 1));
+  padding-bottom: calc(40px * var(--personnel-ui-scale, 1));
 }
 
 .personnel-loading,
 .personnel-empty {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    text-align: center;
-    padding: 24px;
+  font-size: max(0.5rem, calc(0.65rem * var(--personnel-ui-scale, 1)));
+  color: var(--text-secondary);
+  text-align: center;
+  padding: calc(20px * var(--personnel-ui-scale, 1)) calc(16px * var(--personnel-ui-scale, 1));
 }
 
-.personnel-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-    width: 100%;
+@media (max-width: 425px) {
+  .personnel-loading,
+  .personnel-empty {
+    font-size: max(0.48rem, calc(0.6rem * var(--personnel-ui-scale, 1)));
+  }
 }
 
-.personnel-card {
-    background: var(--bg-card);
-    border-radius: 8px;
-    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-    padding: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-height: 100px;
+.personnel-management-container .interruptions-admin-card-grid.personnel-admin-card-grid {
+  gap: calc(8px * var(--personnel-ui-scale, 1));
 }
 
-.personnel-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border-color: var(--accent-primary, #7c4dff);
+.personnel-management-container .interruptions-admin-card-grid.personnel-admin-card-grid > .interruptions-admin-card--compact {
+  min-width: 0;
 }
 
-.personnel-card-banner {
-    padding: 4px 8px;
-    background: rgba(124, 77, 255, 0.1);
-    border-radius: 4px;
-    align-self: flex-start;
+/* Center status row on personnel interruption-style cards */
+.personnel-management-container .personnel-card-interruptions-head,
+.personnel-management-container .personnel-card-interruptions .interruptions-admin-card-head {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
 }
 
-.personnel-card-banner-text {
-    font-size: 0.6rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    color: var(--accent-primary, #7c4dff);
+/* Semantic status chips (personnel — crew + pool) */
+.personnel-management-container .interruptions-admin-status-chip.status-available {
+  background: rgba(34, 197, 94, 0.2);
+  color: #15803d;
 }
 
-.personnel-card-header {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+.personnel-management-container .interruptions-admin-status-chip.status-busy,
+.personnel-management-container .interruptions-admin-status-chip.status-ondispatch {
+  background: rgba(245, 158, 11, 0.22);
+  color: #b45309;
 }
 
-.personnel-card-title {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-header);
+.personnel-management-container .interruptions-admin-status-chip.status-active {
+  background: rgba(59, 130, 246, 0.18);
+  color: #1d4ed8;
 }
 
-.personnel-card-lead {
-    font-size: 0.65rem;
-    color: var(--text-secondary);
+.personnel-management-container .interruptions-admin-status-chip.status-inactive {
+  background: rgba(107, 114, 128, 0.2);
+  color: #4b5563;
 }
 
-.personnel-card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
+.personnel-management-container .interruptions-admin-status-chip.status-leave {
+  background: rgba(168, 85, 247, 0.18);
+  color: #7e22ce;
 }
 
-.personnel-card-meta {
-    font-size: 0.65rem;
-    color: var(--text-secondary);
+.personnel-management-container .interruptions-admin-status-chip.status-unknown {
+  background: rgba(148, 163, 184, 0.25);
+  color: var(--text-secondary);
 }
 
-.personnel-card-phone {
-    font-size: 0.65rem;
+[data-theme='dark'] .personnel-management-container .interruptions-admin-status-chip.status-available {
+  background: rgba(34, 197, 94, 0.25);
+  color: #4ade80;
 }
 
-.personnel-card-action {
-    padding: 4px 10px;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: var(--text-header);
-    cursor: pointer;
-    font-size: 0.65rem;
-    transition: all 0.2s;
-    align-self: flex-start;
+[data-theme='dark'] .personnel-management-container .interruptions-admin-status-chip.status-busy,
+[data-theme='dark'] .personnel-management-container .interruptions-admin-status-chip.status-ondispatch {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
 }
 
-.personnel-card-action:hover {
-    background: rgba(124, 77, 255, 0.1);
-    border-color: var(--accent-primary);
+[data-theme='dark'] .personnel-management-container .interruptions-admin-status-chip.status-active {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+}
+
+/* Crew + lineman: centered identity (stack label / name / ref) */
+.personnel-management-container .personnel-card-identity--centered {
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  text-align: center;
+}
+
+.personnel-management-container .personnel-card-identity--centered .interruptions-admin-card-identity-main {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+.personnel-management-container .personnel-card-preview--centered {
+  text-align: center;
+}
+
+.personnel-management-container .personnel-card-crew-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(10px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  min-height: 0;
+  width: 100%;
+}
+
+.personnel-management-container .personnel-card-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  text-align: center;
+  width: 100%;
+}
+
+.personnel-management-container .personnel-card-stat-label {
+  font-size: max(0.42rem, calc(0.52rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.personnel-management-container .personnel-card-stat-value {
+  font-size: max(0.48rem, calc(0.66rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+/* Lead: yellow banner + star */
+.personnel-management-container .personnel-card-lead-banner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(5px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  max-width: 100%;
+  padding: calc(5px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(10px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border: 1px solid rgba(202, 138, 4, 0.55);
+  background: linear-gradient(
+    180deg,
+    rgba(253, 224, 71, 0.55) 0%,
+    rgba(250, 204, 21, 0.38) 100%
+  );
+  box-shadow: 0 calc(1px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) 0 rgba(161, 98, 7, 0.12);
+}
+
+.personnel-management-container .personnel-card-lead-star {
+  flex-shrink: 0;
+  font-size: max(0.55rem, calc(0.72rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  line-height: 1;
+  color: #ca8a04;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.personnel-management-container .personnel-card-lead-name {
+  font-size: max(0.48rem, calc(0.66rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-weight: 700;
+  line-height: 1.35;
+  color: #713f12;
+  word-break: break-word;
+  text-align: center;
+}
+
+[data-theme='dark'] .personnel-management-container .personnel-card-lead-banner {
+  border-color: rgba(234, 179, 8, 0.45);
+  background: linear-gradient(180deg, rgba(161, 98, 7, 0.45) 0%, rgba(113, 63, 18, 0.55) 100%);
+  box-shadow: none;
+}
+
+[data-theme='dark'] .personnel-management-container .personnel-card-lead-star {
+  color: #facc15;
+  text-shadow: none;
+}
+
+[data-theme='dark'] .personnel-management-container .personnel-card-lead-name {
+  color: #fef9c3;
+}
+
+.personnel-management-container .personnel-card-members-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  margin-left: auto;
+  margin-right: auto;
+  padding: calc(5px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(10px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border-radius: 999px;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input, rgba(0, 0, 0, 0.04));
+  box-shadow: 0 calc(1px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(2px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) rgba(0, 0, 0, 0.04);
+}
+
+.personnel-management-container .personnel-card-members-pill-label {
+  font-size: max(0.42rem, calc(0.52rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.personnel-management-container .personnel-card-members-pill-count {
+  font-size: max(0.48rem, calc(0.78rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  min-width: 1.25em;
+  text-align: center;
+}
+
+/* Phone: emphasized + copy (no high rem floor — scales on 320 / 375 / 425) */
+.personnel-management-container .personnel-card-phone-block {
+  display: flex;
+  flex-direction: column;
+  gap: calc(5px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  margin-top: calc(2px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.personnel-management-container .personnel-card-phone-block--centered {
+  align-items: stretch;
+}
+
+.personnel-management-container .personnel-card-phone-block--centered .personnel-card-phone-block-label {
+  align-self: center;
+}
+
+.personnel-management-container .personnel-card-phone-block-label {
+  font-size: max(0.42rem, calc(0.52rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.personnel-management-container .personnel-card-phone-highlight {
+  display: flex;
+  align-items: center;
+  gap: calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding: calc(7px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(9px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.1);
+  justify-content: space-between;
+}
+
+.personnel-management-container .personnel-card-phone-highlight-value {
+  flex: 1;
+  min-width: 0;
+  font-size: max(0.5rem, calc(0.82rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  line-height: 1.3;
+  word-break: break-word;
+  text-align: center;
+}
+
+.personnel-management-container .personnel-card-phone-copy {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max(26px, calc(30px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  height: max(26px, calc(30px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: calc(7px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  background: var(--bg-card, #fff);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.personnel-management-container .personnel-card-phone-copy svg {
+  width: max(12px, calc(14px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  height: max(12px, calc(14px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .personnel-card-phone-copy:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #1d4ed8;
+}
+
+.personnel-management-container .personnel-card-phone-copy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.personnel-management-container .personnel-card-phone-copied-hint {
+  font-size: max(0.4rem, calc(0.56rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  font-weight: 600;
+  color: #15803d;
+}
+
+[data-theme='dark'] .personnel-management-container .personnel-card-phone-highlight {
+  border-color: rgba(96, 165, 250, 0.4);
+  background: rgba(59, 130, 246, 0.14);
+}
+
+[data-theme='dark'] .personnel-management-container .personnel-card-phone-copy:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+}
+
+[data-theme='dark'] .personnel-management-container .personnel-card-phone-copied-hint {
+  color: #4ade80;
+}
+
+[data-theme='dark'] .personnel-management-container .personnel-card-members-pill {
+  background: rgba(255, 255, 255, 0.05);
 }

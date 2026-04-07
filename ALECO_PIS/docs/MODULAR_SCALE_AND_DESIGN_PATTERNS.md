@@ -130,6 +130,13 @@ The **Power advisories** admin route sets **`--interruption-ui-scale`** on **`.i
 - **Overrides:** `src/CSS/InterruptionModalUIScale.css` (loaded after `InterruptionsAdmin.css` and related interruption CSS) applies scoped rules under `.interruptions-page-container` so modal shells follow the same **`dvh` max-height ladder** as `TicketDetailPane.css`, with proportional padding and controls via `calc(... * var(--interruption-ui-scale, 1))`.
 - **Coarse pointers:** `InterruptionModalUIScale.css` includes `pointer: coarse` rules for native inputs in the advisory modal form and filter drawer (aligned with §7).
 
+### Admin Personnel Management (`--personnel-ui-scale`)
+
+The **Personnel** admin route (`/admin-personnel`) sets **`--personnel-ui-scale`** on **`.personnel-management-container`** using the **same numeric tiers and breakpoints** as `TicketUIScale.css` / `InterruptionUIScale.css` (see §3). Defined in `src/CSS/PersonnelUIScale.css` and imported from `PersonnelManagement.jsx`.
+
+- **Inheritance:** Assemble crew / register lineman modals (`PersonnelModalBase.css`), view-detail modal (`PersonnelDetailModal`), and the mobile card action sheet inherit the scale when rendered **inside** `.personnel-management-container` (modals are children of that wrapper on the personnel page).
+- **Overrides:** `src/CSS/PersonnelModalUIScale.css` (loaded after `PersonnelModalBase.css` / `AddCrew.css`) applies scoped rules under `.personnel-management-container` using `--pm-field-scale` (mobile cap pattern aligned with interruptions) and `calc(... * var(--personnel-ui-scale, 1))` for modal shells, headers, footers, and AddCrew pool list controls.
+
 ---
 
 ## 9. Theme (light / dark)
@@ -164,6 +171,7 @@ Not part of CSS scaling, but affects **real device** behavior:
 | Scale tiers + public layout | `src/CSS/BodyLandPage.css` |
 | Admin tickets UI scale | `src/CSS/TicketUIScale.css`, `src/CSS/TicketModalUIScale.css`, `src/components/Tickets.jsx` |
 | Admin power advisories UI scale | `src/CSS/InterruptionUIScale.css`, `src/CSS/InterruptionModalUIScale.css`, `src/components/Interruptions.jsx` |
+| Admin personnel UI scale | `src/CSS/PersonnelUIScale.css`, `src/CSS/PersonnelModalUIScale.css`, `src/components/PersonnelManagement.jsx` |
 | Report / Track wizard UI | `src/CSS/ReportaProblem.css`, `src/ReportaProblem.jsx` |
 | Brick guards (`:has(#report)`) | `TextFieldProblem.css`, `IssueCategoryDropdown.css`, `ExplainTheProblem.css`, `UploadTheProblem.css` |
 | Privacy / public cards | `src/CSS/PrivacyNotice.css` |

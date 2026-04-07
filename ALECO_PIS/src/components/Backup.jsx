@@ -19,7 +19,6 @@ import TicketFilterDrawer from './tickets/TicketFilterDrawer';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/BackupUIScale.css';
 import '../CSS/Buttons.css';
-import '../CSS/TicketLayoutPicker.css';
 import '../CSS/TicketFilterDrawer.css';
 import '../CSS/Backup.css';
 

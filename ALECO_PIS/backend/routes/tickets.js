@@ -1555,4 +1555,43 @@ router.put('/pool/update/:id', async (req, res) => {
     }
 });
 
+// DELETE: Remove lineman from pool (blocked if assigned to a crew or as lead)
+router.delete('/pool/delete/:id', async (req, res) => {
+    const { id } = req.params;
+    const linemanId = Number(id);
+    if (!Number.isFinite(linemanId)) {
+        return res.status(400).json({ success: false, message: 'Invalid id.' });
+    }
+    try {
+        const [members] = await pool.execute(
+            'SELECT crew_id FROM aleco_crew_members WHERE lineman_id = ? LIMIT 1',
+            [linemanId]
+        );
+        if (members.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete this lineman while they are assigned to a crew. Remove them from the crew first.',
+            });
+        }
+        const [leads] = await pool.execute(
+            'SELECT id, crew_name FROM aleco_personnel WHERE lead_lineman = ? LIMIT 1',
+            [linemanId]
+        );
+        if (leads.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete: this lineman is lead of crew "${leads[0].crew_name}". Reassign the crew lead first.`,
+            });
+        }
+        const [result] = await pool.execute('DELETE FROM aleco_linemen_pool WHERE id = ?', [linemanId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Lineman not found.' });
+        }
+        res.status(200).json({ success: true, message: 'Lineman removed from pool.' });
+    } catch (error) {
+        console.error('Error deleting lineman from pool:', error);
+        res.status(500).json({ success: false, message: 'Cannot delete lineman.' });
+    }
+});
+
 export default router;

@@ -243,33 +243,7 @@
   font-size: calc(0.9rem * var(--ticket-ui-scale, 1));
 }
 
-.tickets-page-container .layout-picker-container {
-  gap: calc(4px * var(--ticket-ui-scale, 1));
-  padding: calc(3px * var(--ticket-ui-scale, 1)) calc(8px * var(--ticket-ui-scale, 1));
-  border-radius: calc(6px * var(--ticket-ui-scale, 1));
-}
-
-.tickets-page-container .layout-btn {
-  gap: calc(3px * var(--ticket-ui-scale, 1));
-  padding: calc(2px * var(--ticket-ui-scale, 1)) calc(6px * var(--ticket-ui-scale, 1));
-  font-size: max(0.5rem, calc(0.55rem * var(--ticket-ui-scale, 1)));
-  border-radius: calc(4px * var(--ticket-ui-scale, 1));
-  min-height: max(20px, calc(22px * var(--ticket-ui-scale, 1)));
-}
-
-.tickets-page-container .layout-icon {
-  font-size: calc(10px * var(--ticket-ui-scale, 1));
-}
-
-.tickets-page-container .layout-label {
-  font-size: calc(0.6rem * var(--ticket-ui-scale, 1));
-}
-
-.tickets-page-container .ticket-filter-inline-btn {
-  width: calc(24px * var(--ticket-ui-scale, 1));
-  height: calc(20px * var(--ticket-ui-scale, 1));
-  min-width: calc(24px * var(--ticket-ui-scale, 1));
-}
+/* Layout picker + inline filter: sizes come only from TicketLayoutPicker.css (User Management parity). */
 
 /* Bulk floating bar — higher specificity than TicketMain media blocks */
 .tickets-page-container .bulk-action-bar-floating {

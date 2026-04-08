@@ -122,6 +122,7 @@ export function mapRowToDto(row) {
       type: row.type,
       status: row.status,
       affectedAreas: parseAffectedAreas(row.affected_areas),
+      feederId: row.feeder_id != null ? Number(row.feeder_id) : null,
       feeder: row.feeder ?? '',
       cause: row.cause ?? null,
       causeCategory: row.cause_category ? String(row.cause_category) : null,

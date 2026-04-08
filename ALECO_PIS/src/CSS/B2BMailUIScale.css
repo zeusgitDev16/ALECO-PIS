@@ -1,0 +1,31 @@
+.b2b-mail-page-container {
+    --b2b-ui-scale: 1;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+    .b2b-mail-page-container { --b2b-ui-scale: 0.88; }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+    .b2b-mail-page-container { --b2b-ui-scale: 0.72; }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+    .b2b-mail-page-container { --b2b-ui-scale: 0.72; }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+    .b2b-mail-page-container { --b2b-ui-scale: 0.72; }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+    .b2b-mail-page-container { --b2b-ui-scale: 0.68; }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+    .b2b-mail-page-container { --b2b-ui-scale: 0.65; }
+}
+
+@media (max-width: 320px) {
+    .b2b-mail-page-container { --b2b-ui-scale: 0.55; }
+}

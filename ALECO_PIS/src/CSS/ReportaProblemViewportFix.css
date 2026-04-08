@@ -17,11 +17,15 @@
   .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
     min-height: 34px !important;
     padding: 8px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
   }
 
   .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
     min-height: 34px !important;
     padding: 8px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
   }
 }
 
@@ -30,11 +34,15 @@
   .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
     min-height: 36px !important;
     padding: 8px 11px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
   }
 
   .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
     min-height: 36px !important;
     padding: 8px 11px !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
   }
 }
 
@@ -43,11 +51,15 @@
   .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
     min-height: 38px !important;
     padding: 9px 12px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
   }
 
   .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
     min-height: 38px !important;
     padding: 9px 12px !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
   }
 }
 
@@ -56,11 +68,15 @@
   .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
     min-height: 40px !important;
     padding: 10px 14px !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
   }
 
   .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
     min-height: 40px !important;
     padding: 10px 14px !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
   }
 }
 
@@ -69,10 +85,74 @@
   .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
     min-height: 42px !important;
     padding: 11px 14px !important;
+    font-size: 15px !important;
+    line-height: 1.45 !important;
   }
 
   .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
     min-height: 42px !important;
     padding: 11px 14px !important;
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+  }
+}
+
+/* Desktop baseline to avoid stale carryover from emulation toggles */
+@media (min-width: 1024px) {
+  .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+    min-height: 44px !important;
+    padding: 12px 15px !important;
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+  }
+
+  .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+    min-height: 44px !important;
+    padding: 11px 16px !important;
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+  }
+}
+
+/* Stepper highlighter overflow fix */
+.report-problem-container .report-wizard-stepper {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+@media (max-width: 899px) {
+  .report-problem-container .report-wizard-stepper {
+    padding-left: 10px;
+    padding-right: 10px;
+    gap: 2px;
+  }
+
+  .report-problem-container .report-wizard-stepper .stepper-step {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+    padding: 4px 6px;
+    border-radius: 8px;
+  }
+
+  .report-problem-container .report-wizard-stepper .stepper-num {
+    flex-shrink: 0;
+  }
+
+  .report-problem-container .report-wizard-stepper .stepper-connector {
+    width: 10px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .report-problem-container .report-wizard-stepper .stepper-step {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .report-problem-container .report-wizard-stepper .stepper-connector {
+    width: 8px;
   }
 }

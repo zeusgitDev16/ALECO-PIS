@@ -71,18 +71,18 @@
 
 /* Narrow viewports: compact textarea (skip on public Report — uses --report-scale in ReportaProblem.css) */
 @media (max-width: 320px) {
-    body:not(:has(#report)) .concern-group {
+    html:not(.has-report-route) .concern-group {
         margin-bottom: 12px;
         min-width: 0;
         max-width: 100%;
     }
 
-    body:not(:has(#report)) .concern-label {
+    html:not(.has-report-route) .concern-label {
         font-size: 12px;
         margin-bottom: 6px;
     }
 
-    body:not(:has(#report)) .concern-field.textarea-large {
+    html:not(.has-report-route) .concern-field.textarea-large {
         min-height: 140px;
         padding: 8px 10px;
         font-size: 14px;
@@ -92,17 +92,17 @@
 }
 
 @media (min-width: 321px) and (max-width: 480px) {
-    body:not(:has(#report)) .concern-group {
+    html:not(.has-report-route) .concern-group {
         margin-bottom: 14px;
         min-width: 0;
         max-width: 100%;
     }
 
-    body:not(:has(#report)) .concern-label {
+    html:not(.has-report-route) .concern-label {
         font-size: 13px;
     }
 
-    body:not(:has(#report)) .concern-field.textarea-large {
+    html:not(.has-report-route) .concern-field.textarea-large {
         min-height: 160px;
         padding: 12px 14px;
         font-size: 14px;

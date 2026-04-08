@@ -96,6 +96,41 @@ const ReportaProblem = () => {
         municipality: ''
     });
 
+    useEffect(() => {
+        const container = document.getElementById('report');
+        if (!container) return;
+
+        const computeScale = (w) => {
+            if (w <= 320) return 0.55;
+            if (w <= 374) return 0.65;
+            if (w <= 424) return 0.68;
+            if (w <= 767) return 0.72;
+            if (w <= 1023) return 0.88;
+            return 1;
+        };
+
+        const applyScale = () => {
+            const width = window.visualViewport?.width ?? window.innerWidth;
+            const scale = computeScale(width);
+            container.style.setProperty('--report-scale', String(scale));
+        };
+
+        applyScale();
+
+        const onResize = () => applyScale();
+        window.addEventListener('resize', onResize, { passive: true });
+        window.addEventListener('orientationchange', onResize, { passive: true });
+        window.visualViewport?.addEventListener?.('resize', onResize, { passive: true });
+        window.visualViewport?.addEventListener?.('scroll', onResize, { passive: true });
+
+        return () => {
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('orientationchange', onResize);
+            window.visualViewport?.removeEventListener?.('resize', onResize);
+            window.visualViewport?.removeEventListener?.('scroll', onResize);
+        };
+    }, []);
+
    const handleFieldChange = useCallback((field) => (value) => {
     setFormData(prev => {
         // Only update if the value actually changed to prevent unnecessary re-renders

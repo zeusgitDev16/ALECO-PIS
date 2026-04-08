@@ -6,7 +6,7 @@ export function toMysqlFormatForConcurrency(isoString) {
   return toMysqlFormatPhilippine(isoString);
 }
 
-/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string }} InterruptionFormState */
+/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string }} InterruptionFormState */
 
 export const emptyForm = {
   type: 'Unscheduled',
@@ -14,6 +14,7 @@ export const emptyForm = {
   statusChangeRemark: '',
   affectedAreasText: '',
   feeder: '',
+  feederId: null,
   cause: '',
   causeCategory: '',
   dateTimeStart: '',
@@ -119,6 +120,7 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt, b
     type: form.type,
     affectedAreas,
     feeder: form.feeder,
+    feederId: form.feederId != null && String(form.feederId).trim() !== '' ? Number(form.feederId) : null,
     cause: form.cause,
     dateTimeStart: datetimeLocalToApi(form.dateTimeStart),
     dateTimeEndEstimated: datetimeLocalToApi(form.dateTimeEndEstimated),
@@ -171,9 +173,14 @@ export function validateInterruptionForm(form, { baselineStatus } = {}) {
   const hasBody = form.body && String(form.body).trim();
   const hasCause = form.cause && String(form.cause).trim();
   const hasFeeder = form.feeder && String(form.feeder).trim();
+  const hasFeederId =
+    form.feederId != null &&
+    String(form.feederId).trim() !== '' &&
+    Number.isInteger(Number(form.feederId)) &&
+    Number(form.feederId) > 0;
   const hasDateTimeStart = form.dateTimeStart && String(form.dateTimeStart).trim();
 
-  if (!hasFeeder) {
+  if (!hasFeeder && !hasFeederId) {
     errors.push('Feeder is required.');
   }
   if (!hasBody && !hasCause) {
@@ -209,6 +216,7 @@ export function rowToFormState(row) {
     statusChangeRemark: '',
     affectedAreasText: (row.affectedAreas || []).join(', '),
     feeder: row.feeder || '',
+    feederId: row.feederId != null ? Number(row.feederId) : null,
     cause: row.cause || '',
     causeCategory: row.causeCategory ? String(row.causeCategory) : '',
     dateTimeStart: displayToDatetimeLocal(row.dateTimeStart),

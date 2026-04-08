@@ -254,6 +254,7 @@ export default function InterruptionAdvisoryForm({
               <FeederCascadeSelect
                 value={form.feeder}
                 onChange={(v) => setForm((f) => ({ ...f, feeder: v }))}
+                onFeederIdChange={(fid) => setForm((f) => ({ ...f, feederId: fid }))}
                 disabled={advisoryArchived}
               />
             </label>

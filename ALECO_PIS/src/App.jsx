@@ -73,6 +73,12 @@ const NavigationWrapper = () => {
     return () => document.documentElement.classList.remove('public-home-smooth-scroll');
   }, [isPublicHome]);
 
+  /* Report route marker: replaces expensive :has(#report) CSS gating */
+  useEffect(() => {
+    document.documentElement.classList.toggle('has-report-route', isPublicHome);
+    return () => document.documentElement.classList.remove('has-report-route');
+  }, [isPublicHome]);
+
   /* Deep link e.g. /#report — scroll after content is mounted */
   useEffect(() => {
     if (!isPublicHome || !location.hash) return;

@@ -95,22 +95,22 @@
 
 /* --- MOBILE SHRINKING (not on public Report — ReportaProblem.css overrides) --- */
 @media (max-width: 768px) {
-    body:not(:has(#report)) .textfield-label {
+    html:not(.has-report-route) .textfield-label {
         font-size: 12px;
         margin-bottom: 5px;
     }
-    body:not(:has(#report)) .textfield-input {
+    html:not(.has-report-route) .textfield-input {
         padding: 10px 12px;
         font-size: 13px;
     }
-    body:not(:has(#report)) .textfield-error-msg {
+    html:not(.has-report-route) .textfield-error-msg {
         font-size: 10px;
         top: 12px;
     }
 }
 
 @media (max-width: 320px) {
-    body:not(:has(#report)) .textfield-group {
+    html:not(.has-report-route) .textfield-group {
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0;
@@ -119,14 +119,14 @@
         box-sizing: border-box;
     }
 
-    body:not(:has(#report)) .textfield-input-wrapper {
+    html:not(.has-report-route) .textfield-input-wrapper {
         width: 100% !important;
         min-width: 0;
         max-width: 100%;
         box-sizing: border-box;
     }
 
-    body:not(:has(#report)) .textfield-input {
+    html:not(.has-report-route) .textfield-input {
         width: 100% !important;
         min-width: 0;
         max-width: 100%;
@@ -136,12 +136,12 @@
         box-sizing: border-box;
     }
 
-    body:not(:has(#report)) .textfield-label {
+    html:not(.has-report-route) .textfield-label {
         font-size: 11px;
         margin-bottom: 4px;
     }
 
-    body:not(:has(#report)) .textfield-error-msg {
+    html:not(.has-report-route) .textfield-error-msg {
         font-size: 9px;
         top: 9px;
         right: 8px;
@@ -149,7 +149,7 @@
 }
 
 @media (max-width: 480px) {
-    body:not(:has(#report)) .textfield-group {
+    html:not(.has-report-route) .textfield-group {
         width: 100% !important;
         max-width: 100% !important;
         margin-bottom: 12px;
@@ -157,13 +157,13 @@
         box-sizing: border-box;
     }
 
-    body:not(:has(#report)) .textfield-input-wrapper {
+    html:not(.has-report-route) .textfield-input-wrapper {
         width: 100% !important;
         display: block;
         box-sizing: border-box;
     }
 
-    body:not(:has(#report)) .textfield-input {
+    html:not(.has-report-route) .textfield-input {
         width: 100% !important;
         min-width: 0;
         padding: 8px 10px;
@@ -172,12 +172,12 @@
         box-sizing: border-box;
     }
 
-    body:not(:has(#report)) .textfield-label {
+    html:not(.has-report-route) .textfield-label {
         font-size: 11px;
         margin-bottom: 4px;
     }
 
-    body:not(:has(#report)) .textfield-error-msg {
+    html:not(.has-report-route) .textfield-error-msg {
         font-size: 9px;
         top: 9px;
         right: 8px;

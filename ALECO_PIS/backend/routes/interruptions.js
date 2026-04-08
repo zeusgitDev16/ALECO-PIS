@@ -24,10 +24,10 @@ import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 const router = express.Router();
 
 /** Columns for list + single-row fetch (without leading SELECT … FROM). */
-const INTERRUPTION_TABLE_COLS_BASE = `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+const INTERRUPTION_TABLE_COLS_BASE = `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
   date_time_start, date_time_end_estimated, date_time_restored,
   public_visible_at, created_at, updated_at`;
-const INTERRUPTION_TABLE_COLS_WITH_PULLED = `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+const INTERRUPTION_TABLE_COLS_WITH_PULLED = `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
   date_time_start, date_time_end_estimated, date_time_restored,
   public_visible_at, pulled_from_feed_at, created_at, updated_at`;
 
@@ -74,6 +74,7 @@ function validatePayload(body, { partial = false } = {}) {
   const type = body.type;
   const status = body.status;
   const feeder = body.feeder;
+  const feederIdRaw = body.feederId;
   const cause = body.cause;
   const bodyText = body.body;
   const dateTimeStart = body.dateTimeStart;
@@ -84,8 +85,15 @@ function validatePayload(body, { partial = false } = {}) {
   if (!partial || status !== undefined) {
     if (!status || !STATUSES.has(status)) errors.push('status must be Pending, Ongoing, or Restored');
   }
-  if (!partial || feeder !== undefined) {
-    if (feeder === undefined || feeder === null || String(feeder).trim() === '') {
+  if (!partial || feeder !== undefined || feederIdRaw !== undefined) {
+    const hasFeederText = feeder != null && String(feeder).trim() !== '';
+    const hasFeederId =
+      feederIdRaw !== undefined &&
+      feederIdRaw !== null &&
+      String(feederIdRaw).trim() !== '' &&
+      Number.isInteger(Number(feederIdRaw)) &&
+      Number(feederIdRaw) > 0;
+    if (!hasFeederText && !hasFeederId) {
       errors.push('feeder is required');
     }
   }
@@ -117,6 +125,20 @@ function validatePayload(body, { partial = false } = {}) {
   }
 
   return errors;
+}
+
+async function resolveFeederById(feederId) {
+  const id = Number(feederId);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  const [rows] = await pool.execute(
+    `SELECT f.id, f.feeder_label
+     FROM aleco_feeders f
+     JOIN aleco_feeder_areas a ON a.id = f.area_id
+     WHERE f.id = ? AND f.is_active = 1 AND a.is_active = 1
+     LIMIT 1`,
+    [id]
+  );
+  return rows?.[0] || null;
 }
 
 /**
@@ -265,6 +287,7 @@ router.post('/interruptions', async (req, res) => {
   const {
     type,
     affectedAreas,
+    feederId,
     feeder,
     cause,
     causeCategory,
@@ -294,17 +317,32 @@ router.post('/interruptions', async (req, res) => {
   const imageUrlVal = imageUrl != null && String(imageUrl).trim() !== '' ? String(imageUrl).trim() : null;
 
   try {
+    let feederIdVal = null;
+    let feederLabelVal = feeder != null ? String(feeder).trim() : '';
+    if (feederId !== undefined && feederId !== null && String(feederId).trim() !== '') {
+      const found = await resolveFeederById(feederId);
+      if (!found) {
+        return res.status(400).json({ success: false, message: 'Invalid feederId.' });
+      }
+      feederIdVal = Number(found.id);
+      feederLabelVal = String(found.feeder_label || '').trim();
+    }
+    if (!feederLabelVal) {
+      return res.status(400).json({ success: false, message: 'feeder is required' });
+    }
+
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const phNow = nowPhilippineForMysql();
     const [result] = await pool.execute(
       `INSERT INTO aleco_interruptions
-       (type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         type,
         initialStatus,
         areasText,
-        String(feeder).trim(),
+        feederLabelVal,
+        feederIdVal,
         causeVal,
         causeCat,
         bodyVal,
@@ -370,9 +408,9 @@ router.put('/interruptions/:id', async (req, res) => {
   try {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const loadCols = hasDel
-      ? `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+      ? `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
        date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, deleted_at`
-      : `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+      : `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
        date_time_start, date_time_end_estimated, date_time_restored, public_visible_at`;
     const [fullRows] = await pool.execute(
       `SELECT ${loadCols}
@@ -457,9 +495,20 @@ router.put('/interruptions/:id', async (req, res) => {
       fields.push('affected_areas = ?');
       params.push(serializeAffectedAreas(affectedAreas));
     }
-    if (feeder !== undefined) {
-      fields.push('feeder = ?');
-      params.push(String(feeder).trim());
+    if (feeder !== undefined || req.body?.feederId !== undefined) {
+      if (req.body?.feederId !== undefined && req.body?.feederId !== null && String(req.body.feederId).trim() !== '') {
+        const found = await resolveFeederById(req.body.feederId);
+        if (!found) return res.status(400).json({ success: false, message: 'Invalid feederId.' });
+        fields.push('feeder_id = ?');
+        params.push(Number(found.id));
+        fields.push('feeder = ?');
+        params.push(String(found.feeder_label || '').trim());
+      } else {
+        fields.push('feeder_id = ?');
+        params.push(null);
+        fields.push('feeder = ?');
+        params.push(feeder != null ? String(feeder).trim() : '');
+      }
     }
     if (cause !== undefined) {
       fields.push('cause = ?');

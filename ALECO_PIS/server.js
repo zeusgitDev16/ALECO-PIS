@@ -15,6 +15,8 @@ import contactNumbersRoutes from './backend/routes/contact-numbers.js';
 import urgentKeywordsRoutes from './backend/routes/urgent-keywords.js';
 import backupRoutes from './backend/routes/backup.js';
 import interruptionsRoutes from './backend/routes/interruptions.js';
+import feedersRoutes from './backend/routes/feeders.js';
+import b2bMailRoutes from './backend/routes/b2b-mail.js';
 import pool from './backend/config/db.js';
 import {
   transitionScheduledStarts,
@@ -70,6 +72,8 @@ app.use('/api', ticketGroupingRoutes); // <-- NEW: Ticket Grouping System
 app.use('/api', interruptionsRoutes); // Power advisory / aleco_interruptions
 app.use('/api', contactNumbersRoutes);
 app.use('/api', urgentKeywordsRoutes);
+app.use('/api', feedersRoutes);
+app.use('/api', b2bMailRoutes);
 
 /** Uptime / load balancer — no DB (Render health checks can target this). */
 app.get('/api/health', (req, res) => {
@@ -132,6 +136,7 @@ app.get('/api/debug/routes', (req, res) => {
         ],
         other: [
             'GET /api/contact-numbers',
+            'GET|POST|PUT|PATCH /api/b2b-mail/*',
             'GET|POST … /api/tickets/export, import, archive — backup.js',
         ],
         deployment: {

@@ -9,6 +9,9 @@ import { insertTicketLog } from '../utils/ticketLogHelper.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
 import { toIsoForClient } from '../utils/interruptionsDto.js';
+import { listUrgentKeywords } from '../utils/urgentKeywordsDb.js';
+import { concernMatchesUrgentKeywords } from '../utils/urgentKeywordMatch.js';
+import { DEFAULT_URGENT_KEYWORDS } from '../constants/defaultUrgentKeywords.js';
 
 const router = express.Router();
 
@@ -119,23 +122,18 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         const image_url = req.file ? req.file.path : null;
         const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-        // --- BACKEND URGENT VALIDATION (Double-Check Frontend) ---
-        const urgentKeywords = [
-            'sparking', 'fire', 'sunog', 'explosion', 'sumabog', 'pumuputok',
-            'electrocuted', 'nakuryente', 'live wire', 'nakabitin na wire',
-            'smoke', 'usok', 'umuusok', 'burning', 'nasusunog',
-            'fallen pole', 'natumba', 'nahulog na poste', 'leaning pole', 'nakahilig',
-            'dangling wire', 'nakabitin', 'naputol na wire', 'cutoff wire',
-            'walang kuryente', 'patay na kuryente', 'brownout', 'blackout',
-            'no power', 'power outage', 'emergency', 'aksidente'
-        ];
+        // --- BACKEND URGENT VALIDATION (DB keywords + shared matcher; fallback if table missing) ---
+        let urgentKeywordList;
+        try {
+            urgentKeywordList = await listUrgentKeywords(pool);
+        } catch (e) {
+            console.error('[tickets/submit] urgent keywords DB:', e?.message || e);
+            urgentKeywordList = DEFAULT_URGENT_KEYWORDS;
+        }
 
-        const lowerConcern = (concern || '').toLowerCase();
-        
-        const backendUrgentCheck = urgentKeywords.some(keyword => {
-            const regex = new RegExp(`\\b${keyword.replace(/\s+/g, '\\s+')}\\b`, 'i');
-            return regex.test(lowerConcern);
-        });
+        const backendUrgentCheck =
+            urgentKeywordList.length > 0 &&
+            concernMatchesUrgentKeywords(concern, urgentKeywordList);
 
         // Use backend validation as source of truth
         const finalUrgentStatus = backendUrgentCheck ? 1 : 0;

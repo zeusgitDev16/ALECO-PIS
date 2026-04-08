@@ -124,16 +124,16 @@
 
 .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
 .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   padding: 2px 5px;
 }
 
 .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 
 .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
 }
 
 .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
@@ -148,7 +148,7 @@
 }
 
 .recent-opened-advisory-preview {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   color: var(--text-secondary);
   margin: 2px 0;
   line-height: 1.2;
@@ -163,7 +163,7 @@
 }
 
 .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
 }
 
 /* Below 768px: base compact (+15% increase, match main content) */
@@ -189,13 +189,13 @@
 
   .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
   .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
-    font-size: 5.75px;
+    font-size: 6.2px;
     padding: 1.15px 3.45px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value,
   .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value--compact {
-    font-size: 6.9px;
+    font-size: 7.4px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id,
@@ -205,17 +205,17 @@
   }
 
   .recent-opened-advisory-preview {
-    font-size: 6.9px;
+    font-size: 7.4px;
     -webkit-line-clamp: 1;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
-    font-size: 5.75px;
+    font-size: 6.2px;
     gap: 2.3px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
-    font-size: 5.75px;
+    font-size: 6.2px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
@@ -253,13 +253,13 @@
 
   .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
   .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
-    font-size: 6.35px;
+    font-size: 6.9px;
     padding: 1.27px 3.81px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value,
   .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value--compact {
-    font-size: 7.62px;
+    font-size: 8.2px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id,
@@ -269,17 +269,17 @@
   }
 
   .recent-opened-advisory-preview {
-    font-size: 7.62px;
+    font-size: 8.2px;
     -webkit-line-clamp: 1;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
-    font-size: 6.35px;
+    font-size: 6.9px;
     gap: 2.54px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
-    font-size: 6.35px;
+    font-size: 6.9px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
@@ -317,13 +317,13 @@
 
   .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
   .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
-    font-size: 7.34px;
+    font-size: 7.9px;
     padding: 1.46px 4.4px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value,
   .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value--compact {
-    font-size: 8.81px;
+    font-size: 9.5px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id,
@@ -333,17 +333,17 @@
   }
 
   .recent-opened-advisory-preview {
-    font-size: 8.81px;
+    font-size: 9.5px;
     -webkit-line-clamp: 1;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
-    font-size: 7.34px;
+    font-size: 7.9px;
     gap: 2.94px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
-    font-size: 7.34px;
+    font-size: 7.9px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
@@ -381,13 +381,13 @@
 
   .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
   .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
-    font-size: 0.513rem;
+    font-size: 0.56rem;
     padding: 1.71px 5.13px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value,
   .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value--compact {
-    font-size: 0.727rem;
+    font-size: 0.78rem;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id,
@@ -397,17 +397,17 @@
   }
 
   .recent-opened-advisory-preview {
-    font-size: 0.599rem;
+    font-size: 0.66rem;
     -webkit-line-clamp: 2;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
-    font-size: 0.556rem;
+    font-size: 0.6rem;
     gap: 5.13px;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
-    font-size: 0.556rem;
+    font-size: 0.6rem;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
@@ -420,7 +420,7 @@
     padding: 4.28px !important;
     min-width: 24px;
     min-height: 24px;
-    font-size: 0.513rem !important;
+    font-size: 0.56rem !important;
   }
 
   .recent-opened-advisory-kanban-card .interruptions-admin-card-actions .interruptions-admin-btn--expand {

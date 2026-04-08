@@ -104,6 +104,32 @@
     text-align: center;
 }
 
+/* Report flow owns location field box sizing (brick-local override) */
+.report-problem-container .aleco-scope-container {
+    gap: clamp(8px, 2.4vw, 12px);
+}
+
+.report-problem-container .search-box-wrapper {
+    gap: clamp(6px, 2vw, 8px);
+}
+
+.report-problem-container .location-search-input,
+.report-problem-container .location-select {
+    padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 15px) !important;
+    min-height: clamp(34px, 6vw, 44px);
+    box-sizing: border-box;
+}
+
+.report-problem-container .clear-selection-btn {
+    padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 16px);
+    min-height: clamp(34px, 6vw, 42px);
+    box-sizing: border-box;
+}
+
+.report-problem-container .selection-preview {
+    padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 15px);
+}
+
 /* =========================================
    INLINE LAYOUT (For TicketFilterBar.jsx)
    ========================================= */

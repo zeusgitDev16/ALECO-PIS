@@ -52,6 +52,23 @@
     box-shadow: 0 0 0 3px rgba(28, 201, 114, 0.15);
 }
 
+/* Report flow owns its own field sizing (brick-local override) */
+.report-problem-container .concern-group {
+    margin-bottom: clamp(12px, 3vw, 20px);
+}
+
+.report-problem-container .concern-label {
+    margin-bottom: clamp(6px, 1.8vw, 8px);
+}
+
+.report-problem-container .concern-field.textarea-large {
+    flex: 0 0 auto !important;
+    min-height: clamp(96px, 24vw, 160px) !important;
+    max-height: clamp(180px, 42vw, 260px) !important;
+    padding: clamp(8px, 2.2vw, 12px) !important;
+    box-sizing: border-box;
+}
+
 /* Narrow viewports: compact textarea (skip on public Report — uses --report-scale in ReportaProblem.css) */
 @media (max-width: 320px) {
     body:not(:has(#report)) .concern-group {

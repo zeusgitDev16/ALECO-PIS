@@ -3,6 +3,47 @@
     --report-scale: 1;
 }
 
+/* Report-local scale source of truth (avoids stale inline style during DevTools viewport emulation) */
+.report-problem-container {
+    --report-scale: 1;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+    .report-problem-container {
+        --report-scale: 0.88;
+    }
+}
+
+@media (max-width: 767px) and (min-width: 480px) {
+    .report-problem-container {
+        --report-scale: 0.72;
+    }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+    .report-problem-container {
+        --report-scale: 0.72;
+    }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+    .report-problem-container {
+        --report-scale: 0.68;
+    }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+    .report-problem-container {
+        --report-scale: 0.65;
+    }
+}
+
+@media (max-width: 320px) {
+    .report-problem-container {
+        --report-scale: 0.55;
+    }
+}
+
 /* --- WIZARD LAYOUT --- */
 /* Fixed height based on Contact Information step - height never changes, width responsive */
 .report-wizard-form {
@@ -851,19 +892,19 @@
 
 /* GPS / location (report flow only) */
 .report-problem-container .gps-location-section {
-    margin: calc(20px * var(--report-scale, 1)) 0;
+    margin: clamp(10px, 2.8vw, 16px) 0;
 }
 
 .report-problem-container .gps-location-actions {
     display: flex;
     flex-direction: column;
-    gap: calc(10px * var(--report-scale, 1));
+    gap: clamp(6px, 1.8vw, 8px);
 }
 
 .report-problem-container .btn-find-location {
     width: 100%;
-    padding: calc(14px * var(--report-scale, 1));
-    min-height: calc(48px * var(--report-scale, 1));
+    padding: clamp(8px, 2.4vw, 12px);
+    min-height: clamp(36px, 6.2vw, 44px);
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
     border: none;
@@ -879,8 +920,8 @@
 
 .report-problem-container .btn-pin-location {
     width: 100%;
-    padding: calc(12px * var(--report-scale, 1));
-    min-height: calc(44px * var(--report-scale, 1));
+    padding: clamp(8px, 2.2vw, 11px);
+    min-height: clamp(34px, 5.8vw, 42px);
     background: var(--bg-body);
     color: var(--text-main);
     border: 1px solid var(--border-color);
@@ -934,8 +975,8 @@
 }
 
 .report-problem-container .location-success-box {
-    margin: calc(16px * var(--report-scale, 1)) 0;
-    padding: calc(16px * var(--report-scale, 1));
+    margin: clamp(10px, 2.8vw, 16px) 0;
+    padding: clamp(10px, 2.6vw, 14px);
     background-color: #d1fae5;
     border: max(1px, calc(2px * var(--report-scale, 1))) solid #10b981;
     border-radius: calc(8px * var(--report-scale, 1));
@@ -943,9 +984,14 @@
 
 .report-problem-container .gps-lock-info {
     display: flex;
-    gap: calc(12px * var(--report-scale, 1));
+    gap: clamp(7px, 2.1vw, 10px);
     align-items: flex-start;
-    margin-bottom: calc(12px * var(--report-scale, 1));
+    margin-bottom: clamp(8px, 2.4vw, 12px);
+}
+
+/* Location "Using device/pinned location" header — scale with report */
+.report-problem-container .location-success-box strong {
+    font-size: calc(14px * var(--report-scale, 1));
 }
 
 .report-problem-container .gps-lock-icon {
@@ -1179,8 +1225,11 @@ select:disabled {
 
 /* !important beats ExplainTheProblem.css breakpoint rules (load order) */
 .report-problem-container .concern-field.textarea-large {
-    min-height: calc(180px * var(--report-scale, 1)) !important;
-    padding: calc(15px * var(--report-scale, 1)) !important;
+    /* Prevent the textarea from stretching to fill the wizard body height */
+    flex: 0 0 auto !important;
+    min-height: clamp(96px, 24vw, 160px) !important;
+    max-height: clamp(180px, 42vw, 260px) !important;
+    padding: clamp(8px, 2.2vw, 12px) !important;
     border-radius: calc(8px * var(--report-scale, 1)) !important;
     border-width: max(1px, calc(1px * var(--report-scale, 1))) !important;
     font-size: calc(15px * var(--report-scale, 1)) !important;
@@ -1256,7 +1305,7 @@ select:disabled {
 
 .report-problem-container .textfield-group,
 .report-problem-container .phone-input-group {
-    margin-bottom: calc(20px * var(--report-scale, 1));
+    margin-bottom: clamp(10px, 2.6vw, 16px);
 }
 
 .report-problem-container .textfield-label {
@@ -1267,18 +1316,18 @@ select:disabled {
 }
 
 .report-problem-container .textfield-input-wrapper {
-    min-height: calc(44px * var(--report-scale, 1));
+    min-height: clamp(34px, 6vw, 40px);
 }
 
 /* Inputs scale with --report-scale; coarse touch keeps 16px floor (iOS zoom) */
 .report-problem-container .textfield-input,
 .report-problem-container .phone-input-input {
-    padding: calc(12px * var(--report-scale, 1)) calc(15px * var(--report-scale, 1)) !important;
+    padding: clamp(8px, 2vw, 10px) clamp(10px, 3vw, 14px) !important;
     border-radius: calc(8px * var(--report-scale, 1)) !important;
     border-width: max(1px, calc(1px * var(--report-scale, 1))) !important;
     font-size: calc(15px * var(--report-scale, 1)) !important;
     line-height: 1.45;
-    min-height: calc(44px * var(--report-scale, 1)) !important;
+    min-height: clamp(34px, 6vw, 40px) !important;
     box-sizing: border-box !important;
 }
 
@@ -1328,16 +1377,10 @@ select:disabled {
     border-radius: calc(8px * var(--report-scale, 1)) !important;
     border-width: max(1px, calc(1px * var(--report-scale, 1))) !important;
     border-style: solid !important;
-    font-size: calc(15px * var(--report-scale, 1)) !important;
+    font-size: max(12px, calc(15px * var(--report-scale, 1))) !important;
     line-height: 1.45;
     min-height: calc(44px * var(--report-scale, 1)) !important;
     box-sizing: border-box !important;
-}
-
-@media (pointer: coarse) and (max-width: 899px) {
-    .report-problem-container .issue-dropdown-container.layout-form .issue-select {
-        font-size: max(16px, calc(15px * var(--report-scale, 1))) !important;
-    }
 }
 
 .report-problem-container .issue-dropdown-container.layout-form .issue-select:focus {
@@ -1513,3 +1556,78 @@ select:disabled {
 }
 
 /* --report-scale tiers: set on .body-padding in BodyLandPage.css (public home); :root fallback for standalone use */
+
+/* -------------------------------------------------------------------------
+   Deterministic field/button sizing for report wizard.
+   Explicit breakpoint values to avoid viewport-emulation lag on calc(var()) paths.
+   ------------------------------------------------------------------------- */
+
+.report-problem-container :is(
+    .textfield-input,
+    .phone-input-input,
+    .issue-dropdown-container.layout-form .issue-select,
+    .location-search-input,
+    .location-select
+) {
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 320px) {
+    .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+        min-height: 34px !important;
+        padding: 8px 10px !important;
+    }
+
+    .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+        min-height: 34px !important;
+        padding: 8px 10px !important;
+    }
+}
+
+@media (min-width: 321px) and (max-width: 374px) {
+    .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+        min-height: 36px !important;
+        padding: 8px 11px !important;
+    }
+
+    .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+        min-height: 36px !important;
+        padding: 8px 11px !important;
+    }
+}
+
+@media (min-width: 375px) and (max-width: 424px) {
+    .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+        min-height: 38px !important;
+        padding: 9px 12px !important;
+    }
+
+    .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+        min-height: 38px !important;
+        padding: 9px 12px !important;
+    }
+}
+
+@media (min-width: 425px) and (max-width: 767px) {
+    .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+        min-height: 40px !important;
+        padding: 10px 14px !important;
+    }
+
+    .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+        min-height: 40px !important;
+        padding: 10px 14px !important;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+        min-height: 42px !important;
+        padding: 11px 14px !important;
+    }
+
+    .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+        min-height: 42px !important;
+        padding: 11px 14px !important;
+    }
+}

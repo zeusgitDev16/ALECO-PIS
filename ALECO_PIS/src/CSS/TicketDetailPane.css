@@ -2034,3 +2034,67 @@ body.modal-open .kanban-column-header {
     color: #bfdbfe;
 }
 
+/* ============================================================================
+   MAP LOCATION (LocationPreviewMap) — ticket modal modular scaling overrides
+   - LocationPreviewMap.css is written for ReportaProblem (fixed px); here we scale it with --ticket-ui-scale.
+   - Scope to ticket modal so Report a Problem remains unchanged.
+   ============================================================================ */
+
+.ticket-modal-content .location-preview-container {
+    margin-top: calc(12px * var(--ticket-ui-scale, 1));
+    border-radius: calc(14px * var(--ticket-ui-scale, 1));
+    box-shadow: 0 calc(4px * var(--ticket-ui-scale, 1)) calc(12px * var(--ticket-ui-scale, 1)) rgba(0, 0, 0, 0.08);
+}
+
+.ticket-modal-content .location-preview-header {
+    padding: calc(12px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1));
+    gap: calc(8px * var(--ticket-ui-scale, 1));
+}
+
+.ticket-modal-content .location-preview-header h4 {
+    font-size: max(0.8rem, calc(1rem * var(--ticket-ui-scale, 1)));
+    gap: calc(6px * var(--ticket-ui-scale, 1));
+}
+
+.ticket-modal-content .location-metadata {
+    gap: calc(6px * var(--ticket-ui-scale, 1));
+}
+
+.ticket-modal-content .municipality-badge {
+    padding: calc(4px * var(--ticket-ui-scale, 1)) calc(8px * var(--ticket-ui-scale, 1));
+    border-radius: calc(6px * var(--ticket-ui-scale, 1));
+    font-size: max(0.7rem, calc(0.8rem * var(--ticket-ui-scale, 1)));
+}
+
+.ticket-modal-content .district-badge,
+.ticket-modal-content .accuracy-badge {
+    padding: calc(4px * var(--ticket-ui-scale, 1)) calc(8px * var(--ticket-ui-scale, 1));
+    border-radius: calc(6px * var(--ticket-ui-scale, 1));
+    font-size: max(0.65rem, calc(0.75rem * var(--ticket-ui-scale, 1)));
+}
+
+.ticket-modal-content .map-preview-wrapper {
+    height: max(180px, calc(240px * var(--ticket-ui-scale, 1)));
+    border-radius: calc(12px * var(--ticket-ui-scale, 1));
+}
+
+@media (max-width: 768px) {
+    .ticket-modal-content .map-preview-wrapper {
+        height: max(160px, calc(200px * var(--ticket-ui-scale, 1)));
+    }
+}
+
+@media (min-width: 1024px) {
+    .ticket-modal-content .map-preview-wrapper {
+        height: max(200px, calc(260px * var(--ticket-ui-scale, 1)));
+    }
+}
+
+.ticket-modal-content .location-preview-footer {
+    padding: calc(10px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1));
+}
+
+.ticket-modal-content .location-hint {
+    font-size: max(0.7rem, calc(0.8rem * var(--ticket-ui-scale, 1)));
+}
+

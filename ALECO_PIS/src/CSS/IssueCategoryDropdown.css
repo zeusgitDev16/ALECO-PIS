@@ -94,6 +94,17 @@
     padding: 8px;
 }
 
+/* Report flow owns category field box sizing (brick-local override) */
+.report-problem-container .issue-dropdown-container.layout-form {
+    margin-bottom: clamp(12px, 3vw, 20px);
+}
+
+.report-problem-container .issue-dropdown-container.layout-form .issue-select {
+    padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 14px) !important;
+    min-height: clamp(34px, 6vw, 44px) !important;
+    box-sizing: border-box;
+}
+
 /* --- 320px: Ultra-compact (not on public Report — modular scale in ReportaProblem.css) --- */
 @media (max-width: 320px) {
     body:not(:has(#report)) .issue-dropdown-container {

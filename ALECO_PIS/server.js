@@ -12,6 +12,7 @@ import userRoutes from './backend/routes/user.js'; // <-- NEW: Imported your Adm
 import ticketFilterRoutes from './backend/routes/ticket-routes.js';
 import ticketGroupingRoutes from './backend/routes/ticket-grouping.js'; // <-- NEW: Ticket Grouping System
 import contactNumbersRoutes from './backend/routes/contact-numbers.js';
+import urgentKeywordsRoutes from './backend/routes/urgent-keywords.js';
 import backupRoutes from './backend/routes/backup.js';
 import interruptionsRoutes from './backend/routes/interruptions.js';
 import pool from './backend/config/db.js';
@@ -68,6 +69,7 @@ app.use('/api', ticketFilterRoutes); // <-- Admin filter brick
 app.use('/api', ticketGroupingRoutes); // <-- NEW: Ticket Grouping System
 app.use('/api', interruptionsRoutes); // Power advisory / aleco_interruptions
 app.use('/api', contactNumbersRoutes);
+app.use('/api', urgentKeywordsRoutes);
 
 /** Uptime / load balancer — no DB (Render health checks can target this). */
 app.get('/api/health', (req, res) => {

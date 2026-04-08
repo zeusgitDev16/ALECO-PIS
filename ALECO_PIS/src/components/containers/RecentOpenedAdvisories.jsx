@@ -124,13 +124,11 @@ const RecentOpenedAdvisories = ({
             <span className={`interruptions-admin-status-chip status-${String(item.status || '').toLowerCase()}`}>
               {getStatusDisplayLabel(item.status)}
             </span>
-            <span className="interruptions-admin-type-pill">{item.type}</span>
           </div>
           <div className="interruptions-admin-card-identity interruptions-admin-card-identity--compact">
             <h3 className="interruptions-admin-card-feeder-value interruptions-admin-card-feeder-value--compact">
               {String(item.feeder || '').trim() || '—'}
             </h3>
-            <span className="interruptions-admin-card-ref-id interruptions-admin-card-ref-id--compact">#{item.id}</span>
           </div>
           <p className="recent-opened-advisory-preview">{truncate(item.body || item.cause, 50)}</p>
           <div className="interruptions-admin-card-meta">

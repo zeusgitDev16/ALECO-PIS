@@ -574,26 +574,26 @@
 
   .interruptions-admin-card--compact .interruptions-admin-status-chip {
     padding: 1.71px 5.13px;
-    font-size: 0.513rem;
+    font-size: 0.56rem;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-type-pill {
-    font-size: 0.513rem;
+    font-size: 0.56rem;
     padding: 1.71px 5.13px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-archived-chip,
   .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
-    font-size: 0.47rem;
+    font-size: 0.52rem;
     padding: 1.71px 4.28px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
-    font-size: 0.556rem;
+    font-size: 0.6rem;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
-    font-size: 0.727rem;
+    font-size: 0.78rem;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
@@ -603,21 +603,21 @@
 
   .interruptions-admin-card-preview-text,
   .interruptions-admin-card-preview-areas {
-    font-size: 0.599rem;
+    font-size: 0.66rem;
   }
 
   .interruptions-admin-card-preview-areas {
-    font-size: 0.556rem;
+    font-size: 0.6rem;
   }
 
   .interruptions-admin-card-meta {
     gap: 5.13px;
-    font-size: 0.556rem;
+    font-size: 0.6rem;
   }
 
   .interruptions-admin-card-meta-label,
   .interruptions-admin-card-meta-value {
-    font-size: 0.556rem;
+    font-size: 0.6rem;
   }
 
   .interruptions-admin-card-actions--compact {
@@ -627,7 +627,7 @@
 
   .interruptions-admin-card-actions--compact .interruptions-admin-btn {
     padding: 3.42px 6.84px !important;
-    font-size: 0.513rem !important;
+    font-size: 0.56rem !important;
   }
 
   .interruptions-admin-card-actions--compact .interruptions-admin-btn--icon {
@@ -670,26 +670,26 @@
   /* Status + Type + Archived/Scheduled chips */
   .interruptions-admin-card--compact .interruptions-admin-status-chip {
     padding: 1.15px 3.45px;
-    font-size: 5.75px;
+    font-size: 6.2px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-type-pill {
-    font-size: 5.75px;
+    font-size: 6.2px;
     padding: 1.15px 3.45px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-archived-chip,
   .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
-    font-size: 5.75px;
+    font-size: 6.2px;
     padding: 1.15px 2.3px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
-    font-size: 5.75px;
+    font-size: 6.2px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
-    font-size: 6.9px;
+    font-size: 7.4px;
     line-height: 1.1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -703,23 +703,23 @@
 
   .interruptions-admin-card-preview-text,
   .interruptions-admin-card-preview-areas {
-    font-size: 6.9px;
+    font-size: 7.4px;
     -webkit-line-clamp: 1;
     line-height: 1.2;
   }
 
   .interruptions-admin-card-preview-areas {
-    font-size: 5.75px;
+    font-size: 6.2px;
   }
 
   .interruptions-admin-card-meta {
-    font-size: 5.75px;
+    font-size: 6.2px;
     gap: 2.3px;
   }
 
   .interruptions-admin-card-meta-label,
   .interruptions-admin-card-meta-value {
-    font-size: 5.75px;
+    font-size: 6.2px;
   }
 
   /* Hide actions below 768px; whole card opens action modal */
@@ -759,26 +759,26 @@
 
   .interruptions-admin-card--compact .interruptions-admin-status-chip {
     padding: 1.27px 3.81px;
-    font-size: 6.35px;
+    font-size: 6.9px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-type-pill {
-    font-size: 6.35px;
+    font-size: 6.9px;
     padding: 1.27px 3.81px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-archived-chip,
   .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
-    font-size: 6.35px;
+    font-size: 6.9px;
     padding: 1.27px 2.54px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
-    font-size: 6.35px;
+    font-size: 6.9px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
-    font-size: 7.62px;
+    font-size: 8.2px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
@@ -787,21 +787,21 @@
   }
 
   .interruptions-admin-card-preview-text {
-    font-size: 7.62px;
+    font-size: 8.2px;
   }
 
   .interruptions-admin-card-preview-areas {
-    font-size: 6.35px;
+    font-size: 6.9px;
   }
 
   .interruptions-admin-card-meta {
-    font-size: 6.35px;
+    font-size: 6.9px;
     gap: 2.54px;
   }
 
   .interruptions-admin-card-meta-label,
   .interruptions-admin-card-meta-value {
-    font-size: 6.35px;
+    font-size: 6.9px;
   }
 }
 
@@ -827,26 +827,26 @@
 
   .interruptions-admin-card--compact .interruptions-admin-status-chip {
     padding: 1.46px 4.4px;
-    font-size: 7.34px;
+    font-size: 7.9px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-type-pill {
-    font-size: 7.34px;
+    font-size: 7.9px;
     padding: 1.46px 4.4px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-archived-chip,
   .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
-    font-size: 7.34px;
+    font-size: 7.9px;
     padding: 1.46px 2.94px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
-    font-size: 7.34px;
+    font-size: 7.9px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
-    font-size: 8.81px;
+    font-size: 9.5px;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
@@ -855,21 +855,21 @@
   }
 
   .interruptions-admin-card-preview-text {
-    font-size: 8.81px;
+    font-size: 9.5px;
   }
 
   .interruptions-admin-card-preview-areas {
-    font-size: 7.34px;
+    font-size: 7.9px;
   }
 
   .interruptions-admin-card-meta {
-    font-size: 7.34px;
+    font-size: 7.9px;
     gap: 2.94px;
   }
 
   .interruptions-admin-card-meta-label,
   .interruptions-admin-card-meta-value {
-    font-size: 7.34px;
+    font-size: 7.9px;
   }
 }
 

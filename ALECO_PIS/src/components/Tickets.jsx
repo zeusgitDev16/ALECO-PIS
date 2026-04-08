@@ -31,6 +31,7 @@ import '../CSS/TicketScopeTabs.css';
 import TicketTableView from './tickets/TicketTableView';
 import TicketKanbanView from './tickets/TicketKanbanView';
 import ConfirmModal from './tickets/ConfirmModal';
+import UrgentKeywordsPanel from './tickets/UrgentKeywordsPanel';
 
 const AdminTickets = () => {
     const { tickets, loading: isLoading, error, filters, setFilters, refetch } = useTickets();
@@ -544,6 +545,7 @@ const AdminTickets = () => {
                             />
                         )
                     )}
+                    {ticketScope === 'urgent' && <UrgentKeywordsPanel />}
                     </div>
 
                     <div className="dashboard-widget main-content-card" id="ticket-panel-regular" role="tabpanel" aria-labelledby="ticket-tab-regular" hidden={ticketScope !== 'regular'}>

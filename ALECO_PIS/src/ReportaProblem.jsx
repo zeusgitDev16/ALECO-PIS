@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 import './CSS/ReportaProblem.css';
@@ -22,6 +22,9 @@ import MapPinPicker from './components/maps/MapPinPicker';
 import AlecoScopeDropdown from './components/dropdowns/AlecoScopeDropdown';
 import ConfirmModal from './components/tickets/ConfirmModal';
 import HotlinesDisplay from './components/contact/HotlinesDisplay';
+import { DEFAULT_URGENT_KEYWORDS } from './constants/urgentKeywordsDefaults';
+import { concernMatchesUrgentKeywords } from './utils/urgentKeywordMatch';
+import './CSS/ReportaProblemViewportFix.css';
 
 const TOTAL_STEPS = 6;
 
@@ -56,6 +59,28 @@ const ReportaProblem = () => {
     const [isLocating, setIsLocating] = useState(false);
     const [locationError, setLocationError] = useState('');
     const [showMapPicker, setShowMapPicker] = useState(false);
+    /** null = not loaded yet (use defaults); array = loaded (may be empty if admin cleared) */
+    const [urgentKeywordsList, setUrgentKeywordsList] = useState(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(apiUrl('/api/urgent-keywords'));
+                const data = await res.json();
+                if (cancelled || !res.ok || !data?.success || !Array.isArray(data.keywords)) {
+                    return;
+                }
+                setUrgentKeywordsList(data.keywords);
+            } catch {
+                /* leave null → submit uses DEFAULT_URGENT_KEYWORDS */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
 
     // --- Master State ---
     const [formData, setFormData] = useState({
@@ -332,29 +357,9 @@ const ReportaProblem = () => {
         submissionData.append('location_method', gpsData.method);
         submissionData.append('location_confidence', gpsData.confidence || 'medium');
 
-        // --- OPTIMIZED URGENT KEYWORD LIST ---
-        const urgentKeywords = [
-            // === TIER 1: IMMEDIATE DANGER (Life-Threatening) ===
-            'sparking', 'fire', 'sunog', 'explosion', 'sumabog', 'pumuputok',
-            'electrocuted', 'nakuryente', 'live wire', 'nakabitin na wire',
-            'smoke', 'usok', 'umuusok', 'burning', 'nasusunog',
-            
-            // === TIER 2: STRUCTURAL HAZARDS (Property Damage Risk) ===
-            'fallen pole', 'natumba', 'nahulog na poste', 'leaning pole', 'nakahilig',
-            'dangling wire', 'nakabitin', 'naputol na wire', 'cutoff wire',
-            
-            // === TIER 3: POWER EMERGENCIES (Widespread Impact) ===
-            'walang kuryente', 'patay na kuryente', 'brownout', 'blackout',
-            'no power', 'power outage', 'emergency', 'aksidente'
-        ];
-
-        const lowerConcern = formData.concern.toLowerCase();
-
-        // Word-boundary matching to prevent false positives
-        const isUrgent = urgentKeywords.some(keyword => {
-            const regex = new RegExp(`\\b${keyword.replace(/\s+/g, '\\s+')}\\b`, 'i');
-            return regex.test(lowerConcern);
-        });
+        const kws =
+            urgentKeywordsList === null ? DEFAULT_URGENT_KEYWORDS : urgentKeywordsList;
+        const isUrgent = concernMatchesUrgentKeywords(formData.concern, kws);
 
         submissionData.append('is_urgent', isUrgent ? 1 : 0);
 

@@ -1,0 +1,78 @@
+/* Report a Problem viewport fix
+   Must be imported last (after all brick CSS) so media tiers win deterministically.
+*/
+
+.report-problem-container :is(
+  .textfield-input,
+  .phone-input-input,
+  .issue-dropdown-container.layout-form .issue-select,
+  .location-search-input,
+  .location-select
+) {
+  box-sizing: border-box !important;
+}
+
+/* <=320 */
+@media (max-width: 320px) {
+  .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+    min-height: 34px !important;
+    padding: 8px 10px !important;
+  }
+
+  .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+    min-height: 34px !important;
+    padding: 8px 10px !important;
+  }
+}
+
+/* 321-374 */
+@media (min-width: 321px) and (max-width: 374px) {
+  .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+    min-height: 36px !important;
+    padding: 8px 11px !important;
+  }
+
+  .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+    min-height: 36px !important;
+    padding: 8px 11px !important;
+  }
+}
+
+/* 375-424 */
+@media (min-width: 375px) and (max-width: 424px) {
+  .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+    min-height: 38px !important;
+    padding: 9px 12px !important;
+  }
+
+  .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+    min-height: 38px !important;
+    padding: 9px 12px !important;
+  }
+}
+
+/* 425-767 */
+@media (min-width: 425px) and (max-width: 767px) {
+  .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+    min-height: 40px !important;
+    padding: 10px 14px !important;
+  }
+
+  .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+    min-height: 40px !important;
+    padding: 10px 14px !important;
+  }
+}
+
+/* 768-1023 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .report-problem-container :is(.textfield-input, .phone-input-input, .issue-dropdown-container.layout-form .issue-select, .location-search-input, .location-select) {
+    min-height: 42px !important;
+    padding: 11px 14px !important;
+  }
+
+  .report-problem-container :is(.btn-wizard-back, .btn-wizard-next, .btn-submit-report, .btn-find-location, .btn-pin-location, .clear-selection-btn) {
+    min-height: 42px !important;
+    padding: 11px 14px !important;
+  }
+}

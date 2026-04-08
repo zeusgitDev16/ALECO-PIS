@@ -16,6 +16,7 @@ import TicketHistoryLogs from './TicketHistoryLogs';
  */
 const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
     const [copiedField, setCopiedField] = useState(null);
+    const [uiScale, setUiScale] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
     const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
     const [isGroupDispatchOpen, setIsGroupDispatchOpen] = useState(false);
@@ -56,6 +57,19 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
         };
     }, []);
 
+    // TicketDetailPane renders outside .tickets-page-container; copy its --ticket-ui-scale to this modal.
+    useEffect(() => {
+        try {
+            const el = document.querySelector('.tickets-page-container');
+            if (!el) return;
+            const v = window.getComputedStyle(el).getPropertyValue('--ticket-ui-scale');
+            const trimmed = String(v || '').trim();
+            if (trimmed) setUiScale(trimmed);
+        } catch {
+            /* leave null => CSS falls back to 1 */
+        }
+    }, []);
+
     // 1. Idempotent Guard
     if (!ticket) return null;
 
@@ -76,7 +90,11 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
     };
 
     return (
-        <div className="ticket-modal-overlay" onClick={onClose}>
+        <div
+            className="ticket-modal-overlay"
+            onClick={onClose}
+            style={uiScale ? { '--ticket-ui-scale': uiScale } : undefined}
+        >
             <div className="ticket-modal-content" onClick={(e) => e.stopPropagation()}>
                 
                 <button className="ticket-modal-close-btn" onClick={onClose} aria-label="Close Modal">

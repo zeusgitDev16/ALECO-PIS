@@ -66,8 +66,8 @@
   border: 1px solid var(--border-color);
   scroll-snap-align: start;
   flex-shrink: 0;
-  width: 380px; /* Resized wider card */
-  height: 400px; /* Set fixed height to 400px */
+  width: min(380px, 94vw); /* Capped at 380px for desktop, scales fluidly for mobile/tablet */
+  height: 400px; /* Fixed height for desktop/laptop view */
   box-sizing: border-box;
   padding: 0; /* Padding moved to internal elements to prevent content leaking on scroll */
   overflow-y: auto;
@@ -174,11 +174,11 @@
   top: 0; /* Reset to 0 to prevent header color from bleeding outside the top container */
   z-index: 10;
   background: var(--bg-card);
-  padding: 17px 20px 12px 16px; /* Increased right padding for space from scrollbar */
+  padding: 17px 16px 12px 16px; /* Symmetrical padding for perfect center alignment */
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
-  border-radius: 14px 14px 0 0; /* Reduced radius to ensure header color stays strictly inside the card curve */
+  border-radius: 15px 15px 0 0; /* Precision clip to match card corners */
   background-clip: padding-box; /* Ensures background color doesn't leak into the border area */
   flex-shrink: 0; /* Header won't shrink if text gets long */
   border-bottom: 1px solid var(--border-color); /* Enhanced visual seal for sticky header */
@@ -307,7 +307,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 20px 16px 16px; /* Increased right padding for space from scrollbar */
+  padding: 0 16px 16px 16px; /* Symmetrical padding for contents */
   width: 100%;
   box-sizing: border-box;
   flex-shrink: 0; /* Keep text section stable */
@@ -321,7 +321,7 @@
 
 .feed-post-headline {
   font-weight: 800;
-  font-size: 0.92rem; /* Balanced size for readability */
+  font-size: 0.92rem; /* Restored original font size */
   text-transform: uppercase;
   letter-spacing: 0.03em;
   line-height: 1.3;
@@ -330,7 +330,7 @@
 }
 
 .feed-post-body-text {
-  font-size: 0.88rem; /* Standard readable font size */
+  font-size: 0.88rem; /* Restored original font size */
   line-height: 1.5;
   color: var(--text-main);
   margin: 0;
@@ -340,7 +340,7 @@
   box-sizing: border-box;
   background: var(--bg-body);
   border: 1px solid var(--border-color);
-  padding: 10px;
+  padding: 10px; /* Restored original padding */
   border-radius: 8px;
   flex-shrink: 0;
   height: auto; /* Allow box to grow with content */
@@ -398,9 +398,9 @@
 /* --- Advisory Infographic --- */
 .feed-advisory-infographic {
   border-radius: 8px;
-  overflow: visible; /* Allows the image to scale beyond the infographic box during interaction */
-  margin: 0 20px 16px 16px; /* Balanced spacing around infographic */
-  width: calc(100% - 36px); /* Ensures it stays within card padding */
+  overflow: hidden; /* FIX: Clips the Indigo header gradient to the rounded corners perfectly */
+  margin: 0 16px 16px 16px; /* Symmetrical margins */
+  width: calc(100% - 32px); /* Corrected width based on 16px side margins */
   box-sizing: border-box;
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
   flex-shrink: 0; /* Prevents infographic from being squashed */
@@ -415,6 +415,8 @@
   justify-content: space-between;
   flex-wrap: nowrap;
   gap: 4px; /* Tighter gap for better space utilization */
+  border-radius: 7px 7px 0 0; /* Matches parent radius (8px) minus border thickness (1px) to prevent corner leakage */
+  background-clip: padding-box; /* Ensures the background gradient stays inside the border boundaries */
 }
 
 .feed-infographic-header-bar > span {
@@ -469,7 +471,7 @@
 }
 
 .feed-infographic-pill {
-  font-size: 0.7rem;
+  font-size: 0.7rem; /* Restored original size */
   font-weight: 600;
   padding: 6px 12px;
   border-radius: 999px;
@@ -522,7 +524,7 @@
 }
 
 .feed-infographic-areas li {
-  font-size: 0.75rem;
+  font-size: 0.75rem; /* Restored original size */
   line-height: 1.3;
   margin: 4px 0;
   overflow-wrap: break-word;
@@ -764,8 +766,9 @@
   }
 
   .interruption-feed-post {
-    width: 360px;
-    height: 390px;
+    width: min(360px, 92vw); /* Adaptive sizing for 425px devices */
+    height: auto;
+    min-height: 380px;
   }
 
   .feed-infographic-header-bar {
@@ -802,15 +805,14 @@
 @media (max-width: 320px) {
   .interruption-feed {
     padding: 8px 6px;
-    gap: 12px;
+    gap: 16px;
   }
 
   .interruption-feed-post {
-    width: 280px;
-    height: 340px;
+    width: min(280px, 92vw); /* Fluid width for ultra-compact devices */
+    height: 340px; /* Fixed height for ultra-compact */
     padding: 0;
     gap: 8px;
-    border-radius: 12px;
   }
 
   .feed-post-header {
@@ -861,11 +863,11 @@
   }
 
   .feed-advisory-infographic {
-    margin-top: 10px;
+    width: calc(100% - 20px);
+    margin: 8px 10px 12px 10px; /* Symmetrical margins for ultra-compact */
   }
 
   .feed-infographic-header-bar {
-    padding: 2px 6px; /* Tightest padding for 320px screens */
     gap: 4px;
   }
 
@@ -880,7 +882,7 @@
   }
 
   .feed-infographic-time-badge {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     padding: 2px 5px;
   }
 

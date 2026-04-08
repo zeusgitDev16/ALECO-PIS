@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
+import LocationPreviewMap from '../LocationPreviewMap';
 import '../../CSS/TicketDetailPane.css';
 import '../../CSS/TicketDashboard.css';
 import DispatchTicketModal from './DispatchTicketModal';
@@ -187,6 +188,29 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                             <small className="district-sub">{ticket.district || ''}</small>
                         </p>
                     </div>
+
+                    {ticket.reported_lat && ticket.reported_lng && (
+                        <div className="detail-group full-width">
+                            <label>Map Location</label>
+                            <LocationPreviewMap
+                                latitude={Number(ticket.reported_lat)}
+                                longitude={Number(ticket.reported_lng)}
+                                accuracy={ticket.location_accuracy ?? null}
+                                municipality={ticket.municipality}
+                                district={ticket.district}
+                            />
+                            <div className="ticket-map-actions">
+                                <a
+                                    className="ticket-map-external-link"
+                                    href={`https://maps.google.com/?q=${ticket.reported_lat},${ticket.reported_lng}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    View on Google Maps
+                                </a>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* --- SECTION 3: CONTENT & EVIDENCE --- */}

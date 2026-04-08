@@ -39,6 +39,7 @@ const AdminTickets = () => {
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [isMapOpen, setIsMapOpen] = useState(false);
+    const [mapTickets, setMapTickets] = useState([]);
     const [selectedIds, setSelectedIds] = useState([]);
     const [availableCrews, setAvailableCrews] = useState([]);
     const [confirmState, setConfirmState] = useState({ open: false, type: null, payload: null });
@@ -101,6 +102,42 @@ const AdminTickets = () => {
         setSelectedTicket(ticket);
         if (ticket?.ticket_id) addOpened(ticket.ticket_id);
     };
+
+    useEffect(() => {
+        if (!isMapOpen) return;
+        const ctrl = new AbortController();
+
+        const fetchMapTickets = async () => {
+            try {
+                const params = new URLSearchParams();
+                Object.keys(filters || {}).forEach((key) => {
+                    const value = filters[key];
+                    if (value !== '' && value !== false) params.set(key, String(value));
+                });
+                params.set('includeChildren', 'true');
+
+                const res = await fetch(apiUrl(`/api/filtered-tickets?${params.toString()}`), { signal: ctrl.signal });
+                const data = await res.json();
+                if (!res.ok || !data?.success) {
+                    setMapTickets([]);
+                    return;
+                }
+
+                const rows = Array.isArray(data.data) ? data.data : [];
+                const withoutGroupMasters = rows.filter((t) => !String(t?.ticket_id || '').startsWith('GROUP-'));
+                const scoped = ticketScope === 'urgent'
+                    ? withoutGroupMasters.filter(t => t.is_urgent === 1 || t.is_urgent === true)
+                    : withoutGroupMasters.filter(t => t.is_urgent !== 1 && t.is_urgent !== true);
+                setMapTickets(scoped);
+            } catch (e) {
+                if (e?.name === 'AbortError') return;
+                setMapTickets([]);
+            }
+        };
+
+        fetchMapTickets();
+        return () => ctrl.abort();
+    }, [isMapOpen, filters, ticketScope]);
 
     useEffect(() => {
         const fetchCrews = async () => {
@@ -605,7 +642,7 @@ const AdminTickets = () => {
             <CoverageMap 
                 isOpen={isMapOpen} 
                 onClose={() => setIsMapOpen(false)} 
-                tickets={tickets}
+                tickets={mapTickets}
             />
 
             {confirmState.type === 'bulkRestore' && (

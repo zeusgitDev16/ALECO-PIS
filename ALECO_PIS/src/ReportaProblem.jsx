@@ -18,6 +18,7 @@ import UploadTheProblem from './components/buckets/UploadTheProblem';
 import TicketPopUp from './components/containers/TicketPopUp'; 
 import IssueCategoryDropdown from './components/dropdowns/IssueCategoryDropdown';
 import LocationPreviewMap from './components/LocationPreviewMap';
+import MapPinPicker from './components/maps/MapPinPicker';
 import AlecoScopeDropdown from './components/dropdowns/AlecoScopeDropdown';
 import ConfirmModal from './components/tickets/ConfirmModal';
 import HotlinesDisplay from './components/contact/HotlinesDisplay';
@@ -54,6 +55,7 @@ const ReportaProblem = () => {
     });
     const [isLocating, setIsLocating] = useState(false);
     const [locationError, setLocationError] = useState('');
+    const [showMapPicker, setShowMapPicker] = useState(false);
 
     // --- Master State ---
     const [formData, setFormData] = useState({
@@ -328,6 +330,7 @@ const ReportaProblem = () => {
         submissionData.append('reported_lng', gpsData.lng || null);
         submissionData.append('location_accuracy', gpsData.accuracy || null);
         submissionData.append('location_method', gpsData.method);
+        submissionData.append('location_confidence', gpsData.confidence || 'medium');
 
         // --- OPTIMIZED URGENT KEYWORD LIST ---
         const urgentKeywords = [
@@ -598,14 +601,31 @@ const ReportaProblem = () => {
                                 <div className="wizard-step-block">
                                     <h3 className="column-section-title">Find Location</h3>
                                     <div className="gps-location-section">
-                                        <button
-                                            type="button"
-                                            onClick={handleFindMyLocation}
-                                            className="btn-find-location"
-                                            disabled={isLocating || gpsData.isLocked}
-                                        >
-                                            {isLocating ? '📡 Locating...' : '📍 Find My Location'}
-                                        </button>
+                                        <div className="gps-location-actions">
+                                            <button
+                                                type="button"
+                                                onClick={handleFindMyLocation}
+                                                className="btn-find-location"
+                                                disabled={isLocating || gpsData.isLocked}
+                                            >
+                                                {isLocating ? '📡 Locating...' : '📍 Find My Location'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const muni = (formData.municipality || '').trim();
+                                                    if (!muni) {
+                                                        toast.info('Select a municipality first, then pin the exact spot on the map.');
+                                                        return;
+                                                    }
+                                                    setShowMapPicker(true);
+                                                }}
+                                                className="btn-pin-location"
+                                                disabled={isLocating || gpsData.isLocked}
+                                            >
+                                                🗺️ Pin Location on Map
+                                            </button>
+                                        </div>
                                         {locationError && (
                                             <div className="location-error-box">⚠️ {locationError}</div>
                                         )}
@@ -615,12 +635,20 @@ const ReportaProblem = () => {
                                             <div className="gps-lock-info">
                                                 <span className="gps-lock-icon">🔒</span>
                                                 <div>
-                                                    <strong>Using device location</strong>
+                                                    <strong>
+                                                        {gpsData.method === 'gps'
+                                                            ? 'Using device location'
+                                                            : gpsData.method === 'map_pin'
+                                                                ? 'Using pinned location'
+                                                                : 'Using selected location'}
+                                                    </strong>
                                                     <p className="gps-lock-details">
                                                         📍 {formData.address}<br />
                                                         <strong>{formData.municipality}</strong>, {formData.district}
                                                     </p>
-                                                    <p className="gps-accuracy">Accuracy: ±{gpsData.accuracy}m</p>
+                                                    {gpsData.accuracy != null && (
+                                                        <p className="gps-accuracy">Accuracy: ±{gpsData.accuracy}m</p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <button type="button" onClick={handleClearGPS} className="location-clear-btn">✖ Clear & Re-locate</button>
@@ -649,7 +677,7 @@ const ReportaProblem = () => {
                                             />
                                         </div>
                                     )}
-                                    {gpsData.method === 'gps' && gpsData.lat && gpsData.lng && (
+                                    {(gpsData.method === 'gps' || gpsData.method === 'map_pin') && gpsData.lat && gpsData.lng && (
                                         <LocationPreviewMap
                                             latitude={gpsData.lat}
                                             longitude={gpsData.lng}
@@ -658,6 +686,51 @@ const ReportaProblem = () => {
                                             district={formData.district}
                                         />
                                     )}
+                                    {showMapPicker && (() => {
+                                        const muniName = (formData.municipality || '').trim().toLowerCase();
+                                        const districtName = (formData.district || '').trim().toLowerCase();
+                                        let initialLat = 13.1353;
+                                        let initialLng = 123.7443;
+
+                                        for (const d of ALECO_SCOPE) {
+                                            const dName = String(d.district || '').toLowerCase();
+                                            if (districtName && dName !== districtName) continue;
+                                            for (const m of d.municipalities || []) {
+                                                const name = String(m.name || '').toLowerCase();
+                                                const googleName = String(m.googleName || '').toLowerCase();
+                                                const clean = name.replace(' city', '').trim();
+                                                const cleanGoogle = googleName.replace(' city', '').trim();
+                                                const muniClean = muniName.replace(' city', '').trim();
+                                                if (muniClean && (clean === muniClean || cleanGoogle === muniClean || name === muniName || googleName === muniName)) {
+                                                    if (m.lat && m.lng) {
+                                                        initialLat = m.lat;
+                                                        initialLng = m.lng;
+                                                    }
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        return (
+                                            <MapPinPicker
+                                                initialLat={initialLat}
+                                                initialLng={initialLng}
+                                                onCancel={() => setShowMapPicker(false)}
+                                                onConfirm={(lat, lng) => {
+                                                    setGpsData({
+                                                        lat,
+                                                        lng,
+                                                        accuracy: 5,
+                                                        method: 'map_pin',
+                                                        isLocked: true,
+                                                        confidence: 'high'
+                                                    });
+                                                    setLocationError('');
+                                                    setShowMapPicker(false);
+                                                }}
+                                            />
+                                        );
+                                    })()}
                                 </div>
                             )}
 

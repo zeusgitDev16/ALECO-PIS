@@ -46,7 +46,9 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, distr
                             {district}
                         </span>
                     )}
-                    <span className="accuracy-badge">±{accuracy}m accuracy</span>
+                    {accuracy != null && (
+                        <span className="accuracy-badge">±{accuracy}m accuracy</span>
+                    )}
                 </div>
             </div>
 

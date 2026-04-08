@@ -10,10 +10,11 @@ router.get('/filtered-tickets', async (req, res) => {
         const {
             tab, isNew, isUrgent, status, searchQuery, category,
             district, municipality,
-            datePreset, startDate, endDate, groupFilter
+            datePreset, startDate, endDate, groupFilter, includeChildren
         } = req.query;
 
         console.log('🔍 Filter Request:', { tab, isNew, isUrgent, status, searchQuery, category, district, municipality, datePreset, groupFilter });
+        const shouldIncludeChildren = includeChildren === 'true';
 
         // Base: show parent tickets (GROUP-*) + ungrouped; exclude children and soft-deleted. Include child_count for GROUP masters.
         // deleted_at: DATETIME column - use IS NULL only. Fallback for DBs without deleted_at (pre-migration).
@@ -24,12 +25,17 @@ router.get('/filtered-tickets', async (req, res) => {
 
         // --- Group Filter (base visibility) ---
         if (groupFilter === 'grouped') {
-            query += ` AND t.ticket_id LIKE 'GROUP-%'`;
+            if (shouldIncludeChildren) {
+                query += ` AND (t.ticket_id LIKE 'GROUP-%' OR (t.parent_ticket_id IS NOT NULL AND t.parent_ticket_id <> ''))`;
+            } else {
+                query += ` AND t.ticket_id LIKE 'GROUP-%'`;
+            }
         } else if (groupFilter === 'ungrouped') {
             query += ` AND (t.parent_ticket_id IS NULL OR t.parent_ticket_id = '') AND t.ticket_id NOT LIKE 'GROUP-%'`;
         } else {
-            // all: GROUP masters + ungrouped tickets (exclude children)
-            query += ` AND (t.parent_ticket_id IS NULL OR t.parent_ticket_id = '' OR t.ticket_id LIKE 'GROUP-%')`;
+            if (!shouldIncludeChildren) {
+                query += ` AND (t.parent_ticket_id IS NULL OR t.parent_ticket_id = '' OR t.ticket_id LIKE 'GROUP-%')`;
+            }
         }
 
         // --- Status Tabs ---

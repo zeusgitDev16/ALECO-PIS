@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { ALECO_SCOPE } from '../../alecoScope'; // Ensure this path is correct
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import '../CSS/CoverageMap.css';
 
 // --- ENTERPRISE CUSTOM ICONS ---
 const getStatusIcon = (status) => {
     let colorClass = 'pin-blue'; 
     if (status?.toLowerCase() === 'pending') colorClass = 'pin-orange';
-    if (status?.toLowerCase() === 'resolved') colorClass = 'pin-green';
+    if (status?.toLowerCase() === 'restored') colorClass = 'pin-green';
 
     return L.divIcon({
         className: 'custom-status-icon',
@@ -57,8 +60,14 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
 
     // --- HELPER: GET TOWN CENTER ---
     const getTownCenter = (muni) => {
-        const poblacion = muni.barangays.find(b => b.name.toLowerCase().includes('poblacion')) || muni.barangays[0];
-        return [poblacion.lat || 13.1353, poblacion.lng || 123.7443];
+        if (muni && muni.lat && muni.lng) return [muni.lat, muni.lng];
+        if (muni && Array.isArray(muni.barangays) && muni.barangays.length > 0) {
+            const poblacion =
+                muni.barangays.find(b => String(b?.name || '').toLowerCase().includes('poblacion')) ||
+                muni.barangays[0];
+            if (poblacion?.lat && poblacion?.lng) return [poblacion.lat, poblacion.lng];
+        }
+        return [13.1353, 123.7443];
     };
 
     // --- SEARCH LOGIC ---
@@ -68,22 +77,29 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
         if (val.length < 2) { setSearchResults([]); return; }
 
         const matched = [];
+        const needle = val.toLowerCase();
         ALECO_SCOPE.forEach(district => {
-            district.municipalities.forEach(muni => {
-                if (muni.name.toLowerCase().includes(val.toLowerCase())) {
-                    matched.push({ name: muni.name, coords: getTownCenter(muni), type: 'Municipality' });
+            (district.municipalities || []).forEach(muni => {
+                const muniName = String(muni?.name || '');
+                const muniGoogleName = String(muni?.googleName || '');
+                if (muniName.toLowerCase().includes(needle) || muniGoogleName.toLowerCase().includes(needle)) {
+                    matched.push({ name: muniName || muniGoogleName, coords: getTownCenter(muni), type: 'Municipality' });
                 }
-                muni.barangays.forEach(brgy => {
-                    const cleanBrgy = getCleanName(brgy.name);
-                    if (cleanBrgy.includes(val.toLowerCase()) || brgy.name.toLowerCase().includes(val.toLowerCase())) {
-                        matched.push({ 
-                            name: brgy.name, 
-                            muni: muni.name, 
-                            coords: brgy.lat ? [brgy.lat, brgy.lng] : getTownCenter(muni), 
-                            type: 'Barangay' 
-                        });
-                    }
-                });
+
+                if (Array.isArray(muni.barangays)) {
+                    muni.barangays.forEach(brgy => {
+                        const brgyName = String(brgy?.name || '');
+                        const cleanBrgy = getCleanName(brgyName || '');
+                        if (cleanBrgy.includes(needle) || brgyName.toLowerCase().includes(needle)) {
+                            matched.push({ 
+                                name: brgyName, 
+                                muni: muniName, 
+                                coords: brgy?.lat && brgy?.lng ? [brgy.lat, brgy.lng] : getTownCenter(muni), 
+                                type: 'Barangay' 
+                            });
+                        }
+                    });
+                }
             });
         });
         setSearchResults(matched.slice(0, 5));
@@ -96,10 +112,10 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
     };
 
     // --- BULLETPROOF LOCATION FINDER & JITTER ---
-    const getTicketPosition = (locationString, ticketId) => {
+    const getTicketPosition = (ticket) => {
         let jitterX = 0;
         let jitterY = 0;
-        const safeId = ticketId ? String(ticketId) : String(Math.random());
+        const safeId = ticket.ticket_id ? String(ticket.ticket_id) : String(Math.random());
         
         let hash = 0;
         for (let i = 0; i < safeId.length; i++) {
@@ -111,6 +127,18 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
         // Ultimate Inland Fallback (Albay Capitol Area - Safe from water)
         const INLAND_LEGAZPI = [13.1353, 123.7443];
 
+        // --- NEW: PRECISE COORDINATE PRIORITY ---
+        // If the ticket has explicit GPS or map-pin coordinates, use them!
+        if (ticket.reported_lat != null && ticket.reported_lng != null) {
+            const lat = Number(ticket.reported_lat);
+            const lng = Number(ticket.reported_lng);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                return [lat, lng];
+            }
+        }
+
+        const locationString = ticket.location || [ticket.address, ticket.municipality, ticket.district].filter(Boolean).join(', ');
+
         if (!locationString || typeof locationString !== 'string') {
             return [INLAND_LEGAZPI[0] + jitterX, INLAND_LEGAZPI[1] + jitterY]; 
         }
@@ -120,9 +148,12 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
 
         // STEP 1: Identify the Municipality First
         for (const district of ALECO_SCOPE) {
-            for (const muni of district.municipalities) {
-                const cleanMuniName = muni.name.toLowerCase().replace(' city', '');
-                if (locLower.includes(cleanMuniName)) {
+            for (const muni of (district.municipalities || [])) {
+                const muniName = String(muni?.name || '').toLowerCase();
+                const muniGoogleName = String(muni?.googleName || '').toLowerCase();
+                const cleanMuniName = muniName.replace(' city', '').trim();
+                const cleanGoogle = muniGoogleName.replace(' city', '').trim();
+                if ((cleanMuniName && locLower.includes(cleanMuniName)) || (cleanGoogle && locLower.includes(cleanGoogle))) {
                     matchedMuni = muni;
                     break;
                 }
@@ -132,11 +163,12 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
 
         // STEP 2: Search strictly inside the confirmed town using Clean Names
         if (matchedMuni) {
-            for (const brgy of matchedMuni.barangays) {
-                const cleanBrgy = getCleanName(brgy.name);
-                // Matches "arimbay" inside "arimbay, legazpi"
-                if (cleanBrgy.length > 2 && locLower.includes(cleanBrgy) && brgy.lat && brgy.lng) {
-                    return [brgy.lat + jitterX, brgy.lng + jitterY];
+            if (Array.isArray(matchedMuni.barangays)) {
+                for (const brgy of matchedMuni.barangays) {
+                    const cleanBrgy = getCleanName(String(brgy?.name || ''));
+                    if (cleanBrgy.length > 2 && locLower.includes(cleanBrgy) && brgy?.lat && brgy?.lng) {
+                        return [brgy.lat + jitterX, brgy.lng + jitterY];
+                    }
                 }
             }
             const townCenter = getTownCenter(matchedMuni);
@@ -145,10 +177,11 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
 
         // STEP 3: Blind Search (If municipality was omitted)
         for (const district of ALECO_SCOPE) {
-            for (const muni of district.municipalities) {
+            for (const muni of (district.municipalities || [])) {
+                if (!Array.isArray(muni.barangays)) continue;
                 for (const brgy of muni.barangays) {
-                    const cleanBrgy = getCleanName(brgy.name);
-                    if (cleanBrgy.length > 2 && locLower.includes(cleanBrgy) && brgy.lat && brgy.lng) {
+                    const cleanBrgy = getCleanName(String(brgy?.name || ''));
+                    if (cleanBrgy.length > 2 && locLower.includes(cleanBrgy) && brgy?.lat && brgy?.lng) {
                         return [brgy.lat + jitterX, brgy.lng + jitterY];
                     }
                 }
@@ -171,7 +204,7 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
                         <div className="map-search-container">
                             <input 
                                 type="text" 
-                                placeholder="🔍 Search Barangay..." 
+                                placeholder="🔍 Search Municipality / Barangay..." 
                                 value={searchQuery}
                                 onChange={handleSearchChange}
                             />
@@ -201,27 +234,44 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
                         
                         <MapFlyHandler targetCoords={flyTarget} />
 
-                        {tickets.map(ticket => {
-                            const position = getTicketPosition(ticket.location, ticket.ticket_id);
-                            const icon = getStatusIcon(ticket.status);
-                            
-                            return (
-                                <Marker key={ticket.ticket_id || Math.random()} position={position} icon={icon}>
-                                    <Popup>
-                                        <div className="map-popup">
-                                            <span className="popup-id">{ticket.ticket_id}</span>
-                                            <h4 className="popup-issue">{ticket.issue_type}</h4>
-                                            <p className="popup-loc">📍 {ticket.location}</p>
-                                            <div className="popup-footer">
-                                                <span className={`status-badge ${ticket.status?.toLowerCase().replace(/\s+/g, '-')}`}>
-                                                    {ticket.status}
-                                                </span>
+                        <MarkerClusterGroup
+                            chunkedLoading
+                            spiderfyOnMaxZoom
+                            showCoverageOnHover={false}
+                            removeOutsideVisibleBounds
+                        >
+                            {tickets.map(ticket => {
+                                const position = getTicketPosition(ticket);
+                                const icon = getStatusIcon(ticket.status);
+                                const locationText = ticket.location || [ticket.address, ticket.municipality, ticket.district].filter(Boolean).join(', ') || '—';
+                                const issueText = ticket.issue_type || ticket.category || '—';
+                                const hasPrecise = ticket.reported_lat != null && ticket.reported_lng != null;
+                                const lat = hasPrecise ? Number(ticket.reported_lat) : null;
+                                const lng = hasPrecise ? Number(ticket.reported_lng) : null;
+                                
+                                return (
+                                    <Marker key={ticket.ticket_id || Math.random()} position={position} icon={icon}>
+                                        <Popup>
+                                            <div className="map-popup">
+                                                <span className="popup-id">{ticket.ticket_id}</span>
+                                                <h4 className="popup-issue">{issueText}</h4>
+                                                <p className="popup-loc">📍 {locationText}</p>
+                                                <p className="popup-loc">
+                                                    {hasPrecise && Number.isFinite(lat) && Number.isFinite(lng)
+                                                        ? `🧭 ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                                                        : '🧭 No precise coordinates'}
+                                                </p>
+                                                <div className="popup-footer">
+                                                    <span className={`status-badge ${ticket.status?.toLowerCase().replace(/\s+/g, '-')}`}>
+                                                        {ticket.status}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Popup>
-                                </Marker>
-                            );
-                        })}
+                                        </Popup>
+                                    </Marker>
+                                );
+                            })}
+                        </MarkerClusterGroup>
                     </MapContainer>
                 </div>
             </div>

@@ -2003,3 +2003,34 @@ body.modal-open .kanban-column-header {
     border-left: max(2px, calc(3px * var(--ticket-ui-scale, 1))) solid var(--accent-color, #7c3aed);
 }
 
+.ticket-map-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: calc(10px * var(--ticket-ui-scale, 1));
+}
+
+.ticket-map-external-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(8px * var(--ticket-ui-scale, 1)) calc(12px * var(--ticket-ui-scale, 1));
+    border-radius: calc(10px * var(--ticket-ui-scale, 1));
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--text-header);
+    font-size: calc(0.8rem * var(--ticket-ui-scale, 1));
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.ticket-map-external-link:hover {
+    background: rgba(59, 130, 246, 0.18);
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: translateY(-1px);
+}
+
+[data-theme="dark"] .ticket-map-external-link {
+    color: #bfdbfe;
+}
+

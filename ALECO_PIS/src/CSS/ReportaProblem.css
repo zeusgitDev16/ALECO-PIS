@@ -854,6 +854,12 @@
     margin: calc(20px * var(--report-scale, 1)) 0;
 }
 
+.report-problem-container .gps-location-actions {
+    display: flex;
+    flex-direction: column;
+    gap: calc(10px * var(--report-scale, 1));
+}
+
 .report-problem-container .btn-find-location {
     width: 100%;
     padding: calc(14px * var(--report-scale, 1));
@@ -869,6 +875,33 @@
     transition: all 0.3s ease;
     box-shadow: 0 calc(4px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1)) rgba(59, 130, 246, 0.3);
     box-sizing: border-box;
+}
+
+.report-problem-container .btn-pin-location {
+    width: 100%;
+    padding: calc(12px * var(--report-scale, 1));
+    min-height: calc(44px * var(--report-scale, 1));
+    background: var(--bg-body);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: calc(8px * var(--report-scale, 1));
+    font-size: calc(14px * var(--report-scale, 1));
+    line-height: 1.35;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    box-sizing: border-box;
+}
+
+.report-problem-container .btn-pin-location:hover:not(:disabled) {
+    background: var(--bg-card);
+    border-color: var(--primary-color, #3b82f6);
+    transform: translateY(calc(-1px * var(--report-scale, 1)));
+}
+
+.report-problem-container .btn-pin-location:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 @media (pointer: coarse) and (max-width: 899px) {
@@ -950,6 +983,147 @@
 .report-problem-container .location-clear-btn:hover {
     background-color: #dc2626;
     transform: translateY(calc(-1px * var(--report-scale, 1)));
+}
+
+.report-problem-container .report-map-picker-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(14px * var(--report-scale, 1));
+    box-sizing: border-box;
+}
+
+.report-problem-container .report-map-picker-modal {
+    width: min(960px, 100%);
+    height: min(640px, calc(100dvh - (40px * var(--report-scale, 1))));
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: calc(12px * var(--report-scale, 1));
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.report-problem-container .report-map-picker-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: calc(10px * var(--report-scale, 1));
+    padding: calc(14px * var(--report-scale, 1)) calc(16px * var(--report-scale, 1));
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-body);
+}
+
+.report-problem-container .report-map-picker-title {
+    margin: 0;
+    font-size: calc(16px * var(--report-scale, 1));
+    font-weight: 800;
+    color: var(--text-header);
+}
+
+.report-problem-container .report-map-picker-subtitle {
+    margin: calc(4px * var(--report-scale, 1)) 0 0;
+    font-size: calc(12px * var(--report-scale, 1));
+    color: var(--text-secondary);
+}
+
+.report-problem-container .report-map-picker-close {
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-main);
+    border-radius: calc(8px * var(--report-scale, 1));
+    width: calc(34px * var(--report-scale, 1));
+    height: calc(34px * var(--report-scale, 1));
+    font-size: calc(18px * var(--report-scale, 1));
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.report-problem-container .report-map-picker-body {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: calc(12px * var(--report-scale, 1));
+    gap: calc(10px * var(--report-scale, 1));
+    box-sizing: border-box;
+}
+
+.report-problem-container .report-map-picker-map {
+    flex: 1 1 0;
+    min-height: 0;
+    border-radius: calc(10px * var(--report-scale, 1));
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background: var(--bg-body);
+}
+
+.report-problem-container .report-map-picker-map .leaflet-container {
+    height: 100%;
+    width: 100%;
+}
+
+.report-problem-container .report-map-picker-coords {
+    display: flex;
+    gap: calc(8px * var(--report-scale, 1));
+    align-items: center;
+    justify-content: center;
+    font-size: calc(12px * var(--report-scale, 1));
+    color: var(--text-secondary);
+    padding: calc(6px * var(--report-scale, 1)) calc(10px * var(--report-scale, 1));
+    border: 1px dashed var(--border-color);
+    border-radius: calc(10px * var(--report-scale, 1));
+    background: var(--bg-body);
+}
+
+.report-problem-container .report-map-picker-coords-value {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.report-problem-container .report-map-picker-actions {
+    display: flex;
+    gap: calc(10px * var(--report-scale, 1));
+    justify-content: flex-end;
+    padding: calc(12px * var(--report-scale, 1)) calc(16px * var(--report-scale, 1));
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-body);
+}
+
+.report-problem-container .report-map-picker-btn {
+    padding: calc(10px * var(--report-scale, 1)) calc(16px * var(--report-scale, 1));
+    border-radius: calc(10px * var(--report-scale, 1));
+    font-size: calc(13px * var(--report-scale, 1));
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+.report-problem-container .report-map-picker-btn--confirm {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.12);
+    color: #1d4ed8;
+}
+
+[data-theme="dark"] .report-problem-container .report-map-picker-btn--confirm {
+    color: #93c5fd;
+}
+
+.report-problem-container .report-map-pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ef4444;
+    border: 2px solid #fff;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
 }
 
 @media (max-width: 480px) {

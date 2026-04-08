@@ -536,6 +536,8 @@
   border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
   display: flex;
   justify-content: center;
+  position: relative;
+  overflow: visible; /* Prevents portrait images from being clipped by the container */
 }
 
 .feed-infographic-image img {
@@ -545,65 +547,97 @@
   border-radius: 8px;
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
   background-color: var(--bg-body);
-  cursor: zoom-in;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .feed-infographic-image img:hover {
-  transform: scale(1.03);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
-/* --- PERSISTENT FULL-SCREEN VIEW (Technical Images) --- */
-.feed-infographic-image img.is-magnified {
+/* Interactive "Click to Magnify" hint label */
+.feed-infographic-image::after {
+  content: 'CLICK TO VIEW';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.feed-infographic-image:hover::after {
+  opacity: 1;
+}
+
+/* --- NEW: Dedicated Full-Screen Image Overlay --- */
+.full-screen-image-overlay {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  object-fit: contain !important;
-  z-index: 2147483647 !important; /* Maximum priority to sit above everything else */
-  background-color: rgba(0, 0, 0, 0.95) !important;
+  background-color: #000000 !important; /* Solid black to ensure visibility */
+  z-index: 9999999 !important; /* Extreme priority */
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  cursor: zoom-out !important; 
+  padding: 0 !important; 
   margin: 0 !important;
-  padding: 20px !important;
-  border: none !important;
-  border-radius: 0 !important;
-  transform: none !important; /* Resets any parent coordinate system context */
-  cursor: zoom-out !important;
-}
-
-/* --- NEW: Dedicated Full-Screen Image Overlay --- */
-/* This div or component would be rendered conditionally at the root of your app */
-.full-screen-image-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.9); /* Dark, semi-transparent backdrop */
-  backdrop-filter: blur(8px); /* Optional blur for background content */
-  z-index: 2147483647; /* Absolute highest z-index to ensure it's always on top */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: zoom-out; /* Indicates it can be clicked to close */
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .full-screen-image-overlay img {
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain; /* Ensures the entire image is visible within the screen */
-  border: 4px solid var(--bg-card); /* Subtle border for the image */
-  border-radius: 8px;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.7); /* Stronger shadow to make it pop */
+  width: 100vw !important; /* Force width to viewport */
+  height: 100vh !important; /* Force height to viewport */
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  object-fit: contain !important; /* Absolute guarantee the WHOLE image shows */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: none !important;
+  display: block !important;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomScaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 /* --- Enhanced Image Visibility in Expanded Modal --- */
 .interruption-modal-container .feed-infographic-image img {
-  height: auto;
-  max-height: 450px; /* Larger image view when expanded */
-  cursor: default;
+  width: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  /* Keeps image large in dashboard but leaves room for the "Click to View" label */
+  max-height: 80vh !important; 
+  object-fit: contain !important;
+  display: block;
+  margin: 0 auto;
+  cursor: pointer !important;
   transform: none !important;
+  transition: filter 0.3s ease;
 }
 
 /* --- Feed Controls (Progress + Date) --- */
@@ -1294,13 +1328,14 @@
 
 .interruption-modal-container {
   position: relative;
-  width: 100%;
-  max-width: 550px;
-  max-height: 90vh;
+  width: 94vw;
+  max-width: 1400px; /* Harmonized with landing page max-width for consistency */
+  max-height: 92vh;
   background: var(--bg-card);
   border-radius: 24px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden; /* Keeps the Close button and frame fixed while content scrolls */
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
@@ -1308,10 +1343,70 @@
 .interruption-modal-container .interruption-feed-post {
   width: 100% !important;
   height: auto !important;
-  min-height: 100%;
+  max-height: 92vh !important;
+  overflow-y: auto !important; /* Direct scroll context for the "scroll you want" */
   box-shadow: none !important;
   border: none !important;
   border-radius: 0;
+}
+
+/* --- Branded Scrollbar for Expanded View --- */
+.interruption-modal-container .interruption-feed-post::-webkit-scrollbar {
+  width: 14px;
+}
+.interruption-modal-container .interruption-feed-post::-webkit-scrollbar-track {
+  background: var(--bg-body);
+  border-left: 1px solid var(--border-color);
+}
+.interruption-modal-container .interruption-feed-post::-webkit-scrollbar-thumb {
+  background-color: var(--text-secondary);
+  border-radius: 10px;
+  border: 4px solid transparent;
+  background-clip: padding-box;
+}
+
+/* --- Landscape Dashboard Layout (Enhanced Navigation & Context) --- */
+@media (min-width: 900px) {
+  .interruption-modal-container .interruption-feed-post {
+    display: grid !important;
+    /* Increased technical column width to 600px to maximize image visibility */
+    grid-template-columns: 1fr 600px; 
+    grid-template-areas: 
+      "header header"
+      "body info";
+    gap: 24px;
+    align-content: start;
+  }
+
+  .interruption-modal-container .feed-post-header {
+    grid-area: header;
+    padding: 20px 24px; 
+  }
+
+  .interruption-modal-container .feed-post-body {
+    grid-area: body;
+    padding: 24px; 
+  }
+
+  .interruption-modal-container .feed-post-body-text {
+    font-size: 1.05rem; /* Upgraded readability for expanded details */
+    background: transparent;
+    border: none;
+    padding: 0;
+    line-height: 1.6;
+  }
+
+  .interruption-modal-container .feed-advisory-infographic {
+    grid-area: info;
+    width: calc(100% - 24px) !important;
+    margin: 0 24px 24px 0 !important;
+    height: auto !important; /* Allows container to expand with image height */
+    overflow: visible !important; /* Unlocks internal clipping for portrait images */
+    position: sticky; /* Keeps technical info visible while reading long descriptions */
+    top: 90px; /* Anchored comfortably below the sticky header */
+    align-self: start;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Subtle lift for the technical column */
+  }
 }
 
 /* Hide the expand button when the card is already in the modal view */
@@ -1319,15 +1414,83 @@
   display: none !important;
 }
 
-.interruption-modal-close-btn {
-  position: absolute;
-  top: -50px;
-  right: 0;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 36px;
+/* --- Modal Navigation "Scroll" Buttons (Gallery Browsing) --- */
+.interruption-modal-nav-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10001; /* Floating above the modal overlay */
+  width: 56px;
+  height: 56px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-header);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
   cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.7;
+}
+
+.interruption-modal-nav-btn:hover {
+  opacity: 1;
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.interruption-modal-nav-btn.prev { left: 40px; }
+.interruption-modal-nav-btn.next { right: 40px; }
+
+@media (max-width: 1100px) {
+  .interruption-modal-nav-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+  }
+  .interruption-modal-nav-btn.prev { left: 10px; }
+  .interruption-modal-nav-btn.next { right: 10px; }
+}
+
+.interruption-modal-close-btn {
+  position: absolute; /* Now relative to the card corner */
+  top: 16px;
+  right: 32px; /* Increased spacing to clear the vertical scrollbar track */
+  z-index: 100; /* Stays above the scrolling content and header */
+  width: 44px;
+  height: 44px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-header);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: 1;
-  transition: transform 0.2s ease;
+}
+
+.interruption-modal-close-btn:hover {
+  background: #ef4444; /* High-visibility red for "Close" action */
+  color: white;
+  transform: scale(1.1) rotate(90deg); /* Modern interaction feedback */
+  border-color: #ef4444;
+}
+
+@media (max-width: 600px) {
+  .interruption-modal-close-btn {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    font-size: 22px;
+  }
 }

@@ -23,79 +23,40 @@ const TARGET_TYPE_LABELS = {
  * @param {() => void} props.onRefresh - Refresh handler
  * @param {(id: number) => void} props.onViewDetails - View message details
  */
-export default function B2BMessagesView({ messages, loading, onRefresh, onViewDetails }) {
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [dateRange, setDateRange] = useState({ from: '', to: '' });
-  const [searchQuery, setSearchQuery] = useState('');
+export default function B2BMessagesView({
+  messages,
+  allMessages,
+  loading,
+  onRefresh,
+  onViewDetails,
+  showLogs,
+  stats,
+  hasDraftMessages,
+}) {
   const [selectedMessage, setSelectedMessage] = useState(null);
-  const [showLogs, setShowLogs] = useState(false);
-  const [sortBy, setSortBy] = useState('newest');
-
-  // Filter and sort messages
-  const filteredMessages = useMemo(() => {
-    let result = [...messages];
-
-    // Status filter
-    if (activeFilter !== 'all') {
-      result = result.filter((m) => m.status === activeFilter);
-    }
-
-    // Date range filter
-    if (dateRange.from) {
-      const fromDate = new Date(dateRange.from);
-      result = result.filter((m) => new Date(m.created_at) >= fromDate);
-    }
-    if (dateRange.to) {
-      const toDate = new Date(dateRange.to);
-      toDate.setHours(23, 59, 59);
-      result = result.filter((m) => new Date(m.created_at) <= toDate);
-    }
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (m) =>
-          (m.subject || '').toLowerCase().includes(query) ||
-          (m.body_text || '').toLowerCase().includes(query) ||
-          (m.sender_email || '').toLowerCase().includes(query)
-      );
-    }
-
-    // Sort
-    result.sort((a, b) => {
-      const dateA = new Date(a.created_at || 0);
-      const dateB = new Date(b.created_at || 0);
-      return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
-    });
-
-    return result;
-  }, [messages, activeFilter, dateRange, searchQuery, sortBy]);
-
-  // Stats
-  const stats = useMemo(() => {
-    return {
-      total: messages.length,
-      sent: messages.filter((m) => m.status === 'sent').length,
-      delivered: messages.filter((m) => m.status === 'delivered').length,
-      failed: messages.filter((m) => m.status === 'failed').length,
-      draft: messages.filter((m) => m.status === 'draft').length,
-    };
-  }, [messages]);
 
   // Generate activity logs from messages
   const logs = useMemo(() => {
-    return messages
+    return (allMessages || messages)
       .slice(0, 20)
       .map((m) => ({
         id: m.id,
         timestamp: m.created_at,
-        action: m.status === 'sent' ? 'Message Sent' : m.status === 'delivered' ? 'Message Delivered' : m.status === 'failed' ? 'Send Failed' : 'Draft Created',
+        action:
+          m.status === 'sent'
+            ? 'Message Sent'
+            : m.status === 'delivered'
+              ? 'Message Delivered'
+              : m.status === 'failed'
+                ? 'Send Failed'
+                : m.status === 'draft'
+                  ? 'Draft Created'
+                  : 'Message Updated',
         details: m.subject || '(No subject)',
         status: m.status,
       }))
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [messages]);
+  }, [allMessages, messages]);
 
   const handleMessageClick = (message) => {
     setSelectedMessage(message);
@@ -151,10 +112,12 @@ export default function B2BMessagesView({ messages, loading, onRefresh, onViewDe
             <span className="stat-value">{stats.failed}</span>
             <span className="stat-label">Failed</span>
           </div>
-          <div className="b2b-messages-stat draft">
-            <span className="stat-value">{stats.draft}</span>
-            <span className="stat-label">Drafts</span>
-          </div>
+          {hasDraftMessages && (
+            <div className="b2b-messages-stat draft">
+              <span className="stat-value">{stats.draft}</span>
+              <span className="stat-label">Drafts</span>
+            </div>
+          )}
         </div>
         <button
           type="button"
@@ -167,92 +130,6 @@ export default function B2BMessagesView({ messages, loading, onRefresh, onViewDe
         </button>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="b2b-messages-toolbar">
-        <div className="b2b-messages-filters">
-          <button
-            type="button"
-            className={`filter-chip ${activeFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('all')}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            className={`filter-chip ${activeFilter === 'sent' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('sent')}
-          >
-            Sent
-          </button>
-          <button
-            type="button"
-            className={`filter-chip ${activeFilter === 'delivered' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('delivered')}
-          >
-            Delivered
-          </button>
-          <button
-            type="button"
-            className={`filter-chip ${activeFilter === 'failed' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('failed')}
-          >
-            Failed
-          </button>
-          <button
-            type="button"
-            className={`filter-chip ${activeFilter === 'draft' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('draft')}
-          >
-            Drafts
-          </button>
-        </div>
-
-        <div className="b2b-messages-date-filters">
-          <input
-            type="date"
-            value={dateRange.from}
-            onChange={(e) => setDateRange((p) => ({ ...p, from: e.target.value }))}
-            placeholder="From"
-            className="date-input"
-          />
-          <span className="date-separator">→</span>
-          <input
-            type="date"
-            value={dateRange.to}
-            onChange={(e) => setDateRange((p) => ({ ...p, to: e.target.value }))}
-            placeholder="To"
-            className="date-input"
-          />
-        </div>
-
-        <div className="b2b-messages-search">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search messages..."
-            className="search-input"
-          />
-        </div>
-
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="sort-select"
-        >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-        </select>
-
-        <button
-          type="button"
-          className={`logs-toggle ${showLogs ? 'active' : ''}`}
-          onClick={() => setShowLogs(!showLogs)}
-        >
-          {showLogs ? 'Hide Logs' : 'Show Logs'}
-        </button>
-      </div>
-
       {/* Main Content Area */}
       <div className={`b2b-messages-content ${showLogs ? 'with-logs' : ''}`}>
         {/* Messages List */}
@@ -262,7 +139,7 @@ export default function B2BMessagesView({ messages, loading, onRefresh, onViewDe
               <div className="spinner" />
               <span>Loading messages...</span>
             </div>
-          ) : filteredMessages.length === 0 ? (
+          ) : messages.length === 0 ? (
             <div className="b2b-messages-empty">
               <div className="empty-icon">✉</div>
               <p>No messages found</p>
@@ -270,14 +147,17 @@ export default function B2BMessagesView({ messages, loading, onRefresh, onViewDe
             </div>
           ) : (
             <div className="b2b-messages-list">
-              {filteredMessages.map((message) => {
-                const status = MESSAGE_STATUS[message.status] || MESSAGE_STATUS.draft;
-                const isSelected = selectedMessage?.id === message.id;
+              {messages.map((message) => {
+                const status = MESSAGE_STATUS[message.status] || {
+                  label: message.status || 'Unknown',
+                  color: 'var(--text-secondary)',
+                  bg: 'color-mix(in srgb, var(--text-secondary) 15%, transparent)',
+                };
 
                 return (
                   <div
                     key={message.id}
-                    className={`b2b-message-card ${isSelected ? 'selected' : ''}`}
+                    className="b2b-message-card"
                     onClick={() => handleMessageClick(message)}
                   >
                     <div className="message-card-header">
@@ -327,56 +207,58 @@ export default function B2BMessagesView({ messages, loading, onRefresh, onViewDe
           )}
         </div>
 
-        {/* Message Detail Panel */}
+        {/* Message Details Modal */}
         {selectedMessage && (
-          <div className="b2b-message-detail">
-            <div className="detail-header">
-              <h4>Message Details</h4>
-              <button
-                type="button"
-                className="close-detail"
-                onClick={() => setSelectedMessage(null)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="detail-content">
-              <div className="detail-row">
-                <label>Subject</label>
-                <span>{selectedMessage.subject || '(No subject)'}</span>
-              </div>
-              <div className="detail-row">
-                <label>Status</label>
-                <span
-                  className="detail-status"
-                  style={{
-                    color: MESSAGE_STATUS[selectedMessage.status]?.color,
-                  }}
+          <div
+            className="b2b-modal-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setSelectedMessage(null);
+            }}
+          >
+            <div className="b2b-modal b2b-message-detail-modal">
+              <div className="detail-header">
+                <h4>Message Details</h4>
+                <button
+                  type="button"
+                  className="close-detail"
+                  onClick={() => setSelectedMessage(null)}
                 >
-                  {MESSAGE_STATUS[selectedMessage.status]?.label || selectedMessage.status}
-                </span>
+                  ×
+                </button>
               </div>
-              <div className="detail-row">
-                <label>Target</label>
-                <span>{TARGET_TYPE_LABELS[selectedMessage.target_mode] || 'Unknown'}</span>
-              </div>
-              <div className="detail-row">
-                <label>Recipients</label>
-                <span>{selectedMessage.recipient_count || 0}</span>
-              </div>
-              <div className="detail-row">
-                <label>Created</label>
-                <span>{formatDate(selectedMessage.created_at)}</span>
-              </div>
-              {selectedMessage.sent_at && (
+              <div className="detail-content">
                 <div className="detail-row">
-                  <label>Sent</label>
-                  <span>{formatDate(selectedMessage.sent_at)}</span>
+                  <label>Subject</label>
+                  <span>{selectedMessage.subject || '(No subject)'}</span>
                 </div>
-              )}
-              <div className="detail-message-body">
-                <label>Message Content</label>
-                <pre>{selectedMessage.body_text || 'No content'}</pre>
+                <div className="detail-row">
+                  <label>Status</label>
+                  <span className="detail-status">
+                    {MESSAGE_STATUS[selectedMessage.status]?.label || selectedMessage.status}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <label>Target</label>
+                  <span>{TARGET_TYPE_LABELS[selectedMessage.target_mode] || 'Unknown'}</span>
+                </div>
+                <div className="detail-row">
+                  <label>Recipients</label>
+                  <span>{selectedMessage.recipient_count || 0}</span>
+                </div>
+                <div className="detail-row">
+                  <label>Created</label>
+                  <span>{formatDate(selectedMessage.created_at)}</span>
+                </div>
+                {selectedMessage.sent_at && (
+                  <div className="detail-row">
+                    <label>Sent</label>
+                    <span>{formatDate(selectedMessage.sent_at)}</span>
+                  </div>
+                )}
+                <div className="detail-message-body">
+                  <label>Message Content</label>
+                  <pre>{selectedMessage.body_text || 'No content'}</pre>
+                </div>
               </div>
             </div>
           </div>

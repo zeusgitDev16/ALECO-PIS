@@ -406,6 +406,13 @@
     opacity: 0.8;
 }
 
+/* Contacts pool stat colors aligned with message pool palette */
+.b2b-stat-total .b2b-stat-value { color: var(--text-main); }
+.b2b-stat-verified .b2b-stat-value { color: #22c55e; }
+.b2b-stat-unverified .b2b-stat-value { color: #f59e0b; }
+.b2b-stat-active .b2b-stat-value { color: #3b82f6; }
+.b2b-stat-inactive .b2b-stat-value { color: #ef4444; }
+
 /* Toolbar */
 .b2b-toolbar {
     display: flex;
@@ -724,6 +731,16 @@
     max-width: calc(600px * var(--b2b-ui-scale, 1));
 }
 
+.b2b-modal-form {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(78vh * var(--b2b-ui-scale, 1));
+}
+
+.b2b-contact-modal-body {
+    overflow: auto;
+}
+
 .b2b-compose-modal {
     max-width: calc(640px * var(--b2b-ui-scale, 1));
 }
@@ -882,6 +899,125 @@
     background: transparent;
 }
 
+.b2b-feeder-selector-card {
+    margin-top: calc(16px * var(--b2b-ui-scale, 1));
+    border: 1px solid var(--border-color);
+    border-radius: calc(8px * var(--b2b-ui-scale, 1));
+    background: var(--bg-body);
+    padding: calc(12px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-feeder-selector-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: calc(12px * var(--b2b-ui-scale, 1));
+    flex-wrap: wrap;
+}
+
+.b2b-feeder-selector-title {
+    display: block;
+    font-size: calc(14px * var(--b2b-ui-scale, 1));
+    font-weight: 600;
+}
+
+.b2b-feeder-selector-subtitle {
+    margin: calc(4px * var(--b2b-ui-scale, 1)) 0 0;
+    font-size: calc(12px * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+}
+
+.b2b-feeder-selector-actions {
+    display: flex;
+    gap: calc(8px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-feeder-chip-list {
+    margin-top: calc(10px * var(--b2b-ui-scale, 1));
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(6px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-feeder-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: calc(3px * var(--b2b-ui-scale, 1)) calc(8px * var(--b2b-ui-scale, 1));
+    font-size: calc(11px * var(--b2b-ui-scale, 1));
+    background: var(--bg-card);
+}
+
+.b2b-feeder-chip-more {
+    opacity: 0.85;
+}
+
+.b2b-feeder-picker-modal {
+    max-width: calc(560px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-feeder-picker-body {
+    display: flex;
+    flex-direction: column;
+    gap: calc(12px * var(--b2b-ui-scale, 1));
+    max-height: calc(60vh * var(--b2b-ui-scale, 1));
+    overflow: auto;
+}
+
+.b2b-feeder-picker-tools {
+    display: flex;
+    flex-direction: column;
+    gap: calc(8px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-feeder-search {
+    width: 100%;
+    padding: calc(8px * var(--b2b-ui-scale, 1)) calc(10px * var(--b2b-ui-scale, 1));
+    border: 1px solid var(--border-color);
+    border-radius: calc(6px * var(--b2b-ui-scale, 1));
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-feeder-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(8px * var(--b2b-ui-scale, 1));
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+}
+
+.b2b-feeder-picker-list {
+    border: 1px solid var(--border-color);
+    border-radius: calc(8px * var(--b2b-ui-scale, 1));
+    background: var(--bg-card);
+    max-height: calc(36vh * var(--b2b-ui-scale, 1));
+    overflow: auto;
+}
+
+.b2b-feeder-option-row {
+    display: flex;
+    align-items: center;
+    gap: calc(10px * var(--b2b-ui-scale, 1));
+    padding: calc(10px * var(--b2b-ui-scale, 1)) calc(12px * var(--b2b-ui-scale, 1));
+    border-bottom: 1px solid var(--border-color);
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-feeder-option-row:last-child {
+    border-bottom: none;
+}
+
+.b2b-feeder-empty {
+    margin: 0;
+    padding: calc(14px * var(--b2b-ui-scale, 1));
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+}
+
 /* Preview Section */
 .b2b-preview-section {
     margin-top: calc(16px * var(--b2b-ui-scale, 1));
@@ -948,6 +1084,87 @@
     background: var(--bg-body);
     border-radius: calc(12px * var(--b2b-ui-scale, 1));
     min-height: calc(500px * var(--b2b-ui-scale, 1));
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* ==========================================================================
+   CONTACTS POOL - Mirror Messages Pool Structure
+   ========================================================================== */
+
+.b2b-contacts-pool {
+    display: flex;
+    flex-direction: column;
+    gap: calc(16px * var(--b2b-ui-scale, 1));
+    padding: calc(16px * var(--b2b-ui-scale, 1));
+    background: var(--bg-body);
+    border-radius: calc(12px * var(--b2b-ui-scale, 1));
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.b2b-contacts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(16px * var(--b2b-ui-scale, 1)) calc(20px * var(--b2b-ui-scale, 1));
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-body) 100%);
+    border-radius: calc(10px * var(--b2b-ui-scale, 1));
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.b2b-contacts-stats {
+    display: flex;
+    gap: calc(24px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-contacts-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: calc(4px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-contacts-stat .stat-value {
+    font-size: calc(24px * var(--b2b-ui-scale, 1));
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.b2b-contacts-stat .stat-label {
+    font-size: calc(11px * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.b2b-contacts-stat.verified .stat-value { color: #22c55e; }
+.b2b-contacts-stat.unverified .stat-value { color: #f59e0b; }
+.b2b-contacts-stat.active .stat-value { color: #3b82f6; }
+.b2b-contacts-stat.inactive .stat-value { color: #ef4444; }
+
+.b2b-new-contact-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(2px * var(--b2b-ui-scale, 1)) calc(6px * var(--b2b-ui-scale, 1));
+    min-height: calc(20px * var(--b2b-ui-scale, 1));
+    border-radius: calc(4px * var(--b2b-ui-scale, 1));
+    font-size: calc(0.55rem * var(--b2b-ui-scale, 1));
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.b2b-contacts-top-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: calc(8px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-new-contact-btn-normal {
+    display: inline-flex;
+    align-items: center;
 }
 
 /* Header with Stats */
@@ -1023,11 +1240,37 @@
     border-radius: calc(10px * var(--b2b-ui-scale, 1));
     border: 1px solid var(--border-color);
     flex-wrap: wrap;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.b2b-messages-toolbar > * {
+    min-width: 0;
+}
+
+.filters-toggle {
+    padding: calc(6px * var(--b2b-ui-scale, 1)) calc(12px * var(--b2b-ui-scale, 1));
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: calc(6px * var(--b2b-ui-scale, 1));
+    cursor: pointer;
+    font-size: calc(12px * var(--b2b-ui-scale, 1));
+    font-weight: 600;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.filters-toggle:hover {
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .b2b-messages-filters {
     display: flex;
     gap: calc(8px * var(--b2b-ui-scale, 1));
+    flex-wrap: wrap;
+    max-width: 100%;
 }
 
 .filter-chip {
@@ -1051,7 +1294,7 @@
 .filter-chip.active {
     background: var(--primary);
     border-color: var(--primary);
-    color: white;
+    color: #000000;
 }
 
 /* Date Filters */
@@ -1059,6 +1302,8 @@
     display: flex;
     align-items: center;
     gap: calc(8px * var(--b2b-ui-scale, 1));
+    flex-wrap: wrap;
+    max-width: 100%;
 }
 
 .date-input {
@@ -1069,6 +1314,8 @@
     font-size: calc(12px * var(--b2b-ui-scale, 1));
     color: var(--text-main);
     cursor: pointer;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .date-separator {
@@ -1080,10 +1327,12 @@
 .b2b-messages-search {
     flex: 1;
     min-width: calc(200px * var(--b2b-ui-scale, 1));
+    max-width: 100%;
 }
 
 .search-input {
     width: 100%;
+    box-sizing: border-box;
     padding: calc(8px * var(--b2b-ui-scale, 1)) calc(14px * var(--b2b-ui-scale, 1));
     background: var(--bg-body);
     border: 1px solid var(--border-color);
@@ -1106,6 +1355,8 @@
     font-size: calc(12px * var(--b2b-ui-scale, 1));
     color: var(--text-main);
     cursor: pointer;
+    flex-shrink: 0;
+    max-width: 100%;
 }
 
 /* Logs Toggle */
@@ -1129,7 +1380,12 @@
 .logs-toggle.active {
     background: var(--primary);
     border-color: var(--primary);
-    color: white;
+    color: #000000;
+}
+
+[data-theme='dark'] .filter-chip.active,
+[data-theme='dark'] .logs-toggle.active {
+    color: #ffffff;
 }
 
 /* Main Content Area - Layered Layout */
@@ -1154,6 +1410,12 @@
     border: 1px solid var(--border-color);
     overflow: hidden;
     min-height: 0;
+}
+
+.b2b-messages-list-search {
+    padding: calc(12px * var(--b2b-ui-scale, 1)) calc(16px * var(--b2b-ui-scale, 1));
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-card);
 }
 
 /* Loading State */
@@ -1429,6 +1691,12 @@
     overflow-y: auto;
 }
 
+.b2b-message-detail-modal {
+    width: min(calc(760px * var(--b2b-ui-scale, 1)), 96vw);
+    max-height: 88vh;
+    overflow: auto;
+}
+
 /* Logs Panel */
 .b2b-messages-logs {
     background: var(--bg-card);
@@ -1516,6 +1784,27 @@
     .b2b-messages-logs {
         max-height: calc(300px * var(--b2b-ui-scale, 1));
     }
+
+    .b2b-messages-toolbar {
+        gap: calc(8px * var(--b2b-ui-scale, 1));
+    }
+
+    .b2b-messages-filters {
+        width: 100%;
+    }
+
+    .filter-chip {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+
+    .b2b-messages-date-filters {
+        width: 100%;
+    }
+
+    .date-input {
+        flex: 1 1 calc(50% - calc(6px * var(--b2b-ui-scale, 1)));
+    }
 }
 
 @media (max-width: 768px) {
@@ -1527,6 +1816,17 @@
     .b2b-messages-stats {
         width: 100%;
         justify-content: space-around;
+    }
+
+    .b2b-contacts-header {
+        flex-direction: column;
+        gap: calc(16px * var(--b2b-ui-scale, 1));
+    }
+
+    .b2b-contacts-stats {
+        width: 100%;
+        justify-content: space-around;
+        flex-wrap: wrap;
     }
     
     .b2b-messages-toolbar {
@@ -1541,14 +1841,263 @@
     
     .b2b-messages-date-filters {
         justify-content: center;
+        width: 100%;
     }
     
     .b2b-messages-search {
         min-width: auto;
+        width: 100%;
+    }
+
+    .sort-select {
+        width: 100%;
+    }
+
+    .logs-toggle {
+        width: 100%;
+    }
+
+    .filters-toggle {
+        width: 100%;
     }
     
     .search-input {
         width: 100%;
+    }
+}
+
+@media (max-width: 375px) {
+    .b2b-contacts-header,
+    .b2b-messages-header {
+        padding: calc(10px * var(--b2b-ui-scale, 1)) calc(12px * var(--b2b-ui-scale, 1));
+    }
+
+    .b2b-contacts-stats,
+    .b2b-messages-stats {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: calc(6px * var(--b2b-ui-scale, 1));
+        justify-content: initial;
+        width: 100%;
+    }
+
+    .b2b-contacts-stat .stat-value,
+    .b2b-messages-stat .stat-value {
+        font-size: calc(11.2px * var(--b2b-ui-scale, 1));
+        line-height: 1;
+    }
+
+    .b2b-contacts-stat .stat-label,
+    .b2b-messages-stat .stat-label {
+        font-size: calc(6.4px * var(--b2b-ui-scale, 1));
+        letter-spacing: 0.1px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .b2b-message-detail-modal {
+        width: 98vw;
+        max-height: 92vh;
+        border-radius: calc(10px * var(--b2b-ui-scale, 1));
+    }
+
+    .detail-header {
+        padding: calc(10px * var(--b2b-ui-scale, 1)) calc(12px * var(--b2b-ui-scale, 1));
+    }
+
+    .detail-header h4 {
+        font-size: calc(14px * var(--b2b-ui-scale, 1));
+    }
+
+    .detail-content {
+        padding: calc(12px * var(--b2b-ui-scale, 1));
+        gap: calc(10px * var(--b2b-ui-scale, 1));
+    }
+
+    .detail-row span {
+        font-size: calc(13px * var(--b2b-ui-scale, 1));
+    }
+
+    .detail-message-body pre {
+        padding: calc(10px * var(--b2b-ui-scale, 1));
+        font-size: calc(12px * var(--b2b-ui-scale, 1));
+        max-height: calc(140px * var(--b2b-ui-scale, 1));
+    }
+}
+
+@media (max-width: 320px) {
+    .b2b-contacts-stats,
+    .b2b-messages-stats {
+        gap: calc(6px * var(--b2b-ui-scale, 1));
+    }
+
+    .b2b-contacts-stat .stat-value,
+    .b2b-messages-stat .stat-value {
+        font-size: calc(14px * var(--b2b-ui-scale, 1));
+    }
+
+    .b2b-contacts-stat .stat-label,
+    .b2b-messages-stat .stat-label {
+        font-size: calc(8px * var(--b2b-ui-scale, 1));
+    }
+
+    .detail-header {
+        padding: calc(8px * var(--b2b-ui-scale, 1)) calc(10px * var(--b2b-ui-scale, 1));
+    }
+
+    .detail-content {
+        padding: calc(10px * var(--b2b-ui-scale, 1));
+    }
+}
+
+/* Final hard override for very small phones to prevent stat wrapping/stacking */
+@media (max-width: 375px) {
+    .b2b-contacts-header,
+    .b2b-messages-header {
+        padding: calc(8px * var(--b2b-ui-scale, 1)) calc(10px * var(--b2b-ui-scale, 1));
+    }
+
+    .b2b-contacts-stats,
+    .b2b-messages-stats {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: calc(2px * var(--b2b-ui-scale, 1)) !important;
+        justify-content: space-between !important;
+        align-items: flex-start;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .b2b-contacts-stat,
+    .b2b-messages-stat {
+        flex: 1 1 0;
+        min-width: 0;
+        gap: calc(2px * var(--b2b-ui-scale, 1));
+    }
+
+    .b2b-contacts-stat .stat-value,
+    .b2b-messages-stat .stat-value {
+        font-size: calc(7.4px * var(--b2b-ui-scale, 1)) !important;
+        line-height: 1;
+    }
+
+    .b2b-contacts-stat .stat-label,
+    .b2b-messages-stat .stat-label {
+        font-size: calc(4.2px * var(--b2b-ui-scale, 1)) !important;
+        letter-spacing: 0;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;
+    }
+}
+
+/* 320px readability boost: enlarge from ultra-compact 375 sizing */
+@media (max-width: 320px) {
+    .b2b-contacts-stat .stat-value,
+    .b2b-messages-stat .stat-value {
+        font-size: calc(14.2px * var(--b2b-ui-scale, 1)) !important;
+    }
+
+    .b2b-contacts-stat .stat-label,
+    .b2b-messages-stat .stat-label {
+        font-size: calc(8px * var(--b2b-ui-scale, 1)) !important;
+    }
+}
+
+/* 321px-373px: improve readability vs ultra-compact 375 rule */
+@media (min-width: 321px) and (max-width: 373px) {
+    .b2b-contacts-stats,
+    .b2b-messages-stats {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        gap: calc(3px * var(--b2b-ui-scale, 1)) !important;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .b2b-contacts-stat,
+    .b2b-messages-stat {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .b2b-contacts-stat .stat-value,
+    .b2b-messages-stat .stat-value {
+        font-size: calc(11.2px * var(--b2b-ui-scale, 1)) !important;
+    }
+
+    .b2b-contacts-stat .stat-label,
+    .b2b-messages-stat .stat-label {
+        font-size: calc(6.6px * var(--b2b-ui-scale, 1)) !important;
+        white-space: nowrap;
+        text-align: center;
+    }
+}
+
+/* 374px-384px: slightly smaller while keeping one-row layout (no stacked Inactive) */
+@media (min-width: 374px) and (max-width: 384px) {
+    .b2b-contacts-stats,
+    .b2b-messages-stats {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        gap: calc(2px * var(--b2b-ui-scale, 1)) !important;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .b2b-contacts-stat,
+    .b2b-messages-stat {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .b2b-contacts-stat .stat-value,
+    .b2b-messages-stat .stat-value {
+        font-size: calc(9.6px * var(--b2b-ui-scale, 1)) !important;
+    }
+
+    .b2b-contacts-stat .stat-label,
+    .b2b-messages-stat .stat-label {
+        font-size: calc(5.6px * var(--b2b-ui-scale, 1)) !important;
+        white-space: nowrap;
+        text-align: center;
+    }
+}
+
+/* Simplified: use 320px stat sizing/layout from 320 up to 384 */
+@media (max-width: 384px) {
+    .b2b-contacts-stats,
+    .b2b-messages-stats {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        gap: calc(3px * var(--b2b-ui-scale, 1)) !important;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .b2b-contacts-stat,
+    .b2b-messages-stat {
+        flex: 1 1 0;
+        min-width: 0;
+        gap: calc(2px * var(--b2b-ui-scale, 1));
+    }
+
+    .b2b-contacts-stat .stat-value,
+    .b2b-messages-stat .stat-value {
+        font-size: calc(14.2px * var(--b2b-ui-scale, 1)) !important;
+        line-height: 1;
+    }
+
+    .b2b-contacts-stat .stat-label,
+    .b2b-messages-stat .stat-label {
+        font-size: calc(8px * var(--b2b-ui-scale, 1)) !important;
+        white-space: nowrap;
+        text-align: center;
+        letter-spacing: 0;
     }
 }
 

@@ -106,20 +106,18 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         <div className="ticket-detail-front">
                 {/* --- SECTION 1: HEADER --- */}
                 <div className="detail-header">
-                    <div className="header-left">
-                        <h2 className="detail-title">{ticket.ticket_id}</h2>
-                        <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
-                            {ticket.status}
-                        </span>
-                        {isGroupMaster && (
-                            <span className="group-badge-detail">
-                                {ticket.child_count ?? children.length ?? 0} ticket{(ticket.child_count ?? children.length ?? 0) !== 1 ? 's' : ''}
+                    <div className="detail-header-align-shell">
+                        <div className="header-left">
+                            <h2 className="detail-title">{ticket.ticket_id}</h2>
+                        </div>
+                        <div className="header-center">
+                            <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
+                                {ticket.status}
                             </span>
-                        )}
-                    </div>
-                    <div className="header-right">
-                        <span className="reported-label">Reported On</span>
-                        <div className="reported-date">{formattedDate}</div>
+                        </div>
+                        <div className="header-right">
+                            <div className="reported-date">{formattedDate}</div>
+                        </div>
                     </div>
                 </div>
 

@@ -10,6 +10,7 @@ import B2BContactList from './b2bmail/B2BContactList';
 import B2BBulkActionBar from './b2bmail/B2BBulkActionBar';
 import B2BContactForm from './b2bmail/B2BContactForm';
 import B2BMessageCompose from './b2bmail/B2BMessageCompose';
+import B2BMessagesView from './b2bmail/B2BMessagesView';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/B2BMailPage.css';
 import '../CSS/B2BMailUIScale.css';
@@ -327,28 +328,13 @@ const B2BMail = () => {
             </>
           ) : (
             <>
-              {/* Messages View - Simplified for now */}
-              <div className="b2b-messages-view">
-                <p className="b2b-placeholder">
-                  Messages view coming soon. Use "New Message" button to compose.
-                </p>
-                {messages.length > 0 && (
-                  <div className="b2b-messages-list">
-                    {messages.slice(0, 10).map((m) => (
-                      <div key={m.id} className="b2b-message-item">
-                        <span className="b2b-message-subject">
-                          {m.subject || '(No subject)'}
-                        </span>
-                        <span
-                          className={`b2b-status-badge b2b-status-${m.status}`}
-                        >
-                          {m.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Messages View - Full Dashboard */}
+              <B2BMessagesView
+                messages={messages}
+                loading={messagesLoading}
+                onRefresh={() => {}}
+                onViewDetails={(id) => console.log('View message:', id)}
+              />
             </>
           )}
         </div>

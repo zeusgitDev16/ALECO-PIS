@@ -314,7 +314,7 @@
     border-radius: calc(4px * var(--b2b-ui-scale, 1));
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: calc(0.75rem * var(--b2b-ui-scale, 1));
+    font-size: calc(0.55rem * var(--b2b-ui-scale, 1));
     font-weight: 600;
     color: var(--text-main);
     white-space: nowrap;
@@ -343,6 +343,16 @@
 /* Dark mode: Keep white text */
 [data-theme="dark"] .b2b-tab.is-active {
     color: #ffffff;
+}
+
+.b2b-tab-icon {
+    font-size: calc(10px * var(--b2b-ui-scale, 1));
+    line-height: 1;
+}
+
+.b2b-tab-label {
+    font-size: calc(0.6rem * var(--b2b-ui-scale, 1));
+    font-weight: 600;
 }
 
 /* Stats Row */
@@ -853,7 +863,11 @@
 .b2b-btn-primary {
     background: var(--primary);
     border-color: var(--primary);
-    color: white;
+    color: #000000;
+}
+
+[data-theme='dark'] .b2b-btn-primary {
+    color: #ffffff;
 }
 
 .b2b-btn-primary:hover:not(:disabled) {

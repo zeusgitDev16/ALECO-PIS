@@ -226,20 +226,28 @@ const B2BMail = () => {
         </header>
 
         {/* Tab Navigation */}
-        <div className="b2b-tabs nav nav-tabs">
+        <div className="b2b-tabs" role="tablist" aria-label="B2B Mail sections">
           <button
             type="button"
-            className={`nav-link ${activeTab === 'contacts' ? 'active' : ''}`}
+            className={`b2b-tab ${activeTab === 'contacts' ? 'is-active' : ''}`}
             onClick={() => setActiveTab('contacts')}
+            role="tab"
+            aria-selected={activeTab === 'contacts'}
+            title="Contacts"
           >
-            Contacts
+            <span className="b2b-tab-icon" aria-hidden="true">▦</span>
+            <span className="b2b-tab-label">Contacts</span>
           </button>
           <button
             type="button"
-            className={`nav-link ${activeTab === 'messages' ? 'active' : ''}`}
+            className={`b2b-tab ${activeTab === 'messages' ? 'is-active' : ''}`}
             onClick={() => setActiveTab('messages')}
+            role="tab"
+            aria-selected={activeTab === 'messages'}
+            title="Messages"
           >
-            Messages
+            <span className="b2b-tab-icon" aria-hidden="true">⇣</span>
+            <span className="b2b-tab-label">Messages</span>
           </button>
         </div>
 

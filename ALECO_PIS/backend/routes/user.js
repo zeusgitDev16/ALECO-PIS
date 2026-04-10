@@ -18,7 +18,7 @@ router.post('/invite', async (req, res) => {
     const [existingUser] = await pool.execute('SELECT * FROM users WHERE email = ?', [cleanEmail]);
 
     if (existingUser.length > 0) {
-      console.log(`--- [DEBUG] User ${cleanEmail} is registered. Promoting to ${role}... ---`);
+      console.log(`--- [INFO] User ${cleanEmail} is registered. Promoting to ${role}... ---`);
       // Update 'role' in the users table
       await pool.execute('UPDATE users SET role = ? WHERE email = ?', [role, cleanEmail]);
       
@@ -32,7 +32,7 @@ router.post('/invite', async (req, res) => {
     const [pendingInvite] = await pool.execute('SELECT * FROM access_codes WHERE email = ?', [cleanEmail]);
 
     if (pendingInvite.length > 0) {
-      console.log("--- [DEBUG] Overwriting existing pending invite... ---");
+      console.log("--- [INFO] Overwriting existing pending invite... ---");
       
       // FIXED: Using 'status' column and 'role_assigned' column from your schema
      const updateQuery = `
@@ -46,7 +46,7 @@ router.post('/invite', async (req, res) => {
     } 
 
     // 3. They are brand new.
-    console.log("--- [DEBUG] Email is new. Creating fresh invite... ---");
+    console.log("--- [INFO] Email is new. Creating fresh invite... ---");
 
     // FIXED: Exactly 4 placeholders match exactly 4 values
     const insertQuery = `
@@ -113,10 +113,10 @@ router.post('/send-email', async (req, res) => {
       text: mailOptions.text,
       html: mailOptions.html,
     });
-    console.log(`--- [DEBUG] Email successfully delivered to ${email} ---`);
+    console.log(`--- [INFO] Email successfully delivered to ${email} ---`);
     res.status(200).json({ message: "Email sent successfully!" });
   } catch (error) {
-    console.error("--- [DEBUG] Nodemailer Error:", error);
+    console.error("--- [ERROR] Nodemailer Error:", error);
     res.status(500).json({ error: "The mailman couldn't reach the recipient." });
   }
 });

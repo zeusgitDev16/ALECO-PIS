@@ -46,10 +46,6 @@ function InterruptionList() {
     return '';
   }, [loading, listUnavailable, visibleInterruptions.length]);
 
-  // Constants for scroll amount
-  const CARD_WIDTH = 380;
-  const CARD_GAP = 32;
-
   const handleScroll = () => {
     const el = feedRef.current;
     if (!el) return;
@@ -61,8 +57,15 @@ function InterruptionList() {
 
   const scroll = (direction) => {
     const el = feedRef.current;
-    if (!el) return;
-    const scrollAmount = CARD_WIDTH + CARD_GAP;
+    if (!el || !el.firstChild) return;
+
+    // Dynamically calculate the width of the first card and the gap from CSS
+    const firstCard = el.querySelector('.interruption-feed-post, .interruption-card--feed');
+    if (!firstCard) return;
+
+    const gap = parseFloat(window.getComputedStyle(el).gap) || 0;
+    const scrollAmount = firstCard.offsetWidth + gap;
+
     const amount = direction === 'left' ? -scrollAmount : scrollAmount;
     el.scrollBy({ left: amount, behavior: 'smooth' });
   };

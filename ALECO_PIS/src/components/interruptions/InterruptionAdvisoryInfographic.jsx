@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getCauseCategoryLabel } from '../../utils/interruptionLabels';
 import {
   formatToPhilippineTime,
@@ -23,6 +24,7 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
   const reasonText = item.cause || getCauseCategoryLabel(item.causeCategory) || '—';
   const feederText = item.feeder || '—';
   const areas = item.affectedAreas || [];
+  const [showFullImage, setShowFullImage] = useState(false);
 
   return (
     <div className="feed-advisory-infographic">
@@ -74,9 +76,27 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
         </div>
       )}
       {item.imageUrl && (
-        <div className="feed-infographic-image">
-          <img src={item.imageUrl} alt="Advisory" />
-        </div>
+        <>
+          <div 
+            className="feed-infographic-image" 
+            onClick={() => setShowFullImage(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowFullImage(true)}
+          >
+            <img src={item.imageUrl} alt="Advisory" />
+          </div>
+
+          {showFullImage && createPortal(
+            <div 
+              className="full-screen-image-overlay" 
+              onClick={() => setShowFullImage(false)}
+            >
+              <img src={item.imageUrl} alt="Full advisory view" />
+            </div>,
+            document.body
+          )}
+        </>
       )}
     </div>
   );

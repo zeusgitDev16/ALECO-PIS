@@ -1,18 +1,10 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import nodemailer from 'nodemailer'; // ADDED: Required for your transporter
 import pool from '../config/db.js';
 import { verifyGoogleIdToken } from '../utils/verifyGoogleIdToken.js';
+import { sendAppMail } from '../utils/appMail.js';
 
 const router = express.Router();
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 // CHANGED: app.post -> router.post AND '/api/setup-account' -> '/setup-account'
 router.post('/setup-account', async (req, res) => {
@@ -327,7 +319,12 @@ router.post('/forgot-password', async (req, res) => {
         </div>`
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendAppMail({
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      html: mailOptions.html,
+    });
     console.log(`--- [SECURITY] Reset code successfully delivered to ${cleanEmail} ---`);
     res.status(200).json({ message: "Reset code sent to your email!" });
 

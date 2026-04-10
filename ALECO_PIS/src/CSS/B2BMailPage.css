@@ -166,6 +166,78 @@
     gap: calc(8px * var(--b2b-ui-scale, 1));
 }
 
+.b2b-mail-field--full {
+    grid-column: 1 / -1;
+}
+
+.b2b-mail-contact-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(8px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-mail-hint {
+    font-size: calc(11px * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+    margin-top: calc(4px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-mail-preview-card {
+    margin-top: calc(6px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-mail-preview-list {
+    margin: 0;
+    padding-left: calc(18px * var(--b2b-ui-scale, 1));
+    font-size: calc(12px * var(--b2b-ui-scale, 1));
+    max-height: calc(160px * var(--b2b-ui-scale, 1));
+    overflow: auto;
+}
+
+.b2b-mail-inbound-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(8px * var(--b2b-ui-scale, 1));
+    margin-bottom: calc(8px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-mail-inbound-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(10px * var(--b2b-ui-scale, 1));
+    max-height: calc(280px * var(--b2b-ui-scale, 1));
+    overflow: auto;
+}
+
+.b2b-mail-inbound-item {
+    border: 1px solid var(--border-color);
+    border-radius: calc(6px * var(--b2b-ui-scale, 1));
+    padding: calc(8px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-mail-inbound-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: calc(8px * var(--b2b-ui-scale, 1));
+    flex-wrap: wrap;
+}
+
+.b2b-mail-inbound-subject {
+    font-size: calc(12px * var(--b2b-ui-scale, 1));
+    margin-top: calc(4px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-mail-inbound-body {
+    margin: calc(6px * var(--b2b-ui-scale, 1)) 0 0;
+    font-size: calc(11px * var(--b2b-ui-scale, 1));
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: calc(120px * var(--b2b-ui-scale, 1));
+    overflow: auto;
+}
+
 .b2b-mail-table-wrap,
 .b2b-mail-recipient-list,
 .b2b-mail-audit-list {

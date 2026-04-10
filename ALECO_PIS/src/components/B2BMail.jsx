@@ -25,11 +25,19 @@ const B2BMail = () => {
     compose,
     setCompose,
     saveDraft,
+    previewRecipients,
     sendNow,
     retryFailed,
     upsertContact,
     setContactActive,
+    sendContactVerification,
     addTemplate,
+    startNewCompose,
+    previewResult,
+    inboundList,
+    inboundLoading,
+    activeContactCount,
+    refreshInbound,
   } = useB2BMail();
   const [showContacts, setShowContacts] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -45,7 +53,7 @@ const B2BMail = () => {
   const statusChip = (item) =>
     item.status === 'draft'
       ? 'b2b-mail-chip b2b-mail-chip--draft'
-      : item.failed_count > 0
+      : Number(item.failed_count) > 0
       ? 'b2b-mail-chip b2b-mail-chip--failed'
       : 'b2b-mail-chip b2b-mail-chip--sent';
 
@@ -63,23 +71,7 @@ const B2BMail = () => {
             <button type="button" className="b2b-mail-btn b2b-mail-btn--ghost" onClick={() => setMobileDrawerOpen((o) => !o)}>
               Filters
             </button>
-            <button
-              type="button"
-              className="b2b-mail-btn b2b-mail-btn--primary"
-              onClick={() =>
-                setCompose({
-                  id: null,
-                  targetMode: 'all_feeders',
-                  selectedFeederIds: [],
-                  selectedContactIds: [],
-                  interruptionId: null,
-                  templateId: null,
-                  subject: '',
-                  bodyText: '',
-                  bodyHtml: '',
-                })
-              }
-            >
+            <button type="button" className="b2b-mail-btn b2b-mail-btn--primary" onClick={startNewCompose}>
               Compose
             </button>
           </div>
@@ -142,8 +134,11 @@ const B2BMail = () => {
               <button type="button" className="b2b-mail-btn b2b-mail-btn--ghost" onClick={saveDraft} disabled={saving}>
                 Save Draft
               </button>
+              <button type="button" className="b2b-mail-btn b2b-mail-btn--ghost" onClick={previewRecipients} disabled={saving}>
+                Preview recipients
+              </button>
               <button type="button" className="b2b-mail-btn b2b-mail-btn--primary" onClick={sendNow} disabled={saving}>
-                {saving ? 'Sending...' : 'Send'}
+                {saving ? 'Working...' : 'Send'}
               </button>
               {selectedId && (
                 <button type="button" className="b2b-mail-btn b2b-mail-btn--danger" onClick={() => retryFailed(selectedId)} disabled={saving}>
@@ -165,7 +160,22 @@ const B2BMail = () => {
                   <option value="manual_contacts">Manual contacts</option>
                   <option value="interruption_linked">Interruption-linked feeder</option>
                 </select>
+                {compose.targetMode === 'all_feeders' && (
+                  <span className="b2b-mail-hint">Active contacts: {activeContactCount}</span>
+                )}
               </label>
+
+              {previewResult != null && (
+                <div className="b2b-mail-card b2b-mail-preview-card">
+                  <strong>Recipient preview</strong>
+                  <p className="b2b-mail-hint">Total: {previewResult.count}</p>
+                  <ul className="b2b-mail-preview-list">
+                    {(previewResult.sample || []).map((row, idx) => (
+                      <li key={`${row.email}-${idx}`}>{row.name ? `${row.name} · ` : ''}{row.email}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {compose.targetMode === 'selected_feeders' && (
                 <label className="b2b-mail-field">
@@ -204,7 +214,7 @@ const B2BMail = () => {
                       }))
                     }
                   >
-                    {contacts.map((c) => (
+                    {contacts.filter((c) => c.email_verified === 1 || c.email_verified === true).map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.contact_name} ({c.email})
                       </option>
@@ -292,19 +302,64 @@ const B2BMail = () => {
                       <option value="">Primary feeder (optional)</option>
                       {feederOptions.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
                     </select>
-                    <button
-                      type="button"
-                      className="b2b-mail-btn b2b-mail-btn--primary"
-                      onClick={async () => {
-                        await upsertContact({
-                          ...contactDraft,
-                          feederId: contactDraft.feederId ? Number(contactDraft.feederId) : null,
-                        });
-                        setContactDraft({ id: null, companyName: '', contactName: '', email: '', phone: '', feederId: '', feederIds: [] });
-                      }}
-                    >
-                      Save Contact
-                    </button>
+                    <label className="b2b-mail-field b2b-mail-field--full">
+                      Additional feeders (multi-select)
+                      <select
+                        className="b2b-mail-input"
+                        multiple
+                        size={Math.min(6, Math.max(3, feederOptions.length))}
+                        value={(contactDraft.feederIds || []).map(String)}
+                        onChange={(e) =>
+                          setContactDraft((d) => ({
+                            ...d,
+                            feederIds: Array.from(e.target.selectedOptions).map((o) => Number(o.value)),
+                          }))
+                        }
+                      >
+                        {feederOptions.map((f) => (
+                          <option key={f.id} value={f.id}>{f.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="b2b-mail-contact-actions">
+                      <button
+                        type="button"
+                        className="b2b-mail-btn b2b-mail-btn--primary"
+                        onClick={async () => {
+                          await upsertContact({
+                            id: contactDraft.id,
+                            companyName: contactDraft.companyName,
+                            contactName: contactDraft.contactName,
+                            email: contactDraft.email,
+                            phone: contactDraft.phone || null,
+                            feederId: contactDraft.feederId ? Number(contactDraft.feederId) : null,
+                            feederIds: contactDraft.feederIds || [],
+                          });
+                          setContactDraft({ id: null, companyName: '', contactName: '', email: '', phone: '', feederId: '', feederIds: [] });
+                        }}
+                      >
+                        {contactDraft.id ? 'Update contact' : 'Save contact'}
+                      </button>
+                      {contactDraft.id != null && (
+                        <button
+                          type="button"
+                          className="b2b-mail-btn b2b-mail-btn--ghost"
+                          onClick={() =>
+                            setContactDraft({
+                              id: null,
+                              companyName: '',
+                              contactName: '',
+                              email: '',
+                              phone: '',
+                              feederId: '',
+                              feederIds: [],
+                            })
+                          }
+                        >
+                          Cancel edit
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="b2b-mail-table-wrap">
                     {contacts.map((c) => (
@@ -312,6 +367,34 @@ const B2BMail = () => {
                         <span>{c.contact_name}</span>
                         <span>{c.email}</span>
                         <span>{c.feeder_label || '-'}</span>
+                        <span className={`b2b-mail-chip ${(c.email_verified === 1 || c.email_verified === true) ? 'b2b-mail-chip--sent' : 'b2b-mail-chip--failed'}`}>
+                          {(c.email_verified === 1 || c.email_verified === true) ? 'Verified' : 'Unverified'}
+                        </span>
+                        <button
+                          type="button"
+                          className="b2b-mail-btn b2b-mail-btn--tiny"
+                          onClick={() =>
+                            setContactDraft({
+                              id: c.id,
+                              companyName: c.company_name || '',
+                              contactName: c.contact_name || '',
+                              email: c.email || '',
+                              phone: c.phone || '',
+                              feederId: c.feeder_id != null ? String(c.feeder_id) : '',
+                              feederIds: Array.isArray(c.feeder_ids) ? c.feeder_ids.map(Number) : [],
+                            })
+                          }
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="b2b-mail-btn b2b-mail-btn--tiny"
+                          onClick={() => sendContactVerification(c.id)}
+                          disabled={c.email_verified === 1 || c.email_verified === true}
+                        >
+                          {(c.email_verified === 1 || c.email_verified === true) ? 'Verified' : 'Send verify'}
+                        </button>
                         <button type="button" className="b2b-mail-btn b2b-mail-btn--tiny" onClick={() => setContactActive(c.id, !c.is_active)}>
                           {c.is_active ? 'Disable' : 'Enable'}
                         </button>
@@ -366,6 +449,40 @@ const B2BMail = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="b2b-mail-card">
+                <div className="b2b-mail-inbound-head">
+                  <h4>Inbound replies</h4>
+                  <button type="button" className="b2b-mail-btn b2b-mail-btn--tiny" onClick={refreshInbound} disabled={inboundLoading}>
+                    Refresh
+                  </button>
+                </div>
+                {inboundLoading ? (
+                  <p className="b2b-mail-empty">Loading replies…</p>
+                ) : inboundList.length === 0 ? (
+                  <p className="b2b-mail-empty">
+                    {selectedId ? 'No replies linked to this message yet.' : 'No stored replies. Enable IMAP poll or use the inbound webhook (see docs).'}
+                  </p>
+                ) : (
+                  <div className="b2b-mail-inbound-list">
+                    {inboundList.map((row) => (
+                      <div key={row.id} className="b2b-mail-inbound-item">
+                        <div className="b2b-mail-inbound-meta">
+                          <strong>{row.from_email}</strong>
+                          <span className="b2b-mail-hint">{row.received_at}</span>
+                        </div>
+                        <div className="b2b-mail-inbound-subject">{row.subject || '(no subject)'}</div>
+                        {row.body_text && (
+                          <pre className="b2b-mail-inbound-body">{String(row.body_text).slice(0, 500)}{String(row.body_text).length > 500 ? '…' : ''}</pre>
+                        )}
+                        {row.linked_message_id != null && (
+                          <span className="b2b-mail-hint">Linked outbound id: {row.linked_message_id}</span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

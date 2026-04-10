@@ -22,6 +22,7 @@ import {
   transitionScheduledStarts,
   autoArchiveResolvedInterruptions,
 } from './backend/services/interruptionLifecycle.js';
+import { pollB2BInboundOnce } from './backend/services/b2bInboundImapPoll.js';
 
 dotenv.config();
 
@@ -136,7 +137,7 @@ app.get('/api/debug/routes', (req, res) => {
         ],
         other: [
             'GET /api/contact-numbers',
-            'GET|POST|PUT|PATCH /api/b2b-mail/*',
+            'GET|POST|PUT|PATCH /api/b2b-mail/* (inbound IMAP poll when B2B_INBOUND_IMAP_ENABLED=true)',
             'GET|POST … /api/tickets/export, import, archive — backup.js',
         ],
         deployment: {
@@ -166,4 +167,12 @@ app.listen(PORT, '0.0.0.0', () => {
   };
   runAutoArchiveResolved();
   setInterval(runAutoArchiveResolved, 5 * 60_000); // every 5 minutes
+
+  const runB2BInboundPoll = () => {
+    pollB2BInboundOnce().catch((err) =>
+      console.error('[b2b-mail] inbound IMAP poll:', err?.message || err)
+    );
+  };
+  runB2BInboundPoll();
+  setInterval(runB2BInboundPoll, 5 * 60_000);
 });

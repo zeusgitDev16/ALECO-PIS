@@ -1,32 +1,44 @@
-import nodemailer from 'nodemailer';
+import { sendAppMail } from './appMail.js';
 
-let cachedTransporter = null;
+/**
+ * B2B outbound: uses dedicated B2B transport when B2B_MAIL_USER/PASS set, else default app mail.
+ * @param {object} opts
+ * @param {string} opts.to
+ * @param {string} opts.subject
+ * @param {string} [opts.text]
+ * @param {string} [opts.html]
+ * @param {Record<string, string>} [opts.headers]
+ * @param {string} [opts.replyTo]
+ * @param {string} [opts.from]
+ */
+export async function sendB2BMail({ to, subject, text, html, headers, replyTo, from }) {
+    const defaultFrom =
+        from ||
+        process.env.B2B_MAIL_FROM ||
+        process.env.B2B_MAIL_USER ||
+        process.env.EMAIL_USER;
+    const replyToResolved =
+        replyTo ||
+        process.env.B2B_MAIL_REPLY_TO ||
+        process.env.B2B_MAIL_USER ||
+        process.env.EMAIL_USER;
 
-function getTransporter() {
-    if (cachedTransporter) return cachedTransporter;
-    cachedTransporter = nodemailer.createTransport({
-        service: process.env.B2B_MAIL_SERVICE || 'gmail',
-        auth: {
-            user: process.env.B2B_MAIL_USER || process.env.EMAIL_USER,
-            pass: process.env.B2B_MAIL_PASS || process.env.EMAIL_PASS,
+    const result = await sendAppMail(
+        {
+            from: defaultFrom,
+            to,
+            subject: subject || 'ALECO B2B Advisory',
+            text: text || '',
+            html: html || undefined,
+            headers: headers || undefined,
+            replyTo: replyToResolved || undefined,
         },
-    });
-    return cachedTransporter;
-}
+        { useB2BTransport: true }
+    );
 
-export async function sendB2BMail({ to, subject, text, html }) {
-    const transporter = getTransporter();
-    const from = process.env.B2B_MAIL_FROM || process.env.B2B_MAIL_USER || process.env.EMAIL_USER;
-    const info = await transporter.sendMail({
-        from,
-        to,
-        subject: subject || 'ALECO B2B Advisory',
-        text: text || '',
-        html: html || undefined,
-    });
     return {
-        providerMessageId: info?.messageId || null,
-        accepted: Array.isArray(info?.accepted) ? info.accepted : [],
-        rejected: Array.isArray(info?.rejected) ? info.rejected : [],
+        providerMessageId: result.messageId,
+        accepted: result.accepted,
+        rejected: result.rejected,
     };
 }

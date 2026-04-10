@@ -1,18 +1,9 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
 import pool from '../config/db.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
+import { sendAppMail } from '../utils/appMail.js';
 
 const router = express.Router();
-
-// 4. The Mailman Configuration (Needed for '/send-email' below)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 // 4. The Mailbox (The API Route)
 router.post('/invite', async (req, res) => {
@@ -115,7 +106,13 @@ router.post('/send-email', async (req, res) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendAppMail({
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      text: mailOptions.text,
+      html: mailOptions.html,
+    });
     console.log(`--- [DEBUG] Email successfully delivered to ${email} ---`);
     res.status(200).json({ message: "Email sent successfully!" });
   } catch (error) {

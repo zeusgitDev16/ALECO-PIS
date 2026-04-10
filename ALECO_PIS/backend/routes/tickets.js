@@ -1,8 +1,6 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
 import pool from '../config/db.js';
 import { upload } from '../../cloudinaryConfig.js'; // <-- Adjusted path to go up two folders
-import axios from 'axios';
 import { sendPhilSMS } from '../utils/sms.js';
 import { normalizePhoneForDB, INVALID_PHONE_MESSAGE } from '../utils/phoneUtils.js';
 import { insertTicketLog } from '../utils/ticketLogHelper.js';
@@ -12,17 +10,9 @@ import { toIsoForClient } from '../utils/interruptionsDto.js';
 import { listUrgentKeywords } from '../utils/urgentKeywordsDb.js';
 import { concernMatchesUrgentKeywords } from '../utils/urgentKeywordMatch.js';
 import { DEFAULT_URGENT_KEYWORDS } from '../constants/defaultUrgentKeywords.js';
+import { sendAppMail } from '../utils/appMail.js';
 
 const router = express.Router();
-
-// The Mailman Configuration (Needed for sending ticket copies)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 // --- DISTRICT-MUNICIPALITY VALIDATION MAP ---
 const ALECO_DISTRICT_MAP = {
@@ -366,7 +356,12 @@ router.post('/tickets/send-copy', async (req, res) => {
     };
 
     try {
-        await transporter.sendMail(mailOptions);
+        await sendAppMail({
+            from: mailOptions.from,
+            to: mailOptions.to,
+            subject: mailOptions.subject,
+            html: mailOptions.html,
+        });
         res.json({ success: true, message: "Copy sent to your email!" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Email failed to send." });

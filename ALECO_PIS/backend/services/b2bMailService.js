@@ -33,13 +33,34 @@ export async function listContacts({ q = '', feederId = null, active = null }) {
     if (active === '1' || active === 1 || active === true) where.push('c.is_active = 1');
 
     const sql = `SELECT
-        c.id, c.company_name, c.contact_name, c.email, c.phone, c.feeder_id, c.is_active, c.created_at, c.updated_at,
+        c.id, c.company_name, c.contact_name, c.email, c.phone, c.feeder_id, c.is_active, c.email_verified, c.verified_at, c.created_at, c.updated_at,
         f.feeder_label AS feeder_label
       FROM aleco_b2b_contacts c
       LEFT JOIN aleco_feeders f ON f.id = c.feeder_id
       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
       ORDER BY c.updated_at DESC, c.id DESC`;
     const [rows] = await pool.execute(sql, params);
+    if (rows.length > 0) {
+        const ids = rows.map((r) => r.id);
+        const ph = ids.map(() => '?').join(', ');
+        const [junctionRows] = await pool.execute(
+            `SELECT contact_id, feeder_id FROM aleco_b2b_contact_feeders WHERE contact_id IN (${ph}) ORDER BY feeder_id`,
+            ids
+        );
+        const map = new Map();
+        for (const j of junctionRows) {
+            const cid = Number(j.contact_id);
+            if (!map.has(cid)) map.set(cid, []);
+            map.get(cid).push(Number(j.feeder_id));
+        }
+        for (const r of rows) {
+            r.feeder_ids = map.get(Number(r.id)) || [];
+        }
+    } else {
+        for (const r of rows) {
+            r.feeder_ids = [];
+        }
+    }
     return rows;
 }
 
@@ -53,8 +74,8 @@ export async function upsertContact({ id = null, companyName, contactName, email
     if (id == null) {
         const [ins] = await pool.execute(
             `INSERT INTO aleco_b2b_contacts
-             (company_name, contact_name, email, phone, feeder_id, is_active, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+             (company_name, contact_name, email, phone, feeder_id, is_active, email_verified, verified_at, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, 1, 0, NULL, ?, ?)`,
             [
                 companyName ? String(companyName).trim() : '',
                 String(contactName).trim(),
@@ -67,9 +88,18 @@ export async function upsertContact({ id = null, companyName, contactName, email
         );
         id = ins.insertId;
     } else {
+        const [prevRows] = await pool.execute(
+            `SELECT email FROM aleco_b2b_contacts WHERE id = ? LIMIT 1`,
+            [Number(id)]
+        );
+        const prevEmail = String(prevRows?.[0]?.email || '').trim().toLowerCase();
+        const emailChanged = prevEmail !== normalizedEmail;
         await pool.execute(
             `UPDATE aleco_b2b_contacts
-             SET company_name = ?, contact_name = ?, email = ?, phone = ?, feeder_id = ?, updated_at = ?
+             SET company_name = ?, contact_name = ?, email = ?, phone = ?, feeder_id = ?,
+                 email_verified = CASE WHEN ? = 1 THEN 0 ELSE email_verified END,
+                 verified_at = CASE WHEN ? = 1 THEN NULL ELSE verified_at END,
+                 updated_at = ?
              WHERE id = ?`,
             [
                 companyName ? String(companyName).trim() : '',
@@ -77,6 +107,8 @@ export async function upsertContact({ id = null, companyName, contactName, email
                 normalizedEmail,
                 phone ? String(phone).trim() : null,
                 primaryFeederId,
+                emailChanged ? 1 : 0,
+                emailChanged ? 1 : 0,
                 phNow,
                 Number(id),
             ]
@@ -108,6 +140,7 @@ export async function setContactActive(id, isActive) {
     ]);
 }
 
+/** Build recipient list from a DB row or virtual row (same field names as aleco_b2b_messages). */
 export async function buildRecipientsForMessage(messageRow) {
     const mode = String(messageRow.target_mode || 'all_feeders');
     const selectedFeederIds = parseJsonArray(messageRow.selected_feeder_ids).map((n) => Number(n));
@@ -118,7 +151,7 @@ export async function buildRecipientsForMessage(messageRow) {
         const q = selectedContactIds.map(() => '?').join(', ');
         const [r] = await pool.execute(
             `SELECT id, contact_name, email FROM aleco_b2b_contacts
-             WHERE is_active = 1 AND id IN (${q})`,
+             WHERE is_active = 1 AND email_verified = 1 AND id IN (${q})`,
             selectedContactIds
         );
         rows = r;
@@ -128,7 +161,7 @@ export async function buildRecipientsForMessage(messageRow) {
             `SELECT DISTINCT c.id, c.contact_name, c.email
              FROM aleco_b2b_contacts c
              LEFT JOIN aleco_b2b_contact_feeders cf ON cf.contact_id = c.id
-             WHERE c.is_active = 1
+             WHERE c.is_active = 1 AND c.email_verified = 1
                AND (c.feeder_id IN (${q}) OR cf.feeder_id IN (${q}))`,
             [...selectedFeederIds, ...selectedFeederIds]
         );
@@ -143,7 +176,7 @@ export async function buildRecipientsForMessage(messageRow) {
                 `SELECT DISTINCT c.id, c.contact_name, c.email
                  FROM aleco_b2b_contacts c
                  LEFT JOIN aleco_b2b_contact_feeders cf ON cf.contact_id = c.id
-                 WHERE c.is_active = 1 AND (c.feeder_id = ? OR cf.feeder_id = ?)`,
+                 WHERE c.is_active = 1 AND c.email_verified = 1 AND (c.feeder_id = ? OR cf.feeder_id = ?)`,
                 [fid, fid]
             );
             rows = r;
@@ -152,7 +185,7 @@ export async function buildRecipientsForMessage(messageRow) {
         const [r] = await pool.execute(
             `SELECT DISTINCT c.id, c.contact_name, c.email
              FROM aleco_b2b_contacts c
-             WHERE c.is_active = 1`
+             WHERE c.is_active = 1 AND c.email_verified = 1`
         );
         rows = r;
     }
@@ -168,6 +201,23 @@ export async function buildRecipientsForMessage(messageRow) {
         throw new TypeError(`Recipient count exceeds max ${MAX_RECIPIENTS}`);
     }
     return recipients;
+}
+
+/**
+ * Preview recipients from unsaved compose payload (camelCase).
+ */
+export async function previewRecipientsFromPayload(payload) {
+    const row = {
+        target_mode: payload.targetMode || 'all_feeders',
+        selected_feeder_ids: JSON.stringify(
+            Array.isArray(payload.selectedFeederIds) ? payload.selectedFeederIds.map((n) => Number(n)) : []
+        ),
+        selected_contact_ids: JSON.stringify(
+            Array.isArray(payload.selectedContactIds) ? payload.selectedContactIds.map((n) => Number(n)) : []
+        ),
+        interruption_id: payload.interruptionId != null && payload.interruptionId !== '' ? Number(payload.interruptionId) : null,
+    };
+    return buildRecipientsForMessage(row);
 }
 
 export async function saveDraft(payload) {
@@ -265,17 +315,33 @@ export async function sendMessage(messageId, { retryOnlyFailed = false } = {}) {
         return { sent: 0, failed: 0 };
     }
 
+    const [idRows] = await pool.execute(
+        `SELECT id, email_snapshot FROM aleco_b2b_message_recipients WHERE message_id = ? ORDER BY id ASC`,
+        [id]
+    );
+    const emailToRecipientRowId = new Map(
+        idRows.map((row) => [String(row.email_snapshot || '').trim().toLowerCase(), row.id])
+    );
+
     let sent = 0;
     let failed = 0;
     for (const r of recipients) {
         const email = String(r.email || '').trim().toLowerCase();
         if (!email) continue;
+        const recipientRowId = emailToRecipientRowId.get(email) || null;
         try {
+            const headers = {
+                'X-ALECO-B2B-Message-Id': String(id),
+            };
+            if (recipientRowId != null) {
+                headers['X-ALECO-B2B-Recipient-Id'] = String(recipientRowId);
+            }
             const result = await sendB2BMail({
                 to: email,
                 subject: msg.subject || 'ALECO B2B Advisory',
                 text: msg.body_text || '',
                 html: msg.body_html || undefined,
+                headers,
             });
             await pool.execute(
                 `UPDATE aleco_b2b_message_recipients

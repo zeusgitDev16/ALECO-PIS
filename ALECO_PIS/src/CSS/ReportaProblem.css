@@ -128,43 +128,44 @@
     border-radius: calc(8px * var(--report-scale, 1)) calc(8px * var(--report-scale, 1)) 0 0;
 }
 
-/* Row layout: stepper + content side-by-side on desktop */
+/* Laptop layout: stepper on top (horizontal), content below — mirrors mobile layout with laptop sizing */
 @media (min-width: 900px) {
     .report-wizard-form {
-        flex-direction: row;
+        display: flex !important;
+        flex-direction: column !important;
         align-items: stretch;
         gap: 0;
     }
 
     .report-wizard-stepper {
-        flex-direction: column;
+        flex-direction: row;
         flex-wrap: nowrap;
-        width: calc(160px * var(--report-scale, 1));
-        min-width: calc(160px * var(--report-scale, 1));
-        height: calc(240px * var(--report-scale, 1));
-        min-height: calc(240px * var(--report-scale, 1));
-        padding: calc(20px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1));
-        border-bottom: none;
-        border-right: 1px solid var(--border-color);
-        border-radius: calc(12px * var(--report-scale, 1)) 0 0 calc(12px * var(--report-scale, 1));
-        justify-content: flex-start;
-        align-items: stretch;
+        width: 100%;
+        height: calc(52px * var(--report-scale, 1));
+        min-height: calc(52px * var(--report-scale, 1));
+        padding: calc(14px * var(--report-scale, 1)) calc(30px * var(--report-scale, 1));
+        gap: calc(8px * var(--report-scale, 1));
+        border-bottom: 1px solid var(--border-color);
+        border-right: none;
+        border-radius: calc(8px * var(--report-scale, 1)) calc(8px * var(--report-scale, 1)) 0 0;
+        justify-content: center;
+        align-items: center;
     }
 
     .report-wizard-stepper .stepper-step {
         flex-direction: row;
-        width: 100%;
-        padding: calc(8px * var(--report-scale, 1)) calc(10px * var(--report-scale, 1));
+        width: auto;
+        padding: calc(6px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1));
         font-size: calc(0.7rem * var(--report-scale, 1));
-        justify-content: flex-start;
+        justify-content: center;
         gap: calc(8px * var(--report-scale, 1));
     }
 
     .report-wizard-stepper .stepper-connector {
-        width: max(1px, calc(2px * var(--report-scale, 1)));
-        height: calc(10px * var(--report-scale, 1));
-        margin-left: calc(19px * var(--report-scale, 1));
-        align-self: flex-start;
+        width: calc(24px * var(--report-scale, 1));
+        height: max(1px, calc(2px * var(--report-scale, 1)));
+        margin-left: 0;
+        align-self: center;
         flex-shrink: 0;
     }
 
@@ -189,14 +190,13 @@
 
 @media (min-width: 1024px) {
     .report-wizard-stepper {
-        width: calc(180px * var(--report-scale, 1));
-        min-width: calc(180px * var(--report-scale, 1));
-        padding: calc(24px * var(--report-scale, 1)) calc(16px * var(--report-scale, 1));
+        padding: calc(16px * var(--report-scale, 1)) calc(36px * var(--report-scale, 1));
+        gap: calc(10px * var(--report-scale, 1));
     }
 
     .report-wizard-stepper .stepper-step {
         font-size: calc(0.75rem * var(--report-scale, 1));
-        padding: calc(10px * var(--report-scale, 1)) calc(12px * var(--report-scale, 1));
+        padding: calc(8px * var(--report-scale, 1)) calc(14px * var(--report-scale, 1));
         gap: calc(10px * var(--report-scale, 1));
     }
 
@@ -207,7 +207,8 @@
     }
 
     .report-wizard-stepper .stepper-connector {
-        margin-left: calc(22px * var(--report-scale, 1));
+        width: calc(28px * var(--report-scale, 1));
+        margin-left: 0;
     }
 
     .report-wizard-form .wizard-step-content {

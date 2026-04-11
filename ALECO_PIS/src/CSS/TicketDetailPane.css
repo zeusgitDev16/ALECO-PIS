@@ -119,9 +119,10 @@
 
 .detail-header-align-shell {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: calc(16px * var(--ticket-ui-scale, 1));
+    gap: calc(12px * var(--ticket-ui-scale, 1));
+    width: 100%;
     min-width: 0;
 }
 
@@ -140,8 +141,11 @@
 
 .header-left {
     display: flex;
-    flex-direction: column;
-    gap: calc(8px * var(--ticket-ui-scale, 1));
+    flex-direction: row;
+    align-items: center;
+    gap: calc(10px * var(--ticket-ui-scale, 1));
+    min-width: 0;
+    overflow: hidden;
     flex: 1;
 }
 
@@ -152,6 +156,10 @@
     margin: 0;
     letter-spacing: -0.3px;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .status-tag {
@@ -212,11 +220,10 @@
 
 .header-right {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
+    align-items: center;
+    justify-content: flex-end;
     flex-shrink: 0;
-    max-width: calc(100% - 100px);
+    min-width: 0;
 }
 
 .reported-label {
@@ -235,6 +242,9 @@
     padding: calc(5px * var(--ticket-ui-scale, 1)) calc(10px * var(--ticket-ui-scale, 1));
     border-radius: calc(6px * var(--ticket-ui-scale, 1));
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 /* ============================================================================
@@ -2324,14 +2334,11 @@ body.modal-open .kanban-column-header {
 
 /* ============================================================================
    MOBILE HEADER COMPACTION (425/375/320)
-   Force single-row: ticketId - status - reportedOn - dateTime
+   Left: ticket-id + status | Right: date-time
    ============================================================================ */
 @media (max-width: 425px) {
     .detail-header {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-        align-items: center !important;
-        gap: 6px !important;
+        display: block !important;
         padding: 6px 8px !important;
         overflow: hidden;
     }
@@ -2340,30 +2347,14 @@ body.modal-open .kanban-column-header {
         display: none !important;
     }
 
-    .header-left,
-    .header-right {
-        display: contents !important;
-    }
-
-    .header-left {
-        overflow: visible;
-    }
-
-    .header-right {
-        overflow: visible;
-    }
-
     .detail-title,
     .status-tag,
-    .reported-label,
     .reported-date {
         white-space: nowrap;
         line-height: 1.1;
     }
 
     .detail-title {
-        grid-column: 1;
-        justify-self: start;
         font-size: 0.62rem !important;
         margin: 0 !important;
         overflow: hidden;
@@ -2372,24 +2363,16 @@ body.modal-open .kanban-column-header {
     }
 
     .status-tag {
-        grid-column: 2;
-        justify-self: center;
         font-size: 0.48rem !important;
         padding: 1px 4px !important;
         border-radius: 7px !important;
         position: static !important;
         transform: none !important;
         margin: 0 !important;
-    }
-
-    .reported-label {
-        font-size: 0.5rem !important;
-        opacity: 0.9;
+        flex-shrink: 0;
     }
 
     .reported-date {
-        grid-column: 3;
-        justify-self: end;
         font-size: 0.6rem !important;
         padding: 1px 4px !important;
         border-radius: 4px !important;
@@ -2401,8 +2384,7 @@ body.modal-open .kanban-column-header {
     }
 
     .detail-title::after,
-    .status-tag::after,
-    .reported-label::after {
+    .status-tag::after {
         content: none !important;
     }
 }
@@ -2471,17 +2453,7 @@ body.modal-open .kanban-column-header {
 
 /* FINAL MOBILE HEADER OVERRIDE (prevents stacked layout at 425) */
 @media (max-width: 425px) {
-    .ticket-modal-content .detail-header {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
-        align-items: center !important;
-        gap: 6px !important;
-        flex-wrap: nowrap !important;
-    }
-
     .ticket-modal-content .detail-header .detail-title {
-        grid-column: 1 / 2 !important;
-        justify-self: start !important;
         text-align: left !important;
         white-space: nowrap !important;
         overflow: hidden !important;
@@ -2489,23 +2461,12 @@ body.modal-open .kanban-column-header {
         max-width: 100% !important;
     }
 
-    .ticket-modal-content .detail-header .header-center {
-        grid-column: 2 / 3 !important;
-        justify-self: center !important;
-        min-width: 0;
-    }
-
     .ticket-modal-content .detail-header .status-tag {
         position: static !important;
         transform: none !important;
         margin: 0 !important;
         white-space: nowrap !important;
-    }
-
-    .ticket-modal-content .detail-header .header-right {
-        grid-column: 3 / 4 !important;
-        justify-self: end !important;
-        min-width: 0;
+        flex-shrink: 0 !important;
     }
 
     .ticket-modal-content .detail-header .reported-date {
@@ -2518,48 +2479,70 @@ body.modal-open .kanban-column-header {
     }
 }
 
-/* UNIFIED HEADER RULE: apply one-line left/center/right up to 768px */
+/* ≤ 1024px — tablet / small laptop */
+@media (max-width: 1024px) {
+    .ticket-modal-content .detail-header {
+        padding: calc(16px * var(--ticket-ui-scale, 1)) calc(48px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1)) calc(20px * var(--ticket-ui-scale, 1)) !important;
+    }
+
+    .ticket-modal-content .detail-header .detail-header-align-shell {
+        gap: calc(10px * var(--ticket-ui-scale, 1)) !important;
+    }
+
+    .ticket-modal-content .detail-header .header-left {
+        gap: calc(8px * var(--ticket-ui-scale, 1)) !important;
+    }
+
+    .ticket-modal-content .detail-header .detail-title {
+        font-size: calc(0.95rem * var(--ticket-ui-scale, 1)) !important;
+    }
+
+    .ticket-modal-content .detail-header .status-tag {
+        font-size: calc(0.455rem * var(--ticket-ui-scale, 1)) !important;
+        padding: calc(3px * var(--ticket-ui-scale, 1)) calc(7px * var(--ticket-ui-scale, 1)) !important;
+    }
+
+    .ticket-modal-content .detail-header .reported-date {
+        font-size: calc(0.65rem * var(--ticket-ui-scale, 1)) !important;
+        padding: calc(4px * var(--ticket-ui-scale, 1)) calc(9px * var(--ticket-ui-scale, 1)) !important;
+    }
+}
+
+/* ≤ 768px — small tablet / large mobile */
 @media (max-width: 768px) {
     .ticket-modal-content .detail-header {
+        display: block !important;
         padding: calc(8px * var(--ticket-ui-scale, 1)) calc(10px * var(--ticket-ui-scale, 1)) !important;
         overflow: hidden !important;
     }
 
     .ticket-modal-content .detail-header .detail-header-align-shell {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+        display: flex !important;
         align-items: center !important;
+        justify-content: space-between !important;
         gap: calc(8px * var(--ticket-ui-scale, 1)) !important;
-        overflow: hidden !important;
+        width: 100% !important;
         min-width: 0 !important;
+        overflow: hidden !important;
     }
 
     .ticket-modal-content .detail-header .header-left {
         display: flex !important;
+        flex-direction: row !important;
         align-items: center !important;
-        grid-column: 1 / 2 !important;
+        gap: calc(8px * var(--ticket-ui-scale, 1)) !important;
         min-width: 0 !important;
         overflow: hidden !important;
-    }
-
-    .ticket-modal-content .detail-header .header-center {
-        display: flex !important;
-        align-items: center !important;
-        grid-column: 2 / 3 !important;
-        justify-self: center !important;
-        min-width: max-content !important;
-        overflow: hidden !important;
+        flex: 1 !important;
     }
 
     .ticket-modal-content .detail-header .header-right {
         display: flex !important;
         align-items: center !important;
         justify-content: flex-end !important;
-        width: 100% !important;
-        grid-column: 3 / 4 !important;
-        justify-self: end !important;
+        flex-shrink: 0 !important;
+        width: auto !important;
         min-width: 0 !important;
-        max-width: 100% !important;
         overflow: hidden !important;
     }
 
@@ -2608,8 +2591,13 @@ body.modal-open .kanban-column-header {
     }
 }
 
+/* ≤ 425px — mobile */
 @media (max-width: 425px) {
     .ticket-modal-content .detail-header .detail-header-align-shell {
+        gap: calc(6px * var(--ticket-ui-scale, 1)) !important;
+    }
+
+    .ticket-modal-content .detail-header .header-left {
         gap: calc(6px * var(--ticket-ui-scale, 1)) !important;
     }
 
@@ -2628,8 +2616,13 @@ body.modal-open .kanban-column-header {
     }
 }
 
+/* ≤ 375px — small mobile */
 @media (max-width: 375px) {
     .ticket-modal-content .detail-header .detail-header-align-shell {
+        gap: calc(5px * var(--ticket-ui-scale, 1)) !important;
+    }
+
+    .ticket-modal-content .detail-header .header-left {
         gap: calc(5px * var(--ticket-ui-scale, 1)) !important;
     }
 
@@ -2648,8 +2641,17 @@ body.modal-open .kanban-column-header {
     }
 }
 
+/* ≤ 320px — very small mobile */
 @media (max-width: 320px) {
+    .ticket-modal-content .detail-header {
+        padding: calc(6px * var(--ticket-ui-scale, 1)) calc(8px * var(--ticket-ui-scale, 1)) !important;
+    }
+
     .ticket-modal-content .detail-header .detail-header-align-shell {
+        gap: calc(4px * var(--ticket-ui-scale, 1)) !important;
+    }
+
+    .ticket-modal-content .detail-header .header-left {
         gap: calc(4px * var(--ticket-ui-scale, 1)) !important;
     }
 
@@ -2659,163 +2661,11 @@ body.modal-open .kanban-column-header {
 
     .ticket-modal-content .detail-header .status-tag {
         font-size: calc(0.42rem * var(--ticket-ui-scale, 1)) !important;
+        padding: calc(1px * var(--ticket-ui-scale, 1)) calc(3px * var(--ticket-ui-scale, 1)) !important;
     }
 
     .ticket-modal-content .detail-header .reported-date {
         font-size: calc(0.52rem * var(--ticket-ui-scale, 1)) !important;
+        padding: calc(1px * var(--ticket-ui-scale, 1)) calc(3px * var(--ticket-ui-scale, 1)) !important;
     }
 }
-
-/* ============================================================================
-   FINAL HEADER RESET (single source of truth)
-   - Applies from 768px and below
-   - Fixed invisible container with 3 fixed zones: left / center / right
-   ============================================================================ */
-@media (max-width: 768px) {
-    .ticket-modal-content .detail-header {
-        display: block !important;
-        padding: 8px 10px !important; /* Manual tune: header wrapper padding (vertical horizontal) */
-        overflow: hidden !important;
-    }
-
-    .ticket-modal-content .detail-header .detail-header-align-shell {
-        display: grid !important;
-        grid-template-columns: 124px 86px 124px !important; /* Manual tune: [ticket-id width] [status width] [date-time width] */
-        justify-content: space-between !important;
-        align-items: center !important;
-        gap: 4px !important; /* Manual tune: spacing between the 3 header items */
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-
-    .ticket-modal-content .detail-header .header-left,
-    .ticket-modal-content .detail-header .header-center,
-    .ticket-modal-content .detail-header .header-right {
-        min-width: 0 !important;
-        max-width: 100% !important;
-        overflow: hidden !important;
-    }
-
-    .ticket-modal-content .detail-header .header-left {
-        justify-self: start !important;
-    }
-
-    .ticket-modal-content .detail-header .header-center {
-        justify-self: center !important;
-        display: flex !important;
-        justify-content: center !important;
-    }
-
-    .ticket-modal-content .detail-header .header-right {
-        justify-self: end !important;
-        display: flex !important;
-        justify-content: flex-end !important;
-    }
-
-    .ticket-modal-content .detail-header .detail-title {
-        margin: 0 !important;
-        font-size: 11px !important; /* Manual tune: ticket-id text size */
-        line-height: 1.1 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-
-    .ticket-modal-content .detail-header .status-tag {
-        margin: 0 !important;
-        font-size: 7px !important; /* Manual tune: status text size */
-        line-height: 1 !important;
-        padding: 2px 6px !important; /* Manual tune: status pill padding (vertical horizontal) */
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        max-width: 100% !important;
-    }
-
-    .ticket-modal-content .detail-header .reported-date {
-        margin: 0 !important;
-        font-size: 10px !important; /* Manual tune: date-time text size */
-        line-height: 1.1 !important;
-        padding: 2px 6px !important; /* Manual tune: date-time pill padding (vertical horizontal) */
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        text-align: right !important;
-    }
-
-    .ticket-modal-content .detail-header .reported-label,
-    .ticket-modal-content .detail-header .group-badge-detail {
-        display: none !important;
-    }
-}
-
-/* 425px and below */
-@media (max-width: 425px) {
-    .ticket-modal-content .detail-header .detail-header-align-shell {
-        grid-template-columns: 112px 76px 112px !important; /* Manual tune (425): [ticket-id] [status] [date-time] */
-        gap: 3px !important; /* Manual tune (425): item spacing */
-    }
-
-    .ticket-modal-content .detail-header .detail-title {
-        font-size: 10px !important; /* Manual tune (425): ticket-id text */
-    }
-
-    .ticket-modal-content .detail-header .status-tag {
-        font-size: 6.5px !important; /* Manual tune (425): status text */
-        padding: 1px 1px !important; /* Manual tune (425): status pill padding */
-    }
-
-    .ticket-modal-content .detail-header .reported-date {
-        font-size: 9px !important; /* Manual tune (425): date-time text */
-        padding: 2px 5px !important; /* Manual tune (425): date-time pill padding */
-    }
-}
-
-/* 375px and below */
-@media (max-width: 375px) {
-    .ticket-modal-content .detail-header .detail-header-align-shell {
-        grid-template-columns: 92px 64px 116px !important; /* Manual tune (375): [ticket-id] [status] [date-time] */
-        gap: 2px !important; /* Manual tune (375): item spacing */
-    }
-
-    .ticket-modal-content .detail-header .detail-title {
-        font-size: 9.5px !important; /* Manual tune (375): ticket-id text */
-    }
-
-    .ticket-modal-content .detail-header .status-tag {
-        font-size: 6px !important; /* Manual tune (375): status text */
-        padding: 1px 4px !important; /* Manual tune (375): status pill padding */
-    }
-
-    .ticket-modal-content .detail-header .reported-date {
-        font-size: 8.5px !important; /* Manual tune (375): date-time text */
-        padding: 1px 3px !important; /* Manual tune (375): date-time pill padding */
-    }
-}
-
-/* 320px focus */
-@media (max-width: 320px) {
-    .ticket-modal-content .detail-header {
-        padding: 6px 8px !important; /* Manual tune (320): header wrapper padding */
-    }
-
-    .ticket-modal-content .detail-header .detail-header-align-shell {
-        grid-template-columns: 82px 58px 120px !important; /* Manual tune (320): [ticket-id] [status] [date-time] */
-        gap: 1px !important; /* Manual tune (320): item spacing */
-    }
-
-    .ticket-modal-content .detail-header .detail-title {
-        font-size: 8px !important; /* Manual tune (320): ticket-id text */
-    }
-
-    .ticket-modal-content .detail-header .status-tag {
-        font-size: 5.8px !important; /* Manual tune (320): status text */
-        padding: 1px 4px !important; /* Manual tune (320): status pill padding */
-    }
-
-    .ticket-modal-content .detail-header .reported-date {
-        font-size: 7.8px !important; /* Manual tune (320): date-time text */
-        padding: 1px 3px !important; /* Manual tune (320): date-time pill padding */
-    }
-}
-

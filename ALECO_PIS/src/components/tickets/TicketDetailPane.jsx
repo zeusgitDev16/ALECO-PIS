@@ -109,8 +109,6 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                     <div className="detail-header-align-shell">
                         <div className="header-left">
                             <h2 className="detail-title">{ticket.ticket_id}</h2>
-                        </div>
-                        <div className="header-center">
                             <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
                                 {ticket.status}
                             </span>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 import './CSS/ReportaProblem.css';
@@ -31,6 +31,7 @@ const TOTAL_STEPS = 6;
 const ReportaProblem = () => {
     // --- Wizard State ---
     const [currentStep, setCurrentStep] = useState(1);
+    const stepContentRef = useRef(null);
     const [showDuplicateModal, setShowDuplicateModal] = useState(false);
     const [pendingDuplicateData, setPendingDuplicateData] = useState(null);
 
@@ -139,6 +140,29 @@ const ReportaProblem = () => {
     });
 }, []);
 
+    const mapPickerCoords = useMemo(() => {
+        const muniName = (formData.municipality || '').trim().toLowerCase();
+        const districtName = (formData.district || '').trim().toLowerCase();
+        let lat = 13.1353;
+        let lng = 123.7443;
+        for (const d of ALECO_SCOPE) {
+            const dName = String(d.district || '').toLowerCase();
+            if (districtName && dName !== districtName) continue;
+            for (const m of d.municipalities || []) {
+                const name = String(m.name || '').toLowerCase();
+                const googleName = String(m.googleName || '').toLowerCase();
+                const clean = name.replace(' city', '').trim();
+                const cleanGoogle = googleName.replace(' city', '').trim();
+                const muniClean = muniName.replace(' city', '').trim();
+                if (muniClean && (clean === muniClean || cleanGoogle === muniClean || name === muniName || googleName === muniName)) {
+                    if (m.lat && m.lng) { lat = m.lat; lng = m.lng; }
+                    break;
+                }
+            }
+        }
+        return { lat, lng };
+    }, [formData.municipality, formData.district]);
+
     const canProceed = useCallback((step) => {
         switch (step) {
             case 1: return !!formData.category;
@@ -150,6 +174,12 @@ const ReportaProblem = () => {
             default: return false;
         }
     }, [formData]);
+
+    useEffect(() => {
+        if (stepContentRef.current) {
+            stepContentRef.current.scrollTop = 0;
+        }
+    }, [currentStep]);
 
     const getStepState = (step) => {
         if (step < currentStep) return 'done';
@@ -601,7 +631,7 @@ const ReportaProblem = () => {
 
                         {/* Step Content + Actions (row layout body) */}
                         <div className="wizard-body">
-                        <div className="wizard-step-content">
+                        <div className="wizard-step-content" ref={stepContentRef}>
                             {currentStep === 1 && (
                                 <div className="wizard-step-block">
                                     <h3 className="column-section-title">Issue Category</h3>
@@ -724,53 +754,9 @@ const ReportaProblem = () => {
                                             accuracy={gpsData.accuracy}
                                             municipality={formData.municipality}
                                             district={formData.district}
+                                            method={gpsData.method}
                                         />
                                     )}
-                                    {showMapPicker && (() => {
-                                        const muniName = (formData.municipality || '').trim().toLowerCase();
-                                        const districtName = (formData.district || '').trim().toLowerCase();
-                                        let initialLat = 13.1353;
-                                        let initialLng = 123.7443;
-
-                                        for (const d of ALECO_SCOPE) {
-                                            const dName = String(d.district || '').toLowerCase();
-                                            if (districtName && dName !== districtName) continue;
-                                            for (const m of d.municipalities || []) {
-                                                const name = String(m.name || '').toLowerCase();
-                                                const googleName = String(m.googleName || '').toLowerCase();
-                                                const clean = name.replace(' city', '').trim();
-                                                const cleanGoogle = googleName.replace(' city', '').trim();
-                                                const muniClean = muniName.replace(' city', '').trim();
-                                                if (muniClean && (clean === muniClean || cleanGoogle === muniClean || name === muniName || googleName === muniName)) {
-                                                    if (m.lat && m.lng) {
-                                                        initialLat = m.lat;
-                                                        initialLng = m.lng;
-                                                    }
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        return (
-                                            <MapPinPicker
-                                                initialLat={initialLat}
-                                                initialLng={initialLng}
-                                                onCancel={() => setShowMapPicker(false)}
-                                                onConfirm={(lat, lng) => {
-                                                    setGpsData({
-                                                        lat,
-                                                        lng,
-                                                        accuracy: 5,
-                                                        method: 'map_pin',
-                                                        isLocked: true,
-                                                        confidence: 'high'
-                                                    });
-                                                    setLocationError('');
-                                                    setShowMapPicker(false);
-                                                }}
-                                            />
-                                        );
-                                    })()}
                                 </div>
                             )}
 
@@ -942,6 +928,26 @@ const ReportaProblem = () => {
                 </div>
             </div>
             
+            {showMapPicker && createPortal(
+                <MapPinPicker
+                    initialLat={mapPickerCoords.lat}
+                    initialLng={mapPickerCoords.lng}
+                    onCancel={() => setShowMapPicker(false)}
+                    onConfirm={(lat, lng) => {
+                        setGpsData({
+                            lat,
+                            lng,
+                            accuracy: 5,
+                            method: 'map_pin',
+                            isLocked: true,
+                            confidence: 'high'
+                        });
+                        setLocationError('');
+                        setShowMapPicker(false);
+                    }}
+                />,
+                document.body
+            )}
             {showModal && createPortal(
                 <TicketPopUp 
                     ticketId={generatedId} 

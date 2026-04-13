@@ -1,0 +1,189 @@
+/* ============================================================================
+   TICKET LOCATION MAP
+   Read-only map viewer used in TicketDetailPane.
+   Separate from LocationPreviewMap (reporter-facing) — no submission hints.
+   ============================================================================ */
+
+.tlm-container {
+    margin-top: calc(10px * var(--ticket-ui-scale, 1));
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: calc(14px * var(--ticket-ui-scale, 1));
+    overflow: hidden;
+    box-shadow: 0 calc(4px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1)) rgba(0, 0, 0, 0.1);
+    animation: tlmFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes tlmFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- HEADER --- */
+.tlm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: calc(8px * var(--ticket-ui-scale, 1));
+    padding: calc(12px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1));
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #f1f5f9;
+}
+
+.tlm-title {
+    font-size: calc(0.95rem * var(--ticket-ui-scale, 1));
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #f1f5f9;
+    white-space: nowrap;
+}
+
+/* --- MAP --- */
+.tlm-map-wrapper {
+    height: max(180px, calc(240px * var(--ticket-ui-scale, 1)));
+    width: 100%;
+}
+
+.tlm-map-wrapper .leaflet-container {
+    height: 100%;
+    width: 100%;
+}
+
+/* --- FOOTER (coordinates row) --- */
+.tlm-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(8px * var(--ticket-ui-scale, 1));
+    padding: calc(9px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1));
+    background: var(--bg-body, #f8fafc);
+    border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+[data-theme="dark"] .tlm-footer {
+    background: #1e293b;
+}
+
+.tlm-coords {
+    display: flex;
+    align-items: center;
+    gap: calc(6px * var(--ticket-ui-scale, 1));
+}
+
+.tlm-coords-label {
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: max(0.58rem, calc(0.68rem * var(--ticket-ui-scale, 1)));
+}
+
+.tlm-coords-value {
+    font-weight: 700;
+    color: var(--text-main, #0f172a);
+    font-variant-numeric: tabular-nums;
+    font-size: max(0.62rem, calc(0.75rem * var(--ticket-ui-scale, 1)));
+}
+
+[data-theme="dark"] .tlm-coords-value {
+    color: #e2e8f0;
+}
+
+.tlm-accuracy {
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    background: var(--bg-card, #f1f5f9);
+    border: 1px solid var(--border-color, #e2e8f0);
+    font-size: max(0.58rem, calc(0.7rem * var(--ticket-ui-scale, 1)));
+    padding: calc(3px * var(--ticket-ui-scale, 1)) calc(8px * var(--ticket-ui-scale, 1));
+    border-radius: calc(20px * var(--ticket-ui-scale, 1));
+}
+
+[data-theme="dark"] .tlm-accuracy {
+    background: #334155;
+    color: #94a3b8;
+    border-color: #475569;
+}
+
+/* --- PIN MARKER --- */
+.tlm-pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ef4444;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.tlm-pin-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.2);
+    animation: tlmPulse 1.8s ease-out infinite;
+}
+
+@keyframes tlmPulse {
+    0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+    .tlm-header {
+        padding: calc(10px * var(--ticket-ui-scale, 1)) calc(12px * var(--ticket-ui-scale, 1));
+    }
+
+    .tlm-title {
+        font-size: calc(0.85rem * var(--ticket-ui-scale, 1));
+    }
+
+    .tlm-map-wrapper {
+        height: max(160px, calc(210px * var(--ticket-ui-scale, 1)));
+    }
+
+    .tlm-footer {
+        padding: calc(7px * var(--ticket-ui-scale, 1)) calc(10px * var(--ticket-ui-scale, 1));
+    }
+}
+
+@media (max-width: 425px) {
+    .tlm-title         { font-size: 0.78rem; }
+    .tlm-coords-label  { font-size: 0.56rem; }
+    .tlm-coords-value  { font-size: 0.6rem;  }
+    .tlm-accuracy      { font-size: 0.54rem; }
+}
+
+@media (max-width: 375px) {
+    .tlm-title         { font-size: 0.7rem;  }
+    .tlm-coords-label  { font-size: 0.5rem;  }
+    .tlm-coords-value  { font-size: 0.54rem; }
+    .tlm-accuracy      { font-size: 0.48rem; }
+}
+
+@media (max-width: 320px) {
+    .tlm-title         { font-size: 0.62rem; }
+    .tlm-coords-label  { font-size: 0.44rem; }
+    .tlm-coords-value  { font-size: 0.48rem; }
+    .tlm-accuracy      { font-size: 0.42rem; }
+}
+
+@media (min-width: 1024px) {
+    .tlm-map-wrapper {
+        height: max(200px, calc(260px * var(--ticket-ui-scale, 1)));
+    }
+}

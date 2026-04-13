@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
-import LocationPreviewMap from '../LocationPreviewMap';
+import TicketLocationMap from '../maps/TicketLocationMap';
 import '../../CSS/TicketDetailPane.css';
 import '../../CSS/TicketDashboard.css';
 import DispatchTicketModal from './DispatchTicketModal';
@@ -206,7 +206,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                     {ticket.reported_lat && ticket.reported_lng && (
                         <div className="detail-group full-width">
                             <label>Map Location</label>
-                            <LocationPreviewMap
+                            <TicketLocationMap
                                 latitude={Number(ticket.reported_lat)}
                                 longitude={Number(ticket.reported_lng)}
                                 accuracy={ticket.location_accuracy ?? null}

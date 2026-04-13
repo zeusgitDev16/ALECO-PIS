@@ -10,7 +10,17 @@ import { toIsoForClient } from '../utils/interruptionsDto.js';
 import { listUrgentKeywords } from '../utils/urgentKeywordsDb.js';
 import { concernMatchesUrgentKeywords } from '../utils/urgentKeywordMatch.js';
 import { DEFAULT_URGENT_KEYWORDS } from '../constants/defaultUrgentKeywords.js';
+
 import { sendAppMail } from '../utils/appMail.js';
+
+async function logPersonnelAction(pool, actorEmail, actorName, action, targetName) {
+  try {
+    await pool.execute(
+      'INSERT INTO aleco_personnel_audit_logs (actor_email, actor_name, action, target_name) VALUES (?, ?, ?, ?)',
+      [actorEmail || null, actorName || null, action, targetName || null]
+    );
+  } catch { /* table may not exist yet — silently skip */ }
+}
 
 const router = express.Router();
 
@@ -1387,6 +1397,9 @@ router.post('/crews/add', async (req, res) => {
         }
 
         await connection.commit(); // Save everything
+        const actorEmail = req.headers['x-user-email'] || null;
+        const actorName  = req.headers['x-user-name']  || null;
+        await logPersonnelAction(pool, actorEmail, actorName, 'add_crew', crew_name);
         res.status(201).json({ success: true, message: 'New crew successfully assembled.' });
     } catch (error) {
         await connection.rollback(); // Undo if something broke
@@ -1470,6 +1483,9 @@ router.put('/crews/update/:id', async (req, res) => {
         }
 
         await connection.commit();
+        const actorEmail = req.headers['x-user-email'] || null;
+        const actorName  = req.headers['x-user-name']  || null;
+        await logPersonnelAction(pool, actorEmail, actorName, 'update_crew', crew_name);
         res.status(200).json({ success: true, message: 'Crew information updated.' });
     } catch (error) {
         await connection.rollback();
@@ -1484,8 +1500,12 @@ router.put('/crews/update/:id', async (req, res) => {
 router.delete('/crews/delete/:id', async (req, res) => {
     const { id } = req.params;
     try {
+        const [[crewRow]] = await pool.execute('SELECT crew_name FROM aleco_personnel WHERE id = ?', [id]);
         // Because we set ON DELETE CASCADE in SQL, deleting the crew automatically deletes their mappings in aleco_crew_members!
         await pool.execute('DELETE FROM aleco_personnel WHERE id = ?', [id]);
+        const actorEmail = req.headers['x-user-email'] || null;
+        const actorName  = req.headers['x-user-name']  || null;
+        await logPersonnelAction(pool, actorEmail, actorName, 'delete_crew', crewRow?.crew_name || null);
         res.status(200).json({ success: true, message: 'Crew removed from system.' });
     } catch (error) {
         console.error("Error deleting crew:", error);
@@ -1525,6 +1545,9 @@ router.post('/pool/add', async (req, res) => {
             `INSERT INTO aleco_linemen_pool (full_name, designation, contact_no, status, leave_start, leave_end, leave_reason) VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [full_name, designation, formattedPhone, finalStatus, leave_start || null, leave_end || null, leave_reason || null]
         );
+        const actorEmail = req.headers['x-user-email'] || null;
+        const actorName  = req.headers['x-user-name']  || null;
+        await logPersonnelAction(pool, actorEmail, actorName, 'add_lineman', full_name);
         res.status(201).json({ success: true, message: 'Lineman registered.' });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server error." });
@@ -1549,6 +1572,9 @@ router.put('/pool/update/:id', async (req, res) => {
             `UPDATE aleco_linemen_pool SET full_name = ?, designation = ?, contact_no = ?, status = ?, leave_start = ?, leave_end = ?, leave_reason = ? WHERE id = ?`,
             [full_name, designation, formattedPhone, finalStatus, leave_start || null, leave_end || null, leave_reason || null, id]
         );
+        const actorEmail = req.headers['x-user-email'] || null;
+        const actorName  = req.headers['x-user-name']  || null;
+        await logPersonnelAction(pool, actorEmail, actorName, 'update_lineman', full_name);
         res.status(200).json({ success: true, message: 'Lineman updated.' });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server error." });
@@ -1583,10 +1609,14 @@ router.delete('/pool/delete/:id', async (req, res) => {
                 message: `Cannot delete: this lineman is lead of crew "${leads[0].crew_name}". Reassign the crew lead first.`,
             });
         }
+        const [[linemanRow]] = await pool.execute('SELECT full_name FROM aleco_linemen_pool WHERE id = ?', [linemanId]);
         const [result] = await pool.execute('DELETE FROM aleco_linemen_pool WHERE id = ?', [linemanId]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'Lineman not found.' });
         }
+        const actorEmail = req.headers['x-user-email'] || null;
+        const actorName  = req.headers['x-user-name']  || null;
+        await logPersonnelAction(pool, actorEmail, actorName, 'delete_lineman', linemanRow?.full_name || null);
         res.status(200).json({ success: true, message: 'Lineman removed from pool.' });
     } catch (error) {
         console.error('Error deleting lineman from pool:', error);

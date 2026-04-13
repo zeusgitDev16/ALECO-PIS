@@ -1,3 +1,18 @@
+/* Let admin-content act as a flex column when it hosts the B2B page,
+   so the page container can fill the available height via flex. */
+.admin-content:has(.b2b-mail-page-container) {
+  display: flex;
+  flex-direction: column;
+}
+
+.b2b-mail-page-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .b2b-dual-pane {
   display: flex;
   flex-direction: column;
@@ -110,6 +125,8 @@
   margin-top: 0 !important;
   flex: 1 1 0;
   min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
 }
 
 .b2b-filter-sidebar {

@@ -2018,6 +2018,43 @@ body.modal-open .kanban-column-header {
     border-left: max(2px, calc(3px * var(--ticket-ui-scale, 1))) solid var(--accent-color, #7c3aed);
 }
 
+/* ============================================================================
+   TICKET HISTORY — explicit mobile font-size breakpoints
+   Follows the 88% / 65% / 53% modular scale tiers used across the app.
+   ============================================================================ */
+@media (max-width: 425px) {
+    .ticket-history-title                         { font-size: 0.94rem; }
+    .ticket-history-subtitle                      { font-size: 0.74rem; }
+    .ticket-history-loading,
+    .ticket-history-error,
+    .ticket-history-empty                         { font-size: 0.78rem; }
+    .ticket-history-label                         { font-size: 0.82rem; }
+    .ticket-history-meta                          { font-size: 0.7rem;  }
+    .ticket-history-detail                        { font-size: 0.7rem;  }
+}
+
+@media (max-width: 375px) {
+    .ticket-history-title                         { font-size: 0.82rem; }
+    .ticket-history-subtitle                      { font-size: 0.66rem; }
+    .ticket-history-loading,
+    .ticket-history-error,
+    .ticket-history-empty                         { font-size: 0.7rem;  }
+    .ticket-history-label                         { font-size: 0.74rem; }
+    .ticket-history-meta                          { font-size: 0.64rem; }
+    .ticket-history-detail                        { font-size: 0.64rem; }
+}
+
+@media (max-width: 320px) {
+    .ticket-history-title                         { font-size: 0.72rem; }
+    .ticket-history-subtitle                      { font-size: 0.6rem;  }
+    .ticket-history-loading,
+    .ticket-history-error,
+    .ticket-history-empty                         { font-size: 0.64rem; }
+    .ticket-history-label                         { font-size: 0.66rem; }
+    .ticket-history-meta                          { font-size: 0.58rem; }
+    .ticket-history-detail                        { font-size: 0.58rem; }
+}
+
 .ticket-map-actions {
     display: flex;
     justify-content: flex-end;
@@ -2050,134 +2087,16 @@ body.modal-open .kanban-column-header {
 }
 
 /* ============================================================================
-   MAP LOCATION (LocationPreviewMap) — ticket modal modular scaling overrides
-   - LocationPreviewMap.css is written for ReportaProblem (fixed px); here we scale it with --ticket-ui-scale.
-   - Scope to ticket modal so Report a Problem remains unchanged.
-   ============================================================================ */
-
-.ticket-modal-content .location-preview-container {
-    margin-top: calc(12px * var(--ticket-ui-scale, 1));
-    border-radius: calc(14px * var(--ticket-ui-scale, 1));
-    box-shadow: 0 calc(4px * var(--ticket-ui-scale, 1)) calc(12px * var(--ticket-ui-scale, 1)) rgba(0, 0, 0, 0.08);
-}
-
-.ticket-modal-content .location-preview-header {
-    padding: calc(12px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1));
-    gap: calc(8px * var(--ticket-ui-scale, 1));
-}
-
-.ticket-modal-content .location-preview-header h4 {
-    font-size: max(0.8rem, calc(1rem * var(--ticket-ui-scale, 1)));
-    gap: calc(6px * var(--ticket-ui-scale, 1));
-}
-
-.ticket-modal-content .location-metadata {
-    gap: calc(6px * var(--ticket-ui-scale, 1));
-}
-
-.ticket-modal-content .municipality-badge {
-    padding: calc(4px * var(--ticket-ui-scale, 1)) calc(8px * var(--ticket-ui-scale, 1));
-    border-radius: calc(6px * var(--ticket-ui-scale, 1));
-    font-size: max(0.7rem, calc(0.8rem * var(--ticket-ui-scale, 1)));
-}
-
-.ticket-modal-content .district-badge,
-.ticket-modal-content .accuracy-badge {
-    padding: calc(4px * var(--ticket-ui-scale, 1)) calc(8px * var(--ticket-ui-scale, 1));
-    border-radius: calc(6px * var(--ticket-ui-scale, 1));
-    font-size: max(0.65rem, calc(0.75rem * var(--ticket-ui-scale, 1)));
-}
-
-.ticket-modal-content .map-preview-wrapper {
-    height: max(180px, calc(240px * var(--ticket-ui-scale, 1)));
-    border-radius: calc(12px * var(--ticket-ui-scale, 1));
-}
-
-@media (max-width: 768px) {
-    .ticket-modal-content .map-preview-wrapper {
-        height: max(160px, calc(200px * var(--ticket-ui-scale, 1)));
-    }
-}
-
-@media (min-width: 1024px) {
-    .ticket-modal-content .map-preview-wrapper {
-        height: max(200px, calc(260px * var(--ticket-ui-scale, 1)));
-    }
-}
-
-.ticket-modal-content .location-preview-footer {
-    padding: calc(10px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1));
-}
-
-.ticket-modal-content .location-hint {
-    font-size: max(0.7rem, calc(0.8rem * var(--ticket-ui-scale, 1)));
-}
-
-.ticket-modal-content .location-confirmation {
-    margin-top: calc(8px * var(--ticket-ui-scale, 1));
-    padding: calc(8px * var(--ticket-ui-scale, 1)) calc(12px * var(--ticket-ui-scale, 1));
-    border-left-width: max(2px, calc(3px * var(--ticket-ui-scale, 1)));
-    border-radius: calc(4px * var(--ticket-ui-scale, 1));
-    font-size: max(0.72rem, calc(0.82rem * var(--ticket-ui-scale, 1)));
-}
-
-/* ============================================================================
-   MAP LOCATION + GOOGLE LINK modular breakpoints
-   Target: 1024 / 768 / 425 / 375 / 320
+   MAP LOCATION — Google Maps link breakpoints
    ============================================================================ */
 @media (max-width: 1024px) {
-    .ticket-modal-content .location-preview-header h4 {
-        font-size: 0.95rem;
-    }
-
-    .ticket-modal-content .municipality-badge {
-        font-size: 0.78rem;
-    }
-
-    .ticket-modal-content .district-badge,
-    .ticket-modal-content .accuracy-badge {
-        font-size: 0.72rem;
-    }
-
     .ticket-map-external-link {
         font-size: 0.78rem;
         padding: 7px 11px;
     }
-
-    .ticket-modal-content .location-preview-footer {
-        padding: 9px 12px;
-    }
-
-    .ticket-modal-content .location-hint {
-        font-size: 0.76rem;
-    }
-
-    .ticket-modal-content .location-confirmation {
-        font-size: 0.74rem;
-        padding: 7px 10px;
-    }
 }
 
 @media (max-width: 768px) {
-    .ticket-modal-content .location-preview-header {
-        padding: 10px 12px;
-    }
-
-    .ticket-modal-content .location-preview-header h4 {
-        font-size: 0.88rem;
-    }
-
-    .ticket-modal-content .municipality-badge {
-        font-size: 0.72rem;
-        padding: 4px 7px;
-    }
-
-    .ticket-modal-content .district-badge,
-    .ticket-modal-content .accuracy-badge {
-        font-size: 0.66rem;
-        padding: 3px 7px;
-    }
-
     .ticket-map-actions {
         margin-top: 8px;
     }
@@ -2187,102 +2106,17 @@ body.modal-open .kanban-column-header {
         padding: 6px 10px;
         border-radius: 8px;
     }
-
-    .ticket-modal-content .location-preview-footer {
-        padding: 8px 10px;
-    }
-
-    .ticket-modal-content .location-hint {
-        font-size: 0.7rem;
-        line-height: 1.4;
-    }
-
-    .ticket-modal-content .location-confirmation {
-        margin-top: 6px;
-        font-size: 0.68rem;
-        padding: 6px 9px;
-    }
 }
 
 @media (max-width: 425px) {
-    .ticket-modal-content .location-preview-header {
-        padding: 9px 10px;
-    }
-
-    .ticket-modal-content .location-preview-header h4 {
-        font-size: 0.8rem;
-        gap: 4px;
-    }
-
-    .ticket-modal-content .location-metadata {
-        gap: 4px;
-    }
-
-    .ticket-modal-content .municipality-badge {
-        font-size: 0.65rem;
-        padding: 3px 6px;
-    }
-
-    .ticket-modal-content .district-badge,
-    .ticket-modal-content .accuracy-badge {
-        font-size: 0.6rem;
-        padding: 3px 6px;
-    }
-
     .ticket-map-external-link {
         font-size: 0.64rem;
         padding: 5px 9px;
         border-radius: 7px;
     }
-
-    .ticket-modal-content .location-preview-footer {
-        padding: 7px 9px;
-    }
-
-    .ticket-modal-content .location-hint {
-        font-size: 0.64rem;
-        line-height: 1.35;
-    }
-
-    .ticket-modal-content .location-confirmation {
-        margin-top: 5px;
-        font-size: 0.6rem;
-        padding: 5px 8px;
-        border-radius: 4px;
-    }
 }
 
 @media (max-width: 375px) {
-    .ticket-modal-content .location-preview-header {
-        padding: 8px 9px;
-    }
-
-    .ticket-modal-content .location-preview-header h4 {
-        font-size: 0.74rem;
-    }
-
-    .ticket-modal-content .municipality-badge {
-        font-size: 0.6rem;
-        padding: 2px 5px;
-    }
-
-    .ticket-modal-content .district-badge,
-    .ticket-modal-content .accuracy-badge {
-        font-size: 0.55rem;
-        padding: 2px 5px;
-    }
-
-    .ticket-modal-content .location-hint {
-        font-size: 0.65rem;
-    }
-
-    .ticket-modal-content .location-confirmation {
-        font-size: 0.56rem;
-        padding: 4px 7px;
-        margin-top: 4px;
-        border-left-width: 2px;
-    }
-
     .ticket-map-external-link {
         font-size: 0.58rem;
         padding: 4px 8px;
@@ -2291,44 +2125,10 @@ body.modal-open .kanban-column-header {
 }
 
 @media (max-width: 320px) {
-    .ticket-modal-content .location-preview-header {
-        padding: 7px 8px;
-    }
-
-    .ticket-modal-content .location-preview-header h4 {
-        font-size: 0.7rem;
-    }
-
-    .ticket-modal-content .municipality-badge {
-        font-size: 0.56rem;
-        padding: 2px 4px;
-    }
-
-    .ticket-modal-content .district-badge,
-    .ticket-modal-content .accuracy-badge {
-        font-size: 0.5rem;
-        padding: 2px 4px;
-    }
-
     .ticket-map-external-link {
         font-size: 0.54rem;
         padding: 4px 7px;
         border-radius: 6px;
-    }
-
-    .ticket-modal-content .location-preview-footer {
-        padding: 6px 8px;
-    }
-
-    .ticket-modal-content .location-hint {
-        font-size: 0.56rem;
-        line-height: 1.3;
-    }
-
-    .ticket-modal-content .location-confirmation {
-        font-size: 0.52rem;
-        padding: 4px 6px;
-        margin-top: 4px;
     }
 }
 

@@ -366,6 +366,7 @@
     flex-shrink: 0;
     font-size: 9px;
     padding: 5px 7px;
+    margin-bottom: 4px;
   }
   .nav-links li::after {
     margin-left: 1px;
@@ -426,6 +427,7 @@
     flex-shrink: 0;
     font-size: 8px;
     padding: 4px 6px;
+    margin-bottom: 3px;
   }
   .nav-links li::after {
     margin-left: 0.5px;

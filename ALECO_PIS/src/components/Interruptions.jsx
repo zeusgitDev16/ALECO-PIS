@@ -173,12 +173,9 @@ const AdminInterruptions = () => {
 
   useEffect(() => {
     if (validationErrors.length === 0) return;
-    const id = setTimeout(() => {
-      setValidationErrors([]);
-      setMessage(null);
-    }, 2000);
+    const id = setTimeout(() => setValidationErrors([]), 8000);
     return () => clearTimeout(id);
-  }, [validationErrors, setMessage]);
+  }, [validationErrors]);
 
   useEffect(() => {
     if (listArchiveFilter === 'archived') setActiveChipKey('all');

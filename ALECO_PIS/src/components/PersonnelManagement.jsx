@@ -61,7 +61,13 @@ const PersonnelManagement = () => {
         if (!window.confirm(`Delete crew "${crew.crew_name}"? This cannot be undone.`)) return;
         setIsLoading(true);
         try {
-            const res = await fetch(apiUrl(`/api/crews/delete/${crew.id}`), { method: 'DELETE' });
+            const res = await fetch(apiUrl(`/api/crews/delete/${crew.id}`), {
+            method: 'DELETE',
+            headers: {
+                'x-user-email': localStorage.getItem('userEmail') || '',
+                'x-user-name':  localStorage.getItem('userName')  || '',
+            },
+        });
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
                 setDetailContext(null);
@@ -82,7 +88,13 @@ const PersonnelManagement = () => {
         if (!window.confirm(`Remove "${man.full_name}" from the linemen pool? This cannot be undone.`)) return;
         setIsLoading(true);
         try {
-            const res = await fetch(apiUrl(`/api/pool/delete/${man.id}`), { method: 'DELETE' });
+            const res = await fetch(apiUrl(`/api/pool/delete/${man.id}`), {
+            method: 'DELETE',
+            headers: {
+                'x-user-email': localStorage.getItem('userEmail') || '',
+                'x-user-name':  localStorage.getItem('userName')  || '',
+            },
+        });
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
                 setDetailContext(null);
@@ -111,8 +123,12 @@ const PersonnelManagement = () => {
         try {
             const res = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(crewData) 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-email': localStorage.getItem('userEmail') || '',
+                    'x-user-name':  localStorage.getItem('userName')  || '',
+                },
+                body: JSON.stringify(crewData)
             });
             
             if (res.ok) {
@@ -141,8 +157,12 @@ const PersonnelManagement = () => {
         try {
             const res = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(linemanData) 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-email': localStorage.getItem('userEmail') || '',
+                    'x-user-name':  localStorage.getItem('userName')  || '',
+                },
+                body: JSON.stringify(linemanData)
             });
             
             if (res.ok) {

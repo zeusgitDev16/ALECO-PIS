@@ -149,6 +149,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 25px;
   margin-top: 30px;
+  align-items: start;
 }
 
 .info-group label { 
@@ -262,6 +263,9 @@ textarea.edit-input-field {
   list-style: none;
   padding: 0;
   margin: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 .activity-log-list li {
   display: flex;

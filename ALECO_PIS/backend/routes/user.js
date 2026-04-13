@@ -175,22 +175,102 @@ router.get('/invites/pending', async (req, res) => {
   }
 });
 
-// Update profile name — persists the name field from ProfilePage to the DB
+// Fetch profile data for the logged-in user
+router.get('/users/profile', async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Missing email.' });
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, name, email, role, auth_method, profile_pic, bio, phone, address, social_url, created_at FROM users WHERE email = ?',
+      [cleanEmail]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found.' });
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error('Profile Fetch Error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch profile.' });
+  }
+});
+
+// Update profile — persists all editable fields to the DB
 router.put('/users/profile', async (req, res) => {
-  const { email, name } = req.body;
-  if (!email || !name || !name.trim()) return res.status(400).json({ error: "Missing email or name." });
+  const { email, name, bio, phone, address, social_url } = req.body;
+  if (!email || !name || !name.trim()) return res.status(400).json({ error: 'Missing email or name.' });
 
   const cleanEmail = email.trim().toLowerCase();
-  const cleanName = name.trim();
+  const cleanName  = name.trim();
+  const cleanBio   = (bio   || '').trim() || null;
+  const cleanPhone = (phone || '').trim() || null;
+  const cleanAddr  = (address    || '').trim() || null;
+  const cleanSocial= (social_url || '').trim() || null;
 
   try {
-    const [result] = await pool.execute('UPDATE users SET name = ? WHERE email = ?', [cleanName, cleanEmail]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: "User not found." });
-    res.status(200).json({ message: "Profile updated successfully." });
+    const [result] = await pool.execute(
+      'UPDATE users SET name = ?, bio = ?, phone = ?, address = ?, social_url = ? WHERE email = ?',
+      [cleanName, cleanBio, cleanPhone, cleanAddr, cleanSocial, cleanEmail]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found.' });
+    res.status(200).json({ message: 'Profile updated successfully.' });
   } catch (error) {
-    console.error("Profile Update Error:", error.message);
-    res.status(500).json({ error: "Failed to update profile." });
+    console.error('Profile Update Error:', error.message);
+    res.status(500).json({ error: 'Failed to update profile.' });
   }
+});
+
+// Fetch recent activity logs — separate queries per source to avoid cross-table collation issues
+router.get('/users/activity', async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Missing email.' });
+  const cleanEmail = email.trim().toLowerCase();
+
+  const results = [];
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 'ticket' AS category, action, ticket_id AS reference_id,
+              from_status, to_status, NULL AS detail, created_at
+       FROM aleco_ticket_logs WHERE actor_email = ? ORDER BY created_at DESC LIMIT 15`,
+      [cleanEmail]
+    );
+    results.push(...rows);
+  } catch (e) { console.error('Activity [ticket] error:', e.message); }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 'b2b' AS category, action, CAST(message_id AS CHAR) AS reference_id,
+              NULL AS from_status, NULL AS to_status, details AS detail, created_at
+       FROM aleco_b2b_mail_audit_logs WHERE actor_email = ? ORDER BY created_at DESC LIMIT 15`,
+      [cleanEmail]
+    );
+    results.push(...rows);
+  } catch (e) { console.error('Activity [b2b] error:', e.message); }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 'interruption' AS category, 'update' AS action,
+              CAST(interruption_id AS CHAR) AS reference_id,
+              NULL AS from_status, NULL AS to_status,
+              SUBSTRING(remark, 1, 80) AS detail, created_at
+       FROM aleco_interruption_updates WHERE actor_email = ? AND kind = 'user'
+       ORDER BY created_at DESC LIMIT 15`,
+      [cleanEmail]
+    );
+    results.push(...rows);
+  } catch (e) { console.error('Activity [interruption] error:', e.message); }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 'personnel' AS category, action, NULL AS reference_id,
+              NULL AS from_status, NULL AS to_status, target_name AS detail, created_at
+       FROM aleco_personnel_audit_logs WHERE actor_email = ? ORDER BY created_at DESC LIMIT 15`,
+      [cleanEmail]
+    );
+    results.push(...rows);
+  } catch (e) { /* table may not exist yet — silently skip */ }
+
+  results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  res.status(200).json(results.slice(0, 15));
 });
 
 // Toggle Status (Matches Schema Casing)

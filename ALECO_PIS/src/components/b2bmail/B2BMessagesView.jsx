@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { listB2BInbound } from '../../api/b2bMailApi';
 
 const MESSAGE_STATUS = {
   sent: { label: 'Sent', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
@@ -34,6 +35,31 @@ export default function B2BMessagesView({
   hasDraftMessages,
 }) {
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [inboundReplies, setInboundReplies] = useState([]);
+  const [loadingReplies, setLoadingReplies] = useState(false);
+
+  // Fetch inbound replies when a message is selected
+  useEffect(() => {
+    if (!selectedMessage?.id) {
+      setInboundReplies([]);
+      return;
+    }
+    let isMounted = true;
+    const fetchReplies = async () => {
+      setLoadingReplies(true);
+      const res = await listB2BInbound({ messageId: selectedMessage.id });
+      if (isMounted) {
+        if (res.success && Array.isArray(res.data)) {
+          setInboundReplies(res.data);
+        } else {
+          setInboundReplies([]);
+        }
+        setLoadingReplies(false);
+      }
+    };
+    fetchReplies();
+    return () => { isMounted = false; };
+  }, [selectedMessage?.id]);
 
   // Generate activity logs from messages
   const logs = useMemo(() => {
@@ -191,8 +217,8 @@ export default function B2BMessagesView({
                           {TARGET_TYPE_LABELS[message.target_mode] || 'Unknown'}
                         </span>
                         <span className="message-recipients">
-                          {message.recipient_count
-                            ? `${message.recipient_count} recipient${message.recipient_count > 1 ? 's' : ''}`
+                          {message.recipients_count
+                            ? `${message.recipients_count} recipient${message.recipients_count > 1 ? 's' : ''}`
                             : 'No recipients'}
                         </span>
                       </div>
@@ -243,7 +269,7 @@ export default function B2BMessagesView({
                 </div>
                 <div className="detail-row">
                   <label>Recipients</label>
-                  <span>{selectedMessage.recipient_count || 0}</span>
+                  <span>{selectedMessage.recipients_count || 0}</span>
                 </div>
                 <div className="detail-row">
                   <label>Created</label>
@@ -256,8 +282,33 @@ export default function B2BMessagesView({
                   </div>
                 )}
                 <div className="detail-message-body">
-                  <label>Message Content</label>
+                  <label>Original Message Content</label>
                   <pre>{selectedMessage.body_text || 'No content'}</pre>
+                </div>
+
+                {/* Inbound Replies Thread */}
+                <div className="b2b-inbound-replies">
+                  <label>Replies ({inboundReplies.length})</label>
+                  {loadingReplies ? (
+                    <div className="replies-loading">Loading replies...</div>
+                  ) : inboundReplies.length === 0 ? (
+                    <div className="replies-empty">No replies received yet.</div>
+                  ) : (
+                    <div className="replies-list">
+                      {inboundReplies.map((reply) => (
+                        <div key={reply.id} className="reply-card">
+                          <div className="reply-header">
+                            <span className="reply-from">{reply.from_email || 'Unknown sender'}</span>
+                            <span className="reply-date">{formatRelativeTime(reply.received_at)}</span>
+                          </div>
+                          {reply.subject && (
+                            <div className="reply-subject">Re: {reply.subject.replace(/^(Re:\s*)+/i, '')}</div>
+                          )}
+                          <pre className="reply-body">{reply.body_text || '(No text content)'}</pre>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

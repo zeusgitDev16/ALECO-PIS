@@ -48,9 +48,8 @@ async function linkRecipientByInReplyTo(inReplyToRaw) {
  * Enable with B2B_INBOUND_IMAP_ENABLED=true and IMAP host/user/pass envs.
  */
 export async function pollB2BInboundOnce() {
-    if (String(process.env.B2B_INBOUND_IMAP_ENABLED || '').toLowerCase() !== 'true') {
-        return { ran: false, reason: 'disabled' };
-    }
+    // Note: removed B2B_INBOUND_IMAP_ENABLED requirement. If the system has 
+    // an email password configured, we automatically enable inbound tracking.
 
     const host = process.env.B2B_INBOUND_IMAP_HOST || 'imap.gmail.com';
     const port = Number(process.env.B2B_INBOUND_IMAP_PORT || 993);
@@ -75,70 +74,92 @@ export async function pollB2BInboundOnce() {
         logger: false,
     });
 
+    // Prevent background socket drops or ETIMEOUTs from crashing the Node.js server
+    client.on('error', (err) => {
+        console.warn(`[B2B inbound] ImapFlow background connection error (${err?.code || 'Unknown'}):`, err?.message || err);
+    });
+
     let inserted = 0;
     try {
         await client.connect();
         const lock = await client.getMailboxLock('INBOX');
         try {
-            const uids = await client.search({ seen: false });
-            for (const uid of uids) {
-                const msg = await client.fetchOne(
-                    String(uid),
-                    { source: true, envelope: true, uid: true },
-                    { uid: true }
-                );
-                if (!msg) continue;
-                const sourceBuf = msg.source;
-                const source = sourceBuf ? sourceBuf.toString('utf8') : '';
-                let providerId = extractHeaderBlock(source, 'Message-ID');
-                if (!providerId) {
-                    providerId = `imap-uid-${msg.uid}@${host}`;
-                }
-                const inReplyTo = extractHeaderBlock(source, 'In-Reply-To');
-                const references = extractHeaderBlock(source, 'References');
-                const env = msg.envelope || {};
-                const fromAddr = env.from?.[0]
-                    ? `${env.from[0].mailbox || ''}@${env.from[0].host || ''}`.replace(/^@|@$/g, '')
-                    : '';
-                const subject = env.subject || '';
-                const bodyText = extractBodySnippet(source);
-                const phNow = nowPhilippineForMysql();
-                const link = await linkRecipientByInReplyTo(inReplyTo);
+            // High-performance streaming fetch: Avoids n+1 sequential queries causing UI lockups.
+            // Grabs the last 15 messages instantly over a single streaming socket using sequence numbers
+            const status = await client.status('INBOX', { messages: true });
+            if (status.messages > 0) {
+                const startSeq = Math.max(1, status.messages - 14); // 15 most recent
+                const seqRange = `${startSeq}:*`;
+                for await (const msg of client.fetch(seqRange, { source: true, envelope: true, uid: true })) {
+                    if (!msg) continue;
 
-                try {
-                    await pool.execute(
-                        `INSERT INTO aleco_b2b_inbound_messages
+                    const sourceBuf = msg.source;
+                    const source = sourceBuf ? sourceBuf.toString('utf8') : '';
+                    const env = msg.envelope || {};
+
+                    // Use robust IMAP envelope parser instead of raw regex
+                    let providerId = env.messageId || extractHeaderBlock(source, 'Message-ID');
+                    if (!providerId) {
+                        providerId = `imap-uid-${msg.uid}@${host}`;
+                    }
+
+                    let inReplyTo = env.inReplyTo || extractHeaderBlock(source, 'In-Reply-To');
+                    let references = extractHeaderBlock(source, 'References');
+
+                    const fromAddr = env.from?.[0]
+                        ? `${env.from[0].mailbox || ''}@${env.from[0].host || ''}`.replace(/^@|@$/g, '')
+                        : '';
+                    const subject = env.subject || '';
+                    const bodyText = extractBodySnippet(source);
+                    const phNow = nowPhilippineForMysql();
+
+                    // Advanced linking: Fallback to crawling the thread references if inReplyTo is swallowed
+                    let link = await linkRecipientByInReplyTo(inReplyTo);
+                    if (!link.linked_message_id && references) {
+                        const refs = references.match(/<[^>]+>/g);
+                        if (refs && refs.length > 0) {
+                            for (let i = refs.length - 1; i >= 0; i--) {
+                                link = await linkRecipientByInReplyTo(refs[i]);
+                                if (link.linked_message_id) break;
+                            }
+                        }
+                    }
+
+                    try {
+                        await pool.execute(
+                            `INSERT INTO aleco_b2b_inbound_messages
                          (provider_message_id, from_email, subject, body_text, in_reply_to, references_header,
                           linked_message_id, linked_recipient_id, raw_headers, received_at)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [
-                            providerId.slice(0, 500),
-                            (fromAddr || 'unknown').slice(0, 255),
-                            String(subject).slice(0, 500),
-                            bodyText || null,
-                            inReplyTo ? inReplyTo.slice(0, 500) : null,
-                            references || null,
-                            link.linked_message_id,
-                            link.linked_recipient_id,
-                            source.slice(0, 50000) || null,
-                            phNow,
-                        ]
-                    );
-                    inserted += 1;
-                } catch (e) {
-                    if (e?.code === 'ER_DUP_ENTRY') {
-                        /* already stored */
-                    } else {
-                        console.error('[B2B inbound] insert error:', e?.message || e);
+                            [
+                                providerId.slice(0, 500),
+                                (fromAddr || 'unknown').slice(0, 255),
+                                String(subject).slice(0, 500),
+                                bodyText || null,
+                                inReplyTo ? inReplyTo.slice(0, 500) : null,
+                                references || null,
+                                link.linked_message_id,
+                                link.linked_recipient_id,
+                                source.slice(0, 50000) || null,
+                                phNow,
+                            ]
+                        );
+                        inserted += 1;
+                    } catch (e) {
+                        if (e?.code === 'ER_DUP_ENTRY') {
+                            /* already stored */
+                        } else {
+                            console.error('[B2B inbound] insert error:', e?.message || e);
+                        }
                     }
-                }
 
-                try {
-                    await client.messageFlagsAdd(String(uid), ['\\Seen'], { uid: true });
-                } catch (e) {
-                    console.warn('[B2B inbound] mark seen failed:', e?.message || e);
-                }
-            }
+                    try {
+                        await client.messageFlagsAdd(String(msg.uid), ['\\Seen'], { uid: true });
+                    } catch (e) {
+                        console.warn('[B2B inbound] mark seen failed:', e?.message || e);
+                    }
+                } // end loop
+            } // end if (status.messages > 0)
         } finally {
             lock.release();
         }

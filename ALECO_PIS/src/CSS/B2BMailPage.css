@@ -1926,6 +1926,91 @@
     overflow-y: auto;
 }
 
+/* Inbound Replies Thread */
+.b2b-inbound-replies {
+    display: flex;
+    flex-direction: column;
+    gap: calc(8px * var(--b2b-ui-scale, 1));
+    margin-top: calc(8px * var(--b2b-ui-scale, 1));
+    border-top: 1px dashed var(--border-color);
+    padding-top: calc(16px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-inbound-replies label {
+    font-size: calc(11px * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.replies-loading, .replies-empty {
+    padding: calc(16px * var(--b2b-ui-scale, 1));
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+    background: var(--bg-body);
+    border-radius: calc(8px * var(--b2b-ui-scale, 1));
+    border: 1px solid transparent;
+}
+
+.replies-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(12px * var(--b2b-ui-scale, 1));
+}
+
+.reply-card {
+    background: color-mix(in srgb, var(--accent-primary, #2563eb) 2%, var(--bg-body));
+    border: 1px solid var(--border-color);
+    border-radius: calc(8px * var(--b2b-ui-scale, 1));
+    padding: calc(14px * var(--b2b-ui-scale, 1));
+    display: flex;
+    flex-direction: column;
+    gap: calc(6px * var(--b2b-ui-scale, 1));
+}
+
+[data-theme='dark'] .reply-card {
+    background: color-mix(in srgb, var(--bg-card) 40%, var(--bg-body));
+}
+
+.reply-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: calc(6px * var(--b2b-ui-scale, 1));
+    margin-bottom: calc(4px * var(--b2b-ui-scale, 1));
+}
+
+.reply-from {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+}
+
+.reply-date {
+    font-size: calc(11px * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+}
+
+.reply-subject {
+    font-size: calc(12px * var(--b2b-ui-scale, 1));
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.reply-body {
+    margin: 0;
+    font-family: inherit;
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+    color: var(--text-main);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+
 .b2b-message-detail-modal {
     width: min(calc(760px * var(--b2b-ui-scale, 1)), 96vw);
     max-height: 88vh;

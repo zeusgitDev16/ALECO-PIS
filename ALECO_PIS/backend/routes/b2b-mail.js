@@ -12,6 +12,7 @@ import {
 } from '../services/b2bMailService.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { sendB2BMail } from '../utils/b2bMailProvider.js';
+import { pollB2BInboundOnce } from '../services/b2bInboundImapPoll.js';
 
 const router = express.Router();
 
@@ -407,6 +408,13 @@ router.post('/b2b-mail/templates', async (req, res) => {
 
 router.get('/b2b-mail/inbound', async (req, res) => {
     try {
+        // Enforce a strict 2-second timeout on the IMAP sync. If the IMAP server hangs, 
+        // we abandon the active await so the UI renders instantly, while the sync finishes in the background.
+        await Promise.race([
+            pollB2BInboundOnce(),
+            new Promise(resolve => setTimeout(resolve, 2000))
+        ]).catch(() => {});
+
         const messageId = req.query.messageId != null && String(req.query.messageId).trim() !== '' ? Number(req.query.messageId) : null;
         const params = [];
         let sql = `SELECT id, provider_message_id, from_email, subject, body_text, in_reply_to,

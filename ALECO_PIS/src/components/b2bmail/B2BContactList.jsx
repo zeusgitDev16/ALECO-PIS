@@ -81,6 +81,7 @@ export default function B2BContactList({
 
   return (
     <div className="b2b-contact-list">
+      {/* Select-all bar above the table */}
       <div className="b2b-contact-table-header">
         <label className="b2b-select-all">
           <input
@@ -93,78 +94,84 @@ export default function B2BContactList({
         </label>
       </div>
 
-      <div className="b2b-contact-table">
-        <div className="b2b-contact-row b2b-contact-header">
-          <div className="b2b-col-checkbox" />
-          <div className="b2b-col-name">Contact</div>
-          <div className="b2b-col-email">Email</div>
-          <div className="b2b-col-company">Company</div>
-          <div className="b2b-col-feeder">Feeder</div>
-          <div className="b2b-col-status">Status</div>
-          <div className="b2b-col-actions">Actions</div>
-        </div>
+      {/* Real <table> — same pattern as TicketTableView for guaranteed column alignment */}
+      <div className="b2b-contact-table-wrap">
+        <table className="b2b-contact-table">
+          <thead className="b2b-contact-thead">
+            <tr className="b2b-contact-header-row">
+              <th className="b2b-th b2b-th-checkbox" />
+              <th className="b2b-th b2b-th-name">Contact</th>
+              <th className="b2b-th b2b-th-email">Email</th>
+              <th className="b2b-th b2b-th-company">Company</th>
+              <th className="b2b-th b2b-th-feeder">Feeder</th>
+              <th className="b2b-th b2b-th-status">Status</th>
+              <th className="b2b-th b2b-th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="b2b-contact-tbody">
+            {contacts.map((contact) => {
+              const isSelected = selectedIds.includes(Number(contact.id));
+              const isVerified = contact.email_verified === 1 || contact.email_verified === true;
+              const isActive = contact.is_active === 1 || contact.is_active === true;
 
-        {contacts.map((contact) => {
-          const isSelected = selectedIds.includes(Number(contact.id));
-          const isVerified = contact.email_verified === 1 || contact.email_verified === true;
-          const isActive = contact.is_active === 1 || contact.is_active === true;
-
-          return (
-            <div
-              key={contact.id}
-              className={`b2b-contact-row ${isSelected ? 'is-selected' : ''}`}
-            >
-              <div className="b2b-col-checkbox">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleSelectOne(Number(contact.id))}
-                  aria-label={`Select ${contact.contact_name || contact.email}`}
-                />
-              </div>
-              <div className="b2b-col-name">
-                <span className="b2b-contact-name">{contact.contact_name || '-'}</span>
-                {contact.phone && (
-                  <span className="b2b-contact-phone">{contact.phone}</span>
-                )}
-              </div>
-              <div className="b2b-col-email">{contact.email}</div>
-              <div className="b2b-col-company">{contact.company_name || '-'}</div>
-              <div className="b2b-col-feeder">{contact.feeder_label || '-'}</div>
-              <div className="b2b-col-status">
-                <VerificationBadge verified={isVerified} active={isActive} />
-              </div>
-              <div className="b2b-col-actions">
-                <button
-                  type="button"
-                  className="b2b-action-btn b2b-btn-edit"
-                  onClick={() => onEdit(contact)}
-                  title="Edit contact"
+              return (
+                <tr
+                  key={contact.id}
+                  className={`b2b-contact-tr${isSelected ? ' is-selected' : ''}`}
                 >
-                  Edit
-                </button>
-                {!isVerified && isActive && (
-                  <button
-                    type="button"
-                    className="b2b-action-btn b2b-btn-verify"
-                    onClick={() => onSendVerification(Number(contact.id))}
-                    title="Send verification email"
-                  >
-                    Verify
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={`b2b-action-btn ${isActive ? 'b2b-btn-disable' : 'b2b-btn-enable'}`}
-                  onClick={() => onToggleActive(Number(contact.id), !isActive)}
-                  title={isActive ? 'Deactivate contact' : 'Activate contact'}
-                >
-                  {isActive ? 'Disable' : 'Enable'}
-                </button>
-              </div>
-            </div>
-          );
-        })}
+                  <td className="b2b-td b2b-td-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelectOne(Number(contact.id))}
+                      aria-label={`Select ${contact.contact_name || contact.email}`}
+                    />
+                  </td>
+                  <td className="b2b-td b2b-td-name">
+                    <span className="b2b-contact-name">{contact.contact_name || '-'}</span>
+                    {contact.phone && (
+                      <span className="b2b-contact-phone">{contact.phone}</span>
+                    )}
+                  </td>
+                  <td className="b2b-td b2b-td-email">{contact.email}</td>
+                  <td className="b2b-td b2b-td-company">{contact.company_name || '-'}</td>
+                  <td className="b2b-td b2b-td-feeder">{contact.feeder_label || '-'}</td>
+                  <td className="b2b-td b2b-td-status">
+                    <VerificationBadge verified={isVerified} active={isActive} />
+                  </td>
+                  <td className="b2b-td b2b-td-actions">
+                    <button
+                      type="button"
+                      className="b2b-action-btn b2b-btn-edit"
+                      onClick={() => onEdit(contact)}
+                      title="Edit contact"
+                    >
+                      Edit
+                    </button>
+                    {!isVerified && isActive && (
+                      <button
+                        type="button"
+                        className="b2b-action-btn b2b-btn-verify"
+                        onClick={() => onSendVerification(Number(contact.id))}
+                        title="Send verification email"
+                      >
+                        Verify
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={`b2b-action-btn ${isActive ? 'b2b-btn-disable' : 'b2b-btn-enable'}`}
+                      onClick={() => onToggleActive(Number(contact.id), !isActive)}
+                      title={isActive ? 'Deactivate contact' : 'Activate contact'}
+                    >
+                      {isActive ? 'Disable' : 'Enable'}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

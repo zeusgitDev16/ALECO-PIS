@@ -29,11 +29,11 @@
 
 ### IMAP poll (Render / long-running API)
 
-- Set `B2B_INBOUND_IMAP_ENABLED=true`.
+- **No enable flag needed.** The poll runs automatically if `EMAIL_USER` / `EMAIL_PASS` (or B2B-specific creds below) are present.
 - `B2B_INBOUND_IMAP_HOST` (default `imap.gmail.com`), `B2B_INBOUND_IMAP_PORT` (default `993`), `B2B_INBOUND_IMAP_TLS` (default `true`).
-- Credentials: `B2B_INBOUND_IMAP_USER` / `B2B_INBOUND_IMAP_PASS`, or fall back to `B2B_MAIL_*`, then `EMAIL_*`.
-- The API runs `pollB2BInboundOnce()` on startup and every **5 minutes** (`server.js`). Unseen messages are marked read after insert to avoid duplicates.
-- Linking: `In-Reply-To` is matched to `aleco_b2b_message_recipients.provider_message_id` from outbound sends.
+- Credentials fall-back chain: `B2B_INBOUND_IMAP_USER` / `B2B_INBOUND_IMAP_PASS` → `B2B_MAIL_USER` / `B2B_MAIL_PASS` → `EMAIL_USER` / `EMAIL_PASS`.
+- The API runs `pollB2BInboundOnce()` on startup and every **5 minutes** (`server.js`). Only `UNSEEN` messages are fetched (up to 50 per poll); each is marked `\Seen` after insert so it is never re-processed.
+- Linking: `In-Reply-To` (and `References` thread walk as fallback) is matched to `aleco_b2b_message_recipients.provider_message_id` from outbound sends.
 
 ### Inbound webhook
 

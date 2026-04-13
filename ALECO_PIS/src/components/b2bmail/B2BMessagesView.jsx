@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { listB2BInbound } from '../../api/b2bMailApi';
+import { listB2BInbound, refreshB2BInbound } from '../../api/b2bMailApi';
 
 const MESSAGE_STATUS = {
   sent: { label: 'Sent', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
@@ -37,6 +37,20 @@ export default function B2BMessagesView({
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [inboundReplies, setInboundReplies] = useState([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
+  const [refreshingReplies, setRefreshingReplies] = useState(false);
+
+  const handleRefreshReplies = async () => {
+    if (!selectedMessage?.id || refreshingReplies) return;
+    setRefreshingReplies(true);
+    try {
+      const res = await refreshB2BInbound({ messageId: selectedMessage.id });
+      if (res.success && Array.isArray(res.data)) {
+        setInboundReplies(res.data);
+      }
+    } finally {
+      setRefreshingReplies(false);
+    }
+  };
 
   // Fetch inbound replies when a message is selected
   useEffect(() => {
@@ -288,7 +302,24 @@ export default function B2BMessagesView({
 
                 {/* Inbound Replies Thread */}
                 <div className="b2b-inbound-replies">
-                  <label>Replies ({inboundReplies.length})</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <label style={{ margin: 0 }}>Replies ({inboundReplies.length})</label>
+                    <button
+                      type="button"
+                      onClick={handleRefreshReplies}
+                      disabled={refreshingReplies || loadingReplies}
+                      style={{
+                        marginLeft: 'auto', fontSize: '0.75rem', padding: '2px 10px',
+                        borderRadius: '6px', border: '1px solid var(--border-color, #ddd)',
+                        background: 'var(--surface, #fff)', cursor: refreshingReplies ? 'wait' : 'pointer',
+                        color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px',
+                      }}
+                      title="Poll inbox for new replies"
+                    >
+                      <span style={{ display: 'inline-block', animation: refreshingReplies ? 'spin 1s linear infinite' : 'none' }}>↻</span>
+                      {refreshingReplies ? 'Checking…' : 'Refresh Replies'}
+                    </button>
+                  </div>
                   {loadingReplies ? (
                     <div className="replies-loading">Loading replies...</div>
                   ) : inboundReplies.length === 0 ? (

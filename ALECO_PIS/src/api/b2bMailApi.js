@@ -118,3 +118,14 @@ export const createB2BTemplate = (body) =>
 
 export const listB2BInbound = ({ messageId = '' } = {}) =>
     jsonFetch(`/api/b2b-mail/inbound?messageId=${encodeURIComponent(messageId)}`);
+
+export const refreshB2BInbound = ({ messageId = '' } = {}) => {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 30000);
+    return jsonFetch(`/api/b2b-mail/inbound/refresh?messageId=${encodeURIComponent(messageId)}`, {
+        method: 'POST',
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
+        body: '{}',
+        signal: controller.signal,
+    }).finally(() => clearTimeout(tid));
+};

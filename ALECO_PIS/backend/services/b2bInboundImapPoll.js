@@ -22,6 +22,35 @@ function extractBodySnippet(source) {
     return String(source.slice(idx)).slice(0, 20000).trim();
 }
 
+async function linkRecipientBySubject(subjectRaw, fromEmail) {
+    const cleanSubject = String(subjectRaw || '').replace(/^(re:\s*)+/i, '').trim();
+    if (!cleanSubject) return { linked_message_id: null, linked_recipient_id: null };
+    // Precise: subject + sender email matches a known recipient
+    if (fromEmail && String(fromEmail).includes('@')) {
+        const [rows] = await pool.execute(
+            `SELECT r.id, r.message_id
+             FROM aleco_b2b_message_recipients r
+             JOIN aleco_b2b_messages m ON m.id = r.message_id
+             WHERE LOWER(TRIM(m.subject)) = LOWER(TRIM(?))
+               AND LOWER(TRIM(r.email_snapshot)) = LOWER(TRIM(?))
+             ORDER BY r.id DESC LIMIT 1`,
+            [cleanSubject, fromEmail]
+        );
+        if (rows?.[0]) return { linked_message_id: rows[0].message_id, linked_recipient_id: rows[0].id };
+    }
+    // Less precise: subject only — only link if a single outbound message has this subject
+    const [rows2] = await pool.execute(
+        `SELECT r.id, r.message_id
+         FROM aleco_b2b_message_recipients r
+         JOIN aleco_b2b_messages m ON m.id = r.message_id
+         WHERE LOWER(TRIM(m.subject)) = LOWER(TRIM(?))
+         ORDER BY r.id DESC LIMIT 1`,
+        [cleanSubject]
+    );
+    if (rows2?.[0]) return { linked_message_id: rows2[0].message_id, linked_recipient_id: rows2[0].id };
+    return { linked_message_id: null, linked_recipient_id: null };
+}
+
 async function linkRecipientByInReplyTo(inReplyToRaw) {
     const raw = String(inReplyToRaw || '').trim();
     if (!raw) return { linked_message_id: null, linked_recipient_id: null };
@@ -72,6 +101,9 @@ export async function pollB2BInboundOnce() {
         secure: String(process.env.B2B_INBOUND_IMAP_TLS || 'true').toLowerCase() !== 'false',
         auth: { user, pass },
         logger: false,
+        connectionTimeout: 12000,
+        greetingTimeout: 8000,
+        socketTimeout: 20000,
     });
 
     // Prevent background socket drops or ETIMEOUTs from crashing the Node.js server
@@ -84,13 +116,12 @@ export async function pollB2BInboundOnce() {
         await client.connect();
         const lock = await client.getMailboxLock('INBOX');
         try {
-            // High-performance streaming fetch: Avoids n+1 sequential queries causing UI lockups.
-            // Grabs the last 15 messages instantly over a single streaming socket using sequence numbers
-            const status = await client.status('INBOX', { messages: true });
-            if (status.messages > 0) {
-                const startSeq = Math.max(1, status.messages - 14); // 15 most recent
-                const seqRange = `${startSeq}:*`;
-                for await (const msg of client.fetch(seqRange, { source: true, envelope: true, uid: true })) {
+            // Fetch only UNSEEN messages so each email is processed exactly once.
+            // Messages are marked \Seen after insert; ER_DUP_ENTRY acts as a safety net.
+            const unseenUids = await client.search({ seen: false }, { uid: true });
+            if (unseenUids && unseenUids.length > 0) {
+                const batch = unseenUids.slice(-50); // cap at 50 most recent per poll
+                for await (const msg of client.fetch(batch, { source: true, envelope: true, uid: true }, { uid: true })) {
                     if (!msg) continue;
 
                     const sourceBuf = msg.source;
@@ -106,14 +137,27 @@ export async function pollB2BInboundOnce() {
                     let inReplyTo = env.inReplyTo || extractHeaderBlock(source, 'In-Reply-To');
                     let references = extractHeaderBlock(source, 'References');
 
-                    const fromAddr = env.from?.[0]
-                        ? `${env.from[0].mailbox || ''}@${env.from[0].host || ''}`.replace(/^@|@$/g, '')
-                        : '';
+                    const fromAddr = (() => {
+                        const ef = env.from?.[0];
+                        // ImapFlow v2+ exposes the full address directly on .address
+                        if (ef?.address) return ef.address;
+                        // Reconstruct from parts as fallback
+                        if (ef?.mailbox && ef?.host) return `${ef.mailbox}@${ef.host}`;
+                        // Last resort: parse the raw From: header
+                        const rawFrom = extractHeaderBlock(source, 'From');
+                        if (rawFrom) {
+                            const angleM = rawFrom.match(/<([^>]+@[^>]+)>/);
+                            if (angleM) return angleM[1].trim();
+                            const plainM = rawFrom.match(/[\w.+\-]+@[\w.\-]+\.\w+/);
+                            if (plainM) return plainM[0].trim();
+                        }
+                        return '';
+                    })();
                     const subject = env.subject || '';
                     const bodyText = extractBodySnippet(source);
                     const phNow = nowPhilippineForMysql();
 
-                    // Advanced linking: Fallback to crawling the thread references if inReplyTo is swallowed
+                    // Linking chain: In-Reply-To → References thread walk → subject+sender fallback
                     let link = await linkRecipientByInReplyTo(inReplyTo);
                     if (!link.linked_message_id && references) {
                         const refs = references.match(/<[^>]+>/g);
@@ -123,6 +167,9 @@ export async function pollB2BInboundOnce() {
                                 if (link.linked_message_id) break;
                             }
                         }
+                    }
+                    if (!link.linked_message_id && subject) {
+                        link = await linkRecipientBySubject(subject, fromAddr);
                     }
 
                     try {
@@ -159,7 +206,7 @@ export async function pollB2BInboundOnce() {
                         console.warn('[B2B inbound] mark seen failed:', e?.message || e);
                     }
                 } // end loop
-            } // end if (status.messages > 0)
+            } // end if (unseenUids.length > 0)
         } finally {
             lock.release();
         }
@@ -175,4 +222,44 @@ export async function pollB2BInboundOnce() {
     }
 
     return { ran: true, inserted };
+}
+
+/**
+ * Retroactively attempt to link inbound messages that have no linked_message_id.
+ * Tries In-Reply-To → References → subject+sender fallback.
+ * Called by the refresh endpoint so previously unmatched rows get linked after new messages arrive.
+ */
+export async function relinkUnlinkedInbound() {
+    const [rows] = await pool.execute(
+        `SELECT id, from_email, subject, in_reply_to, references_header
+         FROM aleco_b2b_inbound_messages
+         WHERE linked_message_id IS NULL
+         ORDER BY id DESC LIMIT 200`
+    );
+    let relinked = 0;
+    for (const row of rows) {
+        let link = await linkRecipientByInReplyTo(row.in_reply_to);
+        if (!link.linked_message_id && row.references_header) {
+            const refs = row.references_header.match(/<[^>]+>/g);
+            if (refs) {
+                for (let i = refs.length - 1; i >= 0; i--) {
+                    link = await linkRecipientByInReplyTo(refs[i]);
+                    if (link.linked_message_id) break;
+                }
+            }
+        }
+        if (!link.linked_message_id && row.subject) {
+            link = await linkRecipientBySubject(row.subject, row.from_email);
+        }
+        if (link.linked_message_id) {
+            await pool.execute(
+                `UPDATE aleco_b2b_inbound_messages
+                 SET linked_message_id = ?, linked_recipient_id = ?
+                 WHERE id = ?`,
+                [link.linked_message_id, link.linked_recipient_id, row.id]
+            );
+            relinked += 1;
+        }
+    }
+    return { relinked };
 }

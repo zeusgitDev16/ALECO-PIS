@@ -28,6 +28,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
     const [isUnresolvedConfirmOpen, setIsUnresolvedConfirmOpen] = useState(false);
     const [isNoFaultFoundConfirmOpen, setIsNoFaultFoundConfirmOpen] = useState(false);
     const [isAccessDeniedConfirmOpen, setIsAccessDeniedConfirmOpen] = useState(false);
+    const [isServiceMemoWarningOpen, setIsServiceMemoWarningOpen] = useState(false);
+    const [serviceMemoWarningData, setServiceMemoWarningData] = useState(null);
     const [groupData, setGroupData] = useState(null);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -239,6 +241,13 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         <label>{isGroupMaster ? 'Summary / Remarks' : "User's Concern"}</label>
                         <div className="concern-box">
                             {ticket.concern}
+                        </div>
+                    </div>
+
+                    <div className="detail-group">
+                        <label>Action Desired</label>
+                        <div className="concern-box">
+                            {ticket.action_desired || '—'}
                         </div>
                     </div>
 
@@ -563,10 +572,15 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isRestoreConfirmOpen}
                 onClose={() => setIsRestoreConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Restored');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'Restored');
                     setIsRestoreConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="Mark as Restored"
                 message={`Mark ticket ${ticket.ticket_id} as Restored? This will close the ticket. Only confirm if resolution has been completed.`}
@@ -578,10 +592,15 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isRevertConfirmOpen}
                 onClose={() => setIsRevertConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Pending');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'Pending');
                     setIsRevertConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="Revert to Pending"
                 message={`Revert ticket ${ticket.ticket_id} to Pending? The ticket will be reopened and you can start resolution again. Use this if the ticket was closed by mistake or needs further action.`}
@@ -593,10 +612,15 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isUnresolvedConfirmOpen}
                 onClose={() => setIsUnresolvedConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Unresolved');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'Unresolved');
                     setIsUnresolvedConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="Mark as Unresolved"
                 message={`Mark ticket ${ticket.ticket_id} as Unresolved? The ticket will return to the queue for re-dispatch.`}
@@ -608,10 +632,15 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isNoFaultFoundConfirmOpen}
                 onClose={() => setIsNoFaultFoundConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
                     setIsNoFaultFoundConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="No Fault Found"
                 message={`Mark ticket ${ticket.ticket_id} as No Fault Found? This will close the ticket. Only confirm if the field crew verified no fault at the location.`}
@@ -623,10 +652,15 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isAccessDeniedConfirmOpen}
                 onClose={() => setIsAccessDeniedConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'AccessDenied');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'AccessDenied');
                     setIsAccessDeniedConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="Access Denied"
                 message={`Mark ticket ${ticket.ticket_id} as Access Denied? This will close the ticket. Only confirm if the field crew could not access the service location.`}
@@ -651,6 +685,33 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                     }}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={isServiceMemoWarningOpen}
+                onClose={() => {
+                    setIsServiceMemoWarningOpen(false);
+                    setServiceMemoWarningData(null);
+                    if (serviceMemoWarningData?.deleted) {
+                        // Trigger refresh of service memo list
+                        window.dispatchEvent(new CustomEvent('service-memo-deleted'));
+                    }
+                    onClose();
+                }}
+                onConfirm={() => {
+                    setIsServiceMemoWarningOpen(false);
+                    setServiceMemoWarningData(null);
+                    if (serviceMemoWarningData?.deleted) {
+                        // Trigger refresh of service memo list
+                        window.dispatchEvent(new CustomEvent('service-memo-deleted'));
+                    }
+                    onClose();
+                }}
+                title={serviceMemoWarningData?.deleted ? "Service Memo Deleted" : "Service Memo Warning"}
+                message={serviceMemoWarningData?.message || 'A service memo exists for this ticket.'}
+                confirmLabel="OK"
+                cancelLabel="Cancel"
+                variant={serviceMemoWarningData?.deleted ? "success" : "warning"}
+            />
         </div>
     );
 };

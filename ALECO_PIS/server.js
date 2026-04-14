@@ -17,6 +17,7 @@ import backupRoutes from './backend/routes/backup.js';
 import interruptionsRoutes from './backend/routes/interruptions.js';
 import feedersRoutes from './backend/routes/feeders.js';
 import b2bMailRoutes from './backend/routes/b2b-mail.js';
+import serviceMemosRoutes from './backend/routes/service-memos.js';
 import pool from './backend/config/db.js';
 import {
   transitionScheduledStarts,
@@ -75,6 +76,7 @@ app.use('/api', contactNumbersRoutes);
 app.use('/api', urgentKeywordsRoutes);
 app.use('/api', feedersRoutes);
 app.use('/api', b2bMailRoutes);
+app.use('/api', serviceMemosRoutes);
 
 /** Uptime / load balancer — no DB (Render health checks can target this). */
 app.get('/api/health', (req, res) => {

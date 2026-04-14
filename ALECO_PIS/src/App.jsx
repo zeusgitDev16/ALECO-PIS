@@ -23,6 +23,7 @@ import AdminBackup from './components/Backup.jsx';
 import ProfilePage from './components/profile/ProfilePage.jsx';
 import PersonnelManagement from './components/PersonnelManagement.jsx';
 import B2BMail from './components/B2BMail.jsx';
+import ServiceMemos from './components/ServiceMemos.jsx';
 
 
 
@@ -152,6 +153,11 @@ const NavigationWrapper = () => {
         {/* B2B MAIL ROUTE */}
         <Route path="/admin-b2b-mail" element={
           <B2BMail />
+        } />
+
+        {/* SERVICE MEMOS ROUTE */}
+        <Route path="/admin-service-memos" element={
+          <ServiceMemos />
         } />
       </Routes>
 

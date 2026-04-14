@@ -238,32 +238,14 @@ const AdminTickets = () => {
                 toast.success(`Ticket ${ticketId} deleted.`);
                 setSelectedTicket(null);
                 refetch();
+                // Trigger refresh of service memo list
+                window.dispatchEvent(new CustomEvent('service-memo-deleted'));
             } else {
-                toast.error(data.message || 'Failed to delete ticket.');
+                toast.error('Delete failed: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
-            console.error('Delete ticket error:', error);
+            console.error('Delete error:', error);
             toast.error('Failed to delete ticket. Please try again.');
-        }
-    };
-
-    const handleResumeFromHold = async (ticketId) => {
-        try {
-            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(getActor())
-            });
-            const data = await response.json();
-            if (response.ok && data.success) {
-                toast.success(`ALECO System: ${data.message || `Ticket ${ticketId} resumed.`}`);
-                refetch();
-            } else {
-                toast.error(data.message || 'Could not resume ticket.');
-            }
-        } catch (error) {
-            console.error('Resume from hold error:', error);
-            toast.error('Failed to resume ticket. Please try again.');
         }
     };
 
@@ -290,6 +272,26 @@ const AdminTickets = () => {
         } catch (error) {
             console.error('Hold error:', error);
             toast.error('Failed to put ticket on hold. Please try again.');
+        }
+    };
+
+    const handleResumeFromHold = async (ticketId) => {
+        try {
+            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getActor())
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                toast.success(`ALECO System: ${data.message || `Ticket ${ticketId} resumed.`}`);
+                refetch();
+            } else {
+                toast.error(data.message || 'Could not resume ticket.');
+            }
+        } catch (error) {
+            console.error('Resume from hold error:', error);
+            toast.error('Failed to resume ticket. Please try again.');
         }
     };
 
@@ -337,6 +339,7 @@ const AdminTickets = () => {
                         : `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} marked as ${newStatus}.`;
                     toast.success(msg);
                     refetch();
+                    return data; // Return full response including service_memo_warning
                 } else {
                     toast.error("Status update failed: " + data.message);
                 }

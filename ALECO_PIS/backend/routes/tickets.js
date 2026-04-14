@@ -60,9 +60,9 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
     try {
         const manilaTime = nowPhilippineForMysql();
 
-        const { 
-            account_number, first_name, middle_name, last_name, 
-            phone_number, address, category, concern,
+        const {
+            account_number, first_name, middle_name, last_name,
+            phone_number, address, category, concern, action_desired,
             district, municipality, is_urgent,
             reported_lat, reported_lng, location_accuracy, location_method,
             location_confidence // NEW: Track GPS confidence
@@ -146,14 +146,14 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
 
         console.log(`🚨 Final Urgent Status: ${finalUrgentStatus} | Concern: "${concern}"`);
 
-        // UPDATED SQL: Now includes GPS columns (18 placeholders)
+        // UPDATED SQL: Now includes GPS columns + action_desired (19 placeholders)
         const sql = `
-            INSERT INTO aleco_tickets 
-            (ticket_id, account_number, first_name, middle_name, last_name, 
-             phone_number, address, district, municipality, 
-             category, concern, image_url, status, created_at, is_urgent,
-             reported_lat, reported_lng, location_accuracy, location_method, location_confidence) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO aleco_tickets
+            (ticket_id, account_number, first_name, middle_name, last_name,
+             phone_number, address, district, municipality,
+             category, concern, action_desired, image_url, status, created_at, is_urgent,
+             reported_lat, reported_lng, location_accuracy, location_method, location_confidence)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const values = [
@@ -168,6 +168,7 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             municipality || "",
             category,
             concern,
+            action_desired,
             image_url,
             manilaTime,
             finalUrgentStatus, // Use backend validation
@@ -201,13 +202,14 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
 
         // Returns consumer-relevant fields including crew/ETA when Ongoing, lineman_remarks, hold_reason
         const [rows] = await pool.execute(
-            `SELECT 
-                first_name, 
-                middle_name, 
-                last_name, 
-                status, 
-                created_at, 
+            `SELECT
+                first_name,
+                middle_name,
+                last_name,
+                status,
+                created_at,
                 concern,
+                action_desired,
                 municipality,
                 district,
                 assigned_crew,
@@ -216,7 +218,7 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
                 lineman_remarks,
                 hold_reason,
                 hold_since
-             FROM aleco_tickets 
+             FROM aleco_tickets
              WHERE ticket_id = ?`,
             [ticketId]
         );
@@ -252,7 +254,7 @@ router.put('/tickets/:ticketId', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Cannot edit a ticket that is part of a group. Ungroup first.' });
         }
 
-        const allowed = ['first_name', 'middle_name', 'last_name', 'phone_number', 'account_number', 'address', 'district', 'municipality', 'category', 'concern'];
+        const allowed = ['first_name', 'middle_name', 'last_name', 'phone_number', 'account_number', 'address', 'district', 'municipality', 'category', 'concern', 'action_desired'];
         const updates = {};
         for (const key of allowed) {
             if (body[key] !== undefined) updates[key] = body[key];
@@ -322,6 +324,36 @@ router.delete('/tickets/:ticketId', async (req, res) => {
 
         if (existing[0].deleted_at) {
             return res.status(400).json({ success: false, message: 'Ticket is already deleted.' });
+        }
+
+        // Check for service memo and delete it
+        const [ticketWithMemo] = await pool.execute(
+            'SELECT service_memo_id FROM aleco_tickets WHERE ticket_id = ?',
+            [ticketId]
+        );
+
+        if (ticketWithMemo.length > 0 && ticketWithMemo[0].service_memo_id) {
+            try {
+                console.log(`🔍 Deleting service memo for ticket ${ticketId} (ticket deletion)`);
+                const serviceMemoId = ticketWithMemo[0].service_memo_id;
+
+                // Update ticket to remove service_memo_id FIRST (to avoid foreign key constraint)
+                await pool.execute(
+                    'UPDATE aleco_tickets SET service_memo_id = NULL WHERE ticket_id = ?',
+                    [ticketId]
+                );
+                console.log(`✅ Ticket service_memo_id set to NULL`);
+
+                // Delete the service memo
+                await pool.execute(
+                    'DELETE FROM aleco_service_memos WHERE id = ?',
+                    [serviceMemoId]
+                );
+                console.log(`✅ Service memo deleted for ticket ${ticketId}`);
+            } catch (memoError) {
+                console.error(`⚠️ Failed to delete service memo for ticket ${ticketId}:`, memoError.message);
+                // Don't fail the ticket deletion if memo deletion fails
+            }
         }
 
         await pool.execute('UPDATE aleco_tickets SET deleted_at = ? WHERE ticket_id = ?', [nowPhilippineForMysql(), ticketId]);
@@ -1244,9 +1276,114 @@ const statusUpdateHandler = async (req, res) => {
                 actor_name: actorName || 'System',
                 metadata: null
             });
-            console.log(`✅ SUCCESS: Ticket ${ticketId} updated to ${status}`);
 
-            res.status(200).json({ success: true, message: `Ticket ${ticketId} marked as ${status}` });
+            // Auto-draft service memo for closed statuses
+            const closedStatuses = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
+            let serviceMemoWarning = null;
+            
+            if (closedStatuses.includes(status) && actorEmail && actorName) {
+                try {
+                    // Check if service memo already exists for this ticket
+                    const [existingMemo] = await pool.execute(
+                        `SELECT id, control_number, memo_status FROM aleco_service_memos WHERE ticket_id = ?`,
+                        [ticketId]
+                    );
+
+                    if (existingMemo.length > 0) {
+                        serviceMemoWarning = {
+                            exists: true,
+                            control_number: existingMemo[0].control_number,
+                            memo_status: existingMemo[0].memo_status,
+                            message: `Service memo ${existingMemo[0].control_number} already exists for this ticket. A new draft was not created.`
+                        };
+                        console.log(`⚠️ Service memo already exists for ticket ${ticketId}: ${existingMemo[0].control_number}`);
+                    } else {
+                        // Generate control number (SM-YYYY-XXXX format)
+                        const year = new Date().getFullYear();
+                        const [lastMemo] = await pool.execute(
+                            `SELECT control_number FROM aleco_service_memos WHERE control_number LIKE ? ORDER BY control_number DESC LIMIT 1`,
+                            [`SM-${year}-%`]
+                        );
+
+                        let nextNumber = 1;
+                        if (lastMemo.length > 0) {
+                            const lastNumber = parseInt(lastMemo[0].control_number.split('-')[2]);
+                            nextNumber = lastNumber + 1;
+                        }
+                        const paddedNumber = String(nextNumber).padStart(4, '0');
+                        const controlNumber = `SM-${year}-${paddedNumber}`;
+
+                        // Create new draft service memo
+                        const [memoResult] = await pool.execute(
+                            `INSERT INTO aleco_service_memos
+                            (ticket_id, ticket_status, control_number, service_date, memo_status, owner_email, owner_name)
+                            VALUES (?, ?, ?, ?, 'draft', ?, ?)`,
+                            [ticketId, status, controlNumber, new Date().toISOString().split('T')[0], actorEmail, actorName]
+                        );
+
+                        // Update ticket with service_memo_id
+                        await pool.execute(
+                            `UPDATE aleco_tickets SET service_memo_id = ? WHERE ticket_id = ?`,
+                            [memoResult.insertId, ticketId]
+                        );
+
+                        console.log(`✅ Auto-drafted Service Memo: ID ${memoResult.insertId}, Control #${controlNumber} for Ticket ${ticketId}`);
+                    }
+                } catch (memoError) {
+                    console.error(`⚠️ Failed to auto-draft service memo for ticket ${ticketId}:`, memoError.message);
+                    // Don't fail the status update if memo creation fails
+                }
+            }
+
+            // Check for service memo when reverting to Pending and delete it
+            if (status === 'Pending') {
+                console.log(`🔍 Checking for service memo to delete for ticket ${ticketId} (reverting to Pending)`);
+                try {
+                    const [existingMemo] = await pool.execute(
+                        `SELECT id, control_number, memo_status FROM aleco_service_memos WHERE ticket_id = ?`,
+                        [ticketId]
+                    );
+
+                    console.log(`🔍 Found ${existingMemo.length} service memos for ticket ${ticketId}`);
+
+                    if (existingMemo.length > 0) {
+                        console.log(`🔍 Deleting service memo id=${existingMemo[0].id}, control_number=${existingMemo[0].control_number}`);
+                        // Update ticket to remove service_memo_id FIRST (to avoid foreign key constraint)
+                        await pool.execute(
+                            `UPDATE aleco_tickets SET service_memo_id = NULL WHERE ticket_id = ?`,
+                            [ticketId]
+                        );
+                        console.log(`✅ Ticket service_memo_id set to NULL`);
+
+                        // Delete the service memo
+                        await pool.execute(
+                            `DELETE FROM aleco_service_memos WHERE id = ?`,
+                            [existingMemo[0].id]
+                        );
+                        console.log(`✅ Service memo deleted from aleco_service_memos`);
+
+                        serviceMemoWarning = {
+                            exists: true,
+                            deleted: true,
+                            control_number: existingMemo[0].control_number,
+                            memo_status: existingMemo[0].memo_status,
+                            message: `Service memo ${existingMemo[0].control_number} has been deleted as the ticket was reverted to Pending.`
+                        };
+                        console.log(`✅ Service memo deleted for ticket ${ticketId} reverting to Pending: ${existingMemo[0].control_number}`);
+                    }
+                } catch (memoError) {
+                    console.error(`⚠️ Failed to delete service memo for ticket ${ticketId}:`, memoError.message);
+                    console.error(`⚠️ Full error:`, memoError);
+                }
+            }
+
+            const responseData = { success: true, message: `Ticket ${ticketId} marked as ${status}` };
+            if (serviceMemoWarning) {
+                responseData.service_memo_warning = serviceMemoWarning;
+            }
+
+            console.log(`✅ SUCCESS: Ticket ${ticketId} updated to ${status}`);
+            res.status(200).json(responseData);
         } else {
             res.status(404).json({ success: false, message: `Ticket ${ticketId} not found` });
         }

@@ -20,7 +20,6 @@ const getDefaultFilterOverrides = () => ({
 
 const FILTER_ICONS = {
     new: '⚡',
-    urgent: '🚨',
     status: '📊',
     group: '🔗',
     category: '🏷️',
@@ -31,7 +30,6 @@ const FILTER_ICONS = {
 
 const FILTER_LABELS = {
     new: 'New (48h)',
-    urgent: 'Urgent',
     status: 'Status',
     group: 'Group',
     category: 'Category',
@@ -86,7 +84,6 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
         if (filters.municipality) count++;
         if (filters.datePreset) count++;
         if (filters.isNew) count++;
-        if (filters.isUrgent) count++;
         if (filters.status) count++;
         if (filters.groupFilter && filters.groupFilter !== 'all') count++;
         return count;
@@ -105,7 +102,6 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
     };
 
     const toggleUrgentNew = () => setFilters(prev => ({ ...prev, isNew: !prev.isNew }));
-    const toggleUrgent = () => setFilters(prev => ({ ...prev, isUrgent: !prev.isUrgent }));
 
     const handleLocationChange = (locObj) => {
         if (locObj && (locObj.district || locObj.municipality)) {
@@ -209,21 +205,6 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
             <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
                 <button
                     type="button"
-                    className={`filter-sidebar-btn ${filters.isUrgent ? 'active' : ''}`}
-                    onClick={toggleUrgent}
-                    title="Urgent"
-                    aria-label="Filter: Urgent only"
-                >
-                    {FILTER_ICONS.urgent}
-                </button>
-                <span className="filter-sidebar-tooltip">
-                    <span className="filter-sidebar-tooltip-text">{FILTER_LABELS.urgent}</span>
-                </span>
-            </div>
-
-            <div className="filter-sidebar-btn-wrap filter-sidebar-tooltip-wrap">
-                <button
-                    type="button"
                     className={`filter-sidebar-btn ${hasActiveFilter('status') ? 'active' : ''}`}
                     onClick={() => openModal('status')}
                     title="Status"
@@ -250,6 +231,7 @@ const TicketFilterSidebar = ({ filters, setFilters, tickets, selectedIds, setSel
                     <option value="">All Status</option>
                     <option value="Pending">Pending</option>
                     <option value="Ongoing">Ongoing</option>
+                    <option value="OnHold">On Hold</option>
                     <option value="Restored">Restored</option>
                     <option value="Unresolved">Unresolved</option>
                     <option value="NoFaultFound">No Fault Found</option>

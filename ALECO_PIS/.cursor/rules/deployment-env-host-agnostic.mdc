@@ -1,0 +1,29 @@
+---
+description: Local + deployed builds; env-based URLs; host-agnostic (no Vercel/Render lock-in)
+alwaysApply: true
+---
+
+# Deployment & environment (ALECO PIS)
+
+## Always verify
+
+- Edits must work **locally** (typical: `VITE_API_URL=http://localhost:5000`) **and** when the SPA is built for **production** (`VITE_API_URL` = public **HTTPS** API origin). Browsers cannot use your machine’s `localhost` for real users.
+- Treat **Vercel** (SPA) and **Render** (API) as **examples**. Do not add code that only works on those hostnames unless guarded by env.
+
+## Use these patterns
+
+- **API base URL:** `getApiBaseUrl()` / `apiUrl()` from `src/config/apiBase.js` and `src/utils/api.js`. Axios: `src/api/axiosConfig.js`.
+- **Never** hardcode production API or SPA URLs in `src/` or route handlers—use `import.meta.env.VITE_*` (frontend) or `process.env.*` (backend).
+- **Remember:** `VITE_*` is **inlined at build time**. Changing it requires a **new frontend deploy**.
+
+## Backend (Express)
+
+- **CORS:** `backend/config/corsOrigins.js` — localhost defaults for dev + `PUBLIC_APP_URL`, `FRONTEND_ORIGIN`, `CORS_ALLOWED_ORIGINS` for deployed SPA origins (no vendor URL baked in). Production API should set at least one of those env vars; `server.js` may log a warning if `NODE_ENV=production` and none are set.
+- **Production SPA build:** `getApiBaseUrl()` throws if neither `VITE_API_URL` nor `VITE_API_URL_PRODUCTION` is set—do not ship a prod bundle without them.
+
+## Before finishing a task
+
+- [ ] No new hardcoded `https://…vercel.app` / `…onrender.com` in app logic.
+- [ ] New `fetch`/axios calls use shared helpers or env-based base URL.
+
+**Full detail:** `docs/ENV_AND_DEPLOYMENT_PRINCIPLES.md`

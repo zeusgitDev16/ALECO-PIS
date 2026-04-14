@@ -35,8 +35,11 @@
   --border-radius-md: 6px;
   --border-radius-lg: 8px;
 
-  /* Accent Colors */
-  --accent-primary: #7c4dff;
+  /* Accent Colors - blue (light) / yellow (dark) for Interruptions & Data Management */
+  --accent-primary: #2563eb;
+  --accent-primary-glow: rgba(37, 99, 235, 0.35);
+  --accent-primary-contrast: #ffffff;
+  --accent-feed-not-on-feed: #a78bfa;  /* Semantic: purple = not on public feed */
   --accent-success: #2e7d32;
   --accent-danger: #d32f2f;
   --accent-warning: #ed6c02;
@@ -63,6 +66,11 @@
   /* Dark Mode Overrides */
   --border-color: rgba(255, 255, 255, 0.1);
   --bg-input: rgba(0, 0, 0, 0.3);
+
+  /* Accent: yellow in dark mode */
+  --accent-primary: #facc15;
+  --accent-primary-glow: rgba(250, 204, 21, 0.4);
+  --accent-primary-contrast: #1f2937;
 }
 
 /* 2. APPLY VARIABLES GLOBALLY */
@@ -100,34 +108,102 @@ h4, h5, h6 {
   color: var(--text-secondary); /* Variable */
 }
 
+/* Global loader — modular scale (same viewport tiers as TicketUIScale.css / BodyLandPage.css) */
 .global-loader-overlay {
+    --global-loader-ui-scale: 1;
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(255, 255, 255, 0.85); /* Slight white blur */
+    background: transparent;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 9999; /* Always on top */
+    pointer-events: auto; /* still blocks interaction while requests run */
+    padding: calc(16px * var(--global-loader-ui-scale, 1));
+    box-sizing: border-box;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+    .global-loader-overlay {
+        --global-loader-ui-scale: 0.88;
+    }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+    .global-loader-overlay {
+        --global-loader-ui-scale: 0.72;
+    }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+    .global-loader-overlay {
+        --global-loader-ui-scale: 0.72;
+    }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+    .global-loader-overlay {
+        --global-loader-ui-scale: 0.72;
+    }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+    .global-loader-overlay {
+        --global-loader-ui-scale: 0.68;
+    }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+    .global-loader-overlay {
+        --global-loader-ui-scale: 0.65;
+    }
+}
+
+@media (max-width: 320px) {
+    .global-loader-overlay {
+        --global-loader-ui-scale: 0.55;
+    }
+}
+
+@media (min-width: 1024px) {
+    .global-loader-overlay {
+        --global-loader-ui-scale: 1;
+    }
 }
 
 .loader-spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #2979ff; /* ALECO Brand Blue */
+    box-sizing: border-box;
+    width: calc(50px * var(--global-loader-ui-scale, 1));
+    height: calc(50px * var(--global-loader-ui-scale, 1));
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
+    border: calc(5px * var(--global-loader-ui-scale, 1)) solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    border-top: calc(5px * var(--global-loader-ui-scale, 1)) solid var(--accent-primary);
     animation: spin 1s linear infinite;
+    filter: drop-shadow(
+        0 calc(2px * var(--global-loader-ui-scale, 1)) calc(8px * var(--global-loader-ui-scale, 1))
+        color-mix(in srgb, var(--bg-body) 70%, transparent)
+    );
 }
 
 .loader-text {
-    margin-top: 15px;
-    font-family: 'Segoe UI', sans-serif;
-    color: #333;
+    margin-top: calc(15px * var(--global-loader-ui-scale, 1));
+    max-width: calc(22rem * var(--global-loader-ui-scale, 1));
+    padding: 0 calc(4px * var(--global-loader-ui-scale, 1));
+    font-family: var(--font-body), 'Segoe UI', sans-serif;
+    font-size: calc(0.9rem * var(--global-loader-ui-scale, 1));
+    line-height: 1.35;
+    color: var(--text-main);
     font-weight: 600;
+    text-align: center;
+    text-shadow:
+        0 0 calc(12px * var(--global-loader-ui-scale, 1)) var(--bg-body),
+        0 0 calc(4px * var(--global-loader-ui-scale, 1)) var(--bg-body),
+        0 calc(1px * var(--global-loader-ui-scale, 1)) calc(2px * var(--global-loader-ui-scale, 1))
+            color-mix(in srgb, var(--bg-body) 90%, transparent);
 }
 
 @keyframes spin {

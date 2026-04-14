@@ -1,0 +1,292 @@
+/**
+ * Ticket modals under admin Tickets page — inherits --ticket-ui-scale from .tickets-page-container.
+ * Loaded after DispatchTicketModal.css / GroupIncidentModal.css so these overrides win.
+ */
+
+.tickets-page-container .dispatch-modal-overlay {
+  padding: calc(20px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .dispatch-modal-content {
+  border-radius: calc(16px * var(--ticket-ui-scale, 1));
+  padding: calc(24px * var(--ticket-ui-scale, 1)) calc(28px * var(--ticket-ui-scale, 1));
+  max-height: min(65vh, calc(100dvh - calc(48px * var(--ticket-ui-scale, 1))));
+  box-shadow: 0 calc(30px * var(--ticket-ui-scale, 1)) calc(60px * var(--ticket-ui-scale, 1)) -12px rgba(0, 0, 0, 0.8);
+}
+
+.tickets-page-container .dispatch-modal-close-btn {
+  top: calc(20px * var(--ticket-ui-scale, 1));
+  right: calc(20px * var(--ticket-ui-scale, 1));
+  width: calc(28px * var(--ticket-ui-scale, 1));
+  height: calc(28px * var(--ticket-ui-scale, 1));
+  border-radius: calc(8px * var(--ticket-ui-scale, 1));
+  font-size: calc(18px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .dispatch-modal-header-container {
+  margin-bottom: calc(12px * var(--ticket-ui-scale, 1));
+  padding-bottom: calc(12px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .dispatch-modal-header {
+  font-size: calc(18px * var(--ticket-ui-scale, 1));
+  margin: 0 0 calc(4px * var(--ticket-ui-scale, 1)) 0;
+}
+
+.tickets-page-container .dispatch-modal-subtitle {
+  font-size: calc(11px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .dispatch-modal-body::-webkit-scrollbar {
+  width: max(4px, calc(6px * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .dispatch-form-group label {
+  font-size: calc(9px * var(--ticket-ui-scale, 1));
+  margin-bottom: calc(6px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .dispatch-form-input,
+.tickets-page-container .dispatch-form-textarea {
+  padding: calc(10px * var(--ticket-ui-scale, 1)) calc(12px * var(--ticket-ui-scale, 1));
+  border-radius: calc(10px * var(--ticket-ui-scale, 1));
+  font-size: max(12px, calc(12px * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .dispatch-form-textarea {
+  min-height: calc(48px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .toggle-group {
+  border-radius: calc(12px * var(--ticket-ui-scale, 1));
+  padding: calc(10px * var(--ticket-ui-scale, 1));
+  margin-top: calc(12px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .toggle-title {
+  font-size: max(12px, calc(12px * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .toggle-desc {
+  font-size: max(9px, calc(9px * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .dispatch-modal-actions {
+  gap: calc(8px * var(--ticket-ui-scale, 1));
+  margin-top: calc(16px * var(--ticket-ui-scale, 1));
+  padding-top: calc(16px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .dispatch-modal-actions .btn-action {
+  padding: calc(10px * var(--ticket-ui-scale, 1)) calc(18px * var(--ticket-ui-scale, 1));
+  border-radius: calc(10px * var(--ticket-ui-scale, 1));
+  font-size: max(13px, calc(13px * var(--ticket-ui-scale, 1)));
+  min-height: max(36px, calc(44px * var(--ticket-ui-scale, 1)));
+}
+
+/* ConfirmModal */
+.tickets-page-container .confirm-modal-content {
+  max-width: min(400px, 94vw);
+  padding: calc(20px * var(--ticket-ui-scale, 1)) calc(22px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .confirm-modal-content .dispatch-modal-close-btn {
+  width: calc(24px * var(--ticket-ui-scale, 1));
+  height: calc(24px * var(--ticket-ui-scale, 1));
+  top: calc(10px * var(--ticket-ui-scale, 1));
+  right: calc(10px * var(--ticket-ui-scale, 1));
+  font-size: calc(14px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .confirm-modal-content .dispatch-modal-header-container {
+  margin-bottom: calc(12px * var(--ticket-ui-scale, 1));
+  padding-bottom: calc(12px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .confirm-modal-content .dispatch-modal-header {
+  font-size: max(0.85rem, calc(1rem * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .confirm-modal-content .dispatch-modal-subtitle {
+  font-size: max(0.75rem, calc(0.8rem * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .confirm-modal-content .dispatch-modal-actions {
+  gap: calc(8px * var(--ticket-ui-scale, 1));
+  margin-top: calc(16px * var(--ticket-ui-scale, 1));
+  padding-top: calc(12px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .confirm-modal-content .dispatch-modal-actions .btn-action {
+  padding: calc(8px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1));
+  font-size: max(0.75rem, calc(0.8rem * var(--ticket-ui-scale, 1)));
+  min-height: max(32px, calc(36px * var(--ticket-ui-scale, 1)));
+}
+
+/* Hold modal shell */
+.tickets-page-container .hold-ticket-modal {
+  max-width: min(400px, 94vw);
+}
+
+.tickets-page-container .hold-ticket-modal .dispatch-modal-header {
+  font-size: max(0.9rem, calc(1rem * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .hold-ticket-modal .dispatch-form-input {
+  padding: calc(10px * var(--ticket-ui-scale, 1)) calc(12px * var(--ticket-ui-scale, 1));
+  font-size: max(12px, calc(0.8rem * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .hold-ticket-modal .dispatch-modal-actions .btn-action {
+  min-height: max(32px, calc(36px * var(--ticket-ui-scale, 1)));
+}
+
+/* Group incident modal */
+.tickets-page-container .group-modal-overlay {
+  padding: calc(24px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .group-modal-content {
+  border-radius: calc(12px * var(--ticket-ui-scale, 1));
+  max-height: calc(100vh - calc(48px * var(--ticket-ui-scale, 1)));
+  max-width: min(400px, 94vw);
+}
+
+.tickets-page-container .group-modal-header-handle {
+  gap: calc(12px * var(--ticket-ui-scale, 1));
+  padding: calc(20px * var(--ticket-ui-scale, 1)) calc(48px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1)) calc(20px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .group-modal-body-scroll::-webkit-scrollbar {
+  width: max(4px, calc(6px * var(--ticket-ui-scale, 1)));
+}
+
+/* Filter modal (sidebar popovers) */
+.tickets-page-container .filter-modal-overlay {
+  padding: calc(16px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .filter-modal-content {
+  border-radius: calc(12px * var(--ticket-ui-scale, 1));
+  max-width: min(360px, calc(100vw - calc(32px * var(--ticket-ui-scale, 1))));
+}
+
+.tickets-page-container .filter-modal-header {
+  padding: calc(14px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .filter-modal-title {
+  font-size: calc(1rem * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .filter-modal-close {
+  width: calc(32px * var(--ticket-ui-scale, 1));
+  height: calc(32px * var(--ticket-ui-scale, 1));
+  font-size: calc(1.5rem * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .filter-modal-body {
+  padding: calc(16px * var(--ticket-ui-scale, 1));
+}
+
+/* Filter drawer */
+.tickets-page-container .ticket-filter-drawer-panel {
+  width: min(calc(260px * var(--ticket-ui-scale, 1)), calc(100vw - calc(32px * var(--ticket-ui-scale, 1))));
+}
+
+.tickets-page-container .ticket-filter-drawer-header {
+  padding: calc(12px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .ticket-filter-drawer-title {
+  font-size: calc(1rem * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .ticket-filter-drawer-content {
+  padding: calc(12px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1));
+}
+
+/* Coarse pointer: avoid iOS zoom on native inputs in ticket filter + modals */
+@media (pointer: coarse) and (max-width: 899px) {
+  .tickets-page-container .dispatch-form-input,
+  .tickets-page-container .dispatch-form-textarea,
+  .tickets-page-container .ticket-filter-bar select,
+  .tickets-page-container .ticket-filter-bar input[type="text"],
+  .tickets-page-container .ticket-filter-bar input[type="date"] {
+    font-size: max(16px, calc(12px * var(--ticket-ui-scale, 1)));
+  }
+}
+
+/* Scope tabs + layout picker — proportional to --ticket-ui-scale */
+.tickets-page-container .ticket-scope-tabs {
+  gap: calc(2px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .ticket-scope-tab {
+  gap: calc(3px * var(--ticket-ui-scale, 1));
+  padding: calc(2px * var(--ticket-ui-scale, 1)) calc(6px * var(--ticket-ui-scale, 1));
+  font-size: max(0.5rem, calc(0.6rem * var(--ticket-ui-scale, 1)));
+  border-radius: calc(4px * var(--ticket-ui-scale, 1));
+  min-height: max(20px, calc(22px * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .ticket-scope-tab-icon {
+  font-size: calc(0.7rem * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .ticket-scope-tab-count {
+  font-size: calc(0.55rem * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .ticket-scope-empty {
+  padding: calc(2rem * var(--ticket-ui-scale, 1)) calc(1.5rem * var(--ticket-ui-scale, 1));
+  font-size: calc(0.9rem * var(--ticket-ui-scale, 1));
+}
+
+/* Layout picker + inline filter: sizes come only from TicketLayoutPicker.css (User Management parity). */
+
+/* Bulk floating bar — higher specificity than TicketMain media blocks */
+.tickets-page-container .bulk-action-bar-floating {
+  bottom: calc(16px * var(--ticket-ui-scale, 1));
+  padding: calc(8px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1));
+  border-radius: calc(24px * var(--ticket-ui-scale, 1));
+  min-height: max(40px, calc(40px * var(--ticket-ui-scale, 1)));
+  max-width: calc(100vw - calc(32px * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .bulk-bar-content {
+  gap: calc(8px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .drag-grip-indicator {
+  font-size: calc(12px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .bulk-selection-count {
+  font-size: max(10px, calc(10px * var(--ticket-ui-scale, 1)));
+  gap: calc(4px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .count-badge {
+  padding: calc(2px * var(--ticket-ui-scale, 1)) calc(6px * var(--ticket-ui-scale, 1));
+  font-size: max(9px, calc(9px * var(--ticket-ui-scale, 1)));
+  border-radius: calc(10px * var(--ticket-ui-scale, 1));
+}
+
+.tickets-page-container .bulk-action-buttons {
+  gap: calc(6px * var(--ticket-ui-scale, 1));
+  height: max(24px, calc(26px * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .btn-bulk-action {
+  padding: calc(5px * var(--ticket-ui-scale, 1)) calc(12px * var(--ticket-ui-scale, 1));
+  font-size: max(10px, calc(10px * var(--ticket-ui-scale, 1)));
+  border-radius: calc(14px * var(--ticket-ui-scale, 1));
+  height: max(24px, calc(26px * var(--ticket-ui-scale, 1)));
+  min-height: max(24px, calc(26px * var(--ticket-ui-scale, 1)));
+}
+
+.tickets-page-container .btn-bulk-action.btn-cancel {
+  padding: calc(5px * var(--ticket-ui-scale, 1)) calc(8px * var(--ticket-ui-scale, 1));
+  min-width: calc(24px * var(--ticket-ui-scale, 1));
+}

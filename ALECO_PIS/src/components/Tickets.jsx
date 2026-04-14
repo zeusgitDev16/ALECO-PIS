@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
 import AdminLayout from './AdminLayout';
@@ -9,6 +9,8 @@ import '../CSS/TicketFilterSidebar.css';
 import '../CSS/TicketSelectAllBar.css';
 import '../CSS/TicketFilterDrawer.css';
 import '../CSS/TicketMain.css';
+import '../CSS/TicketUIScale.css';
+import '../CSS/TicketModalUIScale.css';
 import useTickets from '../utils/useTickets';
 import { useRecentOpenedTickets } from '../utils/useRecentOpenedTickets';
 import UrgentTickets from './containers/UrgentTickets';
@@ -23,10 +25,13 @@ import TicketListPane from './tickets/TicketListPane';
 import TicketDetailPane from './tickets/TicketDetailPane';
 import GroupIncidentModal from './tickets/GroupIncidentModal';
 import TicketLayoutPicker from './tickets/TicketLayoutPicker';
+import TicketScopeTabs from './tickets/TicketScopeTabs';
 import TicketDualPaneLayout from './tickets/TicketDualPaneLayout';
+import '../CSS/TicketScopeTabs.css';
 import TicketTableView from './tickets/TicketTableView';
 import TicketKanbanView from './tickets/TicketKanbanView';
 import ConfirmModal from './tickets/ConfirmModal';
+import UrgentKeywordsPanel from './tickets/UrgentKeywordsPanel';
 
 const AdminTickets = () => {
     const { tickets, loading: isLoading, error, filters, setFilters, refetch } = useTickets();
@@ -35,6 +40,7 @@ const AdminTickets = () => {
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [isMapOpen, setIsMapOpen] = useState(false);
+    const [mapTickets, setMapTickets] = useState([]);
     const [selectedIds, setSelectedIds] = useState([]);
     const [availableCrews, setAvailableCrews] = useState([]);
     const [confirmState, setConfirmState] = useState({ open: false, type: null, payload: null });
@@ -43,16 +49,96 @@ const AdminTickets = () => {
         return saved === 'true';
     });
     const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+    const [ticketScope, setTicketScope] = useState(() => {
+        try {
+            const saved = localStorage.getItem('ticketScope');
+            if (saved && ['urgent', 'regular'].includes(saved)) return saved;
+        } catch {}
+        return 'regular';
+    });
     const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedTickets();
+
+    const urgentTickets = useMemo(() =>
+        (tickets || []).filter(t => t.is_urgent === 1 || t.is_urgent === true),
+        [tickets]
+    );
+    const regularTickets = useMemo(() =>
+        (tickets || []).filter(t => t.is_urgent !== 1 && t.is_urgent !== true),
+        [tickets]
+    );
+    const recentTickets = useMemo(() => {
+        if (!recentIds?.length || !tickets?.length) return [];
+        return recentIds.map(id => tickets.find(t => t.ticket_id === id)).filter(Boolean);
+    }, [tickets, recentIds]);
+
+    const scopeTickets = useMemo(() => {
+        if (ticketScope === 'urgent') return urgentTickets;
+        return regularTickets;
+    }, [ticketScope, urgentTickets, regularTickets]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('ticketScope', ticketScope);
+        } catch {}
+    }, [ticketScope]);
+
+    const handleScopeChange = (newScope) => {
+        if ((newScope === 'urgent' || newScope === 'regular') && newScope !== ticketScope) {
+            setTicketScope(newScope);
+            /* Selection persists across scope switch - selected IDs stay when switching Urgent ↔ Regular */
+        }
+    };
 
     useEffect(() => {
         localStorage.setItem('ticketFilterSidebarCollapsed', String(sidebarCollapsed));
     }, [sidebarCollapsed]);
 
+    useEffect(() => {
+        if (!selectedTicket?.ticket_id || !tickets?.length) return;
+        const updated = tickets.find(t => t.ticket_id === selectedTicket.ticket_id);
+        if (updated) setSelectedTicket(updated);
+    }, [tickets, selectedTicket?.ticket_id]);
+
     const handleSelectTicket = (ticket) => {
         setSelectedTicket(ticket);
         if (ticket?.ticket_id) addOpened(ticket.ticket_id);
     };
+
+    useEffect(() => {
+        if (!isMapOpen) return;
+        const ctrl = new AbortController();
+
+        const fetchMapTickets = async () => {
+            try {
+                const params = new URLSearchParams();
+                Object.keys(filters || {}).forEach((key) => {
+                    const value = filters[key];
+                    if (value !== '' && value !== false) params.set(key, String(value));
+                });
+                params.set('includeChildren', 'true');
+
+                const res = await fetch(apiUrl(`/api/filtered-tickets?${params.toString()}`), { signal: ctrl.signal });
+                const data = await res.json();
+                if (!res.ok || !data?.success) {
+                    setMapTickets([]);
+                    return;
+                }
+
+                const rows = Array.isArray(data.data) ? data.data : [];
+                const withoutGroupMasters = rows.filter((t) => !String(t?.ticket_id || '').startsWith('GROUP-'));
+                const scoped = ticketScope === 'urgent'
+                    ? withoutGroupMasters.filter(t => t.is_urgent === 1 || t.is_urgent === true)
+                    : withoutGroupMasters.filter(t => t.is_urgent !== 1 && t.is_urgent !== true);
+                setMapTickets(scoped);
+            } catch (e) {
+                if (e?.name === 'AbortError') return;
+                setMapTickets([]);
+            }
+        };
+
+        fetchMapTickets();
+        return () => ctrl.abort();
+    }, [isMapOpen, filters, ticketScope]);
 
     useEffect(() => {
         const fetchCrews = async () => {
@@ -152,11 +238,13 @@ const AdminTickets = () => {
                 toast.success(`Ticket ${ticketId} deleted.`);
                 setSelectedTicket(null);
                 refetch();
+                // Trigger refresh of service memo list
+                window.dispatchEvent(new CustomEvent('service-memo-deleted'));
             } else {
-                toast.error(data.message || 'Failed to delete ticket.');
+                toast.error('Delete failed: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
-            console.error('Delete ticket error:', error);
+            console.error('Delete error:', error);
             toast.error('Failed to delete ticket. Please try again.');
         }
     };
@@ -184,6 +272,26 @@ const AdminTickets = () => {
         } catch (error) {
             console.error('Hold error:', error);
             toast.error('Failed to put ticket on hold. Please try again.');
+        }
+    };
+
+    const handleResumeFromHold = async (ticketId) => {
+        try {
+            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getActor())
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                toast.success(`ALECO System: ${data.message || `Ticket ${ticketId} resumed.`}`);
+                refetch();
+            } else {
+                toast.error(data.message || 'Could not resume ticket.');
+            }
+        } catch (error) {
+            console.error('Resume from hold error:', error);
+            toast.error('Failed to resume ticket. Please try again.');
         }
     };
 
@@ -231,6 +339,7 @@ const AdminTickets = () => {
                         : `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} marked as ${newStatus}.`;
                     toast.success(msg);
                     refetch();
+                    return data; // Return full response including service_memo_warning
                 } else {
                     toast.error("Status update failed: " + data.message);
                 }
@@ -361,105 +470,118 @@ const AdminTickets = () => {
                             }
                         />
                     }
+                    scopeTabs={
+                        <TicketScopeTabs
+                            scope={ticketScope}
+                            onScopeChange={handleScopeChange}
+                            urgentCount={urgentTickets.length}
+                            regularCount={regularTickets.length}
+                        />
+                    }
                     selectAllBar={
                         <TicketSelectAllBar
-                            tickets={tickets}
+                            tickets={scopeTickets}
                             selectedIds={selectedIds}
                             setSelectedIds={setSelectedIds}
                         />
                     }
+                    recentOpened={recentTickets.length > 0 ? (
+                        <RecentOpenedTickets
+                            layout={viewMode === 'map' ? 'card' : viewMode}
+                            tickets={tickets}
+                            recentIds={recentIds}
+                            timeRange={timeRange}
+                            onTimeRangeChange={setTimeRange}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                            isCollapsed={isCollapsed}
+                            onToggleCollapse={() => setIsCollapsed(v => !v)}
+                        />
+                    ) : null}
                     rightPane={
                 <>
-                    <div className="dashboard-widget main-content-card">
-                    {viewMode === 'card' && (
-                        <>
-                            <UrgentTickets 
-                                tickets={tickets} 
-                                onSelectTicket={handleSelectTicket} 
-                                selectedIds={selectedIds} 
-                                onToggleSelect={toggleTicketSelection}
-                            />
-
-                            <div className="separator">
-                                <p><span>📋</span> Regular Tickets:</p>
+                    <div className="dashboard-widget main-content-card" id="ticket-panel-urgent" role="tabpanel" aria-labelledby="ticket-tab-urgent" hidden={ticketScope !== 'urgent'}>
+                    {ticketScope === 'urgent' && viewMode === 'card' && (
+                        urgentTickets.length === 0 ? (
+                            <div className="ticket-scope-empty">
+                                <p>No urgent tickets. All clear!</p>
                             </div>
-
-                            <TicketListPane 
-                                tickets={tickets} 
-                                isLoading={isLoading}
-                                selectedTicket={selectedTicket} 
-                                onSelectTicket={handleSelectTicket} 
-                                selectedIds={selectedIds} 
-                                onToggleSelect={toggleTicketSelection}
-                            />
-
-                            <RecentOpenedTickets
-                                layout="card"
+                        ) : (
+                            <UrgentTickets
                                 tickets={tickets}
-                                recentIds={recentIds}
-                                timeRange={timeRange}
-                                onTimeRangeChange={setTimeRange}
-                                selectedTicket={selectedTicket}
                                 onSelectTicket={handleSelectTicket}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleTicketSelection}
-                                isCollapsed={isCollapsed}
-                                onToggleCollapse={() => setIsCollapsed(v => !v)}
                             />
-                        </>
+                        )
                     )}
-
-                    {viewMode === 'compact' && (
-                        <>
+                    {ticketScope === 'urgent' && viewMode === 'compact' && (
+                        urgentTickets.length === 0 ? (
+                            <div className="ticket-scope-empty">
+                                <p>No urgent tickets. All clear!</p>
+                            </div>
+                        ) : (
                             <TicketTableView
-                                tickets={tickets}
+                                tickets={urgentTickets}
                                 selectedTicket={selectedTicket}
                                 onSelectTicket={handleSelectTicket}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleTicketSelection}
                             />
-                            <RecentOpenedTickets
-                                layout="compact"
-                                tickets={tickets}
-                                recentIds={recentIds}
-                                timeRange={timeRange}
-                                onTimeRangeChange={setTimeRange}
-                                selectedTicket={selectedTicket}
-                                onSelectTicket={handleSelectTicket}
-                                selectedIds={selectedIds}
-                                onToggleSelect={toggleTicketSelection}
-                                isCollapsed={isCollapsed}
-                                onToggleCollapse={() => setIsCollapsed(v => !v)}
-                            />
-                        </>
+                        )
                     )}
-
-                    {viewMode === 'workflow' && (
-                        <>
+                    {ticketScope === 'urgent' && viewMode === 'workflow' && (
+                        urgentTickets.length === 0 ? (
+                            <div className="ticket-scope-empty">
+                                <p>No urgent tickets. All clear!</p>
+                            </div>
+                        ) : (
                             <TicketKanbanView
-                                tickets={tickets}
+                                tickets={urgentTickets}
                                 selectedTicket={selectedTicket}
                                 onSelectTicket={handleSelectTicket}
                                 onUpdateTicket={handleUpdateTicket}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleTicketSelection}
                             />
-                            <RecentOpenedTickets
-                                layout="workflow"
-                                tickets={tickets}
-                                recentIds={recentIds}
-                                timeRange={timeRange}
-                                onTimeRangeChange={setTimeRange}
-                                selectedTicket={selectedTicket}
-                                onSelectTicket={handleSelectTicket}
-                                selectedIds={selectedIds}
-                                onToggleSelect={toggleTicketSelection}
-                                isCollapsed={isCollapsed}
-                                onToggleCollapse={() => setIsCollapsed(v => !v)}
-                            />
-                        </>
+                        )
                     )}
-                </div>
+                    {ticketScope === 'urgent' && <UrgentKeywordsPanel />}
+                    </div>
+
+                    <div className="dashboard-widget main-content-card" id="ticket-panel-regular" role="tabpanel" aria-labelledby="ticket-tab-regular" hidden={ticketScope !== 'regular'}>
+                    {ticketScope === 'regular' && viewMode === 'card' && (
+                        <TicketListPane
+                            tickets={tickets}
+                            isLoading={isLoading}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    {ticketScope === 'regular' && viewMode === 'compact' && (
+                        <TicketTableView
+                            tickets={regularTickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    {ticketScope === 'regular' && viewMode === 'workflow' && (
+                        <TicketKanbanView
+                            tickets={regularTickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            onUpdateTicket={handleUpdateTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    </div>
                 </>
                     }
                 />
@@ -471,6 +593,7 @@ const AdminTickets = () => {
                 onClose={() => setSelectedTicket(null)}
                 onUpdateTicket={handleUpdateTicket}
                 onPutHold={handlePutHold}
+                onResumeFromHold={handleResumeFromHold}
                 onDispatchGroup={handleDispatchGroup}
                 onUngroup={executeUngroup}
                 onDeleteTicket={handleDeleteTicket}
@@ -524,7 +647,7 @@ const AdminTickets = () => {
             <CoverageMap 
                 isOpen={isMapOpen} 
                 onClose={() => setIsMapOpen(false)} 
-                tickets={tickets}
+                tickets={mapTickets}
             />
 
             {confirmState.type === 'bulkRestore' && (

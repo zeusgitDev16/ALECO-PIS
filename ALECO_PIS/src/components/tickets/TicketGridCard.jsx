@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatToPhilippineDate } from '../../utils/dateUtils';
+import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
 
 /**
  * TicketGridCard - Single ticket card for grid view.
@@ -74,7 +75,7 @@ const TicketGridCard = ({ ticket, isSelected, isChecked, onSelectTicket, onToggl
                 </div>
 
                 <span className={`status-pill-solid ${ticket.status ? ticket.status.toLowerCase().replace(/\s/g, '') : 'pending'}`}>
-                    {ticket.status || 'Pending'}
+                    {formatTicketStatusLabel(ticket.status) || 'Pending'}
                 </span>
             </div>
         </div>

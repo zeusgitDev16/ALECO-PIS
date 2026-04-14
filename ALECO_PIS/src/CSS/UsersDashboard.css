@@ -1,0 +1,64 @@
+/* Users Management — override global Dashboard.css .dashboard-widget (AdminLayout loads Dashboard.css).
+   Do NOT use padding: 0 here: it was overriding .users-invite-widget / .users-all-widget and collapsing inner spacing. */
+
+.users-page-container .dashboard-widget {
+  margin-top: 0;
+  box-sizing: border-box;
+  padding: calc(28px * var(--users-ui-scale, 1)) calc(32px * var(--users-ui-scale, 1));
+  border: 1px solid var(--border-color);
+  border-radius: calc(12px * var(--users-ui-scale, 1));
+  background: var(--bg-card);
+  text-align: left;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+[data-theme='dark'] .users-page-container .dashboard-widget {
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+}
+
+.users-page-container .main-content-card > .dashboard-widget + .dashboard-widget {
+  margin-top: calc(16px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-all-widget .widget-text {
+  color: inherit;
+  min-width: 0;
+  width: 100%;
+}
+
+/*
+ * Main shell for Invite + All Users: grow with content instead of a short 65vh inner scroll
+ * (AdminPageLayout .main-content-card defaults to max-height: 65vh + overflow-y: auto).
+ */
+.users-page-container .users-main-content {
+  overflow-x: hidden;
+  overflow-y: visible;
+  min-width: 0;
+  max-width: 100%;
+  max-height: none;
+  height: auto;
+}
+
+@media (max-width: 425px) {
+  .users-page-container .users-main-content {
+    padding: 12px !important;
+  }
+
+  .users-page-container .dashboard-widget {
+    padding: calc(22px * var(--users-ui-scale, 1)) calc(18px * var(--users-ui-scale, 1));
+  }
+}
+
+.users-page-container .users-page-header-row {
+  flex-wrap: wrap;
+  gap: calc(12px * var(--users-ui-scale, 1));
+  align-items: flex-end;
+}
+
+@media (max-width: 700px) {
+  .users-page-container .users-page-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

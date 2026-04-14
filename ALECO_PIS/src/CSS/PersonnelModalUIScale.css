@@ -1,0 +1,307 @@
+/**
+ * Personnel Management — modal sizing aligned with Tickets / Interruptions.
+ * View-full crew/lineman detail uses the same classes as Power Advisories view-full;
+ * PersonnelManagement.jsx adds .interruptions-page-container and loads InterruptionUIScale.css +
+ * InterruptionModalUIScale.css (same order as Interruptions.jsx) so those rules apply verbatim.
+ *
+ * This file: .personnel-modal* (assemble/register), action-sheet tweaks, z-index above chrome.
+ * Load after InterruptionModalUIScale.css / AddCrew.css so personnel-only overrides win.
+ */
+
+/* --------------------------------------------------------------------------
+   Field density (match interruption modal mobile cap pattern)
+   -------------------------------------------------------------------------- */
+.personnel-management-container .personnel-modal {
+  --pm-field-scale: min(var(--personnel-ui-scale, 1), 0.65);
+}
+
+@media (min-width: 426px) {
+  .personnel-management-container .personnel-modal {
+    --pm-field-scale: var(--personnel-ui-scale, 1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Assemble / Register — backdrop + shell (.personnel-modal-*)
+   -------------------------------------------------------------------------- */
+.personnel-management-container .personnel-modal-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: max(calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))), env(safe-area-inset-top, 12px))
+    max(calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))), env(safe-area-inset-right, 12px))
+    max(calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))), env(safe-area-inset-bottom, 12px))
+    max(calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))), env(safe-area-inset-left, 12px));
+}
+
+.personnel-management-container .personnel-modal {
+  width: min(100%, calc(100vw - calc(20px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
+  max-width: min(480px, calc(100vw - calc(20px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
+  max-height: min(600px, 88dvh, 92vh, calc(100dvh - calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
+  min-height: min(420px, 65vh);
+  border-radius: calc(16px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  box-shadow: 0 calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(48px * var(--pm-field-scale, var(--personnel-ui-scale, 1))) -12px rgba(0, 0, 0, 0.8);
+}
+
+@media (max-width: 500px) {
+  .personnel-management-container .personnel-modal {
+    width: min(100%, calc(100vw - calc(16px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
+    max-width: none;
+  }
+}
+
+.personnel-management-container .personnel-modal-header {
+  gap: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  padding: calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-modal-title {
+  font-size: max(0.95rem, calc(18px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  margin: 0 0 calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1))) 0;
+}
+
+.personnel-management-container .personnel-modal-subtitle {
+  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .personnel-modal-close {
+  width: max(28px, calc(28px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  height: max(28px, calc(28px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  min-width: max(28px, calc(28px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  border-radius: calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(16px, calc(18px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .personnel-modal-body-scroll {
+  padding: calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-modal-footer {
+  gap: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  padding: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-modal-footer .personnel-modal-btn {
+  min-height: max(40px, calc(44px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  padding: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(16px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  border-radius: calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-modal-form-group {
+  margin-bottom: calc(16px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-modal-form-group label {
+  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  margin-bottom: calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-modal-input {
+  padding: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(11px, calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}
+
+/* --------------------------------------------------------------------------
+   AddCrew — pool list & fieldset (scoped; base rules in AddCrew.css)
+   -------------------------------------------------------------------------- */
+.personnel-management-container .personnel-pool-fieldset {
+  margin: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1))) 0 0;
+  padding: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-pool-fieldset legend {
+  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  gap: calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-selection-count {
+  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  padding: calc(1px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-search-input {
+  padding: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  border-radius: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-list {
+  border-radius: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  max-height: min(200px, calc(28vh * var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-list-item {
+  padding: calc(2px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  gap: calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .personnel-list-check {
+  width: calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  height: calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(3px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .personnel-list-contact {
+  font-size: max(9px, calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .personnel-list-lead-btn {
+  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  min-width: calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  height: calc(18px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+/* --------------------------------------------------------------------------
+   Compact personnel card grid — inherits --pg-card-scale from PersonnelGrid.css
+   -------------------------------------------------------------------------- */
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions {
+  gap: calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  padding: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(10px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-identity--compact {
+  gap: calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  padding-bottom: calc(2px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-status-chip {
+  padding: calc(4px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(10px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(0.45rem, calc(0.7rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-type-pill {
+  font-size: max(0.45rem, calc(0.7rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  padding: calc(4px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  border-radius: calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-feeder-label {
+  font-size: max(0.42rem, calc(0.58rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  margin-bottom: calc(2px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-feeder-value--compact {
+  font-size: max(0.5rem, calc(0.78rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-ref-id--compact {
+  font-size: max(0.4rem, calc(0.55rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  padding: calc(2px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-preview-text {
+  font-size: max(0.48rem, calc(0.65rem * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  line-height: 1.35;
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-actions--compact {
+  gap: calc(4px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+  padding-top: calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-actions--compact .interruptions-admin-btn {
+  padding: calc(4px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(8px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) !important;
+  font-size: max(0.42rem, calc(0.55rem * var(--pg-card-scale, var(--personnel-ui-scale, 1)))) !important;
+  min-height: max(26px, calc(30px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-actions--compact .interruptions-admin-btn--icon {
+  padding: calc(5px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) !important;
+  min-width: max(26px, calc(30px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  min-height: max(26px, calc(30px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-actions--compact .interruptions-admin-btn--icon svg {
+  width: max(12px, calc(15px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  height: max(12px, calc(15px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-btn--expand {
+  padding: calc(4px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+    calc(6px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) !important;
+  min-width: max(26px, calc(30px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-actions--compact .interruptions-admin-btn {
+    padding: calc(3.42px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+      calc(6.84px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) !important;
+    font-size: max(0.42rem, calc(0.48rem * var(--pg-card-scale, var(--personnel-ui-scale, 1)))) !important;
+  }
+
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-actions--compact .interruptions-admin-btn--icon {
+    padding: calc(4.28px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) !important;
+    min-width: max(24px, calc(28px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+    min-height: max(24px, calc(28px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  }
+
+  .personnel-management-container .interruptions-admin-card--compact.personnel-card-interruptions .interruptions-admin-card-actions--compact .interruptions-admin-btn--expand {
+    padding: calc(3.42px * var(--pg-card-scale, var(--personnel-ui-scale, 1)))
+      calc(5.13px * var(--pg-card-scale, var(--personnel-ui-scale, 1))) !important;
+    min-width: max(24px, calc(28px * var(--pg-card-scale, var(--personnel-ui-scale, 1))));
+  }
+}
+
+/* View personnel: InterruptionModalUIScale.css handles .interruption-detail-modal*; stack above admin chrome. */
+.personnel-management-container.interruptions-page-container .interruption-detail-modal-backdrop {
+  z-index: 3000;
+}
+
+.personnel-management-container .personnel-detail-meta-spaced {
+  margin-top: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+/* --------------------------------------------------------------------------
+   Mobile action sheet — .interruption-card-action-modal*
+   -------------------------------------------------------------------------- */
+.personnel-management-container .interruption-card-action-modal-backdrop {
+  z-index: 3001;
+  padding: max(calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))), env(safe-area-inset-top, 0px))
+    max(calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))), env(safe-area-inset-right, 0px))
+    max(calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))), env(safe-area-inset-bottom, 0px))
+    max(calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))), env(safe-area-inset-left, 0px));
+}
+
+.personnel-management-container .interruption-card-action-modal {
+  max-width: min(420px, calc(100vw - calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
+  border-radius: calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  padding: calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+}
+
+.personnel-management-container .interruption-card-action-modal-title {
+  font-size: max(0.9rem, calc(1rem * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .interruption-card-action-modal-ref {
+  font-size: max(0.65rem, calc(0.75rem * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}
+
+.personnel-management-container .interruption-card-action-btn {
+  min-height: max(40px, calc(44px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(0.75rem, calc(0.9rem * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}

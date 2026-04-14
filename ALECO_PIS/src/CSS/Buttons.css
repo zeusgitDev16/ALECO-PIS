@@ -5,25 +5,21 @@
 .btn-add-purple {
     font-size: 0.7rem !important;
     padding: 6px 12px !important;
-    font-weight: 800 !important;
+    font-weight: 700 !important;
     border-radius: var(--border-radius-md) !important;
     border: 1px solid transparent;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     background-color: var(--accent-primary);
-    color: var(--bg-body);
-    box-shadow: 0 4px 10px rgba(124, 77, 255, 0.2);
+    color: var(--accent-primary-contrast);
+    box-shadow: 0 0 14px var(--accent-primary-glow);
 }
 
 .btn-add-purple:hover {
-    background-color: #1565c0;
+    background-color: color-mix(in srgb, var(--accent-primary) 90%, black);
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(21, 101, 192, 0.4);
-}
-
-[data-theme='dark'] .btn-add-purple:hover {
-    background-color: #f9a825;
-    box-shadow: 0 6px 14px rgba(249, 168, 37, 0.4);
+    box-shadow: 0 0 18px var(--accent-primary-glow);
+    color: var(--accent-primary-contrast);
 }
 
 .btn-add-purple:active {
@@ -31,7 +27,37 @@
 }
 
 [data-theme='dark'] .btn-add-purple {
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 14px var(--accent-primary-glow);
+}
+
+/* Same footprint as .btn-new-advisory (InterruptionsAdmin.css) — compact on mobile */
+.btn-advisory-scale.btn-add-purple {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px;
+    padding: 2px 6px !important;
+    font-size: 0.55rem !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    min-height: 20px !important;
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--accent-primary) 35%, transparent) !important;
+}
+
+@media (max-width: 800px) {
+    .btn-advisory-scale.btn-add-purple {
+        padding: 2px 4px !important;
+        font-size: 0.5rem !important;
+        min-height: 18px !important;
+    }
+}
+
+@media (max-width: 500px) {
+    .btn-advisory-scale.btn-add-purple {
+        padding: 2px 3px !important;
+        font-size: 0.5rem !important;
+        min-height: 16px !important;
+    }
 }
 

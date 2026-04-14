@@ -1,0 +1,52 @@
+/* ThemeIconButton: dashboard admin nav — sizes follow .admin-top-nav --nav-scale */
+
+.theme-icon-btn {
+    position: relative;
+}
+
+.theme-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(24px * var(--nav-scale, 1));
+    height: calc(24px * var(--nav-scale, 1));
+}
+
+.theme-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s ease, filter 0.3s ease;
+    width: calc(24px * var(--nav-scale, 1));
+    height: calc(24px * var(--nav-scale, 1));
+}
+
+.theme-icon-sun:not(.active),
+.theme-icon-moon:not(.active) {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.theme-icon-sun.active {
+    opacity: 1;
+    color: #facc15;
+    filter: drop-shadow(0 0 calc(6px * var(--nav-scale, 1)) rgba(250, 204, 21, 0.6));
+}
+
+.theme-icon-moon.active {
+    opacity: 1;
+    color: #a5b4fc;
+    filter: drop-shadow(0 0 calc(6px * var(--nav-scale, 1)) rgba(165, 180, 252, 0.6));
+}
+
+.theme-icon-btn:hover .theme-icon-sun.active {
+    color: #fcd34d;
+    filter: drop-shadow(0 0 calc(8px * var(--nav-scale, 1)) rgba(250, 204, 21, 0.8));
+}
+
+.theme-icon-btn:hover .theme-icon-moon.active {
+    color: #c7d2fe;
+    filter: drop-shadow(0 0 calc(8px * var(--nav-scale, 1)) rgba(165, 180, 252, 0.8));
+}

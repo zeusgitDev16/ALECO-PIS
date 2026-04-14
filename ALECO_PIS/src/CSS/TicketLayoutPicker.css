@@ -1,39 +1,40 @@
 /* =========================================
-   LAYOUT PICKER (ISOLATED TO TICKETS PAGE) - COMPACT DESIGN
+   LAYOUT PICKER (ISOLATED TO TICKETS PAGE) - EXTREMELY COMPACT
    ========================================= */
 .tickets-page-container .layout-picker-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 10px 16px;
+    gap: 4px;
+    padding: 3px 8px;
     background: var(--bg-card);
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    margin-bottom: 0;
 }
 
 .layout-buttons {
     display: flex;
-    gap: 6px;
+    gap: 2px;
     flex-wrap: wrap;
 }
 
 .layout-btn {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    gap: 3px;
+    padding: 2px 6px;
     background: var(--bg-body);
-    border: 1.5px solid var(--border-color);
-    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     font-weight: 600;
     color: var(--text-main);
     white-space: nowrap;
+    min-height: 20px;
 }
 
 .layout-btn:hover:not(:disabled):not(.active) {
@@ -46,8 +47,8 @@
     background: var(--primary-color);
     border-color: var(--primary-color);
     color: #ffffff;
-    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
-    font-weight: 800;
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+    font-weight: 700;
 }
 
 /* Light mode: Make active button text darker for contrast */
@@ -68,12 +69,12 @@
 }
 
 .layout-icon {
-    font-size: 14px;
+    font-size: 10px;
     line-height: 1;
 }
 
 .layout-label {
-    font-size: 13px;
+    font-size: 0.6rem;
     font-weight: 600;
 }
 
@@ -82,13 +83,13 @@
     display: none;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 28px;
-    min-width: 32px;
+    width: 24px;
+    height: 20px;
+    min-width: 24px;
     padding: 0;
     background: var(--bg-body);
-    border: 1.5px solid var(--border-color);
-    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     color: var(--accent-primary);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -97,21 +98,21 @@
 
 .ticket-filter-inline-btn:hover {
     border-color: var(--accent-primary);
-    background: rgba(124, 77, 255, 0.08);
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
 }
 
 .ticket-filter-inline-badge {
     position: absolute;
     top: -2px;
     right: -2px;
-    min-width: 14px;
-    height: 14px;
-    padding: 0 3px;
-    font-size: 0.55rem;
+    min-width: 12px;
+    height: 12px;
+    padding: 0 2px;
+    font-size: 0.5rem;
     font-weight: 700;
     background: var(--accent-primary);
-    color: var(--bg-body);
-    border-radius: 8px;
+    color: var(--accent-primary-contrast);
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -133,60 +134,54 @@
 }
 
 /* =========================================
-   MOBILE RESPONSIVENESS - INCREDIBLY COMPACT
+   MOBILE RESPONSIVENESS - KEEP COMPACT
    ========================================= */
 @media (max-width: 800px) {
     .tickets-page-container .layout-picker-container {
-        padding: 4px 8px;
-        gap: 6px;
-        border: 1px solid var(--border-color);
+        padding: 2px 6px;
+        gap: 3px;
     }
 
     .layout-buttons {
         flex: 1;
         justify-content: space-between;
-        gap: 3px;
+        gap: 2px;
     }
 
     .layout-btn {
         flex: 1;
         justify-content: center;
-        padding: 3px 6px;
-        font-size: 0.6rem;
-        height: 24px;
+        padding: 2px 4px;
+        font-size: 0.5rem;
+        min-height: 18px;
     }
 
     .layout-icon {
-        font-size: 11px;
+        font-size: 9px;
     }
 
     .layout-label {
-        font-size: 0.6rem;
+        font-size: 0.55rem;
     }
 }
 
 @media (max-width: 500px) {
     .tickets-page-container .layout-picker-container {
-        padding: 3px 6px;
-        gap: 4px;
-    }
-
-    .layout-buttons {
-        gap: 2px;
+        padding: 2px 4px;
     }
 
     .layout-btn {
-        padding: 2px 4px;
-        font-size: 0.55rem;
-        height: 22px;
+        padding: 2px 3px;
+        font-size: 0.5rem;
+        min-height: 16px;
     }
 
     .layout-icon {
-        font-size: 10px;
+        font-size: 8px;
     }
 
     .layout-label {
-        font-size: 0.55rem;
+        font-size: 0.5rem;
     }
 }
 

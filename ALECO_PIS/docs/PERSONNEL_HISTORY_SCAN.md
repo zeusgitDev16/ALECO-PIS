@@ -20,7 +20,7 @@ Manage **crews** (`aleco_personnel` + `aleco_crew_members`) and the **linemen po
 - **Tabs:** Active Crews vs Linemen Pool.
 - **Layouts:** grid / table / kanban via [`PersonnelLayoutPicker`](../src/components/personnels/PersonnelLayoutPicker.jsx).
 - **Modals:** [`AddCrew`](../src/components/personnels/AddCrew.jsx), [`AddLinemen`](../src/components/personnels/AddLinemen.jsx).
-- **HTTP:** `fetch` + [`apiUrl()`](../src/utils/api.js) — `GET /api/crews/list`, `GET /api/pool/list`; save uses `POST/PUT` on `/api/crews/*` and `/api/pool/*`.
+- **HTTP:** `fetch` + [`apiUrl()`](../src/utils/api.js) — `GET /api/crews/list`, `GET /api/pool/list`; save uses `POST/PUT` on `/api/crews/*` and `/api/pool/*`; card actions also use `DELETE` for crews and pool entries.
 
 ### Backend (tickets brick)
 Routes live in [`backend/routes/tickets.js`](../backend/routes/tickets.js) (not a separate router file).
@@ -30,10 +30,11 @@ Routes live in [`backend/routes/tickets.js`](../backend/routes/tickets.js) (not 
 | GET | `/api/crews/list` | Personnel + lead join to pool; memberships → `members`, `member_count`. Optional `?availableOnly=true`. |
 | POST | `/api/crews/add` | Transaction: validate members, lead ∈ members, phone normalize; insert personnel + `aleco_crew_members`. |
 | PUT | `/api/crews/update/:id` | Update crew; replace junction rows. |
-| DELETE | `/api/crews/delete/:id` | Delete crew (expects FK cascade on members). **Not called from current frontend** — API exists if you wire a delete action. |
+| DELETE | `/api/crews/delete/:id` | Delete crew (expects FK cascade on members). Wired from Personnel card view. |
 | GET | `/api/pool/list` | All linemen. |
 | POST | `/api/pool/add` | Add lineman; phone normalized. |
 | PUT | `/api/pool/update/:id` | Update lineman (incl. leave fields). |
+| DELETE | `/api/pool/delete/:id` | Delete lineman if not in any crew and not a crew lead. |
 
 **Phone:** [`backend/utils/phoneUtils.js`](../backend/utils/phoneUtils.js) `normalizePhoneForDB`.
 

@@ -1,8 +1,6 @@
-/**
- * Centralized API base URL for fetch calls.
- * Uses VITE_API_URL from env, falls back to localhost:5000.
- */
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getApiBaseUrl } from '../config/apiBase.js';
+
+const API_BASE = getApiBaseUrl();
 
 /**
  * @param {string} path - API path (e.g. '/api/tickets/submit')

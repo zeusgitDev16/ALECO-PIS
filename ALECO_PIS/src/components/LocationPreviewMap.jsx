@@ -17,6 +17,21 @@ const getUserLocationIcon = () => {
     });
 };
 
+// --- AUTO-RESIZE MAP WHEN CONTAINER CHANGES SIZE ---
+const MapResizeHandler = () => {
+    const map = useMap();
+    useEffect(() => {
+        if (!map) return;
+        const container = map.getContainer();
+        const observer = new ResizeObserver(() => {
+            map.invalidateSize();
+        });
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, [map]);
+    return null;
+};
+
 // --- AUTO-CENTER MAP ON USER LOCATION ---
 const MapCenterHandler = ({ coords }) => {
     const map = useMap();
@@ -28,15 +43,17 @@ const MapCenterHandler = ({ coords }) => {
     return null;
 };
 
-const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, district }) => {
+const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, district, method }) => {
     if (!latitude || !longitude) return null;
 
     const userPosition = [latitude, longitude];
 
+    const isPinned = method === 'map_pin';
+
     return (
-        <div className="location-preview-container">
-            <div className="location-preview-header">
-                <h4>📍 Your Detected Location</h4>
+        <div className="location-preview-container" key={method}>
+            <div className={`location-preview-header${isPinned ? ' location-preview-header--pinned' : ''}`}>
+                <h4>{isPinned ? '� Pinned Location' : '📍 Detected Location'}</h4>
                 <div className="location-metadata">
                     <span className="municipality-badge">
                         {municipality || 'Detecting...'}
@@ -46,7 +63,12 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, distr
                             {district}
                         </span>
                     )}
-                    <span className="accuracy-badge">±{accuracy}m accuracy</span>
+                    {!isPinned && accuracy != null && (
+                        <span className="accuracy-badge">±{accuracy}m accuracy</span>
+                    )}
+                    {isPinned && (
+                        <span className="accuracy-badge accuracy-badge--pinned">Manual pin</span>
+                    )}
                 </div>
             </div>
 
@@ -56,7 +78,7 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, distr
                     zoom={16} 
                     scrollWheelZoom={false}
                     zoomControl={true}
-                    style={{ height: '100%', width: '100%', borderRadius: '12px' }}
+                    style={{ height: '100%', width: '100%' }}
                 >
                     <TileLayer 
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
@@ -64,6 +86,7 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, distr
                     />
                     
                     <MapCenterHandler coords={userPosition} />
+                    <MapResizeHandler />
 
                     <Marker position={userPosition} icon={getUserLocationIcon()}>
                     </Marker>
@@ -72,7 +95,9 @@ const LocationPreviewMap = ({ latitude, longitude, accuracy, municipality, distr
 
             <div className="location-preview-footer">
                 <p className="location-hint">
-                    ℹ️ This is your device's GPS location. Make sure it matches your actual position before submitting.
+                    {isPinned
+                        ? '✏️ Location set by manual pin. Confirm the pin is placed at the correct spot before submitting.'
+                        : 'ℹ️ Location captured via device GPS. Verify it matches your actual position before submitting.'}
                 </p>
                 {district && municipality && (
                     <p className="location-confirmation">

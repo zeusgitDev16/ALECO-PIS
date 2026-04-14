@@ -112,9 +112,11 @@ Paths are relative to **`/api`** prefix.
 | PUT | `/tickets/:ticketId`, `/tickets/:ticket_id/dispatch`, `/tickets/:ticket_id/hold`, `/tickets/:ticketId/status`, `/:ticketId/status` (legacy alias) |
 | PUT | `/crews/update/:id`, `/pool/update/:id` |
 | POST | `/crews/add`, `/pool/add` |
-| DELETE | `/tickets/:ticketId`, `/crews/delete/:id` |
+| DELETE | `/tickets/:ticketId`, `/crews/delete/:id`, `/pool/delete/:id` |
 
-**DELETE `/crews/delete/:id`:** implemented on server; **no** matching call found in `src/` (crew removal may be unused from UI).
+**DELETE `/crews/delete/:id`:** implemented on server; called from Personnel Management card actions.
+
+**DELETE `/api/pool/delete/:id`:** removes a lineman from the pool when not assigned to a crew and not a crew lead.
 
 **Utils:** [`sms.js`](../backend/utils/sms.js), [`phoneUtils.js`](../backend/utils/phoneUtils.js), [`ticketLogHelper.js`](../backend/utils/ticketLogHelper.js). **Upload:** [`cloudinaryConfig.js`](../cloudinaryConfig.js). **Tables (typical):** `aleco_tickets`, `aleco_ticket_logs`, `aleco_personnel`, `aleco_crew_members`, `aleco_linemen_pool`.
 

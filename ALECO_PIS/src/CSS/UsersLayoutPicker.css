@@ -1,0 +1,138 @@
+/* =========================================
+   USERS LAYOUT PICKER — same rules as TicketLayoutPicker.css
+   Scoped to .users-page-container (mirrors tickets compact control strip)
+   ========================================= */
+.users-page-container .layout-picker-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--bg-card);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  margin-bottom: 0;
+}
+
+.users-page-container .layout-picker-container .layout-buttons {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.users-page-container .layout-picker-container .layout-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  min-height: 20px;
+}
+
+.users-page-container .layout-picker-container .layout-btn:hover:not(:disabled):not(.active) {
+  background: var(--bg-card);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.users-page-container .layout-picker-container .layout-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+  font-weight: 700;
+}
+
+[data-theme='light'] .users-page-container .layout-picker-container .layout-btn.active {
+  color: #1e3a8a;
+}
+
+[data-theme='dark'] .users-page-container .layout-picker-container .layout-btn.active {
+  color: #ffffff;
+}
+
+.users-page-container .layout-picker-container .layout-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-body);
+  color: var(--text-secondary);
+}
+
+.users-page-container .layout-picker-container .layout-icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.users-page-container .layout-picker-container .layout-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+@media (max-width: 767px) {
+  .users-page-container .layout-picker-container {
+    gap: 8px;
+  }
+
+  .users-page-container .layout-picker-container .layout-buttons {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 800px) {
+  .users-page-container .layout-picker-container {
+    padding: 2px 6px;
+    gap: 3px;
+  }
+
+  .users-page-container .layout-picker-container .layout-buttons {
+    flex: 1;
+    justify-content: space-between;
+    gap: 2px;
+  }
+
+  .users-page-container .layout-picker-container .layout-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 2px 4px;
+    font-size: 0.5rem;
+    min-height: 18px;
+  }
+
+  .users-page-container .layout-picker-container .layout-icon {
+    font-size: 9px;
+  }
+
+  .users-page-container .layout-picker-container .layout-label {
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .users-page-container .layout-picker-container {
+    padding: 2px 4px;
+  }
+
+  .users-page-container .layout-picker-container .layout-btn {
+    padding: 2px 3px;
+    font-size: 0.5rem;
+    min-height: 16px;
+  }
+
+  .users-page-container .layout-picker-container .layout-icon {
+    font-size: 8px;
+  }
+
+  .users-page-container .layout-picker-container .layout-label {
+    font-size: 0.5rem;
+  }
+}

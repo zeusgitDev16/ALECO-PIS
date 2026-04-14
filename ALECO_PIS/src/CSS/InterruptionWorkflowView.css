@@ -105,11 +105,7 @@
 }
 
 .interruption-workflow-card--feed-not-on-feed {
-    border-left: 3px solid var(--accent-primary, #7c3aed);
-}
-
-[data-theme='dark'] .interruption-workflow-card--feed-not-on-feed {
-    border-left-color: #a78bfa;
+    border-left: 3px solid var(--accent-feed-not-on-feed);
 }
 
 .interruption-workflow-card--feed-archived {

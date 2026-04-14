@@ -1,73 +1,182 @@
-/* Backup Layout Picker - Compact pill buttons */
-.backup-layout-picker {
+/* =========================================
+   DATA MANAGEMENT LAYOUT PICKER — pixel parity with UsersLayoutPicker.css
+   (fixed rem/px + same breakpoints; no separate --backup-ui-scale on these controls)
+   ========================================= */
+.backup-page-container .layout-picker-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--bg-card);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  margin-bottom: 0;
+}
+
+.backup-page-container .layout-picker-container .layout-buttons {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.backup-page-container .layout-picker-container .layout-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  min-height: 20px;
+}
+
+.backup-page-container .layout-picker-container .layout-btn:hover:not(:disabled):not(.active) {
+  background: var(--bg-card);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.backup-page-container .layout-picker-container .layout-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+  font-weight: 700;
+}
+
+[data-theme='light'] .backup-page-container .layout-picker-container .layout-btn.active {
+  color: #1e3a8a;
+}
+
+[data-theme='dark'] .backup-page-container .layout-picker-container .layout-btn.active {
+  color: #ffffff;
+}
+
+.backup-page-container .layout-picker-container .layout-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-body);
+  color: var(--text-secondary);
+}
+
+.backup-page-container .layout-picker-container .layout-icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.backup-page-container .layout-picker-container .layout-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+/* Inline filter — same dimensions as TicketLayoutPicker.css */
+.backup-page-container .ticket-filter-inline-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 20px;
+  min-width: 24px;
+  padding: 0;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--accent-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.backup-page-container .ticket-filter-inline-btn:hover {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+}
+
+.backup-page-container .ticket-filter-inline-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 2px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  background: var(--accent-primary);
+  color: var(--accent-primary-contrast);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 767px) {
+  .backup-page-container .layout-picker-container {
+    gap: 8px;
+  }
+
+  .backup-page-container .layout-picker-container .layout-buttons {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .backup-page-container .ticket-filter-inline-btn {
     display: flex;
-    align-items: center;
-    padding: 6px 12px;
-    background: var(--bg-card);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  }
 }
 
-.backup-layout-buttons {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+@media (max-width: 800px) {
+  .backup-page-container .layout-picker-container {
+    padding: 2px 6px;
+    gap: 3px;
+  }
+
+  .backup-page-container .layout-picker-container .layout-buttons {
+    flex: 1;
+    justify-content: space-between;
+    gap: 2px;
+  }
+
+  .backup-page-container .layout-picker-container .layout-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 2px 4px;
+    font-size: 0.5rem;
+    min-height: 18px;
+  }
+
+  .backup-page-container .layout-picker-container .layout-icon {
+    font-size: 9px;
+  }
+
+  .backup-page-container .layout-picker-container .layout-label {
+    font-size: 0.55rem;
+  }
 }
 
-.backup-layout-btn {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    background: var(--bg-body);
-    border: 1.5px solid var(--border-color);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: var(--text-main);
-    white-space: nowrap;
-}
+@media (max-width: 500px) {
+  .backup-page-container .layout-picker-container {
+    padding: 2px 4px;
+  }
 
-.backup-layout-btn:hover:not(:disabled):not(.active) {
-    background: var(--bg-card);
-    border-color: var(--accent-primary);
-    transform: translateY(-1px);
-}
+  .backup-page-container .layout-picker-container .layout-btn {
+    padding: 2px 3px;
+    font-size: 0.5rem;
+    min-height: 16px;
+  }
 
-.backup-layout-btn.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: var(--bg-body);
-    box-shadow: 0 2px 6px rgba(124, 77, 255, 0.3);
-    font-weight: 800;
-}
+  .backup-page-container .layout-picker-container .layout-icon {
+    font-size: 8px;
+  }
 
-[data-theme="light"] .backup-layout-btn.active {
-    color: #fff;
-}
-
-.backup-layout-icon {
-    font-size: 14px;
-    line-height: 1;
-}
-
-.backup-layout-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-@media (max-width: 600px) {
-    .backup-layout-picker {
-        padding: 4px 8px;
-    }
-    .backup-layout-btn {
-        padding: 3px 6px;
-        font-size: 0.6rem;
-    }
-    .backup-layout-label {
-        font-size: 0.65rem;
-    }
+  .backup-page-container .layout-picker-container .layout-label {
+    font-size: 0.5rem;
+  }
 }

@@ -1,0 +1,473 @@
+/**
+ * RecentOpenedAdvisories.css
+ * Compact horizontal strip - minimal vertical space impact on advisory pools
+ */
+
+.recent-opened-advisories-wrapper {
+  margin-bottom: 8px;
+  padding: 6px 0 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.recent-opened-advisories-wrapper.recent-opened-advisories-collapsed {
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+}
+
+.recent-opened-advisories-wrapper.recent-opened-advisories-collapsed .recent-opened-advisories-header {
+  margin-bottom: 0;
+}
+
+.recent-opened-advisories-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0;
+}
+
+.recent-opened-advisories-header:hover {
+  opacity: 0.9;
+}
+
+.recent-opened-advisories-collapse-btn {
+  margin-left: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.recent-opened-advisories-collapse-btn:hover {
+  background: var(--bg-body);
+}
+
+.recent-opened-advisories-icon {
+  font-size: 1rem;
+}
+
+.recent-opened-advisories-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.recent-opened-advisories-time-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.recent-opened-advisories-time-range label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.recent-opened-advisories-time-range select {
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.recent-opened-advisories-kanban-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+  min-height: 88px;
+  margin-top: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.recent-opened-advisories-kanban-strip::-webkit-scrollbar {
+  height: 6px;
+}
+
+.recent-opened-advisory-kanban-card {
+  flex-shrink: 0;
+  min-width: 150px;
+  max-width: 150px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.recent-opened-advisory-kanban-card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 2px 8px var(--accent-primary-glow);
+}
+
+.recent-opened-advisory-kanban-card {
+  border-left: 3px solid var(--accent-primary);
+}
+
+.recent-opened-advisory-kanban-card .interruptions-admin-card-head {
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
+.recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
+  font-size: 0.6rem;
+  padding: 2px 5px;
+}
+
+.recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value {
+  font-size: 0.8rem;
+}
+
+.recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id {
+  font-size: 0.7rem;
+}
+
+.recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
+  padding-top: 4px;
+  gap: 2px;
+}
+
+.recent-opened-advisory-kanban-card .interruptions-admin-card-actions .interruptions-admin-btn--icon {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 3px !important;
+}
+
+.recent-opened-advisory-preview {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  margin: 2px 0;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
+  margin-top: 2px;
+}
+
+.recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
+  font-size: 0.65rem;
+}
+
+/* Below 768px: base compact (+15% increase, match main content) */
+@media (max-width: 767px) {
+  .recent-opened-advisories-kanban-strip {
+    gap: 4.6px;
+    min-height: 75px;
+  }
+
+  .recent-opened-advisory-kanban-card {
+    min-width: 138px;
+    max-width: 138px;
+    padding: 3.45px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-head {
+    gap: 1.15px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-identity--compact {
+    padding-bottom: 2.3px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
+  .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
+    font-size: 6.2px;
+    padding: 1.15px 3.45px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value--compact {
+    font-size: 7.4px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id--compact {
+    font-size: 5.75px !important;
+    padding: 1.15px 2.3px;
+  }
+
+  .recent-opened-advisory-preview {
+    font-size: 7.4px;
+    -webkit-line-clamp: 1;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
+    font-size: 6.2px;
+    gap: 2.3px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
+    font-size: 6.2px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
+    padding-top: 2.3px;
+    gap: 2.3px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions .interruptions-admin-btn--icon {
+    min-width: 23px;
+    min-height: 23px;
+    padding: 2.3px !important;
+  }
+}
+
+/* 375px: +12% from current tier (match main content) */
+@media (max-width: 767px) and (min-width: 321px) {
+  .recent-opened-advisories-kanban-strip {
+    gap: 5.09px;
+    min-height: 82px;
+  }
+
+  .recent-opened-advisory-kanban-card {
+    min-width: 152px;
+    max-width: 152px;
+    padding: 3.81px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-head {
+    gap: 1.27px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-identity--compact {
+    padding-bottom: 2.54px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
+  .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
+    font-size: 6.9px;
+    padding: 1.27px 3.81px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value--compact {
+    font-size: 8.2px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id--compact {
+    font-size: 6.35px !important;
+    padding: 1.27px 2.54px;
+  }
+
+  .recent-opened-advisory-preview {
+    font-size: 8.2px;
+    -webkit-line-clamp: 1;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
+    font-size: 6.9px;
+    gap: 2.54px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
+    font-size: 6.9px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
+    padding-top: 2.54px;
+    gap: 2.54px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions .interruptions-admin-btn--icon {
+    min-width: 25px;
+    min-height: 25px;
+    padding: 2.54px !important;
+  }
+}
+
+/* 425px: +20% from current tier (match main content) */
+@media (max-width: 767px) and (min-width: 376px) {
+  .recent-opened-advisories-kanban-strip {
+    gap: 5.83px;
+    min-height: 95px;
+  }
+
+  .recent-opened-advisory-kanban-card {
+    min-width: 176px;
+    max-width: 176px;
+    padding: 4.4px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-head {
+    gap: 1.46px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-identity--compact {
+    padding-bottom: 2.94px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
+  .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
+    font-size: 7.9px;
+    padding: 1.46px 4.4px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value--compact {
+    font-size: 9.5px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id--compact {
+    font-size: 7.34px !important;
+    padding: 1.46px 2.94px;
+  }
+
+  .recent-opened-advisory-preview {
+    font-size: 9.5px;
+    -webkit-line-clamp: 1;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
+    font-size: 7.9px;
+    gap: 2.94px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
+    font-size: 7.9px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
+    padding-top: 2.98px;
+    gap: 2.98px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions .interruptions-admin-btn--icon {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 2.94px !important;
+  }
+}
+
+/* Tablet (768–1023px): 15% smaller than laptop */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .recent-opened-advisories-kanban-strip {
+    gap: 6.84px;
+    min-height: 86px;
+  }
+
+  .recent-opened-advisory-kanban-card {
+    min-width: 128px;
+    max-width: 128px;
+    padding: 6.84px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-head {
+    gap: 3.42px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-identity--compact {
+    padding-bottom: 3.42px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-status-chip,
+  .recent-opened-advisory-kanban-card .interruptions-admin-type-pill {
+    font-size: 0.56rem;
+    padding: 1.71px 5.13px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-feeder-value--compact {
+    font-size: 0.78rem;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-ref-id--compact {
+    font-size: 0.513rem !important;
+    padding: 1.71px 5.13px;
+  }
+
+  .recent-opened-advisory-preview {
+    font-size: 0.66rem;
+    -webkit-line-clamp: 2;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-meta {
+    font-size: 0.6rem;
+    gap: 5.13px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-meta-value {
+    font-size: 0.6rem;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions {
+    padding-top: 5.13px;
+    gap: 3.42px;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions .interruptions-admin-btn,
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions .interruptions-admin-btn--icon {
+    padding: 4.28px !important;
+    min-width: 24px;
+    min-height: 24px;
+    font-size: 0.56rem !important;
+  }
+
+  .recent-opened-advisory-kanban-card .interruptions-admin-card-actions .interruptions-admin-btn--expand {
+    padding: 3.42px 5.13px !important;
+    min-width: 24px;
+  }
+}
+
+/* 1024px+: base styles above (laptop, original) */
+
+/* 320px and small phones: shrink header so main content dominates */
+@media (max-width: 480px) {
+  .recent-opened-advisories-wrapper {
+    margin-bottom: 2px;
+    padding: 2px 0 4px 0;
+  }
+
+  .recent-opened-advisories-header {
+    gap: 2px;
+    margin-bottom: 2px;
+    padding: 0;
+  }
+
+  .recent-opened-advisories-icon {
+    font-size: 0.6rem;
+  }
+
+  .recent-opened-advisories-title {
+    font-size: 0.5rem;
+  }
+
+  .recent-opened-advisories-time-range {
+    gap: 2px;
+  }
+
+  .recent-opened-advisories-time-range label {
+    font-size: 0.45rem;
+  }
+
+  .recent-opened-advisories-time-range select {
+    padding: 0 3px;
+    font-size: 0.45rem;
+  }
+
+  .recent-opened-advisories-collapse-btn {
+    padding: 0 2px;
+    margin-left: 1px;
+    font-size: 0.45rem;
+  }
+}

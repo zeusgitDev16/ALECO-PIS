@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import '../../CSS/DispatchTicketModal.css';
 import '../../CSS/TicketTableView.css';
@@ -8,14 +8,42 @@ const TICKET_COLUMNS = ['ticket_id', 'first_name', 'last_name', 'phone_number', 
 const LOG_COLUMNS = ['id', 'ticket_id', 'action', 'from_status', 'to_status', 'actor_type', 'created_at'];
 const INTERRUPTION_COLUMNS = ['id', 'type', 'status', 'feeder', 'cause', 'date_time_start', 'created_at'];
 const INTERRUPTION_UPDATE_COLUMNS = ['id', 'interruption_id', 'remark', 'kind', 'actor_email', 'actor_name', 'created_at'];
+const USER_COLUMNS = ['id', 'name', 'email', 'role', 'status', 'created_at'];
+const PERSONNEL_CREW_COLUMNS = ['id', 'crew_name', 'lead_lineman', 'phone_number', 'status', 'created_at'];
+const PERSONNEL_CREW_MEMBER_COLUMNS = ['crew_id', 'lineman_id'];
+const PERSONNEL_LINEMEN_COLUMNS = ['id', 'full_name', 'designation', 'contact_no', 'status', 'leave_start', 'leave_end', 'leave_reason'];
 
 const formatDate = (d) => {
     if (!d) return '—';
     return formatToPhilippineTime(d);
 };
 
+function defaultTabForEntity(entity) {
+    if (entity === 'interruptions') return 'interruptions';
+    if (entity === 'users') return 'users';
+    if (entity === 'personnel') return 'crews';
+    return 'tickets';
+}
+
+function previewSubtitle(entity, metadata) {
+    if (entity === 'interruptions') {
+        return `${metadata.interruptionCount ?? 0} advisories, ${metadata.updateCount ?? 0} updates`;
+    }
+    if (entity === 'users') {
+        return `${metadata.userCount ?? 0} users`;
+    }
+    if (entity === 'personnel') {
+        return `${metadata.crewCount ?? 0} crews, ${metadata.crewMemberCount ?? 0} member rows, ${metadata.linemanCount ?? 0} linemen`;
+    }
+    return `${metadata.ticketCount} tickets, ${metadata.logCount} logs`;
+}
+
 const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
-    const [activeTab, setActiveTab] = useState(entity === 'interruptions' ? 'interruptions' : 'tickets');
+    const [activeTab, setActiveTab] = useState(() => defaultTabForEntity(entity));
+
+    useEffect(() => {
+        setActiveTab(defaultTabForEntity(entity));
+    }, [entity]);
 
     if (!isOpen) return null;
 
@@ -24,6 +52,10 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
     const logs = data?.logs || [];
     const interruptions = data?.interruptions || [];
     const updates = data?.updates || [];
+    const users = data?.users || [];
+    const crews = data?.crews || [];
+    const crewMembers = data?.crewMembers || [];
+    const linemen = data?.linemen || [];
 
     return (
         <div className="dispatch-modal-overlay" onClick={onClose}>
@@ -33,15 +65,12 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                 <div className="dispatch-modal-header-container">
                     <h2 className="dispatch-modal-header">Export Preview</h2>
                     <p className="dispatch-modal-subtitle">
-                        {metadata.dateStart} to {metadata.dateEnd} —{' '}
-                        {entity === 'interruptions'
-                            ? `${metadata.interruptionCount ?? 0} advisories, ${metadata.updateCount ?? 0} updates`
-                            : `${metadata.ticketCount} tickets, ${metadata.logCount} logs`}
+                        {metadata.dateStart} to {metadata.dateEnd} — {previewSubtitle(entity, metadata)}
                     </p>
                 </div>
 
                 <div className="export-preview-tabs">
-                    {entity === 'interruptions' ? (
+                    {entity === 'interruptions' && (
                         <>
                             <button
                                 type="button"
@@ -58,7 +87,8 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                                 Updates ({updates.length})
                             </button>
                         </>
-                    ) : (
+                    )}
+                    {entity === 'tickets' && (
                         <>
                             <button
                                 type="button"
@@ -73,6 +103,40 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                                 onClick={() => setActiveTab('logs')}
                             >
                                 Logs ({logs.length})
+                            </button>
+                        </>
+                    )}
+                    {entity === 'users' && (
+                        <button
+                            type="button"
+                            className={`export-preview-tab ${activeTab === 'users' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('users')}
+                        >
+                            Users ({users.length})
+                        </button>
+                    )}
+                    {entity === 'personnel' && (
+                        <>
+                            <button
+                                type="button"
+                                className={`export-preview-tab ${activeTab === 'crews' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('crews')}
+                            >
+                                Crews ({crews.length})
+                            </button>
+                            <button
+                                type="button"
+                                className={`export-preview-tab ${activeTab === 'crewMembers' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('crewMembers')}
+                            >
+                                Crew members ({crewMembers.length})
+                            </button>
+                            <button
+                                type="button"
+                                className={`export-preview-tab ${activeTab === 'linemen' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('linemen')}
+                            >
+                                Linemen ({linemen.length})
                             </button>
                         </>
                     )}
@@ -184,6 +248,118 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                                                 {LOG_COLUMNS.map((col) => (
                                                     <td key={col}>
                                                         {col === 'created_at' ? formatDate(row[col]) : (row[col] ?? '—')}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
+                    )}
+                    {entity === 'users' && activeTab === 'users' && (
+                        users.length === 0 ? (
+                            <p className="export-preview-empty">No users in this date range.</p>
+                        ) : (
+                            <div className="export-preview-scroll">
+                                <table className="ticket-table">
+                                    <thead>
+                                        <tr>
+                                            {USER_COLUMNS.map((c) => (
+                                                <th key={c}>{c.replace(/_/g, ' ')}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {users.map((row, i) => (
+                                            <tr key={row.id || i}>
+                                                {USER_COLUMNS.map((col) => (
+                                                    <td key={col}>
+                                                        {col === 'created_at' ? formatDate(row[col]) : (row[col] ?? '—')}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
+                    )}
+                    {entity === 'personnel' && activeTab === 'crews' && (
+                        crews.length === 0 ? (
+                            <p className="export-preview-empty">No crews created in this date range.</p>
+                        ) : (
+                            <div className="export-preview-scroll">
+                                <table className="ticket-table">
+                                    <thead>
+                                        <tr>
+                                            {PERSONNEL_CREW_COLUMNS.map((c) => (
+                                                <th key={c}>{c.replace(/_/g, ' ')}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {crews.map((row, i) => (
+                                            <tr key={row.id || i}>
+                                                {PERSONNEL_CREW_COLUMNS.map((col) => (
+                                                    <td key={col}>
+                                                        {col === 'created_at' ? formatDate(row[col]) : (row[col] ?? '—')}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
+                    )}
+                    {entity === 'personnel' && activeTab === 'crewMembers' && (
+                        crewMembers.length === 0 ? (
+                            <p className="export-preview-empty">No crew member rows for crews in this range.</p>
+                        ) : (
+                            <div className="export-preview-scroll">
+                                <table className="ticket-table">
+                                    <thead>
+                                        <tr>
+                                            {PERSONNEL_CREW_MEMBER_COLUMNS.map((c) => (
+                                                <th key={c}>{c.replace(/_/g, ' ')}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {crewMembers.map((row, i) => (
+                                            <tr key={`${row.crew_id}-${row.lineman_id}-${i}`}>
+                                                {PERSONNEL_CREW_MEMBER_COLUMNS.map((col) => (
+                                                    <td key={col}>{row[col] ?? '—'}</td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
+                    )}
+                    {entity === 'personnel' && activeTab === 'linemen' && (
+                        linemen.length === 0 ? (
+                            <p className="export-preview-empty">No linemen referenced by exported crews.</p>
+                        ) : (
+                            <div className="export-preview-scroll">
+                                <table className="ticket-table">
+                                    <thead>
+                                        <tr>
+                                            {PERSONNEL_LINEMEN_COLUMNS.map((c) => (
+                                                <th key={c}>{c.replace(/_/g, ' ')}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {linemen.map((row, i) => (
+                                            <tr key={row.id || i}>
+                                                {PERSONNEL_LINEMEN_COLUMNS.map((col) => (
+                                                    <td key={col}>
+                                                        {col === 'leave_start' || col === 'leave_end'
+                                                            ? formatDate(row[col])
+                                                            : (row[col] ?? '—')}
                                                     </td>
                                                 ))}
                                             </tr>

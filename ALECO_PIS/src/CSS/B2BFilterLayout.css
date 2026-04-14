@@ -1,0 +1,339 @@
+/* Let admin-content act as a flex column when it hosts the B2B page,
+   so the page container can fill the available height via flex. */
+.admin-content:has(.b2b-mail-page-container) {
+  display: flex;
+  flex-direction: column;
+}
+
+.b2b-mail-page-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.b2b-dual-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  gap: 6px;
+}
+
+.b2b-top-bar {
+  flex-shrink: 0;
+}
+
+.b2b-top-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.b2b-filter-trigger {
+  display: none;
+  padding: 2px 8px;
+  min-height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-main);
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+.b2b-top-bar-inner .b2b-tabs {
+  margin-bottom: 0;
+}
+
+.b2b-filter-inline-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 20px;
+  min-width: 24px;
+  padding: 0;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--accent-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.b2b-filter-inline-btn:hover {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+}
+
+.b2b-filter-inline-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 2px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  background: var(--accent-primary);
+  color: var(--accent-primary-contrast);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.b2b-panes-row {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.b2b-left-pane {
+  width: 260px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: var(--bg-card);
+  overflow-y: auto;
+}
+
+.b2b-left-pane.collapsed {
+  width: 44px;
+}
+
+.b2b-right-pane {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.b2b-right-pane .main-content-card {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-top: 0 !important;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
+}
+
+.b2b-filter-sidebar {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.b2b-filter-sidebar-collapsed {
+  padding: 8px 4px;
+  align-items: center;
+}
+
+.b2b-filter-sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.b2b-filter-sidebar-action {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-body);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.b2b-filter-sidebar-expand {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-body);
+  color: var(--text-main);
+}
+
+.b2b-filter-active-badge,
+.b2b-filter-active-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #000;
+  font-size: 0.55rem;
+  font-weight: 700;
+}
+
+.b2b-filter-active-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}
+
+[data-theme='dark'] .b2b-filter-active-badge,
+[data-theme='dark'] .b2b-filter-active-count {
+  color: #fff;
+}
+
+.b2b-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.b2b-filter-panel-title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.b2b-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.b2b-side-filter-btn,
+.b2b-side-select,
+.b2b-side-input,
+.b2b-side-reset {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-body);
+  color: var(--text-main);
+  font-size: 0.72rem;
+}
+
+.b2b-side-filter-btn {
+  text-align: left;
+  padding: 6px 8px;
+}
+
+.b2b-side-filter-btn.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #000;
+  font-weight: 700;
+}
+
+[data-theme='dark'] .b2b-side-filter-btn.is-active {
+  color: #fff;
+}
+
+.b2b-side-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.b2b-side-input,
+.b2b-side-select {
+  padding: 6px 8px;
+}
+
+.b2b-side-date-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.b2b-side-checkbox-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.b2b-side-label-inline {
+  font-size: 0.68rem;
+}
+
+.b2b-side-reset {
+  margin-top: 6px;
+  padding: 6px 10px;
+  font-weight: 600;
+}
+
+.b2b-filter-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 900;
+  display: flex;
+}
+
+.b2b-filter-drawer-panel {
+  width: min(280px, 86vw);
+  height: 100%;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  animation: b2bDrawerIn 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes b2bDrawerIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.b2b-filter-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.b2b-filter-drawer-title {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.b2b-filter-drawer-close {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-body);
+  color: var(--text-main);
+}
+
+.b2b-filter-drawer-content {
+  padding: 12px;
+  overflow: auto;
+}
+
+@media (max-width: 767px) {
+  .b2b-left-pane {
+    display: none;
+  }
+
+  .b2b-filter-inline-btn {
+    display: inline-flex;
+  }
+
+  .b2b-right-pane .main-content-card {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+}

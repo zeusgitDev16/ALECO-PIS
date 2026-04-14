@@ -113,6 +113,12 @@ export default function InterruptionAdvisoryForm({
   const [quickFieldsOpen, setQuickFieldsOpen] = useState(true);
   const [legacyFieldsOpen, setLegacyFieldsOpen] = useState(true);
   const [imageUploading, setImageUploading] = useState(false);
+
+  useEffect(() => {
+    if (validationErrors.some((e) => e.toLowerCase().includes('remark'))) {
+      setQuickFieldsOpen(true);
+    }
+  }, [validationErrors]);
   const fileInputRef = useRef(null);
   const hasBody = form.body && String(form.body).trim();
   const showLegacyFields = !hasBody;
@@ -254,6 +260,7 @@ export default function InterruptionAdvisoryForm({
               <FeederCascadeSelect
                 value={form.feeder}
                 onChange={(v) => setForm((f) => ({ ...f, feeder: v }))}
+                onFeederIdChange={(fid) => setForm((f) => ({ ...f, feederId: fid }))}
                 disabled={advisoryArchived}
               />
             </label>
@@ -266,7 +273,7 @@ export default function InterruptionAdvisoryForm({
                 placeholder="e.g. SIMAR2026-037"
               />
             </label>
-            <label>
+            <label className="interruptions-admin-datetime-field">
               Start
               <div className="interruptions-admin-datetime-wrap">
                 <InModalDateTimePicker
@@ -278,7 +285,7 @@ export default function InterruptionAdvisoryForm({
               </div>
               <DatetimePreview value={form.dateTimeStart} />
             </label>
-            <label>
+            <label className="interruptions-admin-datetime-field">
               Estimated restoration (ERT)
               <div className="interruptions-admin-datetime-wrap">
                 <InModalDateTimePicker
@@ -381,24 +388,6 @@ export default function InterruptionAdvisoryForm({
                   ))}
                 </select>
                 </label>
-                {editingId && baselineStatus != null && (
-                  <label className={`interruptions-admin-span2 interruptions-admin-status-remark-wrap${form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') ? ' interruptions-admin-status-remark-wrap--required' : ''}`}>
-                    <span className="interruptions-admin-status-remark-label">
-                      Reason for status change
-                      {form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') && (
-                        <span className="interruptions-admin-status-remark-required"> (required)</span>
-                      )}
-                    </span>
-                    <input
-                      type="text"
-                      value={form.statusChangeRemark || ''}
-                      onChange={(ev) => setForm((f) => ({ ...f, statusChangeRemark: ev.target.value }))}
-                      placeholder="e.g. Rescheduled to next week, Misinformation corrected, Feeder faulty again"
-                      className="interruptions-admin-status-remark-input"
-                      aria-required={form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing')}
-                    />
-                  </label>
-                )}
               </div>
             ) : (
               <div className="interruptions-admin-span2">
@@ -430,6 +419,24 @@ export default function InterruptionAdvisoryForm({
               </div>
             )}
           </>
+          )}
+          {editingId && baselineStatus != null && (
+            <label className={`interruptions-admin-status-remark-wrap${form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') ? ' interruptions-admin-status-remark-wrap--required' : ''}`}>
+              <span className="interruptions-admin-status-remark-label">
+                Reason for status change
+                {form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') && (
+                  <span className="interruptions-admin-status-remark-required"> (required)</span>
+                )}
+              </span>
+              <input
+                type="text"
+                value={form.statusChangeRemark || ''}
+                onChange={(ev) => setForm((f) => ({ ...f, statusChangeRemark: ev.target.value }))}
+                placeholder="e.g. Rescheduled to next week, Misinformation corrected, Feeder faulty again"
+                className="interruptions-admin-status-remark-input"
+                aria-required={form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing')}
+              />
+            </label>
           )}
         </fieldset>
 
@@ -519,7 +526,7 @@ export default function InterruptionAdvisoryForm({
 
               {form.schedulePublicLater && (
             <div className="interruptions-admin-bull-schedule">
-              <label className="interruptions-admin-span2 interruptions-admin-label-tight">
+              <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
                 Goes live at
                 <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
                   <InModalDateTimePicker
@@ -563,7 +570,7 @@ export default function InterruptionAdvisoryForm({
           <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--resolve">
             <legend>Resolve</legend>
             {form.status === 'Restored' ? (
-              <label className="interruptions-admin-span2">
+              <label className="interruptions-admin-span2 interruptions-admin-datetime-field">
                 Actual restoration date and time
                 <div className="interruptions-admin-datetime-wrap">
                   <InModalDateTimePicker

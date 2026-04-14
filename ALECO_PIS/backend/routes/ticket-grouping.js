@@ -459,10 +459,10 @@ router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
         const { status } = req.body;
 
         // Match the actual enum values in the database
-        if (!['Pending', 'Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(status)) {
+        if (!['Pending', 'Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid status. Must be Pending, Ongoing, Restored, Unresolved, NoFaultFound, or AccessDenied'
+                message: 'Invalid status. Must be Pending, Ongoing, On Hold, Restored, Unresolved, NoFaultFound, or AccessDenied'
             });
         }
 
@@ -499,6 +499,93 @@ router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
 
         await connection.commit();
 
+        // Auto-draft service memo for closed statuses
+        const closedStatuses = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
+        let serviceMemoWarning = null;
+
+        if (closedStatuses.includes(status) && actorEmail && actorName) {
+            try {
+                // Check if service memo already exists for each ticket
+                for (const tid of allTicketIds) {
+                    const [existingMemo] = await pool.execute(
+                        `SELECT id, control_number, memo_status FROM aleco_service_memos WHERE ticket_id = ?`,
+                        [tid]
+                    );
+
+                    if (existingMemo.length === 0) {
+                        // Generate control number (SM-YYYY-XXXX format)
+                        const year = new Date().getFullYear();
+                        const [lastMemo] = await pool.execute(
+                            `SELECT control_number FROM aleco_service_memos WHERE control_number LIKE ? ORDER BY control_number DESC LIMIT 1`,
+                            [`SM-${year}-%`]
+                        );
+
+                        let nextNumber = 1;
+                        if (lastMemo.length > 0) {
+                            const lastNumber = parseInt(lastMemo[0].control_number.split('-')[2]);
+                            nextNumber = lastNumber + 1;
+                        }
+                        const paddedNumber = String(nextNumber).padStart(4, '0');
+                        const controlNumber = `SM-${year}-${paddedNumber}`;
+
+                        // Create new draft service memo
+                        const [memoResult] = await pool.execute(
+                            `INSERT INTO aleco_service_memos
+                            (ticket_id, ticket_status, control_number, service_date, memo_status, owner_email, owner_name)
+                            VALUES (?, ?, ?, ?, 'draft', ?, ?)`,
+                            [tid, status, controlNumber, new Date().toISOString().split('T')[0], actorEmail, actorName]
+                        );
+
+                        // Update ticket with service_memo_id
+                        await pool.execute(
+                            `UPDATE aleco_tickets SET service_memo_id = ? WHERE ticket_id = ?`,
+                            [memoResult.insertId, tid]
+                        );
+
+                        console.log(`✅ Auto-drafted Service Memo: ID ${memoResult.insertId}, Control #${controlNumber} for Ticket ${tid}`);
+                    }
+                }
+            } catch (memoError) {
+                console.error(`⚠️ Failed to auto-draft service memos for group ${mainTicketId}:`, memoError.message);
+            }
+        }
+
+        // Check for service memo when reverting to Pending and delete it
+        if (status === 'Pending') {
+            try {
+                for (const tid of allTicketIds) {
+                    const [existingMemo] = await pool.execute(
+                        `SELECT id, control_number, memo_status FROM aleco_service_memos WHERE ticket_id = ?`,
+                        [tid]
+                    );
+
+                    if (existingMemo.length > 0) {
+                        // Update ticket to remove service_memo_id FIRST (to avoid foreign key constraint)
+                        await pool.execute(
+                            `UPDATE aleco_tickets SET service_memo_id = NULL WHERE ticket_id = ?`,
+                            [tid]
+                        );
+
+                        // Delete the service memo
+                        await pool.execute(
+                            `DELETE FROM aleco_service_memos WHERE id = ?`,
+                            [existingMemo[0].id]
+                        );
+
+                        serviceMemoWarning = {
+                            exists: true,
+                            deleted: true,
+                            control_number: existingMemo[0].control_number,
+                            message: `Service memo ${existingMemo[0].control_number} has been deleted as the ticket was reverted to Pending.`
+                        };
+                        console.log(`✅ Service memo deleted for ticket ${tid} reverting to Pending: ${existingMemo[0].control_number}`);
+                    }
+                }
+            } catch (memoError) {
+                console.error(`⚠️ Failed to delete service memos for group ${mainTicketId}:`, memoError.message);
+            }
+        }
+
         const actorEmail = req.body.actor_email || req.headers['x-user-email'];
         const actorName = req.body.actor_name || req.headers['x-user-name'];
         for (const tid of allTicketIds) {
@@ -517,10 +604,15 @@ router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
 
         console.log(`✅ GROUP STATUS UPDATED: ${mainTicketId} → ${status} (${members.length} tickets)`);
 
-        res.json({
+        const responseData = {
             success: true,
             message: `Group ${mainTicketId} and ${members.length} tickets updated to ${status}`
-        });
+        };
+        if (serviceMemoWarning) {
+            responseData.service_memo_warning = serviceMemoWarning;
+        }
+
+        res.json(responseData);
 
     } catch (error) {
         await connection.rollback();

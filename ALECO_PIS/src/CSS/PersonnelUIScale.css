@@ -1,0 +1,57 @@
+/**
+ * Personnel Management page — modular UI scale (same breakpoint tiers as
+ * InterruptionUIScale.css / TicketUIScale.css).
+ * Set on .personnel-management-container; descendants use --personnel-ui-scale in PersonnelModalUIScale.css.
+ */
+
+.personnel-management-container {
+  --personnel-ui-scale: 1;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .personnel-management-container {
+    --personnel-ui-scale: 0.88;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+  .personnel-management-container {
+    --personnel-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+  .personnel-management-container {
+    --personnel-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+  .personnel-management-container {
+    --personnel-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+  .personnel-management-container {
+    --personnel-ui-scale: 0.68;
+  }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+  .personnel-management-container {
+    --personnel-ui-scale: 0.65;
+  }
+}
+
+@media (max-width: 320px) {
+  .personnel-management-container {
+    --personnel-ui-scale: 0.55;
+  }
+}
+
+@media (min-width: 1024px) {
+  .personnel-management-container {
+    --personnel-ui-scale: 1;
+  }
+}

@@ -18,8 +18,8 @@
 
 .group-modal-content {
     background: var(--bg-card, #fff);
-    width: 100%;
-    max-width: 440px;
+    width: 94%;
+    max-width: 400px;
     max-height: calc(100vh - 48px);
     border-radius: 12px;
     position: relative;
@@ -57,6 +57,38 @@
     cursor: grabbing;
 }
 
+/* Scroll outer: same spine as Ticket Detail Pane - flex chain so only middle scrolls */
+.group-modal-scroll-outer {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.group-modal-body-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.group-modal-body-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.group-modal-body-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.group-modal-body-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-color, rgba(0, 0, 0, 0.15));
+    border-radius: 3px;
+}
+
 .group-modal-header-grip {
     color: var(--text-secondary, #666);
     font-size: 14px;
@@ -77,18 +109,18 @@
     color: var(--text-secondary, #666);
 }
 
-/* Close button */
+/* Close button - modular base (1024px+) */
 .group-modal-close-btn {
     position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
     border: none;
     border-radius: 8px;
     background: transparent;
     color: var(--text-secondary, #666);
-    font-size: 20px;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -102,10 +134,8 @@
     color: #dc2626;
 }
 
-/* Scrollable body */
+/* Body content (lives inside scroll area) */
 .group-modal-body {
-    flex: 1;
-    overflow-y: auto;
     padding: 16px 20px 20px;
 }
 
@@ -313,6 +343,22 @@
     margin-bottom: 0;
 }
 
+/* Master Category dropdown - match group-modal-input base styling (overrides global IssueCategoryDropdown) */
+.group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    background: var(--bg-body, #f8f9fa);
+    color: var(--text-main, #111);
+}
+
+.group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select:focus {
+    outline: none;
+    border-color: var(--accent-primary, #3b82f6);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
 .group-modal-input,
 .group-modal-textarea {
     width: 100%;
@@ -347,14 +393,16 @@
     padding-right: 36px;
 }
 
-/* Actions */
+/* Actions - fixed footer, never scrolls (same as Ticket Detail Pane action-footer) */
 .group-modal-actions {
+    flex-shrink: 0;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    margin-top: 20px;
-    padding-top: 16px;
+    padding: 16px 20px 20px;
     border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+    background: var(--bg-body, #f8f9fa);
+    border-radius: 0 0 12px 12px;
 }
 
 .group-modal-btn {
@@ -400,95 +448,166 @@
     border-radius: 3px;
 }
 
-.group-modal-body::-webkit-scrollbar {
-    width: 6px;
-}
-
-.group-modal-body::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.group-modal-body::-webkit-scrollbar-thumb {
-    background: var(--border-color, rgba(0, 0, 0, 0.15));
-    border-radius: 3px;
-}
-
 /* =========================================
-   RESPONSIVE - Tablet and Mobile
+   MODULAR SIZE SCALING (same as Ticket Detail Pane, Confirm, Hold modals)
    ========================================= */
 
-@media (max-width: 600px) {
-    .group-modal-overlay {
-        padding: 16px;
-    }
-
+/* 768–1023px (88%) */
+@media (min-width: 768px) and (max-width: 1023px) {
     .group-modal-content {
-        max-width: 100%;
-        max-height: calc(100vh - 32px);
+        width: 92%;
+        max-width: 352px;
+    }
+
+    .group-modal-close-btn {
+        width: 21px;
+        height: 21px;
+        top: 9px;
+        right: 9px;
+        font-size: 12px;
     }
 
     .group-modal-header-handle {
-        padding: 16px 44px 12px 16px;
+        padding: 18px 44px 14px 18px;
+    }
+
+    .group-modal-title {
+        font-size: 0.95rem;
+    }
+
+    .group-modal-desc {
+        font-size: 0.75rem;
     }
 
     .group-modal-body {
-        padding: 12px 16px 16px;
-    }
-}
-
-@media (min-width: 321px) and (max-width: 480px) {
-    .group-modal-overlay {
-        padding: 12px;
+        padding: 14px 18px 18px;
     }
 
-    .group-modal-header-handle {
-        padding: 14px 44px 10px 14px;
+    .group-modal-label {
+        font-size: 0.6rem;
+        margin-bottom: 6px;
     }
 
-    .group-modal-body {
-        padding: 10px 14px 14px;
+    .group-modal-type-tabs {
+        gap: 6px;
     }
 
     .group-modal-type-tab {
         padding: 10px 12px;
     }
 
+    .tab-title {
+        font-size: 0.75rem;
+    }
+
+    .tab-desc {
+        font-size: 0.6rem;
+    }
+
     .group-modal-ticket-list {
-        max-height: 150px;
+        max-height: 158px;
+    }
+
+    .group-modal-ticket-row {
+        padding: 9px 10px;
+    }
+
+    .group-modal-ticket-id {
+        font-size: 0.7rem;
+    }
+
+    .group-modal-ticket-meta {
+        font-size: 0.58rem;
+    }
+
+    .group-modal-ticket-location {
+        font-size: 0.65rem;
+        max-width: 120px;
+    }
+
+    .group-modal-input,
+    .group-modal-textarea {
+        padding: 9px 10px;
+        font-size: 0.75rem;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
+        padding: 9px 10px;
+        font-size: 0.75rem;
+        border-radius: 7px;
+    }
+
+    .group-modal-textarea {
+        height: 56px;
+    }
+
+    .group-modal-actions {
+        padding: 14px 18px 18px;
+        gap: 8px;
+    }
+
+    .group-modal-btn {
+        padding: 8px 16px;
+        font-size: 0.75rem;
+    }
+
+    .group-modal-ticket-drag-handle {
+        padding: 4px 6px;
+    }
+
+    .drag-handle-icon {
+        font-size: 11px;
+    }
+
+    .visit-order-badge {
+        font-size: 10px;
+    }
+
+    .group-modal-arrow-btn {
+        width: 20px;
+        height: 16px;
+        font-size: 9px;
     }
 }
 
-@media (max-width: 320px) {
-    .group-modal-overlay {
-        padding: 4px;
-    }
-
+/* 600–767px (72%) */
+@media (min-width: 600px) and (max-width: 767px) {
     .group-modal-content {
-        max-height: calc(100vh - 8px);
-        border-radius: 8px;
-    }
-
-    .group-modal-header-handle {
-        padding: 10px 36px 8px 10px;
+        width: 92%;
+        max-width: 288px;
     }
 
     .group-modal-close-btn {
-        width: 26px;
-        height: 26px;
-        top: 10px;
-        right: 10px;
+        width: 17px;
+        height: 17px;
+        top: 7px;
+        right: 7px;
+        font-size: 10px;
+    }
+
+    .group-modal-header-handle {
+        padding: 14px 40px 12px 14px;
     }
 
     .group-modal-title {
-        font-size: 13px;
+        font-size: 0.78rem;
     }
 
     .group-modal-desc {
-        font-size: 9px;
+        font-size: 0.65rem;
+    }
+
+    .group-modal-body {
+        padding: 12px 14px 14px;
+    }
+
+    .group-modal-label {
+        font-size: 0.52rem;
+        margin-bottom: 5px;
     }
 
     .group-modal-type-tabs {
-        grid-template-columns: 1fr;
+        gap: 6px;
     }
 
     .group-modal-type-tab {
@@ -496,15 +615,252 @@
     }
 
     .tab-title {
-        font-size: 12px;
+        font-size: 0.65rem;
     }
 
     .tab-desc {
-        font-size: 9px;
+        font-size: 0.52rem;
     }
 
     .group-modal-ticket-list {
-        max-height: 100px;
+        max-height: 130px;
+    }
+
+    .group-modal-ticket-row {
+        padding: 7px 9px;
+    }
+
+    .group-modal-ticket-id {
+        font-size: 0.6rem;
+    }
+
+    .group-modal-ticket-meta {
+        font-size: 0.5rem;
+    }
+
+    .group-modal-ticket-location {
+        font-size: 0.56rem;
+        max-width: 100px;
+    }
+
+    .group-modal-input,
+    .group-modal-textarea {
+        padding: 7px 9px;
+        font-size: 0.65rem;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
+        padding: 7px 9px;
+        font-size: 0.65rem;
+        border-radius: 6px;
+    }
+
+    .group-modal-textarea {
+        height: 46px;
+    }
+
+    .group-modal-actions {
+        padding: 12px 14px 14px;
+        gap: 6px;
+    }
+
+    .group-modal-btn {
+        padding: 6px 12px;
+        font-size: 0.65rem;
+    }
+
+    .group-modal-ticket-drag-handle {
+        padding: 3px 6px;
+    }
+
+    .drag-handle-icon {
+        font-size: 10px;
+    }
+
+    .visit-order-badge {
+        font-size: 9px;
+    }
+
+    .group-modal-arrow-btn {
+        width: 18px;
+        height: 14px;
+        font-size: 8px;
+    }
+}
+
+/* 480–599px (72%) */
+@media (min-width: 480px) and (max-width: 599px) {
+    .group-modal-content {
+        width: 92%;
+        max-width: 288px;
+    }
+
+    .group-modal-close-btn {
+        width: 17px;
+        height: 17px;
+        top: 7px;
+        right: 7px;
+        font-size: 10px;
+    }
+
+    .group-modal-header-handle {
+        padding: 14px 40px 12px 14px;
+    }
+
+    .group-modal-title {
+        font-size: 0.78rem;
+    }
+
+    .group-modal-desc {
+        font-size: 0.65rem;
+    }
+
+    .group-modal-body {
+        padding: 12px 14px 14px;
+    }
+
+    .group-modal-label {
+        font-size: 0.52rem;
+        margin-bottom: 5px;
+    }
+
+    .group-modal-type-tabs {
+        gap: 6px;
+    }
+
+    .group-modal-type-tab {
+        padding: 8px 10px;
+    }
+
+    .tab-title {
+        font-size: 0.65rem;
+    }
+
+    .tab-desc {
+        font-size: 0.52rem;
+    }
+
+    .group-modal-ticket-list {
+        max-height: 130px;
+    }
+
+    .group-modal-ticket-row {
+        padding: 7px 9px;
+    }
+
+    .group-modal-ticket-id {
+        font-size: 0.6rem;
+    }
+
+    .group-modal-ticket-meta {
+        font-size: 0.5rem;
+    }
+
+    .group-modal-ticket-location {
+        font-size: 0.56rem;
+        max-width: 100px;
+    }
+
+    .group-modal-input,
+    .group-modal-textarea {
+        padding: 7px 9px;
+        font-size: 0.65rem;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
+        padding: 7px 9px;
+        font-size: 0.65rem;
+        border-radius: 6px;
+    }
+
+    .group-modal-textarea {
+        height: 46px;
+    }
+
+    .group-modal-actions {
+        padding: 12px 14px 14px;
+        gap: 6px;
+    }
+
+    .group-modal-btn {
+        padding: 6px 12px;
+        font-size: 0.65rem;
+    }
+
+    .group-modal-ticket-drag-handle {
+        padding: 3px 6px;
+    }
+
+    .drag-handle-icon {
+        font-size: 10px;
+    }
+
+    .visit-order-badge {
+        font-size: 9px;
+    }
+
+    .group-modal-arrow-btn {
+        width: 18px;
+        height: 14px;
+        font-size: 8px;
+    }
+}
+
+/* 320–479px (65%) */
+@media (min-width: 320px) and (max-width: 479px) {
+    .group-modal-content {
+        width: 94%;
+        max-width: 260px;
+    }
+
+    .group-modal-close-btn {
+        width: 16px;
+        height: 16px;
+        top: 6px;
+        right: 6px;
+        font-size: 9px;
+    }
+
+    .group-modal-header-handle {
+        padding: 12px 36px 10px 12px;
+    }
+
+    .group-modal-title {
+        font-size: 0.7rem;
+    }
+
+    .group-modal-desc {
+        font-size: 0.58rem;
+    }
+
+    .group-modal-body {
+        padding: 10px 13px 13px;
+    }
+
+    .group-modal-label {
+        font-size: 0.47rem;
+        margin-bottom: 4px;
+    }
+
+    .group-modal-type-tabs {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .group-modal-type-tab {
+        padding: 7px 9px;
+    }
+
+    .tab-title {
+        font-size: 0.58rem;
+    }
+
+    .tab-desc {
+        font-size: 0.47rem;
+    }
+
+    .group-modal-ticket-list {
+        max-height: 117px;
     }
 
     .group-modal-ticket-row {
@@ -512,25 +868,184 @@
     }
 
     .group-modal-ticket-id {
-        font-size: 10px;
+        font-size: 0.55rem;
     }
 
     .group-modal-ticket-meta {
-        font-size: 9px;
+        font-size: 0.45rem;
     }
 
     .group-modal-ticket-location {
-        font-size: 9px;
+        font-size: 0.5rem;
+        max-width: 90px;
+    }
+
+    .group-modal-input,
+    .group-modal-textarea {
+        padding: 6px 8px;
+        font-size: 0.58rem;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
+        padding: 6px 8px;
+        font-size: 0.58rem;
+        border-radius: 6px;
+    }
+
+    .group-modal-textarea {
+        height: 42px;
     }
 
     .group-modal-actions {
-        padding-top: 10px;
+        padding: 10px 13px 13px;
         gap: 6px;
     }
 
     .group-modal-btn {
-        padding: 6px 12px;
-        min-height: 36px;
-        font-size: 11px;
+        padding: 6px 10px;
+        font-size: 0.58rem;
+    }
+
+    .group-modal-ticket-drag-handle {
+        padding: 3px 6px;
+    }
+
+    .drag-handle-icon {
+        font-size: 10px;
+    }
+
+    .visit-order-badge {
+        font-size: 9px;
+    }
+
+    .group-modal-arrow-btn {
+        width: 18px;
+        height: 14px;
+        font-size: 8px;
+    }
+}
+
+/* 320px (55%) */
+@media (max-width: 320px) {
+    .group-modal-overlay {
+        padding: 4px;
+    }
+
+    .group-modal-content {
+        width: 96%;
+        max-width: 220px;
+        max-height: calc(100vh - 8px);
+        border-radius: 8px;
+    }
+
+    .group-modal-close-btn {
+        width: 14px;
+        height: 14px;
+        top: 4px;
+        right: 4px;
+        font-size: 8px;
+    }
+
+    .group-modal-header-handle {
+        padding: 10px 32px 8px 11px;
+    }
+
+    .group-modal-title {
+        font-size: 0.6rem;
+    }
+
+    .group-modal-desc {
+        font-size: 0.5rem;
+    }
+
+    .group-modal-body {
+        padding: 9px 11px 11px;
+    }
+
+    .group-modal-label {
+        font-size: 0.42rem;
+        margin-bottom: 3px;
+    }
+
+    .group-modal-type-tabs {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+
+    .group-modal-type-tab {
+        padding: 6px 8px;
+    }
+
+    .tab-title {
+        font-size: 0.52rem;
+    }
+
+    .tab-desc {
+        font-size: 0.42rem;
+    }
+
+    .group-modal-ticket-list {
+        max-height: 100px;
+    }
+
+    .group-modal-ticket-row {
+        padding: 5px 7px;
+    }
+
+    .group-modal-ticket-id {
+        font-size: 0.5rem;
+    }
+
+    .group-modal-ticket-meta {
+        font-size: 0.4rem;
+    }
+
+    .group-modal-ticket-location {
+        font-size: 0.45rem;
+        max-width: 80px;
+    }
+
+    .group-modal-input,
+    .group-modal-textarea {
+        padding: 5px 7px;
+        font-size: 0.5rem;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
+        padding: 5px 7px;
+        font-size: 0.5rem;
+        border-radius: 5px;
+    }
+
+    .group-modal-textarea {
+        height: 36px;
+    }
+
+    .group-modal-actions {
+        padding: 8px 11px 11px;
+        gap: 4px;
+    }
+
+    .group-modal-btn {
+        padding: 5px 8px;
+        font-size: 0.5rem;
+    }
+
+    .group-modal-ticket-drag-handle {
+        padding: 2px 4px;
+    }
+
+    .drag-handle-icon {
+        font-size: 8px;
+    }
+
+    .visit-order-badge {
+        font-size: 8px;
+    }
+
+    .group-modal-arrow-btn {
+        width: 16px;
+        height: 12px;
+        font-size: 7px;
     }
 }

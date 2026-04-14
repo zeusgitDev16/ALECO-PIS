@@ -1,15 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ALECO_SCOPE } from '../../alecoScope'; // Ensure this path is correct
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import '../CSS/CoverageMap.css';
 
 // --- ENTERPRISE CUSTOM ICONS ---
 const getStatusIcon = (status) => {
-    let colorClass = 'pin-blue'; 
-    if (status?.toLowerCase() === 'pending') colorClass = 'pin-orange';
-    if (status?.toLowerCase() === 'resolved') colorClass = 'pin-green';
+    let colorClass = 'pin-purple';
+    const statusLower = status?.toLowerCase() || '';
+
+    if (statusLower === 'pending') colorClass = 'pin-orange';
+    else if (statusLower === 'ongoing') colorClass = 'pin-blue';
+    else if (statusLower === 'restored') colorClass = 'pin-green';
+    else if (statusLower === 'unresolved') colorClass = 'pin-red';
+    else if (statusLower === 'nofaultfound') colorClass = 'pin-yellow';
+    else if (statusLower === 'accessdenied') colorClass = 'pin-red';
+    else if (statusLower === 'onhold') colorClass = 'pin-gray';
 
     return L.divIcon({
         className: 'custom-status-icon',
@@ -25,7 +35,9 @@ const MapFlyHandler = ({ targetCoords }) => {
     const map = useMap();
     useEffect(() => {
         if (targetCoords) {
-            map.flyTo(targetCoords, 16, { duration: 1.5 }); 
+            const coords = targetCoords.coords || targetCoords;
+            const zoom = targetCoords.zoom || 16;
+            map.flyTo(coords, zoom, { duration: 1.5 });
         }
     }, [targetCoords, map]);
     return null;
@@ -35,6 +47,9 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [flyTarget, setFlyTarget] = useState(null);
+    const [selectedTicketId, setSelectedTicketId] = useState(null);
+    const markerRefs = useRef({});
+    const clusterGroupRef = useRef(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -57,49 +72,95 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
 
     // --- HELPER: GET TOWN CENTER ---
     const getTownCenter = (muni) => {
-        const poblacion = muni.barangays.find(b => b.name.toLowerCase().includes('poblacion')) || muni.barangays[0];
-        return [poblacion.lat || 13.1353, poblacion.lng || 123.7443];
+        if (muni && muni.lat && muni.lng) return [muni.lat, muni.lng];
+        if (muni && Array.isArray(muni.barangays) && muni.barangays.length > 0) {
+            const poblacion =
+                muni.barangays.find(b => String(b?.name || '').toLowerCase().includes('poblacion')) ||
+                muni.barangays[0];
+            if (poblacion?.lat && poblacion?.lng) return [poblacion.lat, poblacion.lng];
+        }
+        return [13.1353, 123.7443];
     };
 
-    // --- SEARCH LOGIC ---
+    // --- SEARCH LOGIC (Ticket ID Search) ---
     const handleSearchChange = (e) => {
         const val = e.target.value;
         setSearchQuery(val);
-        if (val.length < 2) { setSearchResults([]); return; }
+        if (val.length < 1) { setSearchResults([]); return; }
 
-        const matched = [];
-        ALECO_SCOPE.forEach(district => {
-            district.municipalities.forEach(muni => {
-                if (muni.name.toLowerCase().includes(val.toLowerCase())) {
-                    matched.push({ name: muni.name, coords: getTownCenter(muni), type: 'Municipality' });
-                }
-                muni.barangays.forEach(brgy => {
-                    const cleanBrgy = getCleanName(brgy.name);
-                    if (cleanBrgy.includes(val.toLowerCase()) || brgy.name.toLowerCase().includes(val.toLowerCase())) {
-                        matched.push({ 
-                            name: brgy.name, 
-                            muni: muni.name, 
-                            coords: brgy.lat ? [brgy.lat, brgy.lng] : getTownCenter(muni), 
-                            type: 'Barangay' 
-                        });
-                    }
-                });
-            });
-        });
-        setSearchResults(matched.slice(0, 5));
+        const needle = val.toLowerCase();
+        const matched = tickets.filter(ticket => {
+            const ticketId = String(ticket.ticket_id || '').toLowerCase();
+            return ticketId.includes(needle);
+        }).slice(0, 5);
+
+        setSearchResults(matched);
     };
 
-    const selectLocation = (coords) => {
-        setFlyTarget(coords); 
+    const selectTicket = (ticket) => {
         setSearchQuery("");
         setSearchResults([]);
+        setSelectedTicketId(ticket.ticket_id);
+
+        // Get marker from refs (reliable direct reference)
+        const storedMarker = markerRefs.current[ticket.ticket_id];
+
+        // Access underlying Leaflet marker - try multiple properties
+        let leafletMarker = storedMarker;
+        if (storedMarker) {
+            // Try to get the actual Leaflet marker instance
+            leafletMarker = storedMarker._leaflet_element || storedMarker._leaflet || storedMarker;
+        }
+
+        if (leafletMarker && clusterGroupRef.current) {
+            const clusterGroup = clusterGroupRef.current;
+
+            // Access underlying Leaflet cluster group - try multiple properties
+            const leafletClusterGroup = clusterGroup._leaflet_element ||
+                                        clusterGroup._leaflet ||
+                                        clusterGroup._markerClusterGroup ||
+                                        clusterGroup.layer ||
+                                        clusterGroup;
+
+            // Spiderfy cluster if marker is inside one
+            if (leafletClusterGroup && leafletClusterGroup.getVisibleParent) {
+                const parentCluster = leafletClusterGroup.getVisibleParent(leafletMarker);
+                if (parentCluster && parentCluster !== leafletMarker && parentCluster.spiderfy) {
+                    parentCluster.spiderfy();
+                }
+            }
+
+            // Get actual marker position (not jittered calculation)
+            let coords;
+            if (leafletMarker.getLatLng) {
+                const markerPosition = leafletMarker.getLatLng();
+                coords = [markerPosition.lat, markerPosition.lng];
+            } else {
+                // Fallback to calculated position
+                coords = getTicketPosition(ticket);
+            }
+
+            // Fly to marker position at high zoom
+            setFlyTarget({ coords, zoom: 18 });
+
+            // Wait for flyTo animation (1.5s) + spiderfy buffer, then open popup
+            setTimeout(() => {
+                if (leafletMarker.openPopup) {
+                    leafletMarker.openPopup();
+                }
+            }, 1600);
+        } else {
+            // Fallback: use calculated position
+            const position = getTicketPosition(ticket);
+            setFlyTarget({ coords: position, zoom: 18 });
+        }
     };
 
     // --- BULLETPROOF LOCATION FINDER & JITTER ---
-    const getTicketPosition = (locationString, ticketId) => {
+    const getTicketPosition = (ticket) => {
         let jitterX = 0;
         let jitterY = 0;
-        const safeId = ticketId ? String(ticketId) : String(Math.random());
+        const safeId = ticket.ticket_id ? String(ticket.ticket_id) : String(Math.random());
         
         let hash = 0;
         for (let i = 0; i < safeId.length; i++) {
@@ -111,6 +172,18 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
         // Ultimate Inland Fallback (Albay Capitol Area - Safe from water)
         const INLAND_LEGAZPI = [13.1353, 123.7443];
 
+        // --- NEW: PRECISE COORDINATE PRIORITY ---
+        // If the ticket has explicit GPS or map-pin coordinates, use them!
+        if (ticket.reported_lat != null && ticket.reported_lng != null) {
+            const lat = Number(ticket.reported_lat);
+            const lng = Number(ticket.reported_lng);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                return [lat, lng];
+            }
+        }
+
+        const locationString = ticket.location || [ticket.address, ticket.municipality, ticket.district].filter(Boolean).join(', ');
+
         if (!locationString || typeof locationString !== 'string') {
             return [INLAND_LEGAZPI[0] + jitterX, INLAND_LEGAZPI[1] + jitterY]; 
         }
@@ -120,9 +193,12 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
 
         // STEP 1: Identify the Municipality First
         for (const district of ALECO_SCOPE) {
-            for (const muni of district.municipalities) {
-                const cleanMuniName = muni.name.toLowerCase().replace(' city', '');
-                if (locLower.includes(cleanMuniName)) {
+            for (const muni of (district.municipalities || [])) {
+                const muniName = String(muni?.name || '').toLowerCase();
+                const muniGoogleName = String(muni?.googleName || '').toLowerCase();
+                const cleanMuniName = muniName.replace(' city', '').trim();
+                const cleanGoogle = muniGoogleName.replace(' city', '').trim();
+                if ((cleanMuniName && locLower.includes(cleanMuniName)) || (cleanGoogle && locLower.includes(cleanGoogle))) {
                     matchedMuni = muni;
                     break;
                 }
@@ -132,11 +208,12 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
 
         // STEP 2: Search strictly inside the confirmed town using Clean Names
         if (matchedMuni) {
-            for (const brgy of matchedMuni.barangays) {
-                const cleanBrgy = getCleanName(brgy.name);
-                // Matches "arimbay" inside "arimbay, legazpi"
-                if (cleanBrgy.length > 2 && locLower.includes(cleanBrgy) && brgy.lat && brgy.lng) {
-                    return [brgy.lat + jitterX, brgy.lng + jitterY];
+            if (Array.isArray(matchedMuni.barangays)) {
+                for (const brgy of matchedMuni.barangays) {
+                    const cleanBrgy = getCleanName(String(brgy?.name || ''));
+                    if (cleanBrgy.length > 2 && locLower.includes(cleanBrgy) && brgy?.lat && brgy?.lng) {
+                        return [brgy.lat + jitterX, brgy.lng + jitterY];
+                    }
                 }
             }
             const townCenter = getTownCenter(matchedMuni);
@@ -145,10 +222,11 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
 
         // STEP 3: Blind Search (If municipality was omitted)
         for (const district of ALECO_SCOPE) {
-            for (const muni of district.municipalities) {
+            for (const muni of (district.municipalities || [])) {
+                if (!Array.isArray(muni.barangays)) continue;
                 for (const brgy of muni.barangays) {
-                    const cleanBrgy = getCleanName(brgy.name);
-                    if (cleanBrgy.length > 2 && locLower.includes(cleanBrgy) && brgy.lat && brgy.lng) {
+                    const cleanBrgy = getCleanName(String(brgy?.name || ''));
+                    if (cleanBrgy.length > 2 && locLower.includes(cleanBrgy) && brgy?.lat && brgy?.lng) {
                         return [brgy.lat + jitterX, brgy.lng + jitterY];
                     }
                 }
@@ -171,16 +249,16 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
                         <div className="map-search-container">
                             <input 
                                 type="text" 
-                                placeholder="🔍 Search Barangay..." 
+                                placeholder="🔍 Search Ticket ID..." 
                                 value={searchQuery}
                                 onChange={handleSearchChange}
                             />
                             {searchResults.length > 0 && (
                                 <ul className="search-results-list">
-                                    {searchResults.map((res, i) => (
-                                        <li key={i} onClick={() => selectLocation(res.coords)}>
-                                            <strong>{res.name}</strong> 
-                                            <small>{res.type === 'Barangay' ? ` (${res.muni})` : ''}</small>
+                                    {searchResults.map((ticket, i) => (
+                                        <li key={i} onClick={() => selectTicket(ticket)}>
+                                            <strong>{ticket.ticket_id}</strong>
+                                            <small>{ticket.status ? ` - ${ticket.status}` : ''}</small>
                                         </li>
                                     ))}
                                 </ul>
@@ -201,27 +279,57 @@ const CoverageMap = ({ isOpen, onClose, tickets = [] }) => {
                         
                         <MapFlyHandler targetCoords={flyTarget} />
 
-                        {tickets.map(ticket => {
-                            const position = getTicketPosition(ticket.location, ticket.ticket_id);
-                            const icon = getStatusIcon(ticket.status);
-                            
-                            return (
-                                <Marker key={ticket.ticket_id || Math.random()} position={position} icon={icon}>
-                                    <Popup>
-                                        <div className="map-popup">
-                                            <span className="popup-id">{ticket.ticket_id}</span>
-                                            <h4 className="popup-issue">{ticket.issue_type}</h4>
-                                            <p className="popup-loc">📍 {ticket.location}</p>
-                                            <div className="popup-footer">
-                                                <span className={`status-badge ${ticket.status?.toLowerCase().replace(/\s+/g, '-')}`}>
-                                                    {ticket.status}
-                                                </span>
+                        <MarkerClusterGroup
+                            ref={clusterGroupRef}
+                            chunkedLoading
+                            spiderfyOnMaxZoom
+                            showCoverageOnHover={false}
+                            removeOutsideVisibleBounds
+                        >
+                            {tickets.map(ticket => {
+                                const position = getTicketPosition(ticket);
+                                const icon = getStatusIcon(ticket.status);
+                                const locationText = ticket.location || [ticket.address, ticket.municipality, ticket.district].filter(Boolean).join(', ') || '—';
+                                const issueText = ticket.issue_type || ticket.category || '—';
+                                const hasPrecise = ticket.reported_lat != null && ticket.reported_lng != null;
+                                const lat = hasPrecise ? Number(ticket.reported_lat) : null;
+                                const lng = hasPrecise ? Number(ticket.reported_lng) : null;
+                                
+                                return (
+                                    <Marker
+                                        key={ticket.ticket_id || Math.random()}
+                                        position={position}
+                                        icon={icon}
+                                        ref={(marker) => {
+                                            if (marker) {
+                                                // Access underlying Leaflet marker instance
+                                                // In react-leaflet v4, the Leaflet instance is available on the component
+                                                const leafletMarker = marker._leaflet_element || marker;
+                                                markerRefs.current[ticket.ticket_id] = leafletMarker;
+                                            }
+                                        }}
+                                    >
+                                        <Popup>
+                                            <div className="map-popup">
+                                                <span className="popup-id">{ticket.ticket_id}</span>
+                                                <h4 className="popup-issue">{issueText}</h4>
+                                                <p className="popup-loc">📍 {locationText}</p>
+                                                <p className="popup-loc">
+                                                    {hasPrecise && Number.isFinite(lat) && Number.isFinite(lng)
+                                                        ? `🧭 ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                                                        : '🧭 No precise coordinates'}
+                                                </p>
+                                                <div className="popup-footer">
+                                                    <span className={`status-badge ${ticket.status?.toLowerCase().replace(/\s+/g, '-')}`}>
+                                                        {ticket.status}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Popup>
-                                </Marker>
-                            );
-                        })}
+                                        </Popup>
+                                    </Marker>
+                                );
+                            })}
+                        </MarkerClusterGroup>
                     </MapContainer>
                 </div>
             </div>

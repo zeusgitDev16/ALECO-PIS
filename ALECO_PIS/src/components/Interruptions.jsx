@@ -3,6 +3,7 @@ import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/Buttons.css';
 import '../CSS/InterruptionsAdmin.css';
+import '../CSS/InterruptionUIScale.css';
 import { FILTER_CHIPS } from '../utils/interruptionLabels';
 import { emptyForm, buildInterruptionPayload, rowToFormState, validateInterruptionForm } from '../utils/interruptionFormUtils';
 import { useAdminInterruptions } from '../hooks/useAdminInterruptions';
@@ -15,9 +16,12 @@ import InterruptionWorkflowView from './interruptions/InterruptionWorkflowView';
 import InterruptionLayoutPicker from './interruptions/InterruptionLayoutPicker';
 import InterruptionAdvisoryUpdates from './interruptions/InterruptionAdvisoryUpdates';
 import InterruptionFilterDrawer from './interruptions/InterruptionFilterDrawer';
+import { useRecentOpenedAdvisories } from '../utils/useRecentOpenedAdvisories';
+import RecentOpenedAdvisories from './containers/RecentOpenedAdvisories';
 import '../CSS/InterruptionLayoutPicker.css';
 import '../CSS/InterruptionWorkflowView.css';
 import '../CSS/InterruptionFilterDrawer.css';
+import '../CSS/InterruptionModalUIScale.css';
 
 const AdminInterruptions = () => {
   const {
@@ -58,6 +62,7 @@ const AdminInterruptions = () => {
   const [validationErrors, setValidationErrors] = useState([]);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('interruptionViewMode') || 'card');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedAdvisories();
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
@@ -153,6 +158,7 @@ const AdminInterruptions = () => {
   };
 
   const openEdit = (row) => {
+    if (row?.id != null) addOpened(row.id);
     setEditingId(row.id);
     setForm(emptyForm);
     setBaselineForm(null);
@@ -167,12 +173,9 @@ const AdminInterruptions = () => {
 
   useEffect(() => {
     if (validationErrors.length === 0) return;
-    const id = setTimeout(() => {
-      setValidationErrors([]);
-      setMessage(null);
-    }, 2000);
+    const id = setTimeout(() => setValidationErrors([]), 8000);
     return () => clearTimeout(id);
-  }, [validationErrors, setMessage]);
+  }, [validationErrors]);
 
   useEffect(() => {
     if (listArchiveFilter === 'archived') setActiveChipKey('all');
@@ -360,6 +363,24 @@ const AdminInterruptions = () => {
           </div>
         </div>
 
+        <RecentOpenedAdvisories
+          advisories={interruptions}
+          recentIds={recentIds}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          onSelectAdvisory={openEdit}
+          onPullFromFeed={pullFromFeedAdvisory}
+          onPushToFeed={pushToFeedAdvisory}
+          onDelete={handleArchiveRequest}
+          onPermanentDelete={(id) => {
+            const row = interruptions.find((i) => i.id === id);
+            setPermanentDeleteConfirm({ id, feeder: String(row?.feeder || '').trim() || `Advisory #${id}` });
+          }}
+          saving={saving}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => setIsCollapsed((v) => !v)}
+        />
+
         <div className="main-content-card interruptions-admin-content-card">
         {viewMode === 'card' && (
           <InterruptionAdvisoryBoard
@@ -368,6 +389,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -385,6 +407,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -402,6 +425,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);

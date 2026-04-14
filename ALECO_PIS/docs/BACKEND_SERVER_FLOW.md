@@ -62,7 +62,7 @@ Prefixes below are **relative to `/api`**.
 `GET` `/tickets/track/:ticketId`, `/tickets/sms/receive`, `/tickets/logs`, `/tickets/:ticketId/logs`  
 `PUT` `/tickets/:ticketId`, `/tickets/:ticket_id/dispatch`, `/tickets/:ticket_id/hold`, `/tickets/:ticketId/status`, **`/:ticketId/status`** (legacy)  
 `DELETE` `/tickets/:ticketId`  
-`GET/POST/PUT/DELETE` `/crews/list`, `/crews/add`, `/crews/update/:id`, `/crews/delete/:id`, `/pool/list`, `/pool/add`, `/pool/update/:id`
+`GET/POST/PUT/DELETE` `/crews/list`, `/crews/add`, `/crews/update/:id`, `/crews/delete/:id`, `/pool/list`, `/pool/add`, `/pool/update/:id`, `/pool/delete/:id`
 
 ### user.js
 `POST` `/invite`, `/send-email`, `/check-email`, `/users/toggle-status`  

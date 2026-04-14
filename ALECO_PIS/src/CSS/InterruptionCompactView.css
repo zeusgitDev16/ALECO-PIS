@@ -144,11 +144,7 @@ body.modal-open .interruptions-compact-table-header {
 }
 
 .interruptions-compact-table-body tr.interruptions-compact-row--feed-not-on-feed {
-  border-left: 3px solid var(--accent-primary, #7c3aed);
-}
-
-[data-theme='dark'] .interruptions-compact-table-body tr.interruptions-compact-row--feed-not-on-feed {
-  border-left-color: #a78bfa;
+  border-left: 3px solid var(--accent-feed-not-on-feed);
 }
 
 .interruptions-compact-table-body tr.interruptions-compact-row--feed-archived {

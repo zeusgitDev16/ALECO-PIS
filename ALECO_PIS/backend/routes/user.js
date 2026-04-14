@@ -1,18 +1,9 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
 import pool from '../config/db.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
+import { sendAppMail } from '../utils/appMail.js';
 
 const router = express.Router();
-
-// 4. The Mailman Configuration (Needed for '/send-email' below)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 // 4. The Mailbox (The API Route)
 router.post('/invite', async (req, res) => {
@@ -27,7 +18,7 @@ router.post('/invite', async (req, res) => {
     const [existingUser] = await pool.execute('SELECT * FROM users WHERE email = ?', [cleanEmail]);
 
     if (existingUser.length > 0) {
-      console.log(`--- [DEBUG] User ${cleanEmail} is registered. Promoting to ${role}... ---`);
+      console.log(`--- [INFO] User ${cleanEmail} is registered. Promoting to ${role}... ---`);
       // Update 'role' in the users table
       await pool.execute('UPDATE users SET role = ? WHERE email = ?', [role, cleanEmail]);
       
@@ -41,7 +32,7 @@ router.post('/invite', async (req, res) => {
     const [pendingInvite] = await pool.execute('SELECT * FROM access_codes WHERE email = ?', [cleanEmail]);
 
     if (pendingInvite.length > 0) {
-      console.log("--- [DEBUG] Overwriting existing pending invite... ---");
+      console.log("--- [INFO] Overwriting existing pending invite... ---");
       
       // FIXED: Using 'status' column and 'role_assigned' column from your schema
      const updateQuery = `
@@ -55,7 +46,7 @@ router.post('/invite', async (req, res) => {
     } 
 
     // 3. They are brand new.
-    console.log("--- [DEBUG] Email is new. Creating fresh invite... ---");
+    console.log("--- [INFO] Email is new. Creating fresh invite... ---");
 
     // FIXED: Exactly 4 placeholders match exactly 4 values
     const insertQuery = `
@@ -115,11 +106,17 @@ router.post('/send-email', async (req, res) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`--- [DEBUG] Email successfully delivered to ${email} ---`);
+    await sendAppMail({
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      text: mailOptions.text,
+      html: mailOptions.html,
+    });
+    console.log(`--- [INFO] Email successfully delivered to ${email} ---`);
     res.status(200).json({ message: "Email sent successfully!" });
   } catch (error) {
-    console.error("--- [DEBUG] Nodemailer Error:", error);
+    console.error("--- [ERROR] Nodemailer Error:", error);
     res.status(500).json({ error: "The mailman couldn't reach the recipient." });
   }
 });
@@ -165,22 +162,115 @@ router.get('/users', async (req, res) => {
   }
 });
 
-// Update profile name — persists the name field from ProfilePage to the DB
+// Fetch all pending invitations
+router.get('/invites/pending', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      "SELECT email, role_assigned, code, created_at FROM access_codes WHERE status = 'pending' ORDER BY created_at DESC"
+    );
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching pending invites:", error.message);
+    res.status(500).json({ error: "Failed to fetch pending invitations." });
+  }
+});
+
+// Fetch profile data for the logged-in user
+router.get('/users/profile', async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Missing email.' });
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, name, email, role, auth_method, profile_pic, bio, phone, address, social_url, created_at FROM users WHERE email = ?',
+      [cleanEmail]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found.' });
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error('Profile Fetch Error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch profile.' });
+  }
+});
+
+// Update profile — persists all editable fields to the DB
 router.put('/users/profile', async (req, res) => {
-  const { email, name } = req.body;
-  if (!email || !name || !name.trim()) return res.status(400).json({ error: "Missing email or name." });
+  const { email, name, bio, phone, address, social_url } = req.body;
+  if (!email || !name || !name.trim()) return res.status(400).json({ error: 'Missing email or name.' });
 
   const cleanEmail = email.trim().toLowerCase();
-  const cleanName = name.trim();
+  const cleanName  = name.trim();
+  const cleanBio   = (bio   || '').trim() || null;
+  const cleanPhone = (phone || '').trim() || null;
+  const cleanAddr  = (address    || '').trim() || null;
+  const cleanSocial= (social_url || '').trim() || null;
 
   try {
-    const [result] = await pool.execute('UPDATE users SET name = ? WHERE email = ?', [cleanName, cleanEmail]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: "User not found." });
-    res.status(200).json({ message: "Profile updated successfully." });
+    const [result] = await pool.execute(
+      'UPDATE users SET name = ?, bio = ?, phone = ?, address = ?, social_url = ? WHERE email = ?',
+      [cleanName, cleanBio, cleanPhone, cleanAddr, cleanSocial, cleanEmail]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found.' });
+    res.status(200).json({ message: 'Profile updated successfully.' });
   } catch (error) {
-    console.error("Profile Update Error:", error.message);
-    res.status(500).json({ error: "Failed to update profile." });
+    console.error('Profile Update Error:', error.message);
+    res.status(500).json({ error: 'Failed to update profile.' });
   }
+});
+
+// Fetch recent activity logs — separate queries per source to avoid cross-table collation issues
+router.get('/users/activity', async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Missing email.' });
+  const cleanEmail = email.trim().toLowerCase();
+
+  const results = [];
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 'ticket' AS category, action, ticket_id AS reference_id,
+              from_status, to_status, NULL AS detail, created_at
+       FROM aleco_ticket_logs WHERE actor_email = ? ORDER BY created_at DESC LIMIT 15`,
+      [cleanEmail]
+    );
+    results.push(...rows);
+  } catch (e) { console.error('Activity [ticket] error:', e.message); }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 'b2b' AS category, action, CAST(message_id AS CHAR) AS reference_id,
+              NULL AS from_status, NULL AS to_status, details AS detail, created_at
+       FROM aleco_b2b_mail_audit_logs WHERE actor_email = ? ORDER BY created_at DESC LIMIT 15`,
+      [cleanEmail]
+    );
+    results.push(...rows);
+  } catch (e) { console.error('Activity [b2b] error:', e.message); }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 'interruption' AS category, 'update' AS action,
+              CAST(interruption_id AS CHAR) AS reference_id,
+              NULL AS from_status, NULL AS to_status,
+              SUBSTRING(remark, 1, 80) AS detail, created_at
+       FROM aleco_interruption_updates WHERE actor_email = ? AND kind = 'user'
+       ORDER BY created_at DESC LIMIT 15`,
+      [cleanEmail]
+    );
+    results.push(...rows);
+  } catch (e) { console.error('Activity [interruption] error:', e.message); }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 'personnel' AS category, action, NULL AS reference_id,
+              NULL AS from_status, NULL AS to_status, target_name AS detail, created_at
+       FROM aleco_personnel_audit_logs WHERE actor_email = ? ORDER BY created_at DESC LIMIT 15`,
+      [cleanEmail]
+    );
+    results.push(...rows);
+  } catch (e) { /* table may not exist yet — silently skip */ }
+
+  results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  res.status(200).json(results.slice(0, 15));
 });
 
 // Toggle Status (Matches Schema Casing)

@@ -52,7 +52,6 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onPer
     >
       <div className="interruptions-admin-card-head">
         <span className={`interruptions-admin-status-chip status-${statusClass}`}>{statusLabel}</span>
-        <span className="interruptions-admin-type-pill">{item.type}</span>
         {archived && (
           <span className="interruptions-admin-archived-chip" title="Archived">Archived</span>
         )}
@@ -66,7 +65,6 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onPer
           <span className="interruptions-admin-card-feeder-label">Feeder</span>
           <h3 className="interruptions-admin-card-feeder-value interruptions-admin-card-feeder-value--compact">{feederDisplay}</h3>
         </div>
-        <span className="interruptions-admin-card-ref-id interruptions-admin-card-ref-id--compact">#{item.id}</span>
       </div>
 
       {(previewText || areasShort) && (

@@ -1,75 +1,309 @@
-/* --- INVITE FORM RESPONSIVE LAYOUT --- */
-.invite-form {
-    display: grid;
-    grid-template-columns: 3fr 2fr auto; /* Email (wide), Role (medium), Button (auto) */
-    gap: 20px;
-    align-items: end; /* Aligns button with input fields */
+/* Invite / Manage User — scoped under .users-page-container; label/value rhythm matches TicketDetailPane */
+
+.users-page-container .users-invite-widget {
+  margin-bottom: calc(20px * var(--users-ui-scale, 1));
+  /* Outer padding lives on .users-page-container .dashboard-widget in UsersDashboard.css */
+  border-left: calc(4px * var(--users-ui-scale, 1)) solid #2e7d32;
+  background: linear-gradient(
+    135deg,
+    rgba(46, 125, 50, 0.06) 0%,
+    var(--bg-card) 48%
+  );
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
+.users-page-container .users-invite-panel-head {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(14px * var(--users-ui-scale, 1));
+  margin-bottom: calc(26px * var(--users-ui-scale, 1));
 }
 
-.form-group label {
-    margin-bottom: 8px;
-    font-size: var(--fs-sm);
-    color: var(--text-secondary);
-    font-weight: 600;
+.users-page-container .users-invite-panel-icon {
+  flex-shrink: 0;
+  width: calc(40px * var(--users-ui-scale, 1));
+  height: calc(40px * var(--users-ui-scale, 1));
+  border-radius: calc(10px * var(--users-ui-scale, 1));
+  background: rgba(46, 125, 50, 0.12);
+  color: #2e7d32;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(46, 125, 50, 0.25);
 }
 
-.form-input {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 8px;
-    border: 1px solid rgba(128, 128, 128, 0.3);
-    background-color: var(--bg-body);
-    color: var(--text-header);
-    outline: none;
-    font-size: var(--fs-base);
-    box-sizing: border-box;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+.users-page-container .users-invite-panel-icon svg {
+  width: calc(22px * var(--users-ui-scale, 1));
+  height: calc(22px * var(--users-ui-scale, 1));
 }
 
-.form-input:focus {
-    border-color: #2e7d32;
-    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+.users-page-container .users-invite-panel-titles {
+  min-width: 0;
 }
 
-/* Custom Select Styling */
-select.form-input {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 1em;
-    cursor: pointer;
+.users-page-container .users-invite-heading {
+  margin: 0 0 calc(6px * var(--users-ui-scale, 1));
+  font-size: calc(0.65rem * var(--users-ui-scale, 1));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
 }
 
-.invite-btn {
-    padding: 12px 24px;
-    height: auto; /* Let padding define height to match inputs */
-    font-size: var(--fs-base);
-    white-space: nowrap;
+.users-page-container .users-invite-subtitle {
+  margin: 0;
+  font-size: calc(0.75rem * var(--users-ui-scale, 1));
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.users-page-container .invite-form {
+  display: grid;
+  grid-template-columns: 3fr 2fr auto;
+  gap: calc(18px * var(--users-ui-scale, 1)) calc(20px * var(--users-ui-scale, 1));
+  align-items: end;
+}
+
+.users-page-container .invite-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--users-ui-scale, 1));
+  min-width: 0;
+}
+
+.users-page-container .users-invite-email-group {
+  gap: calc(10px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .invite-form .form-group > label {
+  font-size: calc(0.65rem * var(--users-ui-scale, 1));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.users-page-container .users-invite-email-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(8px * var(--users-ui-scale, 1));
+  margin-bottom: calc(6px * var(--users-ui-scale, 1));
+  flex-wrap: wrap;
+}
+
+.users-page-container .users-invite-email-label-row > label {
+  margin: 0;
+  font-size: calc(0.65rem * var(--users-ui-scale, 1));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+}
+
+.users-page-container .users-invite-status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(8px * var(--users-ui-scale, 1));
+  padding: calc(10px * var(--users-ui-scale, 1)) calc(12px * var(--users-ui-scale, 1));
+  border-radius: calc(8px * var(--users-ui-scale, 1));
+  font-size: calc(0.65rem * var(--users-ui-scale, 1));
+  font-weight: 600;
+  line-height: 1.45;
+  border: 1px solid transparent;
+}
+
+.users-page-container .users-invite-status-banner span {
+  flex: 1;
+  min-width: 0;
+}
+
+.users-page-container .users-invite-status--pending {
+  color: #f57c00;
+  background: rgba(245, 124, 0, 0.08);
+  border-color: rgba(245, 124, 0, 0.25);
+}
+
+.users-page-container .users-invite-status--registered {
+  color: #1976d2;
+  background: rgba(25, 118, 210, 0.08);
+  border-color: rgba(25, 118, 210, 0.28);
+}
+
+.users-page-container .users-invite-status-banner svg {
+  width: calc(16px * var(--users-ui-scale, 1));
+  height: calc(16px * var(--users-ui-scale, 1));
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.users-page-container .users-invite-input-wrap {
+  position: relative;
+}
+
+.users-page-container .form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: calc(10px * var(--users-ui-scale, 1)) calc(12px * var(--users-ui-scale, 1));
+  padding-right: calc(40px * var(--users-ui-scale, 1));
+  border-radius: calc(6px * var(--users-ui-scale, 1));
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: calc(0.8rem * var(--users-ui-scale, 1));
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.users-page-container .form-input:focus {
+  border-color: var(--accent-primary, #2e7d32);
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+}
+
+.users-page-container select.form-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(10px * var(--users-ui-scale, 1)) center;
+  background-size: calc(1em * var(--users-ui-scale, 1));
+  cursor: pointer;
+  padding-right: calc(36px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-invite-input-icon {
+  position: absolute;
+  right: calc(10px * var(--users-ui-scale, 1));
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(20px * var(--users-ui-scale, 1));
+  height: calc(20px * var(--users-ui-scale, 1));
+  pointer-events: none;
+}
+
+.users-page-container .invite-btn {
+  padding: calc(10px * var(--users-ui-scale, 1)) calc(18px * var(--users-ui-scale, 1));
+  height: auto;
+  font-size: calc(0.8rem * var(--users-ui-scale, 1));
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: calc(8px * var(--users-ui-scale, 1));
+  min-height: max(2em, calc(36px * var(--users-ui-scale, 1)));
+}
+
+.users-page-container .users-invite-success {
+  background: rgba(46, 125, 50, 0.1);
+  padding: calc(14px * var(--users-ui-scale, 1)) calc(16px * var(--users-ui-scale, 1));
+  border-radius: calc(8px * var(--users-ui-scale, 1));
+  border: 1px solid rgba(46, 125, 50, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: calc(14px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-invite-success-lead {
+  margin: 0 0 calc(6px * var(--users-ui-scale, 1));
+  font-size: calc(0.8rem * var(--users-ui-scale, 1));
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.users-page-container .users-invite-code-row {
+  display: flex;
+  align-items: center;
+  gap: calc(10px * var(--users-ui-scale, 1));
+  flex-wrap: wrap;
+}
+
+.users-page-container .users-invite-code {
+  font-size: calc(1rem * var(--users-ui-scale, 1));
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.users-page-container .users-invite-copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: calc(4px * var(--users-ui-scale, 1));
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-invite-copy-btn:hover {
+  color: var(--text-primary);
+}
+
+.users-page-container .users-invite-copy-btn svg {
+  width: calc(20px * var(--users-ui-scale, 1));
+  height: calc(20px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-invite-actions {
+  display: flex;
+  gap: calc(10px * var(--users-ui-scale, 1));
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.users-page-container .users-invite-btn-secondary {
+  padding: calc(8px * var(--users-ui-scale, 1)) calc(16px * var(--users-ui-scale, 1));
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: calc(6px * var(--users-ui-scale, 1));
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: calc(0.8rem * var(--users-ui-scale, 1));
+  font-weight: 600;
+}
+
+.users-page-container .users-invite-btn-secondary:hover {
+  background: rgba(128, 128, 128, 0.08);
+}
+
+.users-page-container .invite-form .main-login-btn.invite-btn {
+  box-sizing: border-box;
+}
+
+.users-page-container .invite-form .invite-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.users-page-container .users-invite-actions .main-login-btn {
+  padding: calc(8px * var(--users-ui-scale, 1)) calc(16px * var(--users-ui-scale, 1));
+  font-size: calc(0.8rem * var(--users-ui-scale, 1));
+  font-weight: 700;
+  border-radius: calc(6px * var(--users-ui-scale, 1));
 }
 
 @media (max-width: 1024px) {
-    .invite-form {
-        grid-template-columns: 1fr 1fr; /* Stack Email and Role side-by-side */
-    }
-    .invite-btn {
-        grid-column: 1 / -1; /* Button takes full width below */
-    }
+  .users-page-container .invite-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .users-page-container .invite-form .invite-btn {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 600px) {
-    .invite-form {
-        grid-template-columns: 1fr; /* Stack everything vertically */
-    }
-    .invite-btn {
-        grid-column: auto;
-    }
+  .users-page-container .invite-form {
+    grid-template-columns: 1fr;
+  }
+
+  .users-page-container .invite-form .invite-btn {
+    grid-column: auto;
+  }
 }

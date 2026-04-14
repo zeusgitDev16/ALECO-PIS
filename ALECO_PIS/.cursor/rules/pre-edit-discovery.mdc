@@ -1,0 +1,22 @@
+---
+description: Before any code edit—discover related files and existing logic; avoid assumptions
+alwaysApply: true
+---
+
+# Pre-edit discovery (ALECO PIS)
+
+## Do not assume
+
+- Do **not** infer behavior, data shape, or call chains from memory alone.
+- Do **not** refactor or “clean up” unrelated code while doing a task.
+
+## Before changing code
+
+1. **Find related files** — Search or follow imports for routes, helpers, shared utils, CSS, env usage, and UI callers tied to the same feature.
+2. **Read the existing logic** — Trace how data flows (API → DTO → state → UI), edge cases, and naming/style used in that area.
+3. **Match structure** — Edits should follow the same patterns (error handling, logging, hooks, route shape) unless the task explicitly changes them.
+4. **Edit minimally** — Touch only what the request requires; preserve comments and unrelated behavior.
+
+## After edits
+
+- Prefer verifying lints only on touched files when relevant.

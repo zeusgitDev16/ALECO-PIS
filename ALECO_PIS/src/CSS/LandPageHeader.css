@@ -12,24 +12,90 @@
     font-weight: 700;
     text-align: center;
     margin: 0;
+    /* Shine: narrow bright band sweeps right-to-left across text */
     background: linear-gradient(
-        to right,
-        #666666 0%, 
-    #ffffff 50%, 
-    #666666 100%
+        90deg,
+        #666666 0%,
+        #666666 30%,
+        #ffffff 45%,
+        #ffffff 55%,
+        #666666 70%,
+        #666666 100%
     );
-    background-size: 200% auto;
-    color: #fff;
+    background-size: 200% 100%;
+    background-position: 200% center;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: shine 4s linear infinite;
+    color: transparent;
+    animation: landing-shine 4s linear infinite;
 }
 
-@keyframes shine {
-    to {
+/* Shine moves from right to left across the text */
+@keyframes landing-shine {
+    from {
         background-position: 200% center;
+    }
+    to {
+        background-position: -100% center;
     }
 }
 
-/* Responsive design */
+/* =========================================
+   MODULAR SIZE SCALING (public view)
+   ========================================= */
+
+/* 768–1023px (88%) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .landing-page-header h4 {
+        font-size: 0.88rem;
+    }
+
+    .landing-page-container {
+        min-height: 0.44rem;
+    }
+}
+
+/* 600–767px (72%) */
+@media (min-width: 600px) and (max-width: 767px) {
+    .landing-page-header h4 {
+        font-size: 0.72rem;
+    }
+
+    .landing-page-container {
+        min-height: 0.36rem;
+    }
+}
+
+/* 480–599px (72%) */
+@media (min-width: 480px) and (max-width: 599px) {
+    .landing-page-header h4 {
+        font-size: 0.72rem;
+    }
+
+    .landing-page-container {
+        min-height: 0.36rem;
+    }
+}
+
+/* 320–479px (65%) */
+@media (min-width: 320px) and (max-width: 479px) {
+    .landing-page-header h4 {
+        font-size: 0.65rem;
+    }
+
+    .landing-page-container {
+        min-height: 0.33rem;
+    }
+}
+
+/* ≤320px (55%) */
+@media (max-width: 320px) {
+    .landing-page-header h4 {
+        font-size: 0.55rem;
+    }
+
+    .landing-page-container {
+        min-height: 0.28rem;
+    }
+}

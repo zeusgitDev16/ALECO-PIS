@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatToPhilippineDate } from '../../utils/dateUtils';
+import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
 import '../../CSS/UrgentTickets.css';
 
 const UrgentTickets = ({ tickets, onSelectTicket, selectedIds, onToggleSelect }) => {
@@ -60,7 +61,7 @@ const UrgentTickets = ({ tickets, onSelectTicket, selectedIds, onToggleSelect })
                             </div>
                             
                             <span className={`status-pill-solid ${ticket.status ? ticket.status.toLowerCase().replace(/\s/g, '') : 'pending'}`}>
-                                {ticket.status || 'Pending'}
+                                {formatTicketStatusLabel(ticket.status) || 'Pending'}
                             </span>
                         </div>
                     </div>

@@ -20,28 +20,31 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
       {isOpen && <div className="sidebar-overlay" onClick={toggleSidebar}></div>}
 
       {/* Dynamic Class applied here: ${isOpen ? 'open' : ''} */}
-      <aside id="sidebar" className={`sidebar ${isOpen ? 'open' : ''}`} style={{ height: '100vh', overflowY: 'auto' }}>
+      <aside id="sidebar" className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-layout">
-          <div className="sidebar-header">
-            <img src={alecoLogo} alt="Aleco Logo" className="sidebar-logo" />
-            <h5>ALECO</h5>
-          </div>
-          <hr className="sidebar-separator" />
-          
-          {/* Main Navigation */}
-          <div className="sidebar-menu">
-            <Link to="/admin-dashboard" className={`sidebar-item ${activePage === 'home' ? 'active' : ''}`} onClick={handleLinkClick}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
-              <span>Home</span>
-            </Link>
-          </div>
+          {/* Fixed top: logo + title + separator */}
+          <header className="sidebar-top">
+            <div className="sidebar-header">
+              <img src={alecoLogo} alt="Aleco Logo" className="sidebar-logo" />
+              <h5>ALECO</h5>
+            </div>
+            <hr className="sidebar-separator" aria-hidden="true" />
+          </header>
 
-          <span className="sidebar-label">Tools*</span>
-          <div className="sidebar-content">
-            {/* Users */}
+          {/* Scrollable middle: all nav links + section labels */}
+          <nav className="sidebar-nav-scroll" aria-label="Admin navigation">
+            <div className="sidebar-menu">
+              <Link to="/admin-dashboard" className={`sidebar-item ${activePage === 'home' ? 'active' : ''}`} onClick={handleLinkClick}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>Home</span>
+              </Link>
+            </div>
+
+            <span className="sidebar-label">Tools*</span>
+            <div className="sidebar-nav-group">
             <Link to="/admin-users" className={`sidebar-item ${activePage === 'users' ? 'active' : ''}`} onClick={handleLinkClick}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -52,17 +55,24 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
               <span>Users</span>
             </Link>
 
-            {/* --- ADD THIS PERSONNEL LINK --- */}
-  <Link to="/admin-personnel" className={`sidebar-item ${activePage === 'personnel' ? 'active' : ''}`} onClick={handleLinkClick}>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-      <circle cx="8.5" cy="7" r="4"></circle>
-      <polyline points="17 11 19 13 23 9"></polyline>
-    </svg>
-    <span>Personnel</span>
-  </Link>
+              <Link to="/admin-personnel" className={`sidebar-item ${activePage === 'personnel' ? 'active' : ''}`} onClick={handleLinkClick}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <polyline points="17 11 19 13 23 9"></polyline>
+                </svg>
+                <span>Personnel</span>
+              </Link>
 
-            {/* Tickets */}
+              <Link to="/admin-b2b-mail" className={`sidebar-item ${activePage === 'b2b-mail' ? 'active' : ''}`} onClick={handleLinkClick}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                  <line x1="12" y1="13" x2="12" y2="20"></line>
+                </svg>
+                <span>B2B Mail</span>
+              </Link>
+
             <Link to="/admin-tickets" className={`sidebar-item ${activePage === 'tickets' ? 'active' : ''}`} onClick={handleLinkClick}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -76,7 +86,6 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
 
             <span className="sidebar-label">Posts*</span>
 
-            {/* Interruptions */}
             <Link to="/admin-interruptions" className={`sidebar-item ${activePage === 'interruptions' ? 'active' : ''}`} onClick={handleLinkClick}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -86,7 +95,6 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
 
             <span className="sidebar-label">Archives*</span>
 
-            {/* History */}
             <Link to="/admin-history" className={`sidebar-item ${activePage === 'history' ? 'active' : ''}`} onClick={handleLinkClick}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -95,7 +103,6 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
               <span>History</span>
             </Link>
 
-            {/* Backup */}
             <Link to="/admin-backup" className={`sidebar-item ${activePage === 'backup' ? 'active' : ''}`} onClick={handleLinkClick}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -104,11 +111,12 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
               </svg>
               <span>Data Management</span>
             </Link>
-          </div>
+            </div>
+          </nav>
 
-          <div className="sidebar-footer">
+          <footer className="sidebar-footer">
             <CreatePost />
-          </div>
+          </footer>
         </div>
       </aside>
     </>

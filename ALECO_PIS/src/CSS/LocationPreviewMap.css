@@ -34,6 +34,11 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
+    transition: background 0.35s ease;
+}
+
+.location-preview-header--pinned {
+    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
 }
 
 .location-preview-header h4 {
@@ -71,12 +76,19 @@
 }
 
 .accuracy-badge {
-    background-color: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
     padding: 6px 12px;
     border-radius: 6px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
+}
+
+.accuracy-badge--pinned {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .location-confirmation {
@@ -95,10 +107,10 @@
 
 /* --- MAP WRAPPER (Compact Height) --- */
 .map-preview-wrapper {
-    height: 240px; /* Reduced from 350px */
+    height: 240px;
     width: 100%;
-    max-width: 500px; /* Compact width on desktop */
-    margin: 0 auto; /* Center the map */
+    max-width: none;
+    margin: 0;
     position: relative;
     background: #f3f4f6;
     border-radius: 12px;
@@ -188,11 +200,11 @@
     }
 }
 
-/* Desktop: Keep map compact */
+/* Desktop: Full width */
 @media (min-width: 1024px) {
     .map-preview-wrapper {
-        height: 260px; /* Slightly taller on desktop but still compact */
-        max-width: 550px;
+        height: 260px;
+        max-width: none;
     }
 }
 

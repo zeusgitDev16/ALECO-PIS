@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 import './CSS/ReportaProblem.css';
 import { apiUrl } from './utils/api';
 import { formatPhoneDisplay, INVALID_PHONE_HINT } from './utils/phoneUtils';
 import { formatToPhilippineTime, formatToPhilippineTimeShort } from './utils/dateUtils';
+import { formatTicketStatusLabel } from './utils/ticketStatusDisplay';
 import { ALECO_SCOPE } from '../alecoScope';
 import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsLocationMatcher';
 
@@ -12,19 +13,26 @@ import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsL
 import TextFieldProblem from './components/textfields/TextFieldProblem';
 import PhoneInputProblem from './components/textfields/PhoneInputProblem';
 import ExplainTheProblem from './components/textfields/ExplainTheProblem';
+import ActionDesired from './components/textfields/ActionDesired';
 import UploadTheProblem from './components/buckets/UploadTheProblem';
+/* Portals (TicketPopUp, ConfirmModal) render under document.body — not inside #report; they do not inherit --report-scale unless styled separately */
 import TicketPopUp from './components/containers/TicketPopUp'; 
 import IssueCategoryDropdown from './components/dropdowns/IssueCategoryDropdown';
 import LocationPreviewMap from './components/LocationPreviewMap';
+import MapPinPicker from './components/maps/MapPinPicker';
 import AlecoScopeDropdown from './components/dropdowns/AlecoScopeDropdown';
 import ConfirmModal from './components/tickets/ConfirmModal';
 import HotlinesDisplay from './components/contact/HotlinesDisplay';
+import { DEFAULT_URGENT_KEYWORDS } from './constants/urgentKeywordsDefaults';
+import { concernMatchesUrgentKeywords } from './utils/urgentKeywordMatch';
+import './CSS/ReportaProblemViewportFix.css';
 
 const TOTAL_STEPS = 6;
 
 const ReportaProblem = () => {
     // --- Wizard State ---
     const [currentStep, setCurrentStep] = useState(1);
+    const stepContentRef = useRef(null);
     const [showDuplicateModal, setShowDuplicateModal] = useState(false);
     const [pendingDuplicateData, setPendingDuplicateData] = useState(null);
 
@@ -52,6 +60,29 @@ const ReportaProblem = () => {
     });
     const [isLocating, setIsLocating] = useState(false);
     const [locationError, setLocationError] = useState('');
+    const [showMapPicker, setShowMapPicker] = useState(false);
+    /** null = not loaded yet (use defaults); array = loaded (may be empty if admin cleared) */
+    const [urgentKeywordsList, setUrgentKeywordsList] = useState(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(apiUrl('/api/urgent-keywords'));
+                const data = await res.json();
+                if (cancelled || !res.ok || !data?.success || !Array.isArray(data.keywords)) {
+                    return;
+                }
+                setUrgentKeywordsList(data.keywords);
+            } catch {
+                /* leave null → submit uses DEFAULT_URGENT_KEYWORDS */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
 
     // --- Master State ---
     const [formData, setFormData] = useState({
@@ -63,9 +94,45 @@ const ReportaProblem = () => {
         address: '',
         category: '',
         concern: '',
+        actionDesired: '',
         district: '',
         municipality: ''
     });
+
+    useEffect(() => {
+        const container = document.getElementById('report');
+        if (!container) return;
+
+        const computeScale = (w) => {
+            if (w <= 320) return 0.55;
+            if (w <= 374) return 0.65;
+            if (w <= 424) return 0.68;
+            if (w <= 767) return 0.72;
+            if (w <= 1023) return 0.88;
+            return 1;
+        };
+
+        const applyScale = () => {
+            const width = window.visualViewport?.width ?? window.innerWidth;
+            const scale = computeScale(width);
+            container.style.setProperty('--report-scale', String(scale));
+        };
+
+        applyScale();
+
+        const onResize = () => applyScale();
+        window.addEventListener('resize', onResize, { passive: true });
+        window.addEventListener('orientationchange', onResize, { passive: true });
+        window.visualViewport?.addEventListener?.('resize', onResize, { passive: true });
+        window.visualViewport?.addEventListener?.('scroll', onResize, { passive: true });
+
+        return () => {
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('orientationchange', onResize);
+            window.visualViewport?.removeEventListener?.('resize', onResize);
+            window.visualViewport?.removeEventListener?.('scroll', onResize);
+        };
+    }, []);
 
    const handleFieldChange = useCallback((field) => (value) => {
     setFormData(prev => {
@@ -75,17 +142,46 @@ const ReportaProblem = () => {
     });
 }, []);
 
+    const mapPickerCoords = useMemo(() => {
+        const muniName = (formData.municipality || '').trim().toLowerCase();
+        const districtName = (formData.district || '').trim().toLowerCase();
+        let lat = 13.1353;
+        let lng = 123.7443;
+        for (const d of ALECO_SCOPE) {
+            const dName = String(d.district || '').toLowerCase();
+            if (districtName && dName !== districtName) continue;
+            for (const m of d.municipalities || []) {
+                const name = String(m.name || '').toLowerCase();
+                const googleName = String(m.googleName || '').toLowerCase();
+                const clean = name.replace(' city', '').trim();
+                const cleanGoogle = googleName.replace(' city', '').trim();
+                const muniClean = muniName.replace(' city', '').trim();
+                if (muniClean && (clean === muniClean || cleanGoogle === muniClean || name === muniName || googleName === muniName)) {
+                    if (m.lat && m.lng) { lat = m.lat; lng = m.lng; }
+                    break;
+                }
+            }
+        }
+        return { lat, lng };
+    }, [formData.municipality, formData.district]);
+
     const canProceed = useCallback((step) => {
         switch (step) {
             case 1: return !!formData.category;
-            case 2: return !!formData.concern?.trim();
+            case 2: return !!formData.concern?.trim() && !!formData.actionDesired?.trim();
             case 3: return true;
             case 4: return !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim();
             case 5: return !!formData.address?.trim() && !!formData.municipality;
-            case 6: return !!formData.category && !!formData.concern?.trim() && !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim() && !!formData.address?.trim() && !!formData.municipality;
+            case 6: return !!formData.category && !!formData.concern?.trim() && !!formData.actionDesired?.trim() && !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim() && !!formData.address?.trim() && !!formData.municipality;
             default: return false;
         }
     }, [formData]);
+
+    useEffect(() => {
+        if (stepContentRef.current) {
+            stepContentRef.current.scrollTop = 0;
+        }
+    }, [currentStep]);
 
     const getStepState = (step) => {
         if (step < currentStep) return 'done';
@@ -326,35 +422,17 @@ const ReportaProblem = () => {
         submissionData.append('reported_lng', gpsData.lng || null);
         submissionData.append('location_accuracy', gpsData.accuracy || null);
         submissionData.append('location_method', gpsData.method);
+        submissionData.append('location_confidence', gpsData.confidence || 'medium');
 
-        // --- OPTIMIZED URGENT KEYWORD LIST ---
-        const urgentKeywords = [
-            // === TIER 1: IMMEDIATE DANGER (Life-Threatening) ===
-            'sparking', 'fire', 'sunog', 'explosion', 'sumabog', 'pumuputok',
-            'electrocuted', 'nakuryente', 'live wire', 'nakabitin na wire',
-            'smoke', 'usok', 'umuusok', 'burning', 'nasusunog',
-            
-            // === TIER 2: STRUCTURAL HAZARDS (Property Damage Risk) ===
-            'fallen pole', 'natumba', 'nahulog na poste', 'leaning pole', 'nakahilig',
-            'dangling wire', 'nakabitin', 'naputol na wire', 'cutoff wire',
-            
-            // === TIER 3: POWER EMERGENCIES (Widespread Impact) ===
-            'walang kuryente', 'patay na kuryente', 'brownout', 'blackout',
-            'no power', 'power outage', 'emergency', 'aksidente'
-        ];
-
-        const lowerConcern = formData.concern.toLowerCase();
-
-        // Word-boundary matching to prevent false positives
-        const isUrgent = urgentKeywords.some(keyword => {
-            const regex = new RegExp(`\\b${keyword.replace(/\s+/g, '\\s+')}\\b`, 'i');
-            return regex.test(lowerConcern);
-        });
+        const kws =
+            urgentKeywordsList === null ? DEFAULT_URGENT_KEYWORDS : urgentKeywordsList;
+        const isUrgent = concernMatchesUrgentKeywords(formData.concern, kws);
 
         submissionData.append('is_urgent', isUrgent ? 1 : 0);
 
         submissionData.append('category', formData.category);
         submissionData.append('concern', formData.concern);
+        submissionData.append('action_desired', formData.actionDesired);
 
         if (selectedFile) {
             submissionData.append('image', selectedFile);
@@ -378,7 +456,7 @@ const ReportaProblem = () => {
                 setFormData({
                     accountNumber: '', firstName: '', middleName: '',
                     lastName: '', phoneNumber: '', address: '',
-                    category: '', concern: '', district: '',
+                    category: '', concern: '', actionDesired: '', district: '',
                     municipality: ''
                 });
                 setSelectedFile(null);
@@ -409,7 +487,8 @@ const ReportaProblem = () => {
             { key: 'district', label: 'District' },
             { key: 'municipality', label: 'Municipality/City' },
             { key: 'category', label: 'Issue Category' },
-            { key: 'concern', label: 'Issue Details' }
+            { key: 'concern', label: 'Issue Details' },
+            { key: 'actionDesired', label: 'Action Desired' }
         ];
 
         for (const field of mandatoryFields) {
@@ -556,7 +635,7 @@ const ReportaProblem = () => {
 
                         {/* Step Content + Actions (row layout body) */}
                         <div className="wizard-body">
-                        <div className="wizard-step-content">
+                        <div className="wizard-step-content" ref={stepContentRef}>
                             {currentStep === 1 && (
                                 <div className="wizard-step-block">
                                     <h3 className="column-section-title">Issue Category</h3>
@@ -568,6 +647,7 @@ const ReportaProblem = () => {
                                 <div className="wizard-step-block">
                                     <h3 className="column-section-title">Explain the Problem</h3>
                                     <ExplainTheProblem value={formData.concern} onChange={handleFieldChange('concern')} />
+                                    <ActionDesired value={formData.actionDesired} onChange={handleFieldChange('actionDesired')} />
                                 </div>
                             )}
 
@@ -596,14 +676,31 @@ const ReportaProblem = () => {
                                 <div className="wizard-step-block">
                                     <h3 className="column-section-title">Find Location</h3>
                                     <div className="gps-location-section">
-                                        <button
-                                            type="button"
-                                            onClick={handleFindMyLocation}
-                                            className="btn-find-location"
-                                            disabled={isLocating || gpsData.isLocked}
-                                        >
-                                            {isLocating ? '📡 Locating...' : '📍 Find My Location'}
-                                        </button>
+                                        <div className="gps-location-actions">
+                                            <button
+                                                type="button"
+                                                onClick={handleFindMyLocation}
+                                                className="btn-find-location"
+                                                disabled={isLocating || gpsData.isLocked}
+                                            >
+                                                {isLocating ? '📡 Locating...' : '📍 Find My Location'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const muni = (formData.municipality || '').trim();
+                                                    if (!muni) {
+                                                        toast.info('Select a municipality first, then pin the exact spot on the map.');
+                                                        return;
+                                                    }
+                                                    setShowMapPicker(true);
+                                                }}
+                                                className="btn-pin-location"
+                                                disabled={isLocating || gpsData.isLocked}
+                                            >
+                                                🗺️ Pin Location on Map
+                                            </button>
+                                        </div>
                                         {locationError && (
                                             <div className="location-error-box">⚠️ {locationError}</div>
                                         )}
@@ -613,12 +710,20 @@ const ReportaProblem = () => {
                                             <div className="gps-lock-info">
                                                 <span className="gps-lock-icon">🔒</span>
                                                 <div>
-                                                    <strong>Using device location</strong>
+                                                    <strong>
+                                                        {gpsData.method === 'gps'
+                                                            ? 'Using device location'
+                                                            : gpsData.method === 'map_pin'
+                                                                ? 'Using pinned location'
+                                                                : 'Using selected location'}
+                                                    </strong>
                                                     <p className="gps-lock-details">
                                                         📍 {formData.address}<br />
                                                         <strong>{formData.municipality}</strong>, {formData.district}
                                                     </p>
-                                                    <p className="gps-accuracy">Accuracy: ±{gpsData.accuracy}m</p>
+                                                    {gpsData.accuracy != null && (
+                                                        <p className="gps-accuracy">Accuracy: ±{gpsData.accuracy}m</p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <button type="button" onClick={handleClearGPS} className="location-clear-btn">✖ Clear & Re-locate</button>
@@ -647,13 +752,14 @@ const ReportaProblem = () => {
                                             />
                                         </div>
                                     )}
-                                    {gpsData.method === 'gps' && gpsData.lat && gpsData.lng && (
+                                    {(gpsData.method === 'gps' || gpsData.method === 'map_pin') && gpsData.lat && gpsData.lng && (
                                         <LocationPreviewMap
                                             latitude={gpsData.lat}
                                             longitude={gpsData.lng}
                                             accuracy={gpsData.accuracy}
                                             municipality={formData.municipality}
                                             district={formData.district}
+                                            method={gpsData.method}
                                         />
                                     )}
                                 </div>
@@ -746,10 +852,10 @@ const ReportaProblem = () => {
             <span>Pending</span>
         </div>
         
-        {/* STEP 2: Ongoing or Unresolved */}
-        <div className={`step ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
-            <div className={`circle ${ticketData.status === 'Unresolved' ? 'red-glow' : 'blue-glow'} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
-            <span>{ticketData.status === 'Unresolved' ? 'Unresolved' : 'Ongoing'}</span>
+        {/* STEP 2: Ongoing, On Hold, or Unresolved */}
+        <div className={`step ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
+            <div className={`circle ${ticketData.status === 'Unresolved' ? 'red-glow' : 'blue-glow'} ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
+            <span>{ticketData.status === 'Unresolved' ? 'Unresolved' : ticketData.status === 'OnHold' ? 'On Hold' : 'Ongoing'}</span>
         </div>
         
         {/* STEP 3: Closed (Restored, NoFaultFound, AccessDenied) */}
@@ -762,10 +868,10 @@ const ReportaProblem = () => {
     <div className="status-details-card">
         <p>
             <strong>Current Status:</strong> 
-            <span className={`status-tag ${(ticketData.status || '').toLowerCase()}`}>{ticketData.status}</span>
+            <span className={`status-tag ${(ticketData.status || '').toLowerCase()}`}>{formatTicketStatusLabel(ticketData.status)}</span>
         </p>
         
-        {ticketData.status === 'Ongoing' && (ticketData.assigned_crew || ticketData.eta || ticketData.hold_reason) && (
+        {['Ongoing', 'OnHold'].includes(ticketData.status) && (ticketData.assigned_crew || ticketData.eta || ticketData.hold_reason) && (
             <div className="crew-eta-info">
                 {ticketData.assigned_crew && <p><strong>Crew dispatched:</strong> {ticketData.assigned_crew}</p>}
                 {ticketData.eta && <p><strong>ETA:</strong> {ticketData.eta}</p>}
@@ -827,6 +933,26 @@ const ReportaProblem = () => {
                 </div>
             </div>
             
+            {showMapPicker && createPortal(
+                <MapPinPicker
+                    initialLat={mapPickerCoords.lat}
+                    initialLng={mapPickerCoords.lng}
+                    onCancel={() => setShowMapPicker(false)}
+                    onConfirm={(lat, lng) => {
+                        setGpsData({
+                            lat,
+                            lng,
+                            accuracy: 5,
+                            method: 'map_pin',
+                            isLocked: true,
+                            confidence: 'high'
+                        });
+                        setLocationError('');
+                        setShowMapPicker(false);
+                    }}
+                />,
+                document.body
+            )}
             {showModal && createPortal(
                 <TicketPopUp 
                     ticketId={generatedId} 

@@ -1,9 +1,8 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../config/apiBase.js';
 
-// This is the Global Setting
 const API = axios.create({
-    // It automatically uses your deployed URL or localhost
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+    baseURL: getApiBaseUrl(),
     headers: {
         'Content-Type': 'application/json'
     }

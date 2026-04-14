@@ -146,6 +146,59 @@ async function buildInterruptionQuery(ds, de, filters = {}) {
     return { query, params };
 }
 
+function buildUserQuery(ds, de, filters = {}) {
+    let query = `SELECT id, name, email, role, status, profile_pic, created_at FROM users WHERE DATE(created_at) BETWEEN ? AND ?`;
+    const params = [ds, de];
+    if (filters.role && String(filters.role).trim()) {
+        query += ` AND role = ?`;
+        params.push(filters.role.trim());
+    }
+    if (filters.status && String(filters.status).trim()) {
+        query += ` AND status = ?`;
+        params.push(filters.status.trim());
+    }
+    query += ` ORDER BY created_at ASC`;
+    return { query, params };
+}
+
+/** Crews in date range + related crew_members and linemen (leads + members). */
+async function fetchPersonnelExportData(ds, de) {
+    const [crewRows] = await pool.execute(
+        `SELECT id, crew_name, lead_lineman, phone_number, status, created_at
+         FROM aleco_personnel
+         WHERE DATE(created_at) BETWEEN ? AND ?
+         ORDER BY created_at ASC`,
+        [ds, de]
+    );
+    const crewIds = crewRows.map((r) => r.id);
+    let crewMemberRows = [];
+    if (crewIds.length > 0) {
+        const placeholders = crewIds.map(() => '?').join(', ');
+        const [cm] = await pool.execute(
+            `SELECT crew_id, lineman_id FROM aleco_crew_members WHERE crew_id IN (${placeholders}) ORDER BY crew_id, lineman_id`,
+            crewIds
+        );
+        crewMemberRows = cm;
+    }
+    const linemanIds = new Set();
+    crewRows.forEach((c) => {
+        if (c.lead_lineman != null) linemanIds.add(c.lead_lineman);
+    });
+    crewMemberRows.forEach((m) => linemanIds.add(m.lineman_id));
+    let linemenRows = [];
+    if (linemanIds.size > 0) {
+        const ids = [...linemanIds];
+        const ph = ids.map(() => '?').join(', ');
+        const [lm] = await pool.execute(
+            `SELECT id, full_name, designation, contact_no, status, leave_start, leave_end, leave_reason
+             FROM aleco_linemen_pool WHERE id IN (${ph}) ORDER BY full_name ASC`,
+            ids
+        );
+        linemenRows = lm;
+    }
+    return { crews: crewRows, crewMembers: crewMemberRows, linemen: linemenRows };
+}
+
 // --- EXPORT PREVIEW (JSON for View in browser) - must be before /tickets/export ---
 router.get('/tickets/export/preview', async (req, res) => {
     try {
@@ -435,6 +488,243 @@ router.get('/interruptions/export', async (req, res) => {
         }
     } catch (error) {
         console.error('❌ Interruptions export error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Export failed' });
+    }
+});
+
+// --- USERS EXPORT PREVIEW ---
+router.get('/users/export/preview', async (req, res) => {
+    try {
+        const { preset, startDate, endDate, role, status } = req.query;
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const filters = { role, status };
+        const { query, params } = buildUserQuery(ds, de, filters);
+        const [userRows] = await pool.execute(query, params);
+        const metadata = { dateStart: ds, dateEnd: de, userCount: userRows.length };
+        res.json({ success: true, metadata, users: userRows });
+    } catch (error) {
+        console.error('❌ Users export preview error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Preview failed' });
+    }
+});
+
+// --- USERS EXPORT ---
+router.get('/users/export', async (req, res) => {
+    try {
+        const { preset, startDate, endDate, format, role, status } = req.query;
+        const fmt = (format || 'excel').toLowerCase();
+        if (fmt !== 'excel' && fmt !== 'csv') {
+            return res.status(400).json({ success: false, message: 'Format must be excel or csv' });
+        }
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const filters = { role, status };
+        const { query, params } = buildUserQuery(ds, de, filters);
+        const [userRows] = await pool.execute(query, params);
+
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
+        const baseFilename = `aleco_users_${ds}_to_${de}_${timestamp}`;
+        const ext = fmt === 'excel' ? 'xlsx' : 'csv';
+        const filename = `${baseFilename}.${ext}`;
+        const exportedBy = req.headers['x-user-email'] || req.headers['x-user-name'] || null;
+
+        await pool.execute(
+            `INSERT INTO aleco_export_log (export_date, date_start, date_end, ticket_count, log_count, format, exported_by)
+             VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
+            [ds, de, userRows.length, 0, fmt, exportedBy]
+        );
+
+        if (fmt === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'ALECO PIS';
+            workbook.created = new Date();
+            const metaSheet = workbook.addWorksheet('Metadata', { properties: { tabColor: { argb: 'FF4472C4' } } });
+            metaSheet.addRow(['Export Info']);
+            metaSheet.addRow(['Schema Version', '1']);
+            metaSheet.addRow(['Export Date', new Date().toISOString()]);
+            metaSheet.addRow(['Date Range', `${ds} to ${de}`]);
+            metaSheet.addRow(['User Count', userRows.length]);
+            metaSheet.addRow(['Format', 'excel']);
+            metaSheet.addRow(['Exported By', exportedBy || '']);
+
+            const userCols = userRows.length > 0 ? Object.keys(userRows[0]) : [];
+            const userSheet = workbook.addWorksheet('Users', { properties: { tabColor: { argb: 'FF70AD47' } } });
+            userSheet.addRow(userCols);
+            userRows.forEach((row) => {
+                userSheet.addRow(
+                    userCols.map((c) => {
+                        const v = row[c];
+                        if (v instanceof Date) return v;
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        return v;
+                    })
+                );
+            });
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            await workbook.xlsx.write(res);
+        } else {
+            const userCols = userRows.length > 0 ? Object.keys(userRows[0]) : [];
+            const userCsv = stringify(
+                userRows.map((r) =>
+                    userCols.map((c) => {
+                        const v = r[c];
+                        if (v instanceof Date) return v.toISOString();
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        return v ?? '';
+                    })
+                ),
+                { header: true, columns: userCols }
+            );
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.send(userCsv);
+        }
+    } catch (error) {
+        console.error('❌ Users export error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Export failed' });
+    }
+});
+
+// --- PERSONNEL EXPORT PREVIEW ---
+router.get('/personnel/export/preview', async (req, res) => {
+    try {
+        const { preset, startDate, endDate } = req.query;
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const { crews, crewMembers, linemen } = await fetchPersonnelExportData(ds, de);
+        const metadata = {
+            dateStart: ds,
+            dateEnd: de,
+            crewCount: crews.length,
+            crewMemberCount: crewMembers.length,
+            linemanCount: linemen.length,
+        };
+        res.json({ success: true, metadata, crews, crewMembers, linemen });
+    } catch (error) {
+        console.error('❌ Personnel export preview error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Preview failed' });
+    }
+});
+
+// --- PERSONNEL EXPORT ---
+// Excel: all sheets. CSV: crews only (primary table), same pattern as interruptions.
+router.get('/personnel/export', async (req, res) => {
+    try {
+        const { preset, startDate, endDate, format } = req.query;
+        const fmt = (format || 'excel').toLowerCase();
+        if (fmt !== 'excel' && fmt !== 'csv') {
+            return res.status(400).json({ success: false, message: 'Format must be excel or csv' });
+        }
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const { crews, crewMembers, linemen } = await fetchPersonnelExportData(ds, de);
+
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
+        const baseFilename = `aleco_personnel_${ds}_to_${de}_${timestamp}`;
+        const ext = fmt === 'excel' ? 'xlsx' : 'csv';
+        const filename = `${baseFilename}.${ext}`;
+        const exportedBy = req.headers['x-user-email'] || req.headers['x-user-name'] || null;
+
+        await pool.execute(
+            `INSERT INTO aleco_export_log (export_date, date_start, date_end, ticket_count, log_count, format, exported_by)
+             VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
+            [ds, de, crews.length, crewMembers.length, fmt, exportedBy]
+        );
+
+        if (fmt === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'ALECO PIS';
+            workbook.created = new Date();
+            const metaSheet = workbook.addWorksheet('Metadata', { properties: { tabColor: { argb: 'FF4472C4' } } });
+            metaSheet.addRow(['Export Info']);
+            metaSheet.addRow(['Schema Version', '1']);
+            metaSheet.addRow(['Export Date', new Date().toISOString()]);
+            metaSheet.addRow(['Date Range', `${ds} to ${de}`]);
+            metaSheet.addRow(['Crew Count', crews.length]);
+            metaSheet.addRow(['Crew Member Rows', crewMembers.length]);
+            metaSheet.addRow(['Lineman Count', linemen.length]);
+            metaSheet.addRow(['Format', 'excel']);
+            metaSheet.addRow(['Exported By', exportedBy || '']);
+
+            const crewCols = crews.length > 0 ? Object.keys(crews[0]) : [];
+            const crewSheet = workbook.addWorksheet('Crews', { properties: { tabColor: { argb: 'FF70AD47' } } });
+            crewSheet.addRow(crewCols);
+            crews.forEach((row) => {
+                crewSheet.addRow(
+                    crewCols.map((c) => {
+                        const v = row[c];
+                        if (v instanceof Date) return v;
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        return v;
+                    })
+                );
+            });
+
+            const cmCols = crewMembers.length > 0 ? Object.keys(crewMembers[0]) : ['crew_id', 'lineman_id'];
+            const cmSheet = workbook.addWorksheet('CrewMembers', { properties: { tabColor: { argb: 'FFFFC000' } } });
+            cmSheet.addRow(cmCols);
+            crewMembers.forEach((row) => {
+                cmSheet.addRow(
+                    cmCols.map((c) => {
+                        const v = row[c];
+                        if (v instanceof Date) return v;
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        return v;
+                    })
+                );
+            });
+
+            const lmCols = linemen.length > 0 ? Object.keys(linemen[0]) : [];
+            const lmSheet = workbook.addWorksheet('Linemen', { properties: { tabColor: { argb: 'FF9BC2E6' } } });
+            lmSheet.addRow(lmCols);
+            linemen.forEach((row) => {
+                lmSheet.addRow(
+                    lmCols.map((c) => {
+                        const v = row[c];
+                        if (v instanceof Date) return v;
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        return v;
+                    })
+                );
+            });
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            await workbook.xlsx.write(res);
+        } else {
+            const crewCols = crews.length > 0 ? Object.keys(crews[0]) : [];
+            const crewCsv = stringify(
+                crews.map((r) =>
+                    crewCols.map((c) => {
+                        const v = r[c];
+                        if (v instanceof Date) return v.toISOString();
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        return v ?? '';
+                    })
+                ),
+                { header: true, columns: crewCols }
+            );
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.send(crewCsv);
+        }
+    } catch (error) {
+        console.error('❌ Personnel export error:', error);
         res.status(500).json({ success: false, message: error.message || 'Export failed' });
     }
 });

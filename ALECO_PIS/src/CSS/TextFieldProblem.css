@@ -59,6 +59,23 @@
     box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.15) !important;
 }
 
+/* Report flow owns field box sizing (brick-local override) */
+.report-problem-container .textfield-group,
+.report-problem-container .phone-input-group {
+    margin-bottom: clamp(10px, 2.6vw, 16px);
+}
+
+.report-problem-container .textfield-input-wrapper {
+    min-height: clamp(34px, 6vw, 40px);
+}
+
+.report-problem-container .textfield-input,
+.report-problem-container .phone-input-input {
+    padding: clamp(8px, 2vw, 10px) clamp(10px, 3vw, 14px) !important;
+    min-height: clamp(34px, 6vw, 40px) !important;
+    box-sizing: border-box;
+}
+
 /* The red warning text */
 .textfield-error-msg {
     position: absolute;
@@ -76,25 +93,24 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- MOBILE SHRINKING --- */
+/* --- MOBILE SHRINKING (not on public Report — ReportaProblem.css overrides) --- */
 @media (max-width: 768px) {
-    .textfield-label { 
-        font-size: 12px; /* Smaller labels */
-        margin-bottom: 5px; 
+    html:not(.has-report-route) .textfield-label {
+        font-size: 12px;
+        margin-bottom: 5px;
     }
-    .textfield-input { 
-        padding: 10px 12px; /* Thinner input box */
-        font-size: 13px; /* Smaller typing text */
+    html:not(.has-report-route) .textfield-input {
+        padding: 10px 12px;
+        font-size: 13px;
     }
-    .textfield-error-msg {
-        font-size: 10px; /* Shrink error text */
+    html:not(.has-report-route) .textfield-error-msg {
+        font-size: 10px;
         top: 12px;
     }
 }
 
-/* --- 320px: Ultra-compact, no overflow --- */
 @media (max-width: 320px) {
-    .textfield-group {
+    html:not(.has-report-route) .textfield-group {
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0;
@@ -103,14 +119,14 @@
         box-sizing: border-box;
     }
 
-    .textfield-input-wrapper {
+    html:not(.has-report-route) .textfield-input-wrapper {
         width: 100% !important;
         min-width: 0;
         max-width: 100%;
         box-sizing: border-box;
     }
 
-    .textfield-input {
+    html:not(.has-report-route) .textfield-input {
         width: 100% !important;
         min-width: 0;
         max-width: 100%;
@@ -120,54 +136,50 @@
         box-sizing: border-box;
     }
 
-    .textfield-label {
+    html:not(.has-report-route) .textfield-label {
         font-size: 11px;
         margin-bottom: 4px;
     }
 
-    .textfield-error-msg {
+    html:not(.has-report-route) .textfield-error-msg {
         font-size: 9px;
         top: 9px;
         right: 8px;
     }
 }
 
-/* --- MOBILE SHRINKING (480px and below) --- */
 @media (max-width: 480px) {
-    /* The Group Container: Strictly follows parent width */
-    .textfield-group {
+    html:not(.has-report-route) .textfield-group {
         width: 100% !important;
         max-width: 100% !important;
         margin-bottom: 12px;
-        padding: 0 !important; /* Prevents double-padding issues */
+        padding: 0 !important;
         box-sizing: border-box;
     }
 
-    /* The Wrapper: Forces the search/input area to behave */
-    .textfield-input-wrapper {
+    html:not(.has-report-route) .textfield-input-wrapper {
         width: 100% !important;
-        display: block; /* Ensures it doesn't try to flex-grow outside parent */
+        display: block;
         box-sizing: border-box;
     }
 
-    /* The Input itself: The core fix */
-    .textfield-input { 
-        width: 100% !important; /* Overrides any fixed width from logic */
-        min-width: 0;           /* Allows the flex-item to shrink below its content size */
-        padding: 8px 10px; 
+    html:not(.has-report-route) .textfield-input {
+        width: 100% !important;
+        min-width: 0;
+        padding: 8px 10px;
         font-size: 13px;
         border-radius: 6px;
-        box-sizing: border-box; /* Includes padding/border in the 100% width calculation */
+        box-sizing: border-box;
     }
 
-    .textfield-label { 
+    html:not(.has-report-route) .textfield-label {
         font-size: 11px;
-        margin-bottom: 4px; 
+        margin-bottom: 4px;
     }
 
-    .textfield-error-msg {
-        font-size: 9px; 
-        top: 9px; /* Re-aligned for thinner mobile input */
+    html:not(.has-report-route) .textfield-error-msg {
+        font-size: 9px;
+        top: 9px;
         right: 8px;
     }
 }

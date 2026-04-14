@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
+import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
+import TicketLocationMap from '../maps/TicketLocationMap';
 import '../../CSS/TicketDetailPane.css';
+import '../../CSS/TicketDashboard.css';
 import DispatchTicketModal from './DispatchTicketModal';
 import HoldTicketModal from './HoldTicketModal';
 import EditTicketModal from './EditTicketModal';
@@ -11,8 +14,9 @@ import TicketHistoryLogs from './TicketHistoryLogs';
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
-const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
+const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
     const [copiedField, setCopiedField] = useState(null);
+    const [uiScale, setUiScale] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
     const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
     const [isGroupDispatchOpen, setIsGroupDispatchOpen] = useState(false);
@@ -24,6 +28,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
     const [isUnresolvedConfirmOpen, setIsUnresolvedConfirmOpen] = useState(false);
     const [isNoFaultFoundConfirmOpen, setIsNoFaultFoundConfirmOpen] = useState(false);
     const [isAccessDeniedConfirmOpen, setIsAccessDeniedConfirmOpen] = useState(false);
+    const [isServiceMemoWarningOpen, setIsServiceMemoWarningOpen] = useState(false);
+    const [serviceMemoWarningData, setServiceMemoWarningData] = useState(null);
     const [groupData, setGroupData] = useState(null);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -53,6 +59,19 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
         };
     }, []);
 
+    // TicketDetailPane renders outside .tickets-page-container; copy its --ticket-ui-scale to this modal.
+    useEffect(() => {
+        try {
+            const el = document.querySelector('.tickets-page-container');
+            if (!el) return;
+            const v = window.getComputedStyle(el).getPropertyValue('--ticket-ui-scale');
+            const trimmed = String(v || '').trim();
+            if (trimmed) setUiScale(trimmed);
+        } catch {
+            /* leave null => CSS falls back to 1 */
+        }
+    }, []);
+
     // 1. Idempotent Guard
     if (!ticket) return null;
 
@@ -73,7 +92,11 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
     };
 
     return (
-        <div className="ticket-modal-overlay" onClick={onClose}>
+        <div
+            className="ticket-modal-overlay"
+            onClick={onClose}
+            style={uiScale ? { '--ticket-ui-scale': uiScale } : undefined}
+        >
             <div className="ticket-modal-content" onClick={(e) => e.stopPropagation()}>
                 
                 <button className="ticket-modal-close-btn" onClick={onClose} aria-label="Close Modal">
@@ -85,32 +108,28 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         <div className="ticket-detail-front">
                 {/* --- SECTION 1: HEADER --- */}
                 <div className="detail-header">
-                    <div className="header-left">
-                        <h2 className="detail-title">{ticket.ticket_id}</h2>
-                        <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
-                            {ticket.status}
-                        </span>
-                        {isGroupMaster && (
-                            <span className="group-badge-detail">
-                                {ticket.child_count ?? children.length ?? 0} ticket{(ticket.child_count ?? children.length ?? 0) !== 1 ? 's' : ''}
+                    <div className="detail-header-align-shell">
+                        <div className="header-left">
+                            <h2 className="detail-title">{ticket.ticket_id}</h2>
+                            <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
+                                {ticket.status}
                             </span>
-                        )}
-                    </div>
-                    <div className="header-right">
-                        <span className="reported-label">Reported On</span>
-                        <div className="reported-date">{formattedDate}</div>
+                        </div>
+                        <div className="header-right">
+                            <div className="reported-date">{formattedDate}</div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Resolution stepper: 1) Dispatch → 2) In Progress → 3) Resolved */}
                 <div className="resolution-stepper">
-                    <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
+                    <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
                         <span className="stepper-num">1</span>
                         <span className="stepper-label stepper-label-full">Dispatch</span>
                         <span className="stepper-label stepper-label-short" aria-hidden="true">Disp</span>
                     </div>
                     <div className="stepper-connector" />
-                    <div className={`stepper-step ${ticket.status === 'Ongoing' ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
+                    <div className={`stepper-step ${['Ongoing', 'OnHold'].includes(ticket.status) ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
                         <span className="stepper-num">2</span>
                         <span className="stepper-label stepper-label-full">In Progress</span>
                         <span className="stepper-label stepper-label-short" aria-hidden="true">Prog</span>
@@ -185,6 +204,29 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                             <small className="district-sub">{ticket.district || ''}</small>
                         </p>
                     </div>
+
+                    {ticket.reported_lat && ticket.reported_lng && (
+                        <div className="detail-group full-width">
+                            <label>Map Location</label>
+                            <TicketLocationMap
+                                latitude={Number(ticket.reported_lat)}
+                                longitude={Number(ticket.reported_lng)}
+                                accuracy={ticket.location_accuracy ?? null}
+                                municipality={ticket.municipality}
+                                district={ticket.district}
+                            />
+                            <div className="ticket-map-actions">
+                                <a
+                                    className="ticket-map-external-link"
+                                    href={`https://maps.google.com/?q=${ticket.reported_lat},${ticket.reported_lng}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    View on Google Maps
+                                </a>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* --- SECTION 3: CONTENT & EVIDENCE --- */}
@@ -202,18 +244,39 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </div>
                     </div>
 
+                    <div className="detail-group">
+                        <label>Action Desired</label>
+                        <div className="concern-box">
+                            {ticket.action_desired || '—'}
+                        </div>
+                    </div>
+
                     {isGroupMaster && children.length > 0 && (
                         <div className="detail-group full-width group-children-section">
                             <label>Child Tickets ({children.length})</label>
                             <ul className="group-children-list">
-                                {children.map((c) => (
-                                    <li key={c.ticket_id} className="group-child-item">
-                                        <span className="child-id">{c.ticket_id}</span>
-                                        <span className="child-category">{c.category}</span>
-                                        <span className="child-location">{c.municipality || c.address || '—'}</span>
-                                        <span className={`child-status status-tag ${c.status?.toLowerCase()}`}>{c.status}</span>
-                                    </li>
-                                ))}
+                                {children.map((c) => {
+                                    const childLocation = c.municipality
+                                        ? `${c.municipality}, ${c.district || 'Albay'}`
+                                        : (c.address || '—');
+                                    const statusKey = c.status ? c.status.toLowerCase().replace(/\s/g, '') : 'pending';
+                                    return (
+                                        <li key={c.ticket_id} className="group-child-item">
+                                            <div className="group-child-top">
+                                                <span className="child-id">{c.ticket_id}</span>
+                                                <span className="child-category">{c.category}</span>
+                                            </div>
+                                            <div className="card-footer-metadata group-child-foot">
+                                                <div className="location-scroll-wrapper">
+                                                    <span className="location-text-full">{childLocation}</span>
+                                                </div>
+                                                <span className={`status-pill-solid ${statusKey}`}>
+                                                    {formatTicketStatusLabel(c.status)}
+                                                </span>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
                     )}
@@ -233,7 +296,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </div>
                     )}
 
-                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes) && ['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
+                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes) && ['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
                         <div className="detail-group dispatch-info-section">
                             <label>Dispatch Info</label>
                             <div className="dispatch-info-box">
@@ -318,7 +381,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </>
                     )}
 
-                    {ticket.status === 'Unresolved' && (
+                    {['Unresolved', 'OnHold'].includes(ticket.status) && (
                         <>
                             {isGroupMaster ? (
                                 onDispatchGroup && (
@@ -363,7 +426,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </button>
                     )}
 
-                    {['Pending', 'Ongoing', 'Unresolved'].includes(ticket.status) && (
+                    {['Pending', 'Ongoing', 'OnHold', 'Unresolved'].includes(ticket.status) && (
                         <button
                             className="btn-action btn-resolved"
                             onClick={() => setIsRestoreConfirmOpen(true)}
@@ -383,17 +446,29 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                         </button>
                     )}
 
-                    {ticket.status === 'Ongoing' && (
+                    {ticket.status === 'Ongoing' && !isGroupMaster && (
+                        <button
+                            className="btn-action btn-hold"
+                            onClick={() => setIsHoldModalOpen(true)}
+                            title="Put on Hold"
+                        >
+                            Put on Hold
+                        </button>
+                    )}
+
+                    {ticket.status === 'OnHold' && onResumeFromHold && (
+                        <button
+                            type="button"
+                            className="btn-action btn-ongoing"
+                            onClick={() => onResumeFromHold(ticket.ticket_id)}
+                            title="Clear hold and continue work"
+                        >
+                            Resume work
+                        </button>
+                    )}
+
+                    {['Ongoing', 'OnHold'].includes(ticket.status) && (
                         <>
-                            {!isGroupMaster && (
-                                <button
-                                    className="btn-action btn-hold"
-                                    onClick={() => setIsHoldModalOpen(true)}
-                                    title="Put on Hold"
-                                >
-                                    Put on Hold
-                                </button>
-                            )}
                             <button
                                 className="btn-action btn-unresolved"
                                 onClick={() => setIsUnresolvedConfirmOpen(true)}
@@ -491,16 +566,21 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                 message="All tickets will become standalone. Continue?"
                 confirmLabel="Dissolve"
                 cancelLabel="Cancel"
-                variant="danger"
+                variant="ungroup"
             />
 
             <ConfirmModal
                 isOpen={isRestoreConfirmOpen}
                 onClose={() => setIsRestoreConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Restored');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'Restored');
                     setIsRestoreConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="Mark as Restored"
                 message={`Mark ticket ${ticket.ticket_id} as Restored? This will close the ticket. Only confirm if resolution has been completed.`}
@@ -512,61 +592,81 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
             <ConfirmModal
                 isOpen={isRevertConfirmOpen}
                 onClose={() => setIsRevertConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Pending');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'Pending');
                     setIsRevertConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="Revert to Pending"
                 message={`Revert ticket ${ticket.ticket_id} to Pending? The ticket will be reopened and you can start resolution again. Use this if the ticket was closed by mistake or needs further action.`}
                 confirmLabel="Revert to Pending"
                 cancelLabel="Cancel"
-                variant="default"
+                variant="revert-pending"
             />
 
             <ConfirmModal
                 isOpen={isUnresolvedConfirmOpen}
                 onClose={() => setIsUnresolvedConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Unresolved');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'Unresolved');
                     setIsUnresolvedConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="Mark as Unresolved"
                 message={`Mark ticket ${ticket.ticket_id} as Unresolved? The ticket will return to the queue for re-dispatch.`}
                 confirmLabel="Mark Unresolved"
                 cancelLabel="Cancel"
-                variant="default"
+                variant="unresolved"
             />
 
             <ConfirmModal
                 isOpen={isNoFaultFoundConfirmOpen}
                 onClose={() => setIsNoFaultFoundConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
                     setIsNoFaultFoundConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="No Fault Found"
                 message={`Mark ticket ${ticket.ticket_id} as No Fault Found? This will close the ticket. Only confirm if the field crew verified no fault at the location.`}
                 confirmLabel="No Fault Found"
                 cancelLabel="Cancel"
-                variant="default"
+                variant="nff"
             />
 
             <ConfirmModal
                 isOpen={isAccessDeniedConfirmOpen}
                 onClose={() => setIsAccessDeniedConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'AccessDenied');
+                onConfirm={async () => {
+                    const result = await onUpdateTicket(ticket.ticket_id, 'AccessDenied');
                     setIsAccessDeniedConfirmOpen(false);
-                    onClose();
+                    if (result?.service_memo_warning) {
+                        setServiceMemoWarningData(result.service_memo_warning);
+                        setIsServiceMemoWarningOpen(true);
+                    } else {
+                        onClose();
+                    }
                 }}
                 title="Access Denied"
                 message={`Mark ticket ${ticket.ticket_id} as Access Denied? This will close the ticket. Only confirm if the field crew could not access the service location.`}
                 confirmLabel="Access Denied"
                 cancelLabel="Cancel"
-                variant="default"
+                variant="access-denied"
             />
 
             {mainTicketId && (
@@ -585,6 +685,33 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onDispatchGroup, 
                     }}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={isServiceMemoWarningOpen}
+                onClose={() => {
+                    setIsServiceMemoWarningOpen(false);
+                    setServiceMemoWarningData(null);
+                    if (serviceMemoWarningData?.deleted) {
+                        // Trigger refresh of service memo list
+                        window.dispatchEvent(new CustomEvent('service-memo-deleted'));
+                    }
+                    onClose();
+                }}
+                onConfirm={() => {
+                    setIsServiceMemoWarningOpen(false);
+                    setServiceMemoWarningData(null);
+                    if (serviceMemoWarningData?.deleted) {
+                        // Trigger refresh of service memo list
+                        window.dispatchEvent(new CustomEvent('service-memo-deleted'));
+                    }
+                    onClose();
+                }}
+                title={serviceMemoWarningData?.deleted ? "Service Memo Deleted" : "Service Memo Warning"}
+                message={serviceMemoWarningData?.message || 'A service memo exists for this ticket.'}
+                confirmLabel="OK"
+                cancelLabel="Cancel"
+                variant={serviceMemoWarningData?.deleted ? "success" : "warning"}
+            />
         </div>
     );
 };

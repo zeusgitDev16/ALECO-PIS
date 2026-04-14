@@ -118,151 +118,144 @@ const InviteNewUsers = ({ onUserInvited }) => {
     alert("Code copied to clipboard!");
   };
 
+  const emailBorderColor =
+    emailValid === true
+      ? userStatus === 'pending'
+        ? '#f57c00'
+        : userStatus === 'registered'
+          ? '#1976d2'
+          : '#2e7d32'
+      : emailValid === false
+        ? '#d32f2f'
+        : undefined;
+
   return (
-    <div className="dashboard-widget" style={{ marginBottom: '30px' }}>
-      <h4 style={{ marginTop: 0, marginBottom: '20px' }}>Invite / Manage User</h4>
-      
+    <div className="dashboard-widget users-invite-widget">
+      <div className="users-invite-panel-head">
+        <div className="users-invite-panel-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <line x1="19" y1="8" x2="19" y2="14" />
+            <line x1="22" y1="11" x2="16" y2="11" />
+          </svg>
+        </div>
+        <div className="users-invite-panel-titles">
+          <h4 className="users-invite-heading">Invite / Manage User</h4>
+          <p className="users-invite-subtitle">Generate invitation codes, send email, or update roles for existing accounts.</p>
+        </div>
+      </div>
+
       {!invitationCode ? (
         <form onSubmit={handleGenerateCode} className="invite-form">
-          <div className="form-group">
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-              <label style={{ margin: 0 }}>Email Address</label>
-              
-              {/* ORANGE INDICATOR: Pending */}
-              {userStatus === 'pending' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f57c00', fontSize: '10px', fontWeight: 'bold' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f57c00" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                  </svg>
-                  <span>Pending invite found. New code will overwrite.</span>
-                </div>
-              )}
-
-              {/* BLUE INDICATOR: Registered */}
-              {userStatus === 'registered' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1976d2', fontSize: '10px', fontWeight: 'bold' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1976d2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                  </svg>
-                  <span>User registered. Will update role directly.</span>
-                </div>
-              )}
+          <div className="form-group users-invite-email-group">
+            <div className="users-invite-email-label-row">
+              <label htmlFor="users-invite-email">Email Address</label>
             </div>
 
-            <div style={{ position: 'relative' }}>
-              <input 
-                type="email" 
+            {userStatus === 'pending' && (
+              <div className="users-invite-status-banner users-invite-status--pending" role="status">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#f57c00" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>Pending invite found. Generating a new code will overwrite the previous one.</span>
+              </div>
+            )}
+
+            {userStatus === 'registered' && (
+              <div className="users-invite-status-banner users-invite-status--registered" role="status">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1976d2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>This email is already registered. Submit will update their role only (no new invite code).</span>
+              </div>
+            )}
+
+            <div className="users-invite-input-wrap">
+              <input
+                id="users-invite-email"
+                type="email"
                 required
                 value={email}
                 onChange={handleEmailChange}
                 placeholder="Enter user email"
                 className="form-input"
-                style={{ 
-                  paddingRight: '40px',
-                  // DYNAMIC BORDER: Green if new, Orange if pending, Blue if registered, Red if invalid
-                  borderColor: emailValid === true 
-                    ? (userStatus === 'pending' ? '#f57c00' : userStatus === 'registered' ? '#1976d2' : '#2e7d32') 
-                    : emailValid === false ? '#d32f2f' : ''
-                }}
+                style={emailBorderColor ? { borderColor: emailBorderColor } : undefined}
               />
-              {/* Valid, New Email -> Green Check */}
               {emailValid === true && userStatus === 'new' && (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                <svg
+                  className="users-invite-input-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#2e7d32"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               )}
-              {/* Invalid Format -> Red X */}
               {emailValid === false && (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                <svg
+                  className="users-invite-input-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#d32f2f"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               )}
             </div>
           </div>
-          
+
           <div className="form-group">
-            <label>Role</label>
-            <select 
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="form-input"
-            >
+            <label htmlFor="users-invite-role">Role</label>
+            <select id="users-invite-role" value={role} onChange={(e) => setRole(e.target.value)} className="form-input">
               <option value={USER_ROLES.EMPLOYEE}>Employee</option>
               <option value={USER_ROLES.ADMIN}>Admin</option>
             </select>
           </div>
 
-          <button 
-            type="submit"
-            className="main-login-btn invite-btn"
-            disabled={!emailValid}
-            style={{ opacity: !emailValid ? 0.6 : 1, cursor: !emailValid ? 'not-allowed' : 'pointer' }}
-          >
-            {userStatus === 'registered' ? 'Update Role' : (userStatus === 'pending' ? 'Re-Generate Code' : 'Generate Code')}
+          <button type="submit" className="main-login-btn invite-btn" disabled={!emailValid}>
+            {userStatus === 'registered' ? 'Update Role' : userStatus === 'pending' ? 'Re-Generate Code' : 'Generate Code'}
           </button>
         </form>
       ) : (
-        <div style={{ 
-          backgroundColor: 'rgba(46, 125, 50, 0.1)', 
-          padding: '20px', 
-          borderRadius: '8px',
-          border: '1px solid rgba(46, 125, 50, 0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '20px'
-        }}>
-         <div>
-          <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--text-main)' }}>
-            Invitation Code for <strong>{email}</strong> ({role})
-          </p>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: 'bold', 
-              fontFamily: 'monospace', 
-              color: 'var(--text-header)' 
-            }}>
-              {invitationCode}
-            </div>
+        <div className="users-invite-success">
+          <div>
+            <p className="users-invite-success-lead">
+              Invitation Code for <strong>{email}</strong> ({role})
+            </p>
 
-            <button 
-              onClick={copyToClipboard} 
-              title="Copy to clipboard"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '4px',
-                color: 'var(--text-secondary)',
-                transition: 'color 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-header)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-            </button>
+            <div className="users-invite-code-row">
+              <div className="users-invite-code">{invitationCode}</div>
+
+              <button type="button" onClick={copyToClipboard} title="Copy to clipboard" className="users-invite-copy-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
-          
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={handleSendEmail} className="main-login-btn" style={{ padding: '8px 16px' }}>
+
+          <div className="users-invite-actions">
+            <button type="button" onClick={handleSendEmail} className="main-login-btn">
               send
             </button>
-            <button onClick={handleClear} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--text-secondary)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-header)' }}>
+            <button type="button" onClick={handleClear} className="users-invite-btn-secondary">
               Done
             </button>
           </div>

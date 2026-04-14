@@ -3,8 +3,8 @@ import React from 'react';
 function Footer (){
 
     return (
-       <footer className="w-full py-4 text-center bg-gray-50">
-  <p className="text-[12px] text-gray-500">
+       <footer className="footer-container">
+  <p className="footer-text">
     &copy; {new Date().getFullYear()} ALECO's Power Information System, all rights reserved.
   </p>
 </footer>

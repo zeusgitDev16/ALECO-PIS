@@ -1,17 +1,10 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import nodemailer from 'nodemailer'; // ADDED: Required for your transporter
-import pool from '../config/db.js'; 
+import pool from '../config/db.js';
+import { verifyGoogleIdToken } from '../utils/verifyGoogleIdToken.js';
+import { sendAppMail } from '../utils/appMail.js';
 
 const router = express.Router();
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 // CHANGED: app.post -> router.post AND '/api/setup-account' -> '/setup-account'
 router.post('/setup-account', async (req, res) => {
@@ -124,8 +117,27 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/google-login', async (req, res) => {
-  const { email, profilePic, name } = req.body; // Added name for data consistency
-  if (!email) return res.status(400).json({ error: "Missing Google email." });
+  const { idToken } = req.body;
+  if (!idToken || typeof idToken !== 'string') {
+    return res.status(400).json({ error: 'Missing Google credential.' });
+  }
+
+  let google;
+  try {
+    google = await verifyGoogleIdToken(idToken);
+  } catch (e) {
+    if (e.code === 'GOOGLE_CLIENT_ID_NOT_CONFIGURED') {
+      console.error('Google Login: GOOGLE_CLIENT_ID or VITE_GOOGLE_CLIENT_ID not set on server');
+      return res.status(500).json({ error: 'Google sign-in is not configured on the server.' });
+    }
+    if (e.code === 'EMAIL_NOT_VERIFIED') {
+      return res.status(403).json({ error: 'Google account email is not verified.' });
+    }
+    console.warn('Google Login: token verification failed');
+    return res.status(401).json({ error: 'Invalid or expired Google sign-in. Please try again.' });
+  }
+
+  const email = google.email;
 
   try {
     const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
@@ -144,10 +156,10 @@ router.post('/google-login', async (req, res) => {
       });
     }
 
-    // 2. DATA SYNC: Update profile pic and name from Google every time they log in
+    // 2. DATA SYNC: Update profile pic and name from verified Google claims
     await pool.execute(
       'UPDATE users SET profile_pic = ?, name = ? WHERE email = ?', 
-      [profilePic, name || user.name, email]
+      [google.picture || user.profile_pic, google.name || user.name, email]
     );
 
     // 3. SECURE RESPONSE: Include token_version for App.jsx security handshake
@@ -155,10 +167,10 @@ router.post('/google-login', async (req, res) => {
       message: "Google Login successful!",
       user: { 
         id: user.id,
-        name: name || user.name,
+        name: google.name || user.name,
         email: user.email, 
         role: user.role, 
-        profilePic: profilePic,
+        profilePic: google.picture || user.profile_pic,
         tokenVersion: user.token_version // Essential for session verification
       }
     });
@@ -169,11 +181,27 @@ router.post('/google-login', async (req, res) => {
 });
 
 router.post('/setup-google-account', async (req, res) => {
-  // Added 'name' to the request body to ensure the AllUsers table is populated
-  const { email, inviteCode, profilePic, name } = req.body; 
-  if (!email || !inviteCode) return res.status(400).json({ error: "Missing info." });
+  const { idToken, inviteCode } = req.body;
+  if (!idToken || typeof idToken !== 'string' || !inviteCode) {
+    return res.status(400).json({ error: "Missing Google credential or invite code." });
+  }
 
-  const cleanEmail = email.trim().toLowerCase();
+  let google;
+  try {
+    google = await verifyGoogleIdToken(idToken);
+  } catch (e) {
+    if (e.code === 'GOOGLE_CLIENT_ID_NOT_CONFIGURED') {
+      console.error('Google Setup: GOOGLE_CLIENT_ID or VITE_GOOGLE_CLIENT_ID not set on server');
+      return res.status(500).json({ error: 'Google sign-in is not configured on the server.' });
+    }
+    if (e.code === 'EMAIL_NOT_VERIFIED') {
+      return res.status(403).json({ error: 'Google account email is not verified.' });
+    }
+    console.warn('Google Setup: token verification failed');
+    return res.status(401).json({ error: 'Invalid or expired Google sign-in. Please try again.' });
+  }
+
+  const cleanEmail = google.email;
   const cleanCode = String(inviteCode).trim();
   try {
     // 1. VERIFY: Ensure the code matches and is still "pending"
@@ -188,13 +216,17 @@ router.post('/setup-google-account', async (req, res) => {
 
     const userRole = invite[0].role_assigned;
 
-    // 2. REGISTER: Create user with Google info and Security Defaults
-    // We initialize 'status' as 'Active' and 'token_version' as 1
+    // 2. REGISTER: Create user with verified Google info and Security Defaults
     const insertQuery = `
       INSERT INTO users (name, email, role, profile_pic, auth_method, status, token_version) 
       VALUES (?, ?, ?, ?, "google", "Active", 1)
     `;
-    await pool.execute(insertQuery, [name || "Google User", cleanEmail, userRole, profilePic]);
+    await pool.execute(insertQuery, [
+      google.name || "Google User",
+      cleanEmail,
+      userRole,
+      google.picture || null,
+    ]);
 
     // 3. UPDATE STATUS: Mark the invitation as "used"
     await pool.execute('UPDATE access_codes SET status = ? WHERE email = ?', ['used', cleanEmail]);
@@ -263,7 +295,12 @@ router.post('/forgot-password', async (req, res) => {
       [cleanEmail, resetCode, expiresAt]
     );
 
-    // 5. EMAIL: Send using functional Nodemailer template
+    // 5. EMAIL: Send using functional Nodemailer template (optional PUBLIC_APP_URL = public SPA link for users)
+    const publicApp = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_ORIGIN || '').trim().replace(/\/$/, '');
+    const appLinkHtml = publicApp
+      ? `<p style="font-size: 14px; color: #555;">Open the app to enter this code: <a href="${publicApp}">${publicApp}</a></p>`
+      : '';
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: cleanEmail, 
@@ -277,11 +314,17 @@ router.post('/forgot-password', async (req, res) => {
               ${resetCode}
             </span>
           </div>
+          ${appLinkHtml}
           <p style="font-size: 14px; color: #888;">Valid for 15 minutes. If this wasn't you, ignore this email.</p>
         </div>`
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendAppMail({
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      html: mailOptions.html,
+    });
     console.log(`--- [SECURITY] Reset code successfully delivered to ${cleanEmail} ---`);
     res.status(200).json({ message: "Reset code sent to your email!" });
 

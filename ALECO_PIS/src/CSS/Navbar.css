@@ -44,7 +44,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 60px;
+  height: 50px;
 }
 
 .nav-brand a {
@@ -72,12 +72,23 @@
   margin-left: auto;
 }
 
+/* Each row: [icon or text] | — flex keeps separator immediately after the link */
+.nav-links li {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .nav-links li::after {
   content: "|";
-  color: var(--text-secondary); /* UPDATED */
-  margin-left: 2px;
-  margin-right: 2px;
+  color: var(--text-secondary);
+  margin-left: 0.35rem;
+  margin-right: 0.35rem;
   font-weight: 300;
+  line-height: 1;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .nav-links li:last-child::after {
@@ -87,18 +98,25 @@
 .nav-item {
   position: relative;
   text-decoration: none;
-  
-  /* UPDATED: Dynamic Text Color */
   color: var(--text-secondary);
-  
   font-size: 1rem;
   transition: all 0.2s ease;
   padding-bottom: 5px;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-item-icon {
+  display: none;
+}
+
+.nav-item-text {
+  display: inline;
 }
 
 .nav-item:hover {
-  color: #007bff; 
+  color: #007bff;
 }
 
 .nav-item::after {
@@ -136,13 +154,15 @@
   transition: color 0.3s ease;
 }
 
-/* --- RESPONSIVE DESIGN (Desktop 1024px+ unchanged) --- */
+/* =========================================
+   MODULAR SIZE SCALING (base: 1024px+)
+   ========================================= */
 
-/* Tablet (768px - 1023px) */
+/* 768–1023px (88%) */
 @media (min-width: 768px) and (max-width: 1023px) {
   .navbar {
-    padding: 0 1rem;
     height: 44px;
+    padding: 0 1.75rem;
   }
   .nav-container {
     height: 44px;
@@ -150,98 +170,48 @@
   .nav-brand {
     flex-shrink: 1;
     min-width: 0;
-    padding-left: 0.25rem;
   }
   .nav-brand a {
     flex-shrink: 1;
     min-width: 0;
+    font-size: 1.32rem;
   }
   .logo-height {
-    height: 24px;
-    width: 24px;
+    height: 35px;
+    width: 35px;
     flex-shrink: 0;
   }
   .Title {
-    font-size: 16px;
-    padding-left: 5px;
+    font-size: 22px;
+    padding-left: 9px;
   }
   .nav-item {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     padding-bottom: 4px;
   }
   .nav-links {
-    gap: 0.75rem;
+    gap: 0.88rem;
   }
   .nav-links-container {
-    gap: 12px;
+    gap: 18px;
     flex-shrink: 0;
     min-width: 0;
   }
   .nav-links li::after {
-    margin-left: 1px;
-    margin-right: 1px;
+    margin-left: 2px;
+    margin-right: 2px;
   }
   .main-login-btn {
-    font-size: 13px;
-    padding: 6px 10px;
+    font-size: 12px;
+    padding: 7px 10px;
   }
 }
 
-/* Large Mobile (600px - 767px) */
+/* 600–767px (72%) */
 @media (min-width: 600px) and (max-width: 767px) {
   .navbar {
-    padding: 0 0.75rem;
-    height: 40px;
-  }
-  .nav-container {
-    height: 40px;
-  }
-  .nav-brand {
-    flex-shrink: 1;
-    min-width: 0;
-    padding-left: 0.25rem;
-  }
-  .nav-brand a {
-    flex-shrink: 1;
-    min-width: 0;
-  }
-  .logo-height {
-    height: 20px;
-    width: 20px;
-    flex-shrink: 0;
-  }
-  .Title {
-    font-size: 12px;
-    padding-left: 4px;
-  }
-  .nav-item {
-    font-size: 0.8rem;
-    padding-bottom: 3px;
-  }
-  .nav-links {
-    gap: 0.5rem;
-  }
-  .nav-links-container {
-    gap: 8px;
-    flex-shrink: 0;
-    min-width: 0;
-  }
-  .nav-links li::after {
-    margin-left: 1px;
-    margin-right: 1px;
-    font-size: 0.85rem;
-  }
-  .main-login-btn {
-    font-size: 12px;
-    padding: 5px 8px;
-  }
-}
-
-/* Medium Mobile (480px - 599px) */
-@media (min-width: 480px) and (max-width: 599px) {
-  .navbar {
-    padding: 0 0.65rem;
     height: 36px;
+    padding: 0 1.25rem;
   }
   .nav-container {
     height: 36px;
@@ -249,30 +219,79 @@
   .nav-brand {
     flex-shrink: 1;
     min-width: 0;
-    padding-left: 0.2rem;
   }
   .nav-brand a {
     flex-shrink: 1;
     min-width: 0;
+    font-size: 1.08rem;
   }
   .logo-height {
-    height: 18px;
-    width: 18px;
+    height: 29px;
+    width: 29px;
     flex-shrink: 0;
   }
   .Title {
-    font-size: 11px;
-    padding-left: 4px;
+    font-size: 18px;
+    padding-left: 7px;
   }
   .nav-item {
     font-size: 0.72rem;
-    padding-bottom: 2px;
+    padding-bottom: 4px;
   }
   .nav-links {
-    gap: 0.35rem;
+    gap: 0.72rem;
   }
   .nav-links-container {
-    gap: 6px;
+    gap: 14px;
+    flex-shrink: 0;
+    min-width: 0;
+  }
+  .nav-links li::after {
+    margin-left: 1px;
+    margin-right: 1px;
+  }
+  .main-login-btn {
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+}
+
+/* 480–599px (72%) */
+@media (min-width: 480px) and (max-width: 599px) {
+  .navbar {
+    height: 36px;
+    padding: 0 1.25rem;
+  }
+  .nav-container {
+    height: 36px;
+  }
+  .nav-brand {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .nav-brand a {
+    flex-shrink: 1;
+    min-width: 0;
+    font-size: 1.08rem;
+  }
+  .logo-height {
+    height: 29px;
+    width: 29px;
+    flex-shrink: 0;
+  }
+  .Title {
+    font-size: 18px;
+    padding-left: 7px;
+  }
+  .nav-item {
+    font-size: 0.72rem;
+    padding-bottom: 4px;
+  }
+  .nav-links {
+    gap: 0.72rem;
+  }
+  .nav-links-container {
+    gap: 14px;
     flex-shrink: 0;
     min-width: 0;
     overflow-x: auto;
@@ -285,53 +304,52 @@
   }
   .main-login-btn {
     flex-shrink: 0;
-    font-size: 11px;
-    padding: 4px 6px;
+    font-size: 10px;
+    padding: 6px 8px;
   }
   .nav-links li::after {
     margin-left: 1px;
     margin-right: 1px;
-    font-size: 0.75rem;
   }
 }
 
-/* Small Mobile (320px - 479px) */
+/* 320–479px (65%) */
 @media (min-width: 320px) and (max-width: 479px) {
   .navbar {
-    padding: 0 0.6rem;
-    height: 34px;
+    height: 33px;
+    padding: 0 1rem;
   }
   .nav-container {
-    height: 34px;
+    height: 33px;
   }
   .nav-brand {
     flex-shrink: 1;
     min-width: 0;
-    padding-left: 0.2rem;
   }
   .nav-brand a {
     flex-shrink: 1;
     min-width: 0;
+    font-size: 0.975rem;
   }
   .logo-height {
-    height: 14px;
-    width: 14px;
+    height: 26px;
+    width: 26px;
     flex-shrink: 0;
   }
   .Title {
-    font-size: 9px;
-    padding-left: 2px;
+    font-size: 16px;
+    padding-left: 7px;
   }
   .nav-item {
     font-size: 0.65rem;
-    padding-bottom: 2px;
+    padding-bottom: 3px;
   }
   .nav-links {
-    gap: 0.25rem;
+    gap: 0.65rem;
     white-space: nowrap;
   }
   .nav-links-container {
-    gap: 4px;
+    gap: 13px;
     flex-shrink: 0;
     min-width: 0;
     overflow-x: auto;
@@ -346,54 +364,53 @@
   }
   .main-login-btn {
     flex-shrink: 0;
-    font-size: 10px;
-    padding: 4px 5px;
-    min-height: 28px;
+    font-size: 9px;
+    padding: 5px 7px;
+    margin-bottom: 4px;
   }
   .nav-links li::after {
-    margin-left: 0.5px;
-    margin-right: 0.5px;
-    font-size: 0.7rem;
+    margin-left: 1px;
+    margin-right: 1px;
   }
 }
 
-/* Extra Small (≤320px) */
+/* ≤320px (55%) */
 @media (max-width: 320px) {
   .navbar {
-    padding: 0 0.5rem;
-    height: 32px;
+    height: 28px;
+    padding: 0 1rem;
   }
   .nav-container {
-    height: 32px;
+    height: 28px;
   }
   .nav-brand {
     flex-shrink: 1;
     min-width: 0;
-    padding-left: 0.15rem;
   }
   .nav-brand a {
     flex-shrink: 1;
     min-width: 0;
+    font-size: 0.825rem;
   }
   .logo-height {
-    height: 12px;
-    width: 12px;
+    height: 22px;
+    width: 22px;
     flex-shrink: 0;
   }
   .Title {
-    font-size: 8px;
-    padding-left: 2px;
+    font-size: 14px;
+    padding-left: 6px;
   }
   .nav-item {
-    font-size: 0.58rem;
-    padding-bottom: 2px;
+    font-size: 0.55rem;
+    padding-bottom: 3px;
   }
   .nav-links {
-    gap: 0.2rem;
+    gap: 0.55rem;
     white-space: nowrap;
   }
   .nav-links-container {
-    gap: 4px;
+    gap: 11px;
     flex-shrink: 0;
     min-width: 0;
     overflow-x: auto;
@@ -408,25 +425,100 @@
   }
   .main-login-btn {
     flex-shrink: 0;
-    font-size: 9px;
-    padding: 3px 4px;
-    min-height: 28px;
+    font-size: 8px;
+    padding: 4px 6px;
+    margin-bottom: 3px;
   }
   .nav-links li::after {
     margin-left: 0.5px;
     margin-right: 0.5px;
-    font-size: 0.65rem;
   }
 }
 
+/* =========================================
+   ICON BUTTON MODE (below 768px)
+   Text links at 768px+ only; icon buttons below
+   ========================================= */
+@media (max-width: 767px) {
+  .nav-item {
+    padding: 0;
+    padding-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    flex-shrink: 0;
+  }
+  .nav-item::after {
+    display: none;
+  }
+  .nav-item-text {
+    display: none;
+  }
+  .nav-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav-item-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  /* Tight row: icon1 | icon2 | icon3 | icon4 */
+  .nav-links {
+    gap: 0.25rem;
+    white-space: nowrap;
+  }
+  .nav-links li::after {
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+  }
+  .nav-links-container {
+    gap: 10px;
+  }
+}
+
+/* Icon button mode: slightly smaller at 320px */
+@media (max-width: 320px) {
+  .nav-item {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+  }
+  .nav-item-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .nav-links {
+    gap: 6px;
+  }
+}
+
+/* Text mode: 768px and above only */
+@media (min-width: 768px) {
+  .nav-item-icon {
+    display: none;
+  }
+  .nav-item-text {
+    display: inline;
+  }
+  .nav-links {
+    gap: 1rem;
+  }
+}
+
+/* Public landing: stays visible while scrolling */
 .fix-container-nav {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 1000;
+  z-index: 1100;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-body);
 }
 
 .login-container {

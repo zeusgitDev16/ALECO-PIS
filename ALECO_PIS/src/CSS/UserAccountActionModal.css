@@ -1,0 +1,60 @@
+/* User enable/disable confirmation — extends DispatchTicketModal confirm shell */
+
+.user-account-action-modal-overlay {
+  z-index: 100002;
+}
+
+.user-account-action-modal {
+  max-width: 420px;
+}
+
+.user-account-action-modal__lead strong {
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.user-account-action-modal__hint {
+  margin: 10px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.user-account-action-modal__field {
+  margin-top: 16px;
+}
+
+.user-account-action-modal__label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.user-account-action-modal__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.user-account-action-modal__input:focus {
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.user-account-action-modal__error {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ef4444;
+}

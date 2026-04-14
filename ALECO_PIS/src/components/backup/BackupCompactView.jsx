@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import BackupFileInput from './BackupFileInput';
 
 const BackupCompactView = ({
+    entity = 'tickets',
     format, onFormatChange,
     exporting, onExport, previewLoading, onViewInBrowser,
     archiving, onArchiveClick,
     importFile, onImportFileChange, importing, previewing, onPreview, onImport, previewResult
 }) => {
     const [activeTab, setActiveTab] = useState('export');
+    const ticketsOnly = entity === 'tickets';
+
+    useEffect(() => {
+        setActiveTab('export');
+    }, [entity]);
 
     return (
         <div className="backup-compact-view">
@@ -20,24 +27,28 @@ const BackupCompactView = ({
                 >
                     Export
                 </button>
-                <button
-                    type="button"
-                    role="tab"
-                    className={`backup-compact-tab ${activeTab === 'archive' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('archive')}
-                    aria-selected={activeTab === 'archive'}
-                >
-                    Archive
-                </button>
-                <button
-                    type="button"
-                    role="tab"
-                    className={`backup-compact-tab ${activeTab === 'import' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('import')}
-                    aria-selected={activeTab === 'import'}
-                >
-                    Import
-                </button>
+                {ticketsOnly && (
+                    <>
+                        <button
+                            type="button"
+                            role="tab"
+                            className={`backup-compact-tab ${activeTab === 'archive' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('archive')}
+                            aria-selected={activeTab === 'archive'}
+                        >
+                            Archive
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            className={`backup-compact-tab ${activeTab === 'import' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('import')}
+                            aria-selected={activeTab === 'import'}
+                        >
+                            Import
+                        </button>
+                    </>
+                )}
             </div>
             <div className="backup-compact-panel" role="tabpanel">
                 {activeTab === 'export' && (
@@ -57,7 +68,7 @@ const BackupCompactView = ({
                         </div>
                     </>
                 )}
-                {activeTab === 'archive' && (
+                {ticketsOnly && activeTab === 'archive' && (
                     <>
                         <p className="backup-compact-desc">Soft-delete tickets in the selected date range. Cannot be undone.</p>
                         <button className="btn-action btn-delete" onClick={onArchiveClick} disabled={archiving}>
@@ -65,11 +76,15 @@ const BackupCompactView = ({
                         </button>
                     </>
                 )}
-                {activeTab === 'import' && (
+                {ticketsOnly && activeTab === 'import' && (
                     <>
                         <p className="backup-compact-desc">Upload Excel (.xlsx) or CSV. Preview validates before import.</p>
-                        <div className="backup-compact-row">
-                            <input type="file" accept=".xlsx,.csv" onChange={(e) => onImportFileChange(e.target.files?.[0] || null)} />
+                        <div className="backup-compact-file-wrap">
+                            <BackupFileInput
+                                variant="compact"
+                                importFile={importFile}
+                                onImportFileChange={onImportFileChange}
+                            />
                         </div>
                         <div className="backup-compact-actions">
                             <button className="btn-action btn-cancel" onClick={onPreview} disabled={!importFile || previewing}>

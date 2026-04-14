@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
 import AdminLayout from './AdminLayout';
@@ -11,12 +11,16 @@ import BackupCardsView from './backup/BackupCardsView';
 import BackupWorkflowView from './backup/BackupWorkflowView';
 import BackupFiltersBar from './backup/BackupFiltersBar';
 import BackupInterruptionFiltersBar from './backup/BackupInterruptionFiltersBar';
+import BackupTicketFiltersForm, { getActiveTicketFiltersCount } from './backup/BackupTicketFiltersForm';
+import BackupInterruptionFiltersForm, { getActiveInterruptionFiltersCount } from './backup/BackupInterruptionFiltersForm';
 import EntityPicker from './backup/EntityPicker';
 import ComingSoonPlaceholder from './backup/ComingSoonPlaceholder';
+import TicketFilterDrawer from './tickets/TicketFilterDrawer';
 import '../CSS/AdminPageLayout.css';
+import '../CSS/BackupUIScale.css';
 import '../CSS/Buttons.css';
+import '../CSS/TicketFilterDrawer.css';
 import '../CSS/Backup.css';
-import '../CSS/BackupLayoutPicker.css';
 
 const AdminBackup = () => {
     const [entity, setEntity] = useState(() => localStorage.getItem('dataManagementEntity') || 'tickets');
@@ -36,6 +40,7 @@ const AdminBackup = () => {
     const [previewData, setPreviewData] = useState(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
     const [filters, setFilters] = useState({
         category: '',
         district: '',
@@ -51,10 +56,56 @@ const AdminBackup = () => {
         includeArchived: false
     });
 
+    const ticketFilterActiveCount = useMemo(() => getActiveTicketFiltersCount(filters), [filters]);
+    const interruptionFilterActiveCount = useMemo(
+        () => getActiveInterruptionFiltersCount(interruptionFilters),
+        [interruptionFilters]
+    );
+
+    const isTicketsEntity = entity === 'tickets';
+    const isInterruptionsEntity = entity === 'interruptions';
+    const isUsersEntity = entity === 'users';
+    const isPersonnelEntity = entity === 'personnel';
+    const hasDataFilters =
+        isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity;
+    const showFilterButton = isTicketsEntity || isInterruptionsEntity;
+
+    const filterActiveCount = isTicketsEntity
+        ? ticketFilterActiveCount
+        : isInterruptionsEntity
+            ? interruptionFilterActiveCount
+            : 0;
+
+    const getExportBasePath = () => {
+        if (isInterruptionsEntity) return '/api/interruptions/export';
+        if (isUsersEntity) return '/api/users/export';
+        if (isPersonnelEntity) return '/api/personnel/export';
+        return '/api/tickets/export';
+    };
+
+    const getExportPreviewBasePath = () => {
+        if (isInterruptionsEntity) return '/api/interruptions/export/preview';
+        if (isUsersEntity) return '/api/users/export/preview';
+        if (isPersonnelEntity) return '/api/personnel/export/preview';
+        return '/api/tickets/export/preview';
+    };
+
     const getExportParams = () => {
         const base = useCustom && startDate && endDate
             ? { startDate, endDate, format }
             : { preset, format };
+
+        if (isInterruptionsEntity) {
+            if (interruptionFilters.type) base.type = interruptionFilters.type;
+            if (interruptionFilters.status) base.status = interruptionFilters.status;
+            if (interruptionFilters.includeArchived) base.includeArchived = 'true';
+            return base;
+        }
+
+        if (isUsersEntity || isPersonnelEntity) {
+            return base;
+        }
+
         if (filters.category) base.category = filters.category;
         if (filters.district) base.district = filters.district;
         if (filters.municipality) base.municipality = filters.municipality;
@@ -92,7 +143,7 @@ const AdminBackup = () => {
         try {
             const params = getExportParams();
             const qs = new URLSearchParams(params).toString();
-            const basePath = entity === 'interruptions' ? '/api/interruptions/export' : '/api/tickets/export';
+            const basePath = getExportBasePath();
             const url = apiUrl(`${basePath}?${qs}`);
             const userEmail = localStorage.getItem('userEmail');
             const userName = localStorage.getItem('userName');
@@ -107,7 +158,9 @@ const AdminBackup = () => {
             }
             const blob = await res.blob();
             const contentDisposition = res.headers.get('Content-Disposition');
-            let filename = `aleco_tickets_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
+            let filename = isInterruptionsEntity
+                ? `aleco_interruptions_export.${format === 'excel' ? 'xlsx' : 'csv'}`
+                : `aleco_tickets_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
             if (contentDisposition) {
                 const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
                 if (match) filename = match[1];
@@ -140,7 +193,7 @@ const AdminBackup = () => {
         try {
             const params = getExportParams();
             const qs = new URLSearchParams(params).toString();
-            const basePath = entity === 'interruptions' ? '/api/interruptions/export/preview' : '/api/tickets/export/preview';
+            const basePath = getExportPreviewBasePath();
             const res = await fetch(apiUrl(`${basePath}?${qs}`));
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Preview failed');
@@ -232,6 +285,7 @@ const AdminBackup = () => {
     };
 
     const sharedProps = {
+        entity,
         format,
         onFormatChange: setFormat,
         exporting,
@@ -249,6 +303,57 @@ const AdminBackup = () => {
         previewResult
     };
 
+    const filterButton = showFilterButton ? (
+        <button
+            type="button"
+            className="ticket-filter-inline-btn"
+            onClick={() => setFilterDrawerOpen(true)}
+            aria-label="Open filters"
+            title="Filters"
+        >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            {filterActiveCount > 0 && (
+                <span className="ticket-filter-inline-badge">{filterActiveCount}</span>
+            )}
+        </button>
+    ) : null;
+
+    const dataManagementMain = (
+        <>
+            <div className="backup-date-bar-wrap">
+                <BackupDateBar
+                    preset={preset}
+                    useCustom={useCustom}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onPresetChange={setPreset}
+                    onUseCustomChange={setUseCustom}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                />
+            </div>
+
+            {isTicketsEntity && <BackupFiltersBar filters={filters} setFilters={setFilters} />}
+            {isInterruptionsEntity && (
+                <BackupInterruptionFiltersBar filters={interruptionFilters} setFilters={setInterruptionFilters} />
+            )}
+
+            <div
+                className={
+                    layoutMode === 'workflow'
+                        ? 'backup-content backup-content--workflow'
+                        : 'backup-content'
+                }
+            >
+                {layoutMode === 'compact' && <BackupCompactView {...sharedProps} />}
+                {layoutMode === 'card' && <BackupCardsView {...sharedProps} />}
+                {layoutMode === 'workflow' && <BackupWorkflowView {...sharedProps} />}
+            </div>
+        </>
+    );
+
     return (
         <AdminLayout activePage="backup">
             <div className="admin-page-container backup-page-container">
@@ -259,35 +364,36 @@ const AdminBackup = () => {
                     </div>
                     <div className="backup-header-pickers">
                         <EntityPicker activeEntity={entity} onEntityChange={setEntity} />
-                        <BackupLayoutPicker activeLayout={layoutMode} onLayoutChange={setLayoutMode} />
+                        <BackupLayoutPicker
+                            activeLayout={layoutMode}
+                            onLayoutChange={setLayoutMode}
+                            filterButton={filterButton}
+                        />
                     </div>
                 </div>
 
-                {entity === 'tickets' ? (
-                    <>
-                        <div className="backup-date-bar-wrap">
-                            <BackupDateBar
-                                preset={preset}
-                                useCustom={useCustom}
-                                startDate={startDate}
-                                endDate={endDate}
-                                onPresetChange={setPreset}
-                                onUseCustomChange={setUseCustom}
-                                onStartDateChange={setStartDate}
-                                onEndDateChange={setEndDate}
-                            />
-                        </div>
-
-                        <BackupFiltersBar filters={filters} setFilters={setFilters} />
-
-                        <div className="backup-content">
-                            {layoutMode === 'compact' && <BackupCompactView {...sharedProps} />}
-                            {layoutMode === 'cards' && <BackupCardsView {...sharedProps} />}
-                            {layoutMode === 'workflow' && <BackupWorkflowView {...sharedProps} />}
-                        </div>
-                    </>
-                ) : (
+                {hasDataFilters ? dataManagementMain : (
                     <ComingSoonPlaceholder entityId={entity} />
+                )}
+
+                {showFilterButton && (
+                    <TicketFilterDrawer isOpen={filterDrawerOpen} onClose={() => setFilterDrawerOpen(false)}>
+                        <div className="backup-filter-drawer-form">
+                            {isTicketsEntity && (
+                                <div className="backup-filters-content backup-filters-content--drawer">
+                                    <BackupTicketFiltersForm filters={filters} setFilters={setFilters} />
+                                </div>
+                            )}
+                            {isInterruptionsEntity && (
+                                <div className="backup-filters-content backup-filters-content--drawer">
+                                    <BackupInterruptionFiltersForm
+                                        filters={interruptionFilters}
+                                        setFilters={setInterruptionFilters}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </TicketFilterDrawer>
                 )}
             </div>
 

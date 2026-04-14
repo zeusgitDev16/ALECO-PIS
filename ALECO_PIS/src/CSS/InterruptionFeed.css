@@ -135,12 +135,16 @@
 
 /* --- Expand Button (Anchored to Sticky Header) --- */
 .feed-post-expand-btn {
-  position: absolute;
-  top: 12px !important; 
-  right: 12px !important; 
+  position: sticky;
+  top: 12px !important;
+  margin-left: auto; /* Aligns the button to the right side of the flex container */
+  margin-right: 28px !important; /* Maintains the 12px gap from the vertical scrollbar */
+  margin-bottom: -32px; /* Offsets height so content slides underneath, staying "pinnable" */
   z-index: 100 !important; /* Maximum priority to stay above headers and content */
-  width: 34px;
-  height: 34px;
+  width: 32px !important;
+  height: 32px !important;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--bg-card) !important;
   border: 1px solid var(--border-color);
@@ -150,7 +154,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 1.3rem; /* Increased size for better visibility */
+  font-size: 1.1rem; 
   line-height: 1; 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   padding: 0;
@@ -634,7 +638,7 @@
   max-width: 100% !important;
   height: auto !important;
   /* Keeps image large in dashboard but leaves room for the "Click to View" label */
-  max-height: 80vh !important; 
+  max-height: 65vh !important; 
   object-fit: contain !important;
   display: block;
   margin: 0 auto;
@@ -721,9 +725,11 @@
 /* --- Bulletin cards in feed (loading, empty, unavailable) --- */
 .interruption-card.interruption-card--feed {
   /* Match the sizing and flex behavior of .interruption-feed-post */
+  display: flex;
+  flex-direction: column;
   scroll-snap-align: center;
   flex-shrink: 0;
-  width: 380px; /* Match new card width */
+  width: min(380px, 94vw); /* Synchronized with standard card width behavior */
   height: 400px; /* Match new card height */
   border-radius: 16px; /* Harmonized with feed post cards to prevent clipping mismatches */
   border: 1px solid var(--border-color); /* Container border to match feed post cards */
@@ -733,6 +739,7 @@
   overflow-x: hidden;
   margin: 0;
   scroll-snap-stop: always;
+  position: relative; /* Added to anchor the absolute positioned expand button correctly */
 }
 
 .interruption-card--feed::-webkit-scrollbar {
@@ -789,9 +796,9 @@
   top: 0; /* Reset to 0 to match card header consistency */
   z-index: 10;
   background: var(--bg-card);
-  padding: 17px 20px 16px 16px;
+  padding: 17px 16px 12px 16px; /* Synchronized padding with standard card headers */
   margin: 0;
-  border-radius: 14px 14px 0 0; /* Synchronized with card header radius to prevent corner leakage */
+  border-radius: 15px 15px 0 0; /* Synchronized radius with standard card headers */
   background-clip: padding-box;
   width: 100%;
   box-sizing: border-box;
@@ -827,10 +834,12 @@
   /* Expand button for mobile */
   .feed-post-expand-btn {
     top: 10px !important;
-    right: 10px !important;
-    width: 30px;
-    height: 30px;
-    font-size: 1rem;
+    margin-left: auto;
+    margin-right: 10px !important;
+    margin-bottom: -28px;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.9rem;
   }
 
   .interruption-card--feed .status-header {
@@ -983,10 +992,12 @@
   /* Expand button for ultra-compact mobile */
   .feed-post-expand-btn {
     top: 8px !important;
-    right: 8px !important;
-    width: 26px;
-    height: 26px;
-    font-size: 0.9rem;
+    margin-left: auto;
+    margin-right: 8px !important;
+    margin-bottom: -24px;
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 0.8rem;
   }
 }
 
@@ -1100,10 +1111,12 @@
   /* Expand button for small mobile */
   .feed-post-expand-btn {
     top: 10px !important;
-    right: 10px !important;
-    width: 28px;
-    height: 28px;
-    font-size: 0.95rem;
+    margin-left: auto;
+    margin-right: 10px !important;
+    margin-bottom: -26px;
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.85rem;
   }
 }
 
@@ -1210,9 +1223,11 @@
   /* Expand button for mid-mobile */
   .feed-post-expand-btn {
     top: 12px !important;
-    right: 12px !important;
-    width: 30px;
-    height: 30px;
+    margin-left: auto;
+    margin-right: 12px !important;
+    margin-bottom: -30px;
+    width: 30px !important;
+    height: 30px !important;
     font-size: 1rem;
   }
 }
@@ -1293,10 +1308,11 @@
   /* Expand button for large mobile */
   .feed-post-expand-btn {
     top: 12px !important;
-    right: 12px !important;
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
+    margin-right: 28px !important;
+    margin-bottom: -26px;
+    width: 26px;
+    height: 26px;
+    font-size: 0.9rem;
   }
 }
 
@@ -1322,10 +1338,11 @@
   /* Expand button for tablet landscape */
   .feed-post-expand-btn {
     top: 14px !important;
-    right: 14px !important;
-    width: 34px;
-    height: 34px;
-    font-size: 1.1rem;
+    margin-right: 28px !important;
+    margin-bottom: -30px;
+    width: 30px;
+    height: 30px;
+    font-size: 1.05rem;
   }
 
   .interruption-card--feed .status-header {
@@ -1358,9 +1375,9 @@
 
 .interruption-modal-container {
   position: relative;
-  width: 94vw;
-  max-width: 1400px; /* Harmonized with landing page max-width for consistency */
-  max-height: 92vh;
+  width: fit-content; /* Container wraps tightly around its content */
+  max-width: 94vw; 
+  max-height: 90vh;
   background: var(--bg-card);
   border-radius: 24px;
   overflow: hidden; /* Keeps the Close button and frame fixed while content scrolls */
@@ -1371,13 +1388,21 @@
 
 /* Force the card content to expand fully within the modal */
 .interruption-modal-container .interruption-feed-post {
-  width: 100% !important;
+  width: min(1200px, 94vw) !important; /* Balanced expansion width for reading comfort */
   height: auto !important;
-  max-height: 92vh !important;
+  max-height: 90vh !important;
   overflow-y: auto !important; /* Direct scroll context for the "scroll you want" */
   box-shadow: none !important;
   border: none !important;
   border-radius: 0;
+}
+
+/* Allow bulletin cards to breathe when expanded in modal */
+.interruption-modal-container .interruption-card--feed {
+  width: min(600px, 94vw) !important;
+  height: auto !important;
+  max-height: 90vh !important;
+  border: none !important;
 }
 
 /* --- Branded Scrollbar for Expanded View --- */
@@ -1399,8 +1424,8 @@
 @media (min-width: 900px) {
   .interruption-modal-container .interruption-feed-post {
     display: grid !important;
-    /* Increased technical column width to 600px to maximize image visibility */
-    grid-template-columns: 1fr 600px; 
+    /* Optimized ratio: 1fr for narrative text, 480px for technical/image dashboard */
+    grid-template-columns: 1fr 480px; 
     grid-template-areas: 
       "header header"
       "body info";

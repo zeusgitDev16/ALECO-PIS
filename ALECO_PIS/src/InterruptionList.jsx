@@ -97,20 +97,20 @@ function InterruptionList() {
       >
         {loading && (
           <div className="interruption-card interruption-card--bulletin interruption-card--feed" aria-busy="true">
+            <button
+              type="button"
+              className="feed-post-expand-btn"
+              title="Expand"
+              aria-label="Expand"
+              onClick={() => handleExpand({ type: 'loading' })}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+              </svg>
+            </button>
             <div className="blob blob-pending" aria-hidden />
             <div className="bg">
-              <h3 className="status-header status-pending" style={{ position: 'relative' }}>
-                One moment…
-                <button
-                  type="button"
-                  className="feed-post-expand-btn"
-                  title="Expand"
-                  aria-label="Expand"
-                  onClick={() => handleExpand({ type: 'loading' })}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                </button>
-              </h3>
+              <h3 className="status-header status-pending">One moment…</h3>
               <div className="card-details card-details--bulletin">
                 <p>We&apos;re checking for the latest brownout updates from ALECO.</p>
               </div>
@@ -120,20 +120,20 @@ function InterruptionList() {
 
         {!loading && listUnavailable && (
           <div className="interruption-card interruption-card--bulletin interruption-card--feed" role="status">
+            <button
+              type="button"
+              className="feed-post-expand-btn"
+              title="Expand"
+              aria-label="Expand"
+              onClick={() => handleExpand({ type: 'unavailable' })}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+              </svg>
+            </button>
             <div className="blob blob-pending" aria-hidden />
             <div className="bg">
-              <h3 className="status-header status-pending" style={{ position: 'relative' }}>
-                Updates will be back soon
-                <button
-                  type="button"
-                  className="feed-post-expand-btn"
-                  title="Expand"
-                  aria-label="Expand"
-                  onClick={() => handleExpand({ type: 'unavailable' })}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                </button>
-              </h3>
+              <h3 className="status-header status-pending">Updates will be back soon</h3>
               <div className="card-details card-details--bulletin">
                 <p>
                   We can&apos;t show the outage bulletin right now. This doesn&apos;t mean your power is
@@ -149,6 +149,16 @@ function InterruptionList() {
 
         {!loading && !listUnavailable && visibleInterruptions.length === 0 && (
           <div className="interruption-card interruption-card--bulletin interruption-card--good-news interruption-card--feed">
+            <button
+              type="button"
+              className="feed-post-expand-btn"
+              title="View Bulletin Details"
+              onClick={() => handleExpand({ type: 'good-news' })}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+              </svg>
+            </button>
             <div className="blob blob-restored" aria-hidden />
             <div className="bg interruption-good-news-inner">
               <div className="interruption-good-news-icon" aria-hidden>
@@ -164,18 +174,8 @@ function InterruptionList() {
                 </svg>
               </div>
               <span className="interruption-good-news-badge">Good news</span>
-              <h3 className="status-header status-restored interruption-good-news-headline" style={{ position: 'relative' }}>
+              <h3 className="status-header status-restored interruption-good-news-headline">
                 No power advisories to report
-                <button
-                  type="button"
-                  className="feed-post-expand-btn"
-                  title="View Bulletin Details"
-                  onClick={() => handleExpand({ type: 'good-news' })}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                  </svg>
-                </button>
               </h3>
               <p className="interruption-good-news-date">{bulletinDateFull}</p>
               <div className="card-details card-details--bulletin card-details--good-news">

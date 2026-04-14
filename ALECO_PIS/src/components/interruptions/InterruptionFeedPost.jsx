@@ -5,12 +5,26 @@ import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
 
 /**
  * Facebook-style feed post card: header + body + infographic.
- * @param {{ item: object, now?: number }} props - API DTO, now for countdown refresh only
+ * @param {{ item: object, now?: number, onExpand: function, isExpandedView?: boolean }} props - API DTO, now for countdown refresh only
  */
-export default function InterruptionFeedPost({ item, now = Date.now() }) {
+export default function InterruptionFeedPost({ item, now = Date.now(), onExpand, isExpandedView = false }) {
   return (
     <article className="interruption-feed-post">
-      <InterruptionFeedPostHeader item={item} />
+      {/* The Expand Button Trigger for actual advisory posts */}
+      {!isExpandedView && onExpand && (
+        <button
+          type="button"
+          className="feed-post-expand-btn"
+          title="View full details"
+          aria-label="Expand Advisory"
+          onClick={onExpand}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+          </svg>
+        </button>
+      )}
+      <InterruptionFeedPostHeader item={item} /> {/* onExpand is handled by the button above, not necessarily needed in header now */}
       <InterruptionFeedPostBody item={item} />
       <InterruptionAdvisoryInfographic item={item} now={now} />
     </article>

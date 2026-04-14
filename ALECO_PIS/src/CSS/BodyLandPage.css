@@ -187,12 +187,11 @@ html.public-home-smooth-scroll {
 
 /* Public landing H2s: Power Outages, About ALECO, Privacy — same size + rhythm as Report a Problem */
 .section-title {
-  font-size: calc(2.2rem * var(--public-section-scale, 1));
+  font-size: 1.8rem;
   color: var(--text-header);
-  margin-top: 0;
-  margin-bottom: calc(30px * var(--public-section-scale, 1));
-  border-bottom: max(2px, calc(3px * var(--public-section-scale, 1))) solid var(--text-secondary);
-  padding-bottom: calc(10px * var(--public-section-scale, 1));
+  margin: 0 0 24px 0; /* Reverted to left-alignment */
+  border-bottom: 3px solid var(--text-secondary);
+  padding-bottom: 10px;
   font-family: var(--font-header);
   font-weight: 700;
   line-height: 1.2;
@@ -343,6 +342,13 @@ html.public-home-smooth-scroll {
   object-fit: contain;
   border-radius: 8px;
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  cursor: zoom-in;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.card-details-image img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Wider “bulletin” cards: good news / loading / refresh — same blob + glass as advisory cards */

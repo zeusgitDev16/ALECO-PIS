@@ -4,7 +4,6 @@ const TARGET_MODES = [
   { key: 'all_feeders', label: 'All Feeders', desc: 'Send to all active contacts' },
   { key: 'selected_feeders', label: 'Selected Feeders', desc: 'Choose specific feeders' },
   { key: 'manual_contacts', label: 'Manual Contacts', desc: 'Select individual contacts' },
-  { key: 'interruption_linked', label: 'Interruption-Linked', desc: 'Link to an advisory' },
 ];
 
 /**
@@ -37,7 +36,6 @@ export default function B2BMessageCompose({
     targetMode: 'all_feeders',
     selectedFeederIds: [],
     selectedContactIds: [],
-    interruptionId: '',
     templateId: '',
     subject: '',
     bodyText: '',
@@ -51,7 +49,6 @@ export default function B2BMessageCompose({
         targetMode: 'all_feeders',
         selectedFeederIds: [],
         selectedContactIds: [],
-        interruptionId: '',
         templateId: '',
         subject: '',
         bodyText: '',
@@ -85,9 +82,6 @@ export default function B2BMessageCompose({
     }
     if (formData.targetMode === 'manual_contacts' && formData.selectedContactIds.length === 0) {
       errs.push('Please select at least one contact');
-    }
-    if (formData.targetMode === 'interruption_linked' && !formData.interruptionId) {
-      errs.push('Please enter an interruption/advisory ID');
     }
     if (formData.targetMode === 'all_feeders' && activeContactCount === 0) {
       errs.push('No active contacts available. Please add and verify contacts first.');
@@ -174,75 +168,120 @@ export default function B2BMessageCompose({
           </label>
 
           {formData.targetMode === 'all_feeders' && (
-            <div className="b2b-recipient-info">
-              <span className="b2b-recipient-count">
-                Active contacts: <strong>{activeContactCount}</strong>
-              </span>
+            <div className="b2b-all-feeders-info">
+              <div className="b2b-info-card">
+                <span className="b2b-info-icon">📧</span>
+                <div className="b2b-info-content">
+                  <strong className="b2b-info-title">All Active Contacts</strong>
+                  <span className="b2b-info-desc">Message will be sent to {activeContactCount} verified contacts across all feeders</span>
+                </div>
+              </div>
             </div>
           )}
 
           {formData.targetMode === 'selected_feeders' && (
             <label className="b2b-form-field">
               <span>Select Feeders</span>
-              <select
-                multiple
-                size={Math.min(5, Math.max(3, feederOptions.length))}
-                value={formData.selectedFeederIds.map(String)}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
-                  setFormData((p) => ({ ...p, selectedFeederIds: selected }));
-                }}
-                disabled={saving}
-                className="b2b-multiselect"
-              >
-                {feederOptions.map((f) => (
-                  <option key={f.id} value={f.id}>{f.label}</option>
-                ))}
-              </select>
+              <div className="b2b-feeder-checkbox-list">
+                <div className="b2b-feeder-table-header">
+                  <label className="b2b-select-all">
+                    <input
+                      type="checkbox"
+                      checked={feederOptions.length > 0 && formData.selectedFeederIds.length === feederOptions.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData((p) => ({ ...p, selectedFeederIds: feederOptions.map((f) => f.id) }));
+                        } else {
+                          setFormData((p) => ({ ...p, selectedFeederIds: [] }));
+                        }
+                      }}
+                      disabled={saving}
+                    />
+                    <span>Select All ({feederOptions.length})</span>
+                  </label>
+                </div>
+                <div className="b2b-feeder-list-wrap">
+                  {feederOptions.map((feeder) => (
+                    <div
+                      key={feeder.id}
+                      className={`b2b-feeder-row${formData.selectedFeederIds.includes(feeder.id) ? ' is-selected' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.selectedFeederIds.includes(feeder.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData((p) => ({ ...p, selectedFeederIds: [...p.selectedFeederIds, feeder.id] }));
+                          } else {
+                            setFormData((p) => ({ ...p, selectedFeederIds: p.selectedFeederIds.filter((id) => id !== feeder.id) }));
+                          }
+                        }}
+                        disabled={saving}
+                      />
+                      <span className="b2b-feeder-label">{feeder.label}</span>
+                    </div>
+                  ))}
+                  {feederOptions.length === 0 && (
+                    <div className="b2b-feeder-empty">No feeders available</div>
+                  )}
+                </div>
+              </div>
             </label>
           )}
 
           {formData.targetMode === 'manual_contacts' && (
             <label className="b2b-form-field">
               <span>Select Contacts</span>
-              <select
-                multiple
-                size={Math.min(6, Math.max(4, verifiedContacts.length))}
-                value={formData.selectedContactIds.map(String)}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
-                  setFormData((p) => ({ ...p, selectedContactIds: selected }));
-                }}
-                disabled={saving}
-                className="b2b-multiselect"
-              >
-                {verifiedContacts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.contact_name} ({c.email})
-                  </option>
-                ))}
-              </select>
-              {verifiedContacts.length === 0 && (
-                <small className="b2b-form-error">No verified contacts available</small>
-              )}
+              <div className="b2b-contact-checkbox-list">
+                <div className="b2b-contact-table-header">
+                  <label className="b2b-select-all">
+                    <input
+                      type="checkbox"
+                      checked={verifiedContacts.length > 0 && formData.selectedContactIds.length === verifiedContacts.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData((p) => ({ ...p, selectedContactIds: verifiedContacts.map((c) => c.id) }));
+                        } else {
+                          setFormData((p) => ({ ...p, selectedContactIds: [] }));
+                        }
+                      }}
+                      disabled={saving}
+                    />
+                    <span>Select All ({verifiedContacts.length})</span>
+                  </label>
+                </div>
+                <div className="b2b-contact-list-wrap">
+                  {verifiedContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className={`b2b-contact-row${formData.selectedContactIds.includes(contact.id) ? ' is-selected' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.selectedContactIds.includes(contact.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData((p) => ({ ...p, selectedContactIds: [...p.selectedContactIds, contact.id] }));
+                          } else {
+                            setFormData((p) => ({ ...p, selectedContactIds: p.selectedContactIds.filter((id) => id !== contact.id) }));
+                          }
+                        }}
+                        disabled={saving}
+                      />
+                      <div className="b2b-contact-info">
+                        <span className="b2b-contact-name">{contact.contact_name || '-'}</span>
+                        <span className="b2b-contact-email">{contact.email}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {verifiedContacts.length === 0 && (
+                    <div className="b2b-contact-empty">No verified contacts available</div>
+                  )}
+                </div>
+              </div>
             </label>
           )}
 
-          {formData.targetMode === 'interruption_linked' && (
-            <label className="b2b-form-field">
-              <span>Interruption/Advisory ID</span>
-              <input
-                type="number"
-                value={formData.interruptionId}
-                onChange={(e) => setFormData((p) => ({ 
-                  ...p, 
-                  interruptionId: e.target.value ? Number(e.target.value) : '' 
-                }))}
-                placeholder="Enter advisory ID number"
-                disabled={saving}
-              />
-            </label>
-          )}
 
           <label className="b2b-form-field">
             <span>Template (optional)</span>

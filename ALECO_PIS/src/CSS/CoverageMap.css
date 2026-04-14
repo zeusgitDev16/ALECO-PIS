@@ -233,6 +233,18 @@
 .pin-green.core-dot { background-color: #10b981; }
 .pin-green.pulse-ring { background-color: #10b981; }
 
+.pin-purple.core-dot { background-color: #8b5cf6; }
+.pin-purple.pulse-ring { background-color: #8b5cf6; }
+
+.pin-red.core-dot { background-color: #ef4444; }
+.pin-red.pulse-ring { background-color: #ef4444; }
+
+.pin-yellow.core-dot { background-color: #eab308; }
+.pin-yellow.pulse-ring { background-color: #eab308; }
+
+.pin-gray.core-dot { background-color: #6b7280; }
+.pin-gray.pulse-ring { background-color: #6b7280; }
+
 @keyframes ping {
     75%, 100% {
         transform: scale(2);

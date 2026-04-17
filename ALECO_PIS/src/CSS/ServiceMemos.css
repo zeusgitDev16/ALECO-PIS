@@ -774,3 +774,1040 @@
     border: 1px solid #000;
   }
 }
+
+/* Service Memo Modal Container (page-as-modal) */
+.service-memo-modal-container {
+  background: var(--bg-card);
+  border-radius: 16px;
+  max-width: min(1300px, 95vw);
+  width: 100%;
+  /*
+   * Give the modal a DEFINITE height so the flex child
+   * (.service-memo-modal-content { flex:1 }) gets a computed height
+   * and overflow-y: auto actually creates a scroll area.
+   * Without an explicit height (only max-height) flex children
+   * cannot establish a scroll container reliably across browsers.
+   */
+  height: min(90dvh, calc(100dvh - 40px));
+  max-height: min(90dvh, calc(100dvh - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  animation: smSlideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.service-memo-modal-content {
+  flex: 1;
+  min-height: 0;        /* critical — flex children collapse without this */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.service-memo-modal-content .admin-page-container {
+  padding: 24px;
+  padding-bottom: 48px;   /* breathing room so last field is never flush with bottom */
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/*
+ * Create pool: nested shell — single scroll on .service-memo-create-shell (strip + form bands).
+ * The inner body is not a separate flex-shrink slice; both stack and scroll together in one tall viewport.
+ */
+.service-memo-modal-content:has(.service-memo-form-root--create-nested),
+.service-memo-modal-content:has(.service-memos-page-container--create-memo) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.service-memo-modal-content:has(.service-memo-form-root--create-nested) .admin-page-container,
+.service-memo-modal-content .service-memos-page-container--create-memo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 16px;
+}
+
+.service-memo-form-root--create-nested {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.service-memo-form-root--create-nested .service-memo-form-toolbar {
+  flex-shrink: 0;
+}
+
+.service-memo-create-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: 28px;
+  gap: 12px;
+}
+
+.service-memo-create-shell-top {
+  flex-shrink: 0;
+}
+
+/* Form grid wrapper — flows at natural height; shell above scrolls the combined strip + bands */
+.service-memo-create-shell-body {
+  flex-shrink: 0;
+  min-width: 0;
+  padding-bottom: 8px;
+}
+
+@keyframes smSlideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Service Memo Two-Pane Layout (Header top, Body bottom) */
+.memo-two-pane-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+}
+
+.memo-header-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px 20px;
+  flex-shrink: 0;
+}
+
+.memo-header-content {
+  min-height: 60px;
+}
+
+.memo-body-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px 20px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.memo-body-content {
+  min-height: 200px;
+}
+
+/* Dark mode specific adjustments */
+[data-theme="dark"] .memo-header-container,
+[data-theme="dark"] .memo-body-container {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+/* Service Memo Search Header (replacing tabs) - Compact with dual pane space */
+.service-memo-search-header {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.service-memo-search-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 55%;
+}
+
+.service-memo-search-right {
+  flex: 1;
+  min-height: 80px;
+}
+
+.service-memo-search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.service-memo-search-row:first-child {
+  gap: 16px;
+}
+
+.service-memo-search-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.service-memo-search-field--full {
+  flex: 1;
+}
+
+.service-memo-search-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.service-memo-search-input {
+  flex: 1;
+  min-width: 80px;
+  height: 22px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.service-memo-search-input::placeholder {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+
+.service-memo-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.service-memo-search-field--full .service-memo-search-input {
+  min-width: 120px;
+}
+
+[data-theme="dark"] .service-memo-search-label {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .service-memo-search-input {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .service-memo-search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+/* ============================================================
+   Service Memo Modal Layout
+   Header + scrollable content + footer are flex siblings
+   inside .service-memo-modal-container (flex column)
+   ============================================================ */
+
+/* Fixed top header — title, subtitle, close btn */
+.service-memo-modal-top-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
+  gap: 12px;
+}
+
+.service-memo-modal-top-header .header-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.service-memo-modal-top-header .header-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.service-memo-modal-top-header .header-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* Close button for service memo modal */
+.service-memo-close-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-body);
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.service-memo-close-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  transform: rotate(90deg) scale(1.1);
+}
+
+/* Toolbar inside scrollable content — refresh + filter */
+.service-memos-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* Fixed footer — Draft / Save / Print */
+.service-memo-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+/* Footer Buttons — styled after .btn-action from TicketDetailPane */
+.service-memos-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 18px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+.service-memos-btn:active {
+  transform: scale(0.97);
+}
+
+.service-memos-btn--draft {
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.service-memos-btn--draft:hover {
+  background: rgba(100, 116, 139, 0.22);
+  border-color: var(--text-secondary);
+}
+
+.service-memos-btn--save {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.service-memos-btn--save:hover {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.service-memos-btn--print {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.service-memos-btn--print:hover {
+  background: rgba(34, 197, 94, 0.22);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+[data-theme="dark"] .service-memo-modal-top-header,
+[data-theme="dark"] .service-memo-footer {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+/* --- Service memo form (shared create / update / view) --- */
+.service-memo-form-root {
+  padding: 0 0 16px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.service-memo-form-root[data-mode='create'] {
+  padding-bottom: 24px;
+}
+
+.service-memo-form-root *,
+.service-memo-reference-header,
+.service-memo-reference-header * {
+  box-sizing: border-box;
+}
+
+.service-memo-form-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+/* Reference-style title + strip shell */
+.service-memo-reference-header {
+  margin-bottom: 4px;
+}
+
+.service-memo-reference-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.service-memo-reference-badge {
+  width: 6px;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--primary, #3b82f6);
+  flex-shrink: 0;
+}
+
+.service-memo-reference-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.service-memo-reference-photo {
+  margin-left: auto;
+  position: relative;
+  min-width: 88px;
+  min-height: 88px;
+  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+  background: var(--bg-input, var(--bg-card));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.service-memo-reference-photo--interactive {
+  cursor: pointer;
+  border-style: solid;
+}
+
+.service-memo-reference-photo--interactive:hover {
+  border-color: var(--primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.service-memo-reference-photo--interactive:focus {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.service-memo-reference-photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.service-memo-reference-photo-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.service-memo-reference-photo-hint {
+  font-size: 0.55rem;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.service-memo-reference-photo-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.service-memo-reference-photo-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  padding: 0;
+}
+
+.service-memo-reference-photo:hover .service-memo-reference-photo-remove {
+  opacity: 1;
+}
+
+.service-memo-reference-photo-remove:hover {
+  background: #d32f2f;
+  transform: scale(1.1);
+}
+
+.service-memo-reference-photo-remove:active {
+  transform: scale(0.95);
+}
+
+.service-memo-form-top-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.service-memo-strip-row-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .service-memo-strip-row-two {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.service-memo-strip-row-ticket {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.service-memo-form-strip-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.service-memo-form-strip-field--wide {
+  width: 100%;
+}
+
+.service-memo-form-strip-field--grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-memo-strip-search-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+
+.service-memo-strip-search-wrap input {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-memo-strip-icon-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input, var(--bg-card));
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.service-memo-strip-icon-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: var(--primary, #3b82f6);
+}
+
+.service-memo-strip-icon-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.service-memo-strip-search-icon {
+  display: block;
+}
+
+.service-memo-strip-display {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--bg-input, rgba(0, 0, 0, 0.03));
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+}
+
+[data-theme='dark'] .service-memo-strip-display {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.service-memo-strip-readonly-placeholder {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.service-memo-strip-input-with-action {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Must win over .service-memo-form-strip-field input { width: 100% } or ticket row overflows */
+.service-memo-form-strip-field .service-memo-strip-input-with-action input {
+  width: auto;
+  flex: 1 1 0%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.service-memo-strip-load-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.service-memo-strip-load-err {
+  display: block;
+  margin-top: 4px;
+}
+
+.service-memo-form-strip-field label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.service-memo-form-strip-field input {
+  width: 100%;
+  max-width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  min-height: 34px;
+  transition: border-color 0.15s ease;
+}
+
+.service-memo-form-strip-field input:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.service-memo-form-strip-field--wide {
+  width: 100%;
+}
+
+.service-memo-create-ticket-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.service-memo-create-ticket-row label {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.service-memo-create-ticket-row input {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.service-memo-inline-err {
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.service-memo-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.service-memo-form-section {
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.service-memo-band {
+  background: var(--bg-card);
+}
+
+.service-memo-band-heading {
+  margin: -14px -14px 12px -14px;
+  padding: 8px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-primary);
+  background: rgba(59, 130, 246, 0.12);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 7px 7px 0 0;
+}
+
+[data-theme='dark'] .service-memo-band-heading {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.service-memo-band--request .service-memo-band-heading {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+/* Extra room below the last row so borders/inputs are not clipped in scroll regions */
+.service-memo-form-section.service-memo-band--request {
+  padding-bottom: 24px;
+}
+
+.service-memo-band--intake .service-memo-band-heading {
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.service-memo-band--resolution .service-memo-band-heading {
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.service-memo-band--site .service-memo-band-heading {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.service-memo-band--notes .service-memo-band-heading {
+  background: rgba(100, 116, 139, 0.14);
+}
+
+[data-theme='dark'] .service-memo-band--intake .service-memo-band-heading {
+  background: rgba(16, 185, 129, 0.16);
+}
+
+[data-theme='dark'] .service-memo-band--resolution .service-memo-band-heading {
+  background: rgba(245, 158, 11, 0.16);
+}
+
+[data-theme='dark'] .service-memo-band--site .service-memo-band-heading {
+  background: rgba(139, 92, 246, 0.18);
+}
+
+[data-theme='dark'] .service-memo-band--notes .service-memo-band-heading {
+  background: rgba(100, 116, 139, 0.2);
+}
+
+.service-memo-form-section-title {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.service-memo-form-row {
+  margin-bottom: 10px;
+}
+
+.service-memo-form-row:last-child {
+  margin-bottom: 0;
+}
+
+.service-memo-form-row label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.service-memo-form-row input,
+.service-memo-form-row textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  min-height: 34px;
+  transition: border-color 0.15s ease;
+}
+
+.service-memo-form-row input:focus,
+.service-memo-form-row textarea:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.service-memo-form-row textarea {
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.service-memo-form-row.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Create pool: minimalist density, clear label↔input gap, row spacing, request block bottom space */
+.service-memo-form-root[data-mode='create'] .service-memo-reference-title-row {
+  margin-bottom: 8px;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-top-strip {
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-strip-row-two {
+  gap: 8px;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-strip-field label {
+  margin-bottom: 5px;
+  font-size: 0.65rem;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-strip-field input {
+  min-height: 30px;
+  padding: 5px 8px;
+  font-size: 0.8125rem;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-strip-input-with-action {
+  gap: 6px;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-strip-load-btn {
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  min-height: 30px;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-grid {
+  gap: 12px;
+}
+
+/* Longhand so Request / ticket can set a larger padding-bottom without shorthand reset */
+.service-memo-form-root[data-mode='create'] .service-memo-form-section {
+  padding-top: 10px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 10px;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-band-heading {
+  margin: -10px -12px 10px -12px;
+  padding: 6px 10px;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+/* Higher specificity + large bottom inset (focus ring + visual breathing room) */
+.service-memo-form-root[data-mode='create'] .service-memo-form-section.service-memo-band--request {
+  padding-bottom: 48px;
+  margin-bottom: 16px;
+  overflow: visible;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-row {
+  margin-bottom: 12px;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-row:last-child {
+  margin-bottom: 0;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-row label {
+  margin-bottom: 6px;
+  font-size: 0.68rem;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-row input,
+.service-memo-form-root[data-mode='create'] .service-memo-form-row textarea {
+  min-height: 30px;
+  padding: 6px 8px;
+  font-size: 0.8125rem;
+}
+
+.service-memo-form-root[data-mode='create'] .service-memo-form-row textarea {
+  min-height: 48px;
+  line-height: 1.35;
+}
+
+.service-memo-meta-line {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.service-memo-close-row {
+  padding: 12px 0;
+}
+
+.service-memo-tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.service-memo-tab {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.service-memo-tab--active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.service-memo-search-actions {
+  margin-top: 8px;
+}
+
+@media print {
+  .service-memos-toolbar,
+  .service-memo-form-toolbar .service-memo-btn--secondary,
+  .service-memo-form-toolbar .service-memo-btn--primary,
+  .service-memo-close-row,
+  .service-memo-create-ticket-row,
+  .memo-header-container .service-memo-search-actions,
+  .interruption-filter-inline-btn,
+  .interruptions-admin-btn {
+    display: none !important;
+  }
+
+  /* Update-mode search affordances should not print */
+  .service-memo-strip-icon-btn,
+  .service-memo-strip-load-btn {
+    display: none !important;
+  }
+
+  .service-memo-strip-search-wrap input {
+    border: 1px solid #999 !important;
+    background: #fff !important;
+  }
+
+  .service-memo-form-root {
+    padding: 0;
+  }
+
+  .service-memo-reference-photo {
+    border-style: solid;
+    border-color: #ccc;
+  }
+
+  .service-memo-form-section {
+    break-inside: avoid;
+    border: 1px solid #ccc;
+    background: #fff !important;
+  }
+
+  .service-memo-band-heading {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

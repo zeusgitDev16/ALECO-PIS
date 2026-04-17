@@ -18,6 +18,10 @@ export function useServiceMemos() {
 
   const [filters, setFilters] = useState({
     search: '',
+    searchAccount: '',
+    searchName: '',
+    searchAddress: '',
+    searchMemo: '',
     status: '',
     startDate: '',
     endDate: '',
@@ -29,7 +33,11 @@ export function useServiceMemos() {
     setFetchError(null);
     const r = await listServiceMemos({
       tab: activeTab,
-      ...filters,
+      search: filters.search,
+      status: filters.status,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      owner: filters.owner,
     });
     setLoading(false);
     if (r.success) {

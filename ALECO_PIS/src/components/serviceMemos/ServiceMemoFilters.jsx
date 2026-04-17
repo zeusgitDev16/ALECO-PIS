@@ -24,6 +24,10 @@ const ServiceMemoFilters = ({ filters, onFilterChange, onClose }) => {
   const handleClearFilters = () => {
     onFilterChange({
       search: '',
+      searchAccount: '',
+      searchName: '',
+      searchAddress: '',
+      searchMemo: '',
       status: '',
       startDate: '',
       endDate: '',
@@ -31,7 +35,16 @@ const ServiceMemoFilters = ({ filters, onFilterChange, onClose }) => {
     });
   };
 
-  const hasActiveFilters = filters.search || filters.status || filters.startDate || filters.endDate || filters.owner;
+  const hasActiveFilters =
+    filters.search ||
+    filters.searchAccount ||
+    filters.searchName ||
+    filters.searchAddress ||
+    filters.searchMemo ||
+    filters.status ||
+    filters.startDate ||
+    filters.endDate ||
+    filters.owner;
 
   return (
     <div className="service-memo-filter-drawer-backdrop" onClick={onClose}>

@@ -1,16 +1,9 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../../CSS/CreatePost.css';
 
-const CreatePost = () => {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    navigate('/admin-service-memos');
-  };
-
+const CreatePost = ({ onOpen }) => {
   return (
-    <button className="create-post-btn" onClick={handleClick}>
+    <button className="create-post-btn" onClick={onOpen}>
       <span>
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>

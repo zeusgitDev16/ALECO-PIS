@@ -154,11 +154,6 @@ const NavigationWrapper = () => {
         <Route path="/admin-b2b-mail" element={
           <B2BMail />
         } />
-
-        {/* SERVICE MEMOS ROUTE */}
-        <Route path="/admin-service-memos" element={
-          <ServiceMemos />
-        } />
       </Routes>
 
       <CookieBanner />

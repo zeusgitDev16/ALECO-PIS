@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import AdminLayout from './AdminLayout';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/ServiceMemos.css';
+import '../CSS/ServiceMemoUIScale.css';
 import { useServiceMemos } from '../hooks/useServiceMemos';
-import ServiceMemoTabs from './serviceMemos/ServiceMemoTabs';
-import ServiceMemoCard from './serviceMemos/ServiceMemoCard';
-import ServiceMemoModal from './serviceMemos/ServiceMemoModal';
+import MemoHeader from './serviceMemos/memoHeader';
+import MemoBody from './serviceMemos/memoBody';
 import ServiceMemoFilters from './serviceMemos/ServiceMemoFilters';
+import ServiceMemoForm from './serviceMemos/ServiceMemoForm';
+import { getServiceMemo } from '../api/serviceMemosApi';
 
 const ServiceMemos = () => {
   const {
     memos,
     loading,
-    saving,
     message,
     setMessage,
     fetchError,
@@ -21,165 +21,204 @@ const ServiceMemos = () => {
     setActiveTab,
     filters,
     setFilters,
-    updateMemo,
     closeMemo,
   } = useServiceMemos();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingMemoId, setEditingMemoId] = useState(null);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [screen, setScreen] = useState('browse');
+  const [detailMode, setDetailMode] = useState('view');
+  const [activeMemoId, setActiveMemoId] = useState(null);
+  const [detailMemo, setDetailMemo] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  // Listen for service memo deletion event
+  const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
+  const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
+
   useEffect(() => {
     const handleServiceMemoDeleted = () => {
       fetchList();
     };
-
     window.addEventListener('service-memo-deleted', handleServiceMemoDeleted);
-
-    return () => {
-      window.removeEventListener('service-memo-deleted', handleServiceMemoDeleted);
-    };
+    return () => window.removeEventListener('service-memo-deleted', handleServiceMemoDeleted);
   }, [fetchList]);
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
+  const loadDetail = useCallback(async (id) => {
+    setDetailLoading(true);
+    setDetailMemo(null);
+    try {
+      const r = await getServiceMemo(id);
+      if (r.success && r.data) {
+        setDetailMemo(r.data);
+      } else {
+        setMessage({ type: 'err', text: r.message || 'Could not load memo.' });
+      }
+    } finally {
+      setDetailLoading(false);
+    }
+  }, [setMessage]);
+
+  useEffect(() => {
+    if (screen === 'detail' && activeMemoId) {
+      loadDetail(activeMemoId);
+    }
+  }, [screen, activeMemoId, loadDetail]);
+
+  const handleViewMemo = (memoId) => {
+    setActiveMemoId(memoId);
+    setDetailMode('view');
+    setScreen('detail');
   };
 
   const handleEditMemo = (memoId) => {
-    setEditingMemoId(memoId);
-    setModalOpen(true);
+    setActiveMemoId(memoId);
+    setDetailMode('update');
+    setScreen('detail');
   };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setEditingMemoId(null);
-    setMessage(null);
+  const handleBackFromDetail = () => {
+    setScreen('browse');
+    setActiveMemoId(null);
+    setDetailMemo(null);
+    fetchList();
   };
 
-  const handleSaveMemo = async (memoData) => {
-    if (editingMemoId) {
-      const result = await updateMemo(editingMemoId, memoData);
-      if (result.saved) {
-        handleCloseModal();
-      }
-    }
+  const handleCreateNew = () => {
+    setScreen('create');
+    setDetailMemo(null);
+    setActiveMemoId(null);
   };
 
-  const handleCloseMemo = async (memoId) => {
+  const handleCloseMemoFromCard = async (memoId) => {
     const result = await closeMemo(memoId);
     if (result.closed) {
       setMessage({ type: 'ok', text: 'Service memo closed successfully.' });
     }
   };
 
-  return (
-    <AdminLayout activePage="service-memos">
+  if (screen === 'create') {
+    return (
+      <div className="admin-page-container service-memos-page-container service-memos-page-container--create-memo">
+        <ServiceMemoForm
+          mode="create"
+          memo={null}
+          onBack={() => {
+            setScreen('browse');
+            fetchList();
+          }}
+          onSaved={() => {
+            setScreen('browse');
+            fetchList();
+            setMessage({ type: 'ok', text: 'Service memo created.' });
+          }}
+          currentUserEmail={userEmail}
+          currentUserName={userName}
+        />
+      </div>
+    );
+  }
+
+  if (screen === 'detail') {
+    if (detailLoading || !detailMemo) {
+      return (
+        <div className="admin-page-container service-memos-page-container">
+          <p className="widget-text service-memos-loading">{detailLoading ? 'Loading memo…' : 'Memo not found.'}</p>
+          <button type="button" className="interruptions-admin-btn" onClick={handleBackFromDetail}>
+            Back
+          </button>
+        </div>
+      );
+    }
+
+    const isOwner = detailMemo.owner_email === userEmail;
+    const formMode = detailMode === 'update' && isOwner ? 'update' : 'view';
+
+    return (
       <div className="admin-page-container service-memos-page-container">
-        <div className="dashboard-header-flex service-memos-header-flex">
-          <div className="header-text-group">
-            <h2 className="header-title">Service Memos</h2>
-            <p className="header-subtitle">Documentation for resolved tickets</p>
-          </div>
-          <div className="service-memos-header-pickers">
+        <ServiceMemoForm
+          mode={formMode}
+          memo={detailMemo}
+          onBack={handleBackFromDetail}
+          onSaved={handleBackFromDetail}
+          onMemoNavigate={(id) => setActiveMemoId(id)}
+          currentUserEmail={userEmail}
+          currentUserName={userName}
+        />
+        {formMode === 'update' && detailMemo.memo_status === 'saved' && (
+          <div className="service-memo-close-row">
             <button
               type="button"
-              className="interruption-filter-inline-btn"
-              onClick={() => setFilterDrawerOpen(true)}
-              aria-label="Open filters"
-              title="Filters"
+              className="service-memo-btn service-memo-btn--close"
+              onClick={async () => {
+                const r = await closeMemo(detailMemo.id);
+                if (r.closed) {
+                  setMessage({ type: 'ok', text: 'Memo closed.' });
+                  handleBackFromDetail();
+                }
+              }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="interruptions-admin-btn"
-              onClick={() => fetchList()}
-              disabled={loading}
-            >
-              {loading ? 'Loading…' : 'Refresh list'}
+              Close memo (finalize)
             </button>
           </div>
-        </div>
-
-        {message && (
-          <p
-            className="widget-text service-memos-msg"
-            data-variant={message.type}
-            role="status"
-          >
-            {message.text}
-          </p>
-        )}
-
-        {fetchError && !loading && (
-          <p className="widget-text service-memos-fetch-err" role="alert">
-            {fetchError}{' '}
-            <button type="button" className="interruptions-admin-inline-link" onClick={() => fetchList()}>
-              Retry
-            </button>
-          </p>
-        )}
-
-        <ServiceMemoTabs activeTab={activeTab} onTabChange={handleTabChange} />
-
-        <div className="main-content-card service-memos-content-card">
-          {loading ? (
-            <p className="widget-text service-memos-loading">Loading service memos…</p>
-          ) : !memos.length ? (
-            <div className="placeholder-content service-memos-placeholder">
-              <h3>No service memos</h3>
-              <p className="widget-text">
-                {activeTab === 'draft'
-                  ? 'No draft service memos. Drafts are created when you close a ticket.'
-                  : activeTab === 'saved'
-                  ? 'No saved service memos. Save your drafts to prepare for printing.'
-                  : activeTab === 'closed'
-                  ? 'No closed service memos. Closed memos are completed and finalized.'
-                  : 'No service memos in the system yet.'}
-              </p>
-            </div>
-          ) : (
-            <div className="service-memo-card-grid">
-              {memos.map((memo) => (
-                <ServiceMemoCard
-                  key={memo.id}
-                  memo={memo}
-                  onEdit={handleEditMemo}
-                  onClose={handleCloseMemo}
-                  onPrint={() => window.print()}
-                  activeTab={activeTab}
-                  currentUserEmail={localStorage.getItem('userEmail')}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ServiceMemoModal */}
-        {modalOpen && editingMemoId && (
-          <ServiceMemoModal
-            memo={memos.find(m => m.id === editingMemoId)}
-            isOpen={modalOpen}
-            onClose={handleCloseModal}
-            onSave={handleSaveMemo}
-            onCloseMemo={handleCloseMemo}
-            currentUserEmail={localStorage.getItem('userEmail')}
-          />
-        )}
-
-        {/* ServiceMemoFilters */}
-        {filterDrawerOpen && (
-          <ServiceMemoFilters
-            filters={filters}
-            onFilterChange={setFilters}
-            onClose={() => setFilterDrawerOpen(false)}
-          />
         )}
       </div>
-    </AdminLayout>
+    );
+  }
+
+  return (
+    <div className="admin-page-container service-memos-page-container">
+      <div className="service-memos-toolbar">
+        <button type="button" className="interruptions-admin-btn" onClick={handleCreateNew}>
+          Create memo
+        </button>
+        <button
+          type="button"
+          className="interruption-filter-inline-btn"
+          onClick={() => setFilterDrawerOpen(true)}
+          aria-label="Open filters"
+          title="Filters"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+        </button>
+        <button type="button" className="interruptions-admin-btn" onClick={() => fetchList()} disabled={loading}>
+          {loading ? 'Loading…' : 'Refresh list'}
+        </button>
+      </div>
+
+      {message && (
+        <p className="widget-text service-memos-msg" data-variant={message.type} role="status">
+          {message.text}
+        </p>
+      )}
+
+      {fetchError && !loading && (
+        <p className="widget-text service-memos-fetch-err" role="alert">
+          {fetchError}{' '}
+          <button type="button" className="interruptions-admin-inline-link" onClick={() => fetchList()}>
+            Retry
+          </button>
+        </p>
+      )}
+
+      <div className="memo-two-pane-layout">
+        <MemoHeader filters={filters} setFilters={setFilters} activeTab={activeTab} setActiveTab={setActiveTab} />
+        <MemoBody
+          memos={memos}
+          loading={loading}
+          activeTab={activeTab}
+          onView={handleViewMemo}
+          onEdit={handleEditMemo}
+          onClose={handleCloseMemoFromCard}
+          onPrint={() => window.print()}
+          currentUserEmail={userEmail}
+        />
+      </div>
+
+      {filterDrawerOpen && (
+        <ServiceMemoFilters filters={filters} onFilterChange={setFilters} onClose={() => setFilterDrawerOpen(false)} />
+      )}
+    </div>
   );
 };
 

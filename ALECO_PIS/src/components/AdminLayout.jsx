@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import AdminSidebar from './Sidebar';
 import SearchBarGlobal from './searchBars/SearchBarGlobal';
 import LandingPage from './headers/landingPage';
+import ServiceMemoModalContainer from './ServiceMemoModalContainer';
 import '../CSS/Dashboard.css';
 
 const AdminLayout = ({ children, activePage }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isServiceMemoModalOpen, setIsServiceMemoModalOpen] = useState(false);
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  const handleOpenServiceMemos = () => setIsServiceMemoModalOpen(true);
+  const handleCloseServiceMemos = () => setIsServiceMemoModalOpen(false);
 
   return (
     <div className="admin-shell-root">
@@ -18,6 +23,7 @@ const AdminLayout = ({ children, activePage }) => {
           activePage={activePage}
           isOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
+          onOpenServiceMemos={handleOpenServiceMemos}
         />
 
         <div className="admin-main-wrapper">
@@ -28,6 +34,11 @@ const AdminLayout = ({ children, activePage }) => {
           </div>
         </div>
       </div>
+
+      <ServiceMemoModalContainer
+        isOpen={isServiceMemoModalOpen}
+        onClose={handleCloseServiceMemos}
+      />
     </div>
   );
 };

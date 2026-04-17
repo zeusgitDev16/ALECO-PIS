@@ -127,32 +127,191 @@ body.admin-app-scroll-lock {
 
 /* --- HEADER SECTION --- */
 .dashboard-header {
-    margin-bottom: 30px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Forces alignment to the left */
+    text-align: left;
+    padding-top: 5px;
 }
 
 .header-title {
     margin: 0;
     font-size: var(--fs-xl);
+    font-weight: 800;
+    color: var(--text-header);
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    text-transform: capitalize; /* Ensures the greeting and name are properly capitalized */
 }
 
 .header-subtitle {
-    color: var(--text-secondary);
-    margin-top: 10px;
+    color: var(--text-secondary) !important;
+    margin-top: 6px;
     font-size: var(--fs-sm);
+    font-weight: 700;
+    opacity: 0.75;
 }
 
 /* --- WIDGETS / CONTENT --- */
-.dashboard-widget {
-    margin-top: 20px;
-    padding: 50px;
-    border: 2px dashed var(--text-secondary);
+
+/* Scrolling Fix: Ensure the dashboard page has enough bottom clearance 
+   to fully reveal the last features when scrolling. */
+.dashboard-page-container {
+    padding-bottom: 60px !important; 
+}
+
+/* Remove nested scrollbar conflict: Allow the incident tracking card 
+   to expand naturally within the main dashboard scroll area. */
+.dashboard-page-container .main-content-card {
+    max-height: none !important;
+    overflow: visible !important;
+    margin-bottom: 20px;
+}
+
+.analytics-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 32px;
+}
+
+/* Summary Cards Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    padding: 10px 14px;
     border-radius: 12px;
-    background-color: rgba(128, 128, 128, 0.05);
-    text-align: center;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover { transform: translateY(-4px); }
+
+.stat-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.total .stat-icon-box { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+.pending .stat-icon-box { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.ongoing .stat-icon-box { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+.resolved .stat-icon-box { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.unresolved .stat-icon-box { background: rgba(225, 29, 72, 0.1); color: #e11d48; }
+.nofault .stat-icon-box { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+.denied .stat-icon-box { background: rgba(249, 115, 22, 0.1); color: #f97316; }
+.urgent .stat-icon-box { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+.stat-content { display: flex; flex-direction: column; min-width: 0; }
+.stat-label { font-size: 0.65rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
+.stat-number { font-size: 1.25rem; font-weight: 900; margin: 1px 0; color: var(--text-header); line-height: 1.1; }
+.stat-trend { font-size: 0.7rem; font-weight: 600; opacity: 0.8; }
+.stat-trend.positive { color: #22c55e; }
+.stat-trend.negative { color: #ef4444; }
+
+/* Charts Layout */
+.charts-grid-main, .charts-grid-secondary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 900px) {
+    .charts-grid-main, .charts-grid-secondary { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+    background: var(--bg-card);
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.chart-header-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.chart-header-group h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-header);
+}
+
+.chart-icon { color: var(--accent-primary); opacity: 0.8; }
+
+.chart-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* Location Insight Styling */
+.location-insight-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.location-row { display: flex; flex-direction: column; gap: 6px; }
+.loc-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.loc-bar-bg {
+    height: 6px;
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.loc-bar-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 10px;
 }
 
 .widget-text {
     color: var(--text-secondary);
+}
+
+/* Customize Recharts Legend text */
+.recharts-legend-item-text {
+    color: var(--text-secondary) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+/* Dark mode legend adjustment */
+[data-theme="dark"] .recharts-cartesian-grid-horizontal line {
+    stroke: rgba(255, 255, 255, 0.05);
+}
+
+/* Ensure dashboard scroll area respects mobile safe areas and providing breathing room */
+.admin-content:has(.dashboard-page-container) {
+    scroll-padding-bottom: max(60px, env(safe-area-inset-bottom, 0px));
 }
 
 /* Data Management: last workflow step (import) stays reachable when scrolling */

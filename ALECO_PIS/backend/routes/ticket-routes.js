@@ -19,7 +19,8 @@ router.get('/filtered-tickets', async (req, res) => {
         // Base: show parent tickets (GROUP-*) + ungrouped; exclude children and soft-deleted. Include child_count for GROUP masters.
         // deleted_at: DATETIME column - use IS NULL only. Fallback for DBs without deleted_at (pre-migration).
         let query = `SELECT t.*, 
-            (SELECT COUNT(*) FROM aleco_tickets c WHERE c.parent_ticket_id = t.ticket_id AND c.deleted_at IS NULL) as child_count 
+            (SELECT COUNT(*) FROM aleco_tickets c WHERE c.parent_ticket_id = t.ticket_id AND c.deleted_at IS NULL) as child_count,
+            (EXISTS (SELECT 1 FROM aleco_service_memos sm WHERE sm.ticket_id = t.ticket_id)) AS has_service_memo
             FROM aleco_tickets t WHERE 1=1 AND t.deleted_at IS NULL`;
         const params = [];
 

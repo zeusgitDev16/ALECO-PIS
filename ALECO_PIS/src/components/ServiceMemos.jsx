@@ -7,6 +7,7 @@ import MemoHeader from './serviceMemos/memoHeader';
 import MemoBody from './serviceMemos/memoBody';
 import ServiceMemoFilters from './serviceMemos/ServiceMemoFilters';
 import ServiceMemoForm from './serviceMemos/ServiceMemoForm';
+import ConfirmModal from './tickets/ConfirmModal';
 import { getServiceMemo } from '../api/serviceMemosApi';
 
 const ServiceMemos = () => {
@@ -22,9 +23,11 @@ const ServiceMemos = () => {
     filters,
     setFilters,
     closeMemo,
+    deleteMemo,
   } = useServiceMemos();
 
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [screen, setScreen] = useState('browse');
   const [detailMode, setDetailMode] = useState('view');
   const [activeMemoId, setActiveMemoId] = useState(null);
@@ -95,6 +98,18 @@ const ServiceMemos = () => {
     }
   };
 
+  const handleRequestDeleteFromList = (m) => {
+    setDeleteTarget({
+      id: m.id,
+      control_number: m.control_number,
+      ticket_id: m.ticket_id,
+    });
+  };
+
+  const handleConfirmDeleteFromList = () => {
+    if (deleteTarget?.id != null) void deleteMemo(deleteTarget.id);
+  };
+
   if (screen === 'create') {
     return (
       <div className="admin-page-container service-memos-page-container service-memos-page-container--create-memo">
@@ -139,27 +154,18 @@ const ServiceMemos = () => {
           memo={detailMemo}
           onBack={handleBackFromDetail}
           onSaved={handleBackFromDetail}
-          onMemoNavigate={(id) => setActiveMemoId(id)}
           currentUserEmail={userEmail}
           currentUserName={userName}
+          onDeleted={handleBackFromDetail}
+          showCloseMemoFinalize={formMode === 'update' && detailMemo.memo_status === 'saved'}
+          onCloseMemoFinalize={async () => {
+            const r = await closeMemo(detailMemo.id);
+            if (r.closed) {
+              setMessage({ type: 'ok', text: 'Memo closed.' });
+              handleBackFromDetail();
+            }
+          }}
         />
-        {formMode === 'update' && detailMemo.memo_status === 'saved' && (
-          <div className="service-memo-close-row">
-            <button
-              type="button"
-              className="service-memo-btn service-memo-btn--close"
-              onClick={async () => {
-                const r = await closeMemo(detailMemo.id);
-                if (r.closed) {
-                  setMessage({ type: 'ok', text: 'Memo closed.' });
-                  handleBackFromDetail();
-                }
-              }}
-            >
-              Close memo (finalize)
-            </button>
-          </div>
-        )}
       </div>
     );
   }
@@ -210,6 +216,7 @@ const ServiceMemos = () => {
           onView={handleViewMemo}
           onEdit={handleEditMemo}
           onClose={handleCloseMemoFromCard}
+          onRequestDelete={handleRequestDeleteFromList}
           onPrint={() => window.print()}
           currentUserEmail={userEmail}
         />
@@ -218,6 +225,21 @@ const ServiceMemos = () => {
       {filterDrawerOpen && (
         <ServiceMemoFilters filters={filters} onFilterChange={setFilters} onClose={() => setFilterDrawerOpen(false)} />
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDeleteFromList}
+        title="Delete service memo permanently?"
+        message={
+          deleteTarget
+            ? `Memo ${deleteTarget.control_number || `#${deleteTarget.id}`} (ticket ${deleteTarget.ticket_id || '—'}) will be removed from the database. The ticket record's link to this memo will be cleared. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete permanently"
+        cancelLabel="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

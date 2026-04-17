@@ -8,9 +8,11 @@ import axios from './axiosConfig';
 /**
  * Load a ticket row for memo creation (admin list API).
  * @param {string} ticketId
+ * @param {{ exactMatchOnly?: boolean }} [options] — if true, only succeed when DB returns that exact ticket_id (for debounced verify / Load).
  * @returns {Promise<{ ok: boolean, ticket: object|null, message: string|null }>}
  */
-export async function fetchTicketPreviewForMemo(ticketId) {
+export async function fetchTicketPreviewForMemo(ticketId, options = {}) {
+  const exactOnly = options.exactMatchOnly === true;
   const q = (ticketId || '').trim();
   if (!q) {
     return { ok: false, ticket: null, message: 'Enter a ticket ID.' };
@@ -22,8 +24,16 @@ export async function fetchTicketPreviewForMemo(ticketId) {
     if (!response.data?.success || !Array.isArray(response.data.data)) {
       return { ok: false, ticket: null, message: 'Could not load tickets.' };
     }
-    const exact = response.data.data.find((t) => t.ticket_id === q);
-    const ticket = exact || response.data.data[0] || null;
+    const rows = response.data.data;
+    if (exactOnly) {
+      const exact = rows.find((t) => t.ticket_id === q);
+      if (!exact) {
+        return { ok: false, ticket: null, message: 'No ticket found with that exact ID.' };
+      }
+      return { ok: true, ticket: exact, message: null };
+    }
+    const exact = rows.find((t) => t.ticket_id === q);
+    const ticket = exact || rows[0] || null;
     if (!ticket) {
       return { ok: false, ticket: null, message: 'No ticket found for that search.' };
     }
@@ -43,12 +53,29 @@ function authHeaders() {
 }
 
 /**
- * @param {{ tab?: string, search?: string, status?: string, startDate?: string, endDate?: string, owner?: string }} opts
+ * @param {{
+ *   tab?: string,
+ *   search?: string,
+ *   searchMemo?: string,
+ *   searchTicket?: string,
+ *   searchAccount?: string,
+ *   searchCustomer?: string,
+ *   searchAddress?: string,
+ *   status?: string,
+ *   startDate?: string,
+ *   endDate?: string,
+ *   owner?: string
+ * }} opts
  * @returns {Promise<{ ok: boolean, success: boolean, data: object[], message: string|null }>}
  */
 export async function listServiceMemos({
   tab = 'all',
   search = '',
+  searchMemo = '',
+  searchTicket = '',
+  searchAccount = '',
+  searchCustomer = '',
+  searchAddress = '',
   status = '',
   startDate = '',
   endDate = '',
@@ -57,6 +84,11 @@ export async function listServiceMemos({
   const qs = new URLSearchParams();
   if (tab) qs.set('tab', tab);
   if (search) qs.set('search', search);
+  if (searchMemo) qs.set('searchMemo', searchMemo);
+  if (searchTicket) qs.set('searchTicket', searchTicket);
+  if (searchAccount) qs.set('searchAccount', searchAccount);
+  if (searchCustomer) qs.set('searchCustomer', searchCustomer);
+  if (searchAddress) qs.set('searchAddress', searchAddress);
   if (status) qs.set('status', status);
   if (startDate) qs.set('startDate', startDate);
   if (endDate) qs.set('endDate', endDate);
@@ -144,7 +176,7 @@ export async function createServiceMemo(body) {
       body: JSON.stringify(body),
     });
   } catch {
-    return { ok: false, success: false, data: null, message: 'Network error.' };
+    return { ok: false, success: false, data: null, message: 'Network error.', status: 0 };
   }
   const json = await res.json().catch(() => null);
   const success = res.ok && json && json.success === true;
@@ -152,7 +184,52 @@ export async function createServiceMemo(body) {
     ok: res.ok,
     success,
     data: json?.data ?? null,
-    message: typeof json?.message === 'string' ? json.message : null,
+    status: res.status,
+    message:
+      typeof json?.message === 'string'
+        ? json.message
+        : !res.ok
+          ? `Request failed (${res.status}).`
+          : null,
+  };
+}
+
+/**
+ * Preview next memo control number (PREFIX-##########) from saved memos only—does not reserve until POST save.
+ * @param {string} ticketId
+ * @returns {Promise<{ ok: boolean, success: boolean, data: { control_number?: string, prefix?: string }|null, message: string|null, status: number }>}
+ */
+export async function allocateControlNumber(ticketId) {
+  const q = String(ticketId || '').trim();
+  if (!q) {
+    return { ok: false, success: false, data: null, message: 'Ticket ID is required.', status: 400 };
+  }
+  let res;
+  try {
+    res = await fetch(apiUrl('/api/service-memos/allocate-control-number'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders(),
+      },
+      body: JSON.stringify({ ticket_id: q }),
+    });
+  } catch {
+    return { ok: false, success: false, data: null, message: 'Network error.', status: 0 };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    data: json?.data ?? null,
+    status: res.status,
+    message:
+      typeof json?.message === 'string'
+        ? json.message
+        : !res.ok
+          ? `Request failed (${res.status}).`
+          : null,
   };
 }
 

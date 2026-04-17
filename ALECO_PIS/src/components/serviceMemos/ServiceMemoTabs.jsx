@@ -1,23 +1,15 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
+/**
+ * Tabs + per-field search. Each field maps to API scoped params (AND) via useServiceMemos → listServiceMemos.
+ * Typing updates filters and refetches; no separate "apply" step.
+ */
 const ServiceMemoTabs = ({ filters, setFilters, activeTab, setActiveTab }) => {
-  const combinedSearch = useMemo(() => {
-    const a = (filters.searchAccount || '').trim();
-    const n = (filters.searchName || '').trim();
-    const ad = (filters.searchAddress || '').trim();
-    const m = (filters.searchMemo || '').trim();
-    return [a, n, ad, m].filter(Boolean).join(' ');
-  }, [filters.searchAccount, filters.searchName, filters.searchAddress, filters.searchMemo]);
-
-  const applySearch = () => {
-    setFilters((prev) => ({ ...prev, search: combinedSearch }));
-  };
-
   return (
     <div className="service-memo-search-header">
       <div className="service-memo-search-left">
         <div className="service-memo-tab-row">
-          {['all', 'draft', 'saved', 'closed'].map((tab) => (
+          {['all', 'saved', 'closed'].map((tab) => (
             <button
               key={tab}
               type="button"
@@ -35,7 +27,7 @@ const ServiceMemoTabs = ({ filters, setFilters, activeTab, setActiveTab }) => {
               className="service-memo-search-input"
               value={filters.searchAccount || ''}
               onChange={(e) => setFilters((p) => ({ ...p, searchAccount: e.target.value }))}
-              placeholder="Account"
+              placeholder="Account (ticket)"
             />
           </div>
           <div className="service-memo-search-field">
@@ -44,7 +36,7 @@ const ServiceMemoTabs = ({ filters, setFilters, activeTab, setActiveTab }) => {
               className="service-memo-search-input"
               value={filters.searchMemo || ''}
               onChange={(e) => setFilters((p) => ({ ...p, searchMemo: e.target.value }))}
-              placeholder="SM-…"
+              placeholder="Control #"
             />
           </div>
         </div>
@@ -66,14 +58,9 @@ const ServiceMemoTabs = ({ filters, setFilters, activeTab, setActiveTab }) => {
               className="service-memo-search-input"
               value={filters.searchAddress || ''}
               onChange={(e) => setFilters((p) => ({ ...p, searchAddress: e.target.value }))}
-              placeholder="Address"
+              placeholder="Address / area"
             />
           </div>
-        </div>
-        <div className="service-memo-search-actions">
-          <button type="button" className="interruptions-admin-btn" onClick={applySearch}>
-            Apply search
-          </button>
         </div>
       </div>
       <div className="service-memo-search-right" />

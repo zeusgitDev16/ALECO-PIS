@@ -134,7 +134,184 @@
   font-size: 0.85rem;
 }
 
-/* Card grid */
+/* Compact list table (ticket table–style) */
+.service-memo-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.service-memo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  background: var(--bg-card);
+  min-width: 960px;
+}
+
+.service-memo-table-head th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.service-memo-table-th--check {
+  width: 36px;
+  text-align: center;
+}
+
+.service-memo-table-th--actions {
+  min-width: 120px;
+}
+
+.service-memo-list-row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.12s ease;
+}
+
+.service-memo-list-row:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+[data-theme='dark'] .service-memo-list-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.service-memo-list-row:hover {
+  background: rgba(25, 118, 210, 0.06);
+}
+
+.service-memo-list-row--selected {
+  background: rgba(25, 118, 210, 0.1);
+}
+
+.service-memo-list-col {
+  padding: 8px 10px;
+  vertical-align: middle;
+  color: var(--text-primary);
+  max-width: 220px;
+}
+
+.service-memo-list-col--check {
+  width: 36px;
+  text-align: center;
+}
+
+.service-memo-list-col--check input {
+  cursor: pointer;
+}
+
+.service-memo-list-col--memo-id,
+.service-memo-list-col--customer {
+  max-width: 140px;
+}
+
+.service-memo-list-col--location {
+  max-width: 200px;
+}
+
+.service-memo-list-primary {
+  display: block;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.service-memo-list-sub {
+  display: block;
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.service-memo-list-col .service-memo-status-badge,
+.service-memo-list-col .ticket-status-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.service-memo-list-col--created {
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.service-memo-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.service-memo-list-action-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.service-memo-list-action-btn--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  min-width: 28px;
+  min-height: 28px;
+  line-height: 0;
+  border-radius: 6px;
+}
+
+.service-memo-list-action-btn--icon svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.service-memo-list-action-btn:hover {
+  background: rgba(25, 118, 210, 0.1);
+  border-color: var(--primary, #1976d2);
+}
+
+.service-memo-list-action-btn--muted:hover {
+  background: rgba(76, 175, 80, 0.12);
+}
+
+.service-memo-list-action-btn--warn:hover {
+  background: rgba(244, 67, 54, 0.12);
+}
+
+.service-memo-list-action-btn--danger {
+  color: #c62828;
+  border-color: rgba(198, 40, 40, 0.45);
+}
+
+.service-memo-list-action-btn--danger:hover {
+  background: rgba(198, 40, 40, 0.12);
+  border-color: #c62828;
+}
+
+/* Legacy card grid / card — kept for print or older references */
 .service-memo-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -171,11 +348,6 @@
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-}
-
-.service-memo-status-badge--draft {
-  background: rgba(255, 152, 0, 0.1);
-  color: #ff9800;
 }
 
 .service-memo-status-badge--saved {
@@ -593,6 +765,17 @@
   border-color: #4caf50;
 }
 
+.service-memo-btn--danger {
+  color: #c62828;
+  border: 1px solid rgba(198, 40, 40, 0.55);
+  background: rgba(198, 40, 40, 0.06);
+}
+
+.service-memo-btn--danger:hover:not(:disabled) {
+  background: rgba(198, 40, 40, 0.14);
+  border-color: #c62828;
+}
+
 .service-memo-btn--print:hover:not(:disabled) {
   background: rgba(76, 175, 80, 0.2);
 }
@@ -715,6 +898,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .service-memo-table {
+    min-width: 100%;
+  }
+
   .service-memo-card-grid {
     grid-template-columns: 1fr;
   }
@@ -1122,17 +1309,6 @@
   transform: scale(0.97);
 }
 
-.service-memos-btn--draft {
-  background: rgba(100, 116, 139, 0.12);
-  color: var(--text-secondary);
-  border-color: var(--border-color);
-}
-
-.service-memos-btn--draft:hover {
-  background: rgba(100, 116, 139, 0.22);
-  border-color: var(--text-secondary);
-}
-
 .service-memos-btn--save {
   background: rgba(59, 130, 246, 0.12);
   color: #3b82f6;
@@ -1324,6 +1500,37 @@
   max-width: 100%;
 }
 
+/* Invite-style notice when ticket already has a memo (mirrors Users → Invite banners) */
+.service-memo-status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.45;
+  border: 1px solid transparent;
+}
+
+.service-memo-status-banner span {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-memo-status-banner svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.service-memo-status--memo-exists {
+  color: #1976d2;
+  background: rgba(25, 118, 210, 0.08);
+  border-color: rgba(25, 118, 210, 0.28);
+}
+
 .service-memo-strip-row-two {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1446,9 +1653,63 @@
   white-space: nowrap;
 }
 
+.service-memo-strip-generate-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+}
+
 .service-memo-strip-load-err {
   display: block;
   margin-top: 4px;
+}
+
+.service-memo-strip-verify-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.service-memo-strip-memo-preview-hint {
+  margin: 6px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  max-width: 52ch;
+}
+
+.service-memo-strip-address-label-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.service-memo-strip-address-label-row label {
+  margin-bottom: 0;
+}
+
+.service-memo-strip-muni-from-ticket {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme='dark'] .service-memo-strip-muni-from-ticket {
+  background: rgba(129, 140, 248, 0.12);
+  border-color: rgba(129, 140, 248, 0.3);
 }
 
 .service-memo-form-strip-field label {
@@ -1548,11 +1809,6 @@
   background: rgba(59, 130, 246, 0.12);
 }
 
-/* Extra room below the last row so borders/inputs are not clipped in scroll regions */
-.service-memo-form-section.service-memo-band--request {
-  padding-bottom: 24px;
-}
-
 .service-memo-band--intake .service-memo-band-heading {
   background: rgba(16, 185, 129, 0.12);
 }
@@ -1567,6 +1823,21 @@
 
 .service-memo-band--notes .service-memo-band-heading {
   background: rgba(100, 116, 139, 0.14);
+}
+
+.service-memo-band-hint {
+  margin: -4px 0 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.service-memo-strip-account-reminder {
+  margin: 6px 0 0;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  max-width: 36rem;
 }
 
 [data-theme='dark'] .service-memo-band--intake .service-memo-band-heading {
@@ -1643,7 +1914,7 @@
   gap: 12px;
 }
 
-/* Create pool: minimalist density, clear label↔input gap, row spacing, request block bottom space */
+/* Create pool: minimalist density, clear label↔input gap, row spacing */
 .service-memo-form-root[data-mode='create'] .service-memo-reference-title-row {
   margin-bottom: 8px;
 }
@@ -1683,7 +1954,7 @@
   gap: 12px;
 }
 
-/* Longhand so Request / ticket can set a larger padding-bottom without shorthand reset */
+/* Create sections: same padding on all bands (matches Intake / Referral / …) */
 .service-memo-form-root[data-mode='create'] .service-memo-form-section {
   padding-top: 10px;
   padding-left: 12px;
@@ -1696,13 +1967,6 @@
   padding: 6px 10px;
   font-size: 0.65rem;
   letter-spacing: 0.08em;
-}
-
-/* Higher specificity + large bottom inset (focus ring + visual breathing room) */
-.service-memo-form-root[data-mode='create'] .service-memo-form-section.service-memo-band--request {
-  padding-bottom: 48px;
-  margin-bottom: 16px;
-  overflow: visible;
 }
 
 .service-memo-form-root[data-mode='create'] .service-memo-form-row {

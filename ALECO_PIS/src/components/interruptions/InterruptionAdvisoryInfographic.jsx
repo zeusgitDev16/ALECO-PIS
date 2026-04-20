@@ -8,6 +8,7 @@ import {
   formatToPhilippineDayRangeShort,
 } from '../../utils/dateUtils';
 import { getCountdownToStart } from '../../utils/interruptionStatusUtils';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
  * Structured advisory infographic: header bar, date/time badges, reason/feeder pills, affected areas.
@@ -25,6 +26,7 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
   const feederText = item.feeder || '—';
   const areas = item.affectedAreas || [];
   const [showFullImage, setShowFullImage] = useState(false);
+  const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
 
   return (
     <div className="feed-advisory-infographic">
@@ -75,7 +77,7 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
           </ul>
         </div>
       )}
-      {item.imageUrl && (
+      {safeAdvisoryImageUrl && (
         <>
           <div 
             className="feed-infographic-image" 
@@ -84,7 +86,7 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
             tabIndex={0}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowFullImage(true)}
           >
-            <img src={item.imageUrl} alt="Advisory" />
+            <img src={safeAdvisoryImageUrl} alt="Advisory" />
           </div>
 
           {showFullImage && createPortal(
@@ -92,7 +94,7 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
               className="full-screen-image-overlay" 
               onClick={() => setShowFullImage(false)}
             >
-              <img src={item.imageUrl} alt="Full advisory view" />
+              <img src={safeAdvisoryImageUrl} alt="Full advisory view" />
             </div>,
             document.body
           )}

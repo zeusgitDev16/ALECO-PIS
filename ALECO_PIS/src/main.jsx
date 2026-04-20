@@ -1,5 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { installFetchSessionHeaders } from './utils/installFetchSessionHeaders.js';
+
+installFetchSessionHeaders();
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import App from './App.jsx'

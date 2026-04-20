@@ -23,7 +23,7 @@ import AdminBackup from './components/Backup.jsx';
 import ProfilePage from './components/profile/ProfilePage.jsx';
 import PersonnelManagement from './components/PersonnelManagement.jsx';
 import B2BMail from './components/B2BMail.jsx';
-import ServiceMemos from './components/ServiceMemos.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 
 
@@ -130,29 +130,31 @@ const NavigationWrapper = () => {
           </div>
         } />
 
-        {/* ADMIN ROUTES */}
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/admin-users" element={<AdminUsers />} />
-        <Route path="/admin-tickets" element={<AdminTickets />} />
-        <Route path="/admin-interruptions" element={<AdminInterruptions />} />
-        <Route path="/admin-history" element={<AdminHistory />} />
-        <Route path="/admin-backup" element={<AdminBackup />} />
+        {/* ADMIN ROUTES — session required (password or Google via login.jsx only) */}
+        <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin-users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
+        <Route path="/admin-tickets" element={<ProtectedRoute><AdminTickets /></ProtectedRoute>} />
+        <Route path="/admin-interruptions" element={<ProtectedRoute><AdminInterruptions /></ProtectedRoute>} />
+        <Route path="/admin-history" element={<ProtectedRoute><AdminHistory /></ProtectedRoute>} />
+        <Route path="/admin-backup" element={<ProtectedRoute><AdminBackup /></ProtectedRoute>} />
 
         {/* PROFILE ROUTE */}
         <Route path="/admin-profile" element={ 
-          <AdminLayout activePage="profile"> 
-            <ProfilePage /> 
-          </AdminLayout> 
+          <ProtectedRoute>
+            <AdminLayout activePage="profile"> 
+              <ProfilePage /> 
+            </AdminLayout>
+          </ProtectedRoute>
         } />
 
         {/* PERSONNEL MANAGEMENT ROUTE */}
         <Route path="/admin-personnel" element={
-          <PersonnelManagement />
+          <ProtectedRoute><PersonnelManagement /></ProtectedRoute>
         } />
 
         {/* B2B MAIL ROUTE */}
         <Route path="/admin-b2b-mail" element={
-          <B2BMail />
+          <ProtectedRoute><B2BMail /></ProtectedRoute>
         } />
       </Routes>
 

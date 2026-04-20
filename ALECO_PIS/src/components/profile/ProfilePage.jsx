@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaEdit, FaSave, FaLock, FaHistory, FaLink, FaExternalLinkAlt } from 'react-icons/fa';
 import { apiUrl } from '../../utils/api';
 import { clearLocalStoragePreservingPreferences } from '../../utils/clearLocalStoragePreservingPreferences';
+import { getSafeHttpUrl, getSafeResourceUrl } from '../../utils/safeUrl';
 import '../../CSS/ProfilePage.css';
 
 // --- Helpers ---
@@ -264,6 +265,11 @@ const ProfilePage = () => {
     );
   }
 
+  const safeProfilePicSrc = userData.pic
+    ? getSafeResourceUrl(userData.pic.replace(/=s\d+(-c)?/g, '=s1024-c'))
+    : null;
+  const safeSocialHref = getSafeHttpUrl(userData.social_url);
+
   return (
     <div className="profile-main-container">
       <header className="profile-header-text">
@@ -277,11 +283,12 @@ const ProfilePage = () => {
           <div className="avatar-section">
             <div
               className={`avatar-ring role-${userData.role}`}
-              onClick={() => setShowImageModal(true)}
-              title="Click to view full image"
+              onClick={() => safeProfilePicSrc && setShowImageModal(true)}
+              title={safeProfilePicSrc ? 'Click to view full image' : undefined}
+              style={safeProfilePicSrc ? undefined : { cursor: 'default' }}
             >
               <img
-                src={userData.pic ? userData.pic.replace(/=s\d+(-c)?/g, '=s1024-c') : ''}
+                src={safeProfilePicSrc ?? ''}
                 alt="Profile"
                 referrerPolicy="no-referrer"
               />
@@ -402,8 +409,9 @@ const ProfilePage = () => {
                   onChange={(e) => setUserData({ ...userData, social_url: e.target.value })}
                 />
               ) : userData.social_url ? (
+                safeSocialHref ? (
                 <a
-                  href={userData.social_url}
+                  href={safeSocialHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="social-text"
@@ -412,6 +420,11 @@ const ProfilePage = () => {
                   {userData.social_url.replace(/^https?:\/\//, '')}
                   <FaExternalLinkAlt style={{ fontSize: '0.7rem', opacity: 0.6 }} />
                 </a>
+                ) : (
+                  <span className="social-text" style={{ marginLeft: '12px', color: 'var(--color-text-muted)' }} title="Only http(s) links are allowed">
+                    Invalid link (use https://…)
+                  </span>
+                )
               ) : (
                 <span className="social-text" style={{ marginLeft: '12px', color: 'var(--color-text-muted)' }}>
                   No link added
@@ -466,10 +479,10 @@ const ProfilePage = () => {
       </div>
 
       {/* FULL SCREEN IMAGE MODAL */}
-      {showImageModal && (
+      {showImageModal && safeProfilePicSrc && (
         <div className="profile-image-modal" onClick={() => setShowImageModal(false)}>
           <img
-            src={userData.pic ? userData.pic.replace(/=s\d+(-c)?/g, '=s1024-c') : ''}
+            src={safeProfilePicSrc}
             alt="Full Profile View"
             referrerPolicy="no-referrer"
           />

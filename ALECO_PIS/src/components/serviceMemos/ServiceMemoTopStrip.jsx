@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 import PropTypes from 'prop-types';
 
 function RemoveIcon() {
@@ -81,6 +82,14 @@ const ServiceMemoTopStrip = ({
     onPhotoRemove?.();
   };
 
+  const safePhotoSrc = useMemo(() => {
+    if (!photoUrl || typeof photoUrl !== 'string') return null;
+    const t = photoUrl.trim();
+    if (!t) return null;
+    if (/^data:image\//i.test(t)) return t;
+    return getSafeResourceUrl(t);
+  }, [photoUrl]);
+
   return (
     <div className="service-memo-reference-header">
       <div className="service-memo-reference-title-row">
@@ -93,9 +102,9 @@ const ServiceMemoTopStrip = ({
           tabIndex={!isDisplay && !disabled ? 0 : undefined}
           aria-label={!isDisplay && !disabled ? 'Add or change photo' : 'Service memo photo'}
         >
-          {photoUrl ? (
+          {safePhotoSrc ? (
             <>
-              <img src={photoUrl} alt="Service memo" className="service-memo-reference-photo-preview" />
+              <img src={safePhotoSrc} alt="Service memo" className="service-memo-reference-photo-preview" />
               {!isDisplay && !disabled && (
                 <button
                   type="button"

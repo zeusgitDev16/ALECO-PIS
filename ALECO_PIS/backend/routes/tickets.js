@@ -10,6 +10,7 @@ import { toIsoForClient } from '../utils/interruptionsDto.js';
 import { listUrgentKeywords } from '../utils/urgentKeywordsDb.js';
 import { concernMatchesUrgentKeywords } from '../utils/urgentKeywordMatch.js';
 import { DEFAULT_URGENT_KEYWORDS } from '../constants/defaultUrgentKeywords.js';
+import { clampSqlInt } from '../utils/safeSqlInt.js';
 
 import { sendAppMail } from '../utils/appMail.js';
 
@@ -1160,8 +1161,8 @@ router.get('/tickets/logs', async (req, res) => {
         }
 
         const whereClause = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
-        const lim = Math.min(parseInt(limit, 10) || 50, 200);
-        const off = Math.max(0, parseInt(offset, 10) || 0);
+        const lim = clampSqlInt(limit, 1, 200, 50);
+        const off = clampSqlInt(offset, 0, 50_000, 0);
 
         const [countRows] = await pool.execute(
             `SELECT COUNT(*) as total FROM aleco_ticket_logs${whereClause}`,

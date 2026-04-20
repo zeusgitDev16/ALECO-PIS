@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiUrl } from '../../utils/api';
 import { clearLocalStoragePreservingPreferences } from '../../utils/clearLocalStoragePreservingPreferences';
 import { useTheme } from '../../context/ThemeContext';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 import ThemeIconButton from '../buttons/ThemeIconButton';
 import '../../CSS/SearchBarGlobal.css';
 
@@ -57,6 +58,8 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       document.body.classList.remove('modal-open');
     };
   }, [showLogoutConfirm]);
+
+  const displayProfilePic = getSafeResourceUrl(profilePic) || defaultAvatar;
 
   // Async handleLogout to support the server-side global flush
   const handleLogout = async () => {
@@ -136,7 +139,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
             title="Account Menu"
           >
             <div className={`profile-image-border role-${role}`}>
-              <img src={profilePic} alt="User" className="profile-image" referrerPolicy="no-referrer" />
+              <img src={displayProfilePic} alt="User" className="profile-image" referrerPolicy="no-referrer" />
             </div>
           </button>
 

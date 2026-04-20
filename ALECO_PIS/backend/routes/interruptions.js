@@ -19,6 +19,7 @@ import {
   getAlecoInterruptionsDeletedAtSupported,
   getAlecoInterruptionsPulledFromFeedAtSupported,
 } from '../utils/interruptionsDbSupport.js';
+import { clampSqlInt } from '../utils/safeSqlInt.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 
 const router = express.Router();
@@ -175,7 +176,7 @@ function buildInterruptionsListWhere(req, hasDeletedAtColumn, hasPulledFromFeedA
 /** Public + admin list (default: non-deleted only; admin archive via query flags). */
 router.get('/interruptions', async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(String(req.query.limit), 10) || 100, 1), 200);
+    const limit = clampSqlInt(req.query.limit, 1, 200, 100);
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     // Auto-upgrade Pending -> Ongoing when go-live (publicVisibleAt or dateTimeStart) has passed
     const upgradeWhere = hasDel
@@ -197,11 +198,12 @@ router.get('/interruptions', async (req, res) => {
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     const visibilityWhere = buildInterruptionsListWhere(req, hasDel, hasPulled);
     const listCols = listInterruptionCols(hasDel, hasPulled);
-    const [rows] = await pool.query(
+    const [rows] = await pool.execute(
       `SELECT ${listCols}
        FROM aleco_interruptions${visibilityWhere}
        ORDER BY date_time_start DESC
-       LIMIT ${limit}`
+       LIMIT ?`,
+      [limit]
     );
     const list = Array.isArray(rows) ? rows.map(mapRowToDto).filter(Boolean) : [];
     res.setHeader('Cache-Control', 'no-store');

@@ -6,6 +6,7 @@ import {
 } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
 import AdvisoryLog from './AdvisoryLog';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 function getTypeLabel(type) {
   const opt = TYPE_FORM_OPTIONS.find((o) => o.value === type);
@@ -53,6 +54,7 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
   const causeText = (d.cause && String(d.cause).trim()) || '—';
   const causeCatLabel = getCauseCategoryLabel(d.causeCategory);
   const hasScheduledPublic = Boolean(d.publicVisibleAt && String(d.publicVisibleAt).trim());
+  const safeAdvisoryImageUrl = d.imageUrl ? getSafeResourceUrl(d.imageUrl) : null;
 
   return (
     <div className="interruptions-admin-view-only interruptions-admin-modal-form">
@@ -90,9 +92,9 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
                 <p key={i}>{line || '\u00A0'}</p>
               ))}
             </div>
-            {d.imageUrl && (
+            {safeAdvisoryImageUrl && (
               <div className="interruptions-admin-view-image">
-                <img src={d.imageUrl} alt="Advisory" />
+                <img src={safeAdvisoryImageUrl} alt="Advisory" />
               </div>
             )}
           </section>

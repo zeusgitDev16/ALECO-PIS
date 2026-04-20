@@ -13,6 +13,7 @@ import { formatPhilippineWallClock } from '../../utils/dateUtils';
 import FeederCascadeSelect from './FeederCascadeSelect';
 import InModalDateTimePicker from './InModalDateTimePicker';
 import { uploadInterruptionImage } from '../../api/interruptionsApi';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 const BODY_PLACEHOLDER =
   'Type your advisory like a Facebook post. Include date, time, affected areas, and reason. You can use line breaks and structure.';
@@ -119,6 +120,11 @@ export default function InterruptionAdvisoryForm({
   const fileInputRef = useRef(null);
   const hasBody = form.body && String(form.body).trim();
   const showLegacyFields = !hasBody;
+
+  const safeImagePreviewUrl = useMemo(
+    () => (form.imageUrl ? getSafeResourceUrl(form.imageUrl) : null),
+    [form.imageUrl]
+  );
 
   const insertTemplate = () => {
     const apiStart = form.dateTimeStart ? datetimeLocalToApi(form.dateTimeStart) : null;
@@ -318,9 +324,9 @@ export default function InterruptionAdvisoryForm({
                 style={{ display: 'none' }}
               />
               <div className="interruptions-admin-image-row">
-                {form.imageUrl && (
+                {form.imageUrl && safeImagePreviewUrl && (
                   <div className="interruptions-admin-image-preview">
-                    <img src={form.imageUrl} alt="Advisory" />
+                    <img src={safeImagePreviewUrl} alt="Advisory" />
                     <button
                       type="button"
                       className="interruptions-admin-btn interruptions-admin-btn--small"

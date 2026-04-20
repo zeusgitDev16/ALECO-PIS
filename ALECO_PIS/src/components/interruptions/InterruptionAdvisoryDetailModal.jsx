@@ -2,6 +2,7 @@ import React from 'react';
 import { getStatusDisplayLabel, getCauseCategoryLabel } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
 import { IconArrowUp, IconArrowDown, IconPencil, IconArchive } from './AdvisoryActionIcons';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
  * InterruptionAdvisoryDetailModal - Full advisory view in a modal (read-only).
@@ -18,6 +19,7 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
   const areasFull = (item.affectedAreas || []).join(', ') || '—';
   const hasBody = item.body && String(item.body).trim();
   const bodyDisplay = hasBody ? String(item.body).trim() : '';
+  const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
 
   return (
     <div
@@ -88,9 +90,9 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
               </>
             )}
 
-            {item.imageUrl && (
+            {safeAdvisoryImageUrl && (
               <div className="interruptions-admin-card-image">
-                <img src={item.imageUrl} alt="Advisory" />
+                <img src={safeAdvisoryImageUrl} alt="Advisory" />
               </div>
             )}
 

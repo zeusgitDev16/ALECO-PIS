@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
-  STATUS_FORM_OPTIONS,
   TYPE_FORM_OPTIONS,
   CAUSE_CATEGORY_FORM_OPTIONS,
   getStatusDisplayLabel,
@@ -83,10 +82,8 @@ export default function InterruptionAdvisoryForm({
   onSubmit,
   onCancel,
   editingId,
-  baselineStatus,
   detailLoading = false,
   saving,
-  memoSlot = null,
   saveConflict = false,
   onReloadAdvisory,
   advisoryArchived = false,
@@ -343,55 +340,8 @@ export default function InterruptionAdvisoryForm({
                 </button>
               </div>
             </div>
-            {editingId ? (
-              <div className="interruptions-admin-span2">
-                <div className="interruptions-admin-lifecycle-preview-title">Lifecycle</div>
-                <div className="interruptions-admin-lifecycle-stepper" role="status">
-                  {lifecycleSteps.map((step, i) => (
-                    <React.Fragment key={step}>
-                      <div
-                        className={`interruptions-admin-stepper-step${form.status === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
-                      >
-                        <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
-                        <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
-                      </div>
-                      {i < lifecycleSteps.length - 1 && (
-                        <span className="interruptions-admin-stepper-connector" aria-hidden="true" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-                <label className={`interruptions-admin-stepper-select-wrap interruptions-admin-lifecycle-select interruptions-admin-lifecycle-select--${(form.status || '').toLowerCase()}`}>
-                  Lifecycle
-                <select
-                  value={form.status}
-                  className="interruptions-admin-lifecycle-dropdown"
-                  onChange={(ev) => {
-                    const v = ev.target.value;
-                    setForm((f) => {
-                      const next = { ...f, status: v, statusChangeRemark: f.statusChangeRemark || '' };
-                      if (v === 'Restored') {
-                        next.dateTimeRestored = f.dateTimeRestored && String(f.dateTimeRestored).trim()
-                          ? f.dateTimeRestored
-                          : toDatetimeLocalFromDate(new Date());
-                      } else {
-                        next.dateTimeRestored = '';
-                      }
-                      return next;
-                    });
-                  }}
-                >
-                  {STATUS_FORM_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                </label>
-              </div>
-            ) : (
-              <div className="interruptions-admin-span2">
-                <div className="interruptions-admin-lifecycle-preview-title">Lifecycle</div>
+            <div className="interruptions-admin-span2">
+                <div className="interruptions-admin-lifecycle-preview-title">Lifecycle preview</div>
                 <div className="interruptions-admin-lifecycle-stepper" role="status" aria-live="polite">
                   {lifecycleSteps.map((step, i) => (
                     <React.Fragment key={step}>
@@ -407,8 +357,10 @@ export default function InterruptionAdvisoryForm({
                     </React.Fragment>
                   ))}
                 </div>
+                {editingId && (
+                  <p className="interruptions-admin-field-hint">Use the <strong>Update Advisory</strong> action to change lifecycle status.</p>
+                )}
               </div>
-            )}
           </div>
             {unscheduledFutureStart && (
               <div
@@ -419,24 +371,6 @@ export default function InterruptionAdvisoryForm({
               </div>
             )}
           </>
-          )}
-          {editingId && baselineStatus != null && (
-            <label className={`interruptions-admin-status-remark-wrap${form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') ? ' interruptions-admin-status-remark-wrap--required' : ''}`}>
-              <span className="interruptions-admin-status-remark-label">
-                Reason for status change
-                {form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') && (
-                  <span className="interruptions-admin-status-remark-required"> (required)</span>
-                )}
-              </span>
-              <input
-                type="text"
-                value={form.statusChangeRemark || ''}
-                onChange={(ev) => setForm((f) => ({ ...f, statusChangeRemark: ev.target.value }))}
-                placeholder="e.g. Rescheduled to next week, Misinformation corrected, Feeder faulty again"
-                className="interruptions-admin-status-remark-input"
-                aria-required={form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing')}
-              />
-            </label>
           )}
         </fieldset>
 
@@ -558,35 +492,12 @@ export default function InterruptionAdvisoryForm({
           )}
         </fieldset>
 
-        {memoSlot}
-
         {advisoryArchived && (
           <div className="interruptions-admin-callout interruptions-admin-callout--warn" role="status">
             <strong>Archived</strong> — view only.
           </div>
         )}
 
-        {editingId && (
-          <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--resolve">
-            <legend>Resolve</legend>
-            {form.status === 'Restored' ? (
-              <label className="interruptions-admin-span2 interruptions-admin-datetime-field">
-                Actual restoration date and time
-                <div className="interruptions-admin-datetime-wrap">
-                  <InModalDateTimePicker
-                    value={form.dateTimeRestored}
-                    onChange={(v) => setForm((f) => ({ ...f, dateTimeRestored: v }))}
-                    required
-                    placeholder="Select restoration date and time"
-                  />
-                </div>
-                <DatetimePreview value={form.dateTimeRestored} />
-              </label>
-            ) : (
-              <p className="interruptions-admin-resolve-placeholder">Set lifecycle to Resolved to enter restoration time.</p>
-            )}
-          </fieldset>
-        )}
         </>
         )}
         </div>

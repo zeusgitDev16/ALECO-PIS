@@ -15,6 +15,7 @@ import InterruptionCompactView from './interruptions/InterruptionCompactView';
 import InterruptionWorkflowView from './interruptions/InterruptionWorkflowView';
 import InterruptionLayoutPicker from './interruptions/InterruptionLayoutPicker';
 import InterruptionAdvisoryUpdates from './interruptions/InterruptionAdvisoryUpdates';
+import UpdateAdvisoryModal from './interruptions/UpdateAdvisoryModal';
 import InterruptionFilterDrawer from './interruptions/InterruptionFilterDrawer';
 import { useRecentOpenedAdvisories } from '../utils/useRecentOpenedAdvisories';
 import RecentOpenedAdvisories from './containers/RecentOpenedAdvisories';
@@ -61,6 +62,7 @@ const AdminInterruptions = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [validationErrors, setValidationErrors] = useState([]);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('interruptionViewMode') || 'card');
+  const [updateModalId, setUpdateModalId] = useState(null);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedAdvisories();
 
@@ -167,6 +169,29 @@ const AdminInterruptions = () => {
     setModalOpen(true);
   };
 
+  const openUpdate = (row) => {
+    if (row?.id != null) addOpened(row.id);
+    setUpdateModalId(row.id);
+    loadEditDetail(row.id);
+  };
+
+  const closeUpdateModal = () => {
+    setUpdateModalId(null);
+    clearEditDetail();
+  };
+
+  const handleSaveStatus = useCallback(
+    async (payload) => {
+      if (!updateModalId) return { saved: false };
+      const result = await saveAdvisory({ editingId: updateModalId, payload });
+      if (result.saved) {
+        await loadEditDetail(updateModalId);
+      }
+      return result;
+    },
+    [updateModalId, saveAdvisory, loadEditDetail]
+  );
+
   const [resolveConfirmOpen, setResolveConfirmOpen] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(null);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
@@ -183,8 +208,7 @@ const AdminInterruptions = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const baselineStatus = baselineForm?.status ?? editDetail?.status;
-    const errors = validateInterruptionForm(form, { baselineStatus });
+    const errors = validateInterruptionForm(form);
     if (errors.length > 0) {
       setValidationErrors(errors);
       setMessage({ type: 'err', text: errors.join(' ') });
@@ -194,20 +218,7 @@ const AdminInterruptions = () => {
     const payload = buildInterruptionPayload(form, {
       editingId,
       baselineUpdatedAt: editingId ? editDetail?.updatedAt : null,
-      baselineStatus,
     });
-    if (payload.status === 'Restored') {
-      if (!payload.dateTimeRestored || !String(payload.dateTimeRestored).trim()) {
-        setValidationErrors(['Enter the actual restoration date and time before marking as Resolved.']);
-        setMessage({ type: 'err', text: 'Enter the actual restoration date and time before marking as Resolved.' });
-        return;
-      }
-      if (baselineStatus !== 'Restored' && !resolveConfirmOpen) {
-        setPendingSubmit({ payload, baselineStatus });
-        setResolveConfirmOpen(true);
-        return;
-      }
-    }
     const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
     const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
     if (userEmail) payload.actorEmail = userEmail;
@@ -484,26 +495,11 @@ const AdminInterruptions = () => {
                 validationErrors={validationErrors}
                 onCancel={requestCloseModal}
                 editingId={editingId}
-                baselineStatus={baselineForm?.status ?? editDetail?.status}
                 detailLoading={detailLoading}
                 saving={saving}
                 saveConflict={message?.type === 'conflict'}
                 onReloadAdvisory={handleReloadAdvisory}
                 advisoryArchived={advisoryArchived}
-                memoSlot={
-                  editingId && form.status === 'Restored' ? (
-                    <InterruptionAdvisoryUpdates
-                      interruptionId={editingId}
-                      updates={editDetail?.updates ?? []}
-                      createdAt={editDetail?.createdAt}
-                      detailLoading={detailLoading}
-                      memoSaving={memoSaving}
-                      memoMessage={memoMessage}
-                      onAddMemo={addMemo}
-                      archivedReadOnly={advisoryArchived}
-                    />
-                  ) : null
-                }
               />
               )}
             </div>
@@ -732,6 +728,20 @@ const AdminInterruptions = () => {
             </div>
           </div>
         </InterruptionFilterDrawer>
+
+        {updateModalId && (
+          <UpdateAdvisoryModal
+            item={editDetail || interruptions.find((i) => i.id === updateModalId)}
+            updates={editDetail?.updates ?? []}
+            detailLoading={detailLoading}
+            saving={saving}
+            memoSaving={memoSaving}
+            memoMessage={memoMessage}
+            onAddMemo={addMemo}
+            onSaveStatus={handleSaveStatus}
+            onClose={closeUpdateModal}
+          />
+        )}
 
         {permanentDeleteConfirm && (
           <div

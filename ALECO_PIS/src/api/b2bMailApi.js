@@ -26,6 +26,7 @@ async function jsonFetch(path, options = {}) {
         success: res.ok && json?.success === true,
         data: json?.data ?? null,
         message: typeof json?.message === 'string' ? json.message : null,
+        totalInbound: json?.totalInbound ?? null,
     };
 }
 
@@ -121,7 +122,7 @@ export const listB2BInbound = ({ messageId = '' } = {}) =>
 
 export const refreshB2BInbound = ({ messageId = '' } = {}) => {
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 30000);
+    const tid = setTimeout(() => controller.abort(), 60000);
     return jsonFetch(`/api/b2b-mail/inbound/refresh?messageId=${encodeURIComponent(messageId)}`, {
         method: 'POST',
         headers: adminHeaders({ 'Content-Type': 'application/json' }),

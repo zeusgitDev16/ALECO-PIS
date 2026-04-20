@@ -12,7 +12,7 @@ import {
 } from '../services/b2bMailService.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { sendB2BMail } from '../utils/b2bMailProvider.js';
-import { pollB2BInboundOnce, relinkUnlinkedInbound } from '../services/b2bInboundImapPoll.js';
+import { pollB2BInboundOnce, relinkUnlinkedInbound, fetchTargetedReplies } from '../services/b2bInboundImapPoll.js';
 
 const router = express.Router();
 
@@ -419,7 +419,8 @@ router.get('/b2b-mail/inbound', async (req, res) => {
         }
         sql += ' ORDER BY received_at DESC, id DESC LIMIT 200';
         const [rows] = await pool.execute(sql, params);
-        return res.json({ success: true, data: rows });
+        const [[{ cnt: totalInbound }]] = await pool.execute('SELECT COUNT(*) AS cnt FROM aleco_b2b_inbound_messages');
+        return res.json({ success: true, data: rows, totalInbound });
     } catch (err) {
         console.error('❌ GET /b2b-mail/inbound:', err);
         return res.status(500).json({ success: false, message: 'Failed to load inbound mail.' });
@@ -432,13 +433,19 @@ router.get('/b2b-mail/inbound', async (req, res) => {
  */
 router.post('/b2b-mail/inbound/refresh', async (req, res) => {
     try {
-        await Promise.race([
-            pollB2BInboundOnce(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('IMAP poll timeout')), 25000)),
-        ]).catch((err) => console.warn('[B2B inbound] refresh poll aborted:', err?.message || err));
-        await relinkUnlinkedInbound();
-
         const messageId = req.query.messageId != null && String(req.query.messageId).trim() !== '' ? Number(req.query.messageId) : null;
+
+        if (messageId && Number.isInteger(messageId) && messageId > 0) {
+            // On-demand targeted fetch: IMAP SEARCH FROM <recipient> SINCE <30d>
+            await fetchTargetedReplies(messageId);
+        } else {
+            // No specific message — full background poll
+            await Promise.race([
+                pollB2BInboundOnce(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('IMAP poll timeout')), 55000)),
+            ]).catch((err) => console.warn('[B2B inbound] refresh poll aborted:', err?.message || err));
+        }
+        relinkUnlinkedInbound().catch((err) => console.warn('[B2B inbound] background relink error:', err?.message || err));
         const params = [];
         let sql = `SELECT id, provider_message_id, from_email, subject, body_text, in_reply_to,
             linked_message_id, linked_recipient_id, received_at, created_at
@@ -449,7 +456,8 @@ router.post('/b2b-mail/inbound/refresh', async (req, res) => {
         }
         sql += ' ORDER BY received_at DESC, id DESC LIMIT 200';
         const [rows] = await pool.execute(sql, params);
-        return res.json({ success: true, data: rows });
+        const [[{ cnt: totalInbound }]] = await pool.execute('SELECT COUNT(*) AS cnt FROM aleco_b2b_inbound_messages');
+        return res.json({ success: true, data: rows, totalInbound });
     } catch (err) {
         console.error('❌ POST /b2b-mail/inbound/refresh:', err);
         return res.status(500).json({ success: false, message: 'Refresh failed.' });

@@ -14,7 +14,6 @@ import InterruptionAdvisoryBoard from './interruptions/InterruptionAdvisoryBoard
 import InterruptionCompactView from './interruptions/InterruptionCompactView';
 import InterruptionWorkflowView from './interruptions/InterruptionWorkflowView';
 import InterruptionLayoutPicker from './interruptions/InterruptionLayoutPicker';
-import InterruptionAdvisoryUpdates from './interruptions/InterruptionAdvisoryUpdates';
 import UpdateAdvisoryModal from './interruptions/UpdateAdvisoryModal';
 import InterruptionFilterDrawer from './interruptions/InterruptionFilterDrawer';
 import { useRecentOpenedAdvisories } from '../utils/useRecentOpenedAdvisories';
@@ -112,8 +111,6 @@ const AdminInterruptions = () => {
     setBaselineForm(null);
     setMessage(null);
     setValidationErrors([]);
-    setResolveConfirmOpen(false);
-    setPendingSubmit(null);
     setDiscardConfirmOpen(false);
     formLoadedForIdRef.current = null;
   }, []);
@@ -192,8 +189,6 @@ const AdminInterruptions = () => {
     [updateModalId, saveAdvisory, loadEditDetail]
   );
 
-  const [resolveConfirmOpen, setResolveConfirmOpen] = useState(false);
-  const [pendingSubmit, setPendingSubmit] = useState(null);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -224,19 +219,6 @@ const AdminInterruptions = () => {
     if (userEmail) payload.actorEmail = userEmail;
     if (userName) payload.actorName = userName;
     const r = await saveAdvisory({ editingId, payload });
-    if (r.saved) doCloseModal();
-  };
-
-  const confirmResolveAndSave = async () => {
-    if (!pendingSubmit) return;
-    const { payload } = pendingSubmit;
-    const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
-    const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
-    if (userEmail) payload.actorEmail = userEmail;
-    if (userName) payload.actorName = userName;
-    setResolveConfirmOpen(false);
-    const r = await saveAdvisory({ editingId, payload });
-    setPendingSubmit(null);
     if (r.saved) doCloseModal();
   };
 
@@ -400,6 +382,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
@@ -418,6 +401,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
@@ -436,6 +420,7 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
@@ -542,55 +527,6 @@ const AdminInterruptions = () => {
                   disabled={saving}
                 >
                   Discard
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {resolveConfirmOpen && pendingSubmit && (
-          <div
-            className="interruptions-admin-modal-backdrop interruptions-admin-modal-backdrop--confirm"
-            role="presentation"
-            onClick={(ev) => {
-              if (ev.target === ev.currentTarget && !saving) {
-                setResolveConfirmOpen(false);
-                setPendingSubmit(null);
-              }
-            }}
-          >
-            <div
-              className="interruptions-admin-modal interruptions-admin-confirm-dialog"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="resolve-confirm-title"
-            >
-              <h3 id="resolve-confirm-title" className="header-title interruptions-admin-confirm-title">
-                Mark as Resolved?
-              </h3>
-              <p className="widget-text interruptions-admin-confirm-lead">
-                This advisory will display on the public bulletin for 1 day 12 hours, then automatically move to Archive.
-              </p>
-              <p className="widget-text">Confirm that power has been restored and you want to mark this advisory as Resolved.</p>
-              <div className="interruptions-admin-confirm-actions">
-                <button
-                  type="button"
-                  className="interruptions-admin-btn"
-                  onClick={() => {
-                    setResolveConfirmOpen(false);
-                    setPendingSubmit(null);
-                  }}
-                  disabled={saving}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="interruptions-admin-btn interruptions-admin-btn--submit"
-                  onClick={confirmResolveAndSave}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving…' : 'Yes, mark as Resolved'}
                 </button>
               </div>
             </div>

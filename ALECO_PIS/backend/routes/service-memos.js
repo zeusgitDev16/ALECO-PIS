@@ -11,8 +11,11 @@ import {
   isValidNewMemoControlNumberFormat,
   peekNextMemoControlNumber,
 } from '../utils/memoControlNumber.js';
+import { recordMemoNotification, MEMO_EVENT } from '../utils/adminNotifications.js';
+import { requireAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
+router.use(requireAdmin);
 
 const CLOSED_TICKET_STATUSES = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
 
@@ -436,6 +439,13 @@ router.post('/service-memos', async (req, res) => {
 
     await pool.execute(`UPDATE aleco_tickets SET service_memo_id = ? WHERE ticket_id = ?`, [result.insertId, ticket_id]);
 
+    await recordMemoNotification(pool, {
+      eventType: MEMO_EVENT.CREATED,
+      subjectName: controlNumber,
+      detail: `Ticket ${ticket_id}`,
+      actorEmail: currentUserEmail.trim(),
+    });
+
     console.log(`✅ Service Memo Created: ID ${result.insertId}, Control #${controlNumber} for Ticket ${ticket_id}`);
     res.json({
       success: true,
@@ -545,6 +555,13 @@ router.put('/service-memos/:id', async (req, res) => {
     const query = `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE id = ?`;
     await pool.execute(query, updateParams);
 
+    await recordMemoNotification(pool, {
+      eventType: MEMO_EVENT.UPDATED,
+      subjectName: memo.control_number || String(id),
+      detail: memo.ticket_id ? `Ticket ${memo.ticket_id}` : null,
+      actorEmail: currentUserEmail && String(currentUserEmail).trim() ? String(currentUserEmail).trim() : null,
+    });
+
     console.log(`✅ Service Memo Updated: ID ${id}`);
     res.json({ success: true, message: 'Service memo updated successfully.' });
   } catch (error) {
@@ -577,6 +594,13 @@ router.put('/service-memos/:id/close', async (req, res) => {
 
     await pool.execute(`UPDATE aleco_service_memos SET memo_status = 'closed', closed_at = NOW() WHERE id = ?`, [id]);
 
+    await recordMemoNotification(pool, {
+      eventType: MEMO_EVENT.CLOSED,
+      subjectName: memo.control_number || String(id),
+      detail: memo.ticket_id ? `Ticket ${memo.ticket_id}` : null,
+      actorEmail: currentUserEmail && String(currentUserEmail).trim() ? String(currentUserEmail).trim() : null,
+    });
+
     console.log(`✅ Service Memo Closed: ID ${id}`);
     res.json({ success: true, message: 'Service memo closed successfully.' });
   } catch (error) {
@@ -605,7 +629,19 @@ router.delete('/service-memos/:id', async (req, res) => {
 
     await pool.execute(`UPDATE aleco_tickets SET service_memo_id = NULL WHERE ticket_id = ?`, [memo.ticket_id]);
 
+    const controlNo = memo.control_number || String(id);
+    const ticketRef = memo.ticket_id ? `Ticket ${memo.ticket_id}` : null;
+    const deleter =
+      currentUserEmail && String(currentUserEmail).trim() ? String(currentUserEmail).trim() : null;
+
     await pool.execute(`DELETE FROM aleco_service_memos WHERE id = ?`, [id]);
+
+    await recordMemoNotification(pool, {
+      eventType: MEMO_EVENT.DELETED,
+      subjectName: controlNo,
+      detail: ticketRef,
+      actorEmail: deleter,
+    });
 
     console.log(`✅ Service Memo Deleted: ID ${id}`);
     res.json({ success: true, message: 'Service memo deleted successfully.' });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { getStatusDisplayLabel, getCauseCategoryLabel } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive } from './AdvisoryActionIcons';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconRefreshCw } from './AdvisoryActionIcons';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
@@ -9,7 +9,7 @@ import { getSafeResourceUrl } from '../../utils/safeUrl';
  * Displays the advisory exactly as a full card - same structure as the card content,
  * but in a modal for detailed viewing. Not edit mode, not the plain-text view with audit logs.
  */
-export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit, onPullFromFeed, onPushToFeed, saving }) {
+export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit, onUpdate, onPullFromFeed, onPushToFeed, saving }) {
   if (!item) return null;
 
   const archived = Boolean(item.deletedAt);
@@ -185,8 +185,20 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
                 </button>
               )}
               {onEdit && (
-                <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={() => onEdit(item)} disabled={saving} title="Edit" aria-label="Edit">
+                <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={() => onEdit(item)} disabled={saving} title="Edit content" aria-label="Edit content">
                   <IconPencil />
+                </button>
+              )}
+              {!archived && onUpdate && (
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--update"
+                  onClick={() => onUpdate(item)}
+                  disabled={saving}
+                  title="Update status & remarks"
+                  aria-label="Update status & remarks"
+                >
+                  <IconRefreshCw />
                 </button>
               )}
               <button type="button" className="interruptions-admin-btn" onClick={onClose}>

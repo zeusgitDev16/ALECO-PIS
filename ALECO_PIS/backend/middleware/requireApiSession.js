@@ -1,24 +1,67 @@
 /**
- * Enforces that protected /api routes receive a valid session:
- * X-User-Email + X-Token-Version matching users.token_version and Active status.
- * Public routes (landing, ticket submit, auth, etc.) are skipped — see isPublicApiRoute.
+ * Session gate for non-public /api routes.
+ *
+ * Public URLs are detected from **req.originalUrl** (full path) so behavior is stable regardless
+ * of whether Express reports `req.path` as `/api/foo` or `/foo` under `app.use('/api', ...)`.
+ *
+ * Legacy session headers beat JWT when present (see requireApiSession body).
+ * Dashboard SPA: ProtectedRoute + server RBAC for real enforcement.
  */
 import pool from '../config/db.js';
+import { verifyAccessToken } from '../utils/sessionJwt.js';
+
+function extractBearerToken(req) {
+  const h = req.headers.authorization || req.headers.Authorization;
+  if (!h || typeof h !== 'string') return null;
+  const m = h.match(/^Bearer\s+(.+)$/i);
+  return m ? m[1].trim() : null;
+}
+
+function allowLegacySessionHeaders() {
+  return String(process.env.ALLOW_LEGACY_SESSION_HEADERS || 'true').toLowerCase() !== 'false';
+}
+
+/** @returns {{ email: string, tokenVersion: number } | null} */
+function readLegacyHeaders(req) {
+  const email = String(req.headers['x-user-email'] || '')
+    .trim()
+    .toLowerCase();
+  const tokenVersionRaw = req.headers['x-token-version'];
+  if (!email || tokenVersionRaw === undefined || tokenVersionRaw === null || String(tokenVersionRaw).trim() === '') {
+    return null;
+  }
+  const tokenVersion = Number(tokenVersionRaw);
+  if (Number.isNaN(tokenVersion)) return null;
+  return { email, tokenVersion };
+}
 
 /**
+ * Pathname + query string only, stable across mounts (uses full request URL).
+ */
+function requestPathAndQuery(req) {
+  const raw = String(req.originalUrl || req.url || '');
+  return raw.split('#')[0];
+}
+
+/**
+ * Public routes: no login. Match on **full** `/api/...` path so we never depend on `req.path`
+ * quirks when middleware is mounted at `/api`.
+ *
  * @param {import('express').Request} req
  */
 export function isPublicApiRoute(req) {
   const m = String(req.method || 'GET').toUpperCase();
-  const p = String(req.path || '/').split('?')[0].replace(/\/$/, '') || '/';
+  const full = requestPathAndQuery(req);
+  const [pathname, queryStr = ''] = full.split('?');
+  const path = pathname.replace(/\/+$/, '') || '/';
+  const q = req.query || Object.fromEntries(new URLSearchParams(queryStr));
 
   if (m === 'OPTIONS') return true;
 
-  if (m === 'GET' && p === '/health') return true;
+  if (m === 'GET' && /^\/api\/health$/i.test(path)) return true;
 
-  /** Public bulletin: default filters only — archive / future / admin list flags require a session. */
-  if (m === 'GET' && p === '/interruptions') {
-    const q = req.query || {};
+  /** List advisories — public unless admin-only query flags are used */
+  if (m === 'GET' && /^\/api\/interruptions$/i.test(path)) {
     const adminList =
       q.includeDeleted === '1' ||
       q.includeDeleted === 'true' ||
@@ -29,31 +72,32 @@ export function isPublicApiRoute(req) {
       q.includeScheduled === '1';
     return !adminList;
   }
-  if (m === 'GET' && p === '/contact-numbers') return true;
-  if (m === 'GET' && p === '/urgent-keywords') return true;
-  if (m === 'GET' && p === '/feeders') return true;
 
-  if (m === 'GET' && p.startsWith('/tickets/track/')) return true;
-  if (m === 'GET' && p.startsWith('/tickets/sms/receive')) return true;
+  if (m === 'GET' && /^\/api\/contact-numbers$/i.test(path)) return true;
+  if (m === 'GET' && /^\/api\/urgent-keywords$/i.test(path)) return true;
+  if (m === 'GET' && /^\/api\/feeders$/i.test(path)) return true;
 
-  if (m === 'GET' && p.startsWith('/b2b-mail/contacts/verify')) return true;
+  if (m === 'GET' && /^\/api\/tickets\/track\//i.test(path)) return true;
+  if (m === 'GET' && /^\/api\/tickets\/sms\/receive/i.test(path)) return true;
 
-  if (m === 'POST' && p === '/b2b-mail/inbound/webhook') return true;
+  if (m === 'GET' && /^\/api\/b2b-mail\/contacts\/verify/i.test(path)) return true;
+
+  if (m === 'POST' && /^\/api\/b2b-mail\/inbound\/webhook$/i.test(path)) return true;
 
   const publicPost = new Set([
-    '/setup-account',
-    '/login',
-    '/google-login',
-    '/setup-google-account',
-    '/logout-all',
-    '/forgot-password',
-    '/reset-password',
-    '/verify-session',
-    '/tickets/submit',
-    '/check-duplicates',
-    '/tickets/send-copy',
+    '/api/setup-account',
+    '/api/login',
+    '/api/google-login',
+    '/api/setup-google-account',
+    '/api/logout-all',
+    '/api/forgot-password',
+    '/api/reset-password',
+    '/api/verify-session',
+    '/api/tickets/submit',
+    '/api/check-duplicates',
+    '/api/tickets/send-copy',
   ]);
-  if (m === 'POST' && publicPost.has(p)) return true;
+  if (m === 'POST' && publicPost.has(path.toLowerCase())) return true;
 
   return false;
 }
@@ -63,29 +107,42 @@ export async function requireApiSession(req, res, next) {
     return next();
   }
 
-  const email = String(req.headers['x-user-email'] || '')
-    .trim()
-    .toLowerCase();
-  const tokenVersionRaw = req.headers['x-token-version'];
+  let email = '';
+  let tokenVersion = NaN;
 
-  if (!email || tokenVersionRaw === undefined || tokenVersionRaw === null || String(tokenVersionRaw).trim() === '') {
-    return res.status(401).json({
-      error: 'Authentication required.',
-      code: 'AUTH_REQUIRED',
-    });
-  }
-
-  const tokenVersion = Number(tokenVersionRaw);
-  if (Number.isNaN(tokenVersion)) {
-    return res.status(401).json({
-      error: 'Invalid session.',
-      code: 'AUTH_INVALID',
-    });
+  const legacy = allowLegacySessionHeaders() ? readLegacyHeaders(req) : null;
+  if (legacy) {
+    email = legacy.email;
+    tokenVersion = legacy.tokenVersion;
+  } else {
+    const bearer = extractBearerToken(req);
+    if (bearer) {
+      try {
+        const v = verifyAccessToken(bearer);
+        email = v.email;
+        tokenVersion = v.tokenVersion;
+      } catch {
+        return res.status(401).json({
+          error: 'Invalid or expired session token.',
+          code: 'AUTH_INVALID',
+        });
+      }
+    } else if (!allowLegacySessionHeaders()) {
+      return res.status(401).json({
+        error: 'Authentication required. Authorization Bearer token missing.',
+        code: 'AUTH_TOKEN_REQUIRED',
+      });
+    } else {
+      return res.status(401).json({
+        error: 'Authentication required.',
+        code: 'AUTH_REQUIRED',
+      });
+    }
   }
 
   try {
     const [users] = await pool.execute(
-      'SELECT status, token_version FROM users WHERE email = ?',
+      'SELECT status, token_version, role FROM users WHERE email = ?',
       [email]
     );
     if (users.length === 0) {
@@ -107,7 +164,10 @@ export async function requireApiSession(req, res, next) {
         code: 'AUTH_STALE',
       });
     }
-    req.authUser = { email };
+    req.authUser = {
+      email,
+      role: user.role != null ? String(user.role) : '',
+    };
     return next();
   } catch (e) {
     console.error('[requireApiSession]', e.message);

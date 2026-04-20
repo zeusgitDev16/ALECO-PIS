@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../utils/api';
+import { authFetch } from '../utils/authFetch';
 import { formatToPhilippineTime } from '../utils/dateUtils';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
@@ -63,7 +64,7 @@ const AdminHistory = () => {
             params.set('limit', limit);
             params.set('offset', page * limit);
 
-            const response = await fetch(apiUrl(`/api/tickets/logs?${params}`));
+            const response = await authFetch(apiUrl(`/api/tickets/logs?${params}`));
             const data = await response.json();
 
             if (response.ok && data.success) {

@@ -498,6 +498,77 @@ export default function InterruptionAdvisoryForm({
           )}
         </fieldset>
 
+        <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--auto-restore">
+          <legend>Scheduled auto-restoration</legend>
+          <div className="interruptions-admin-visibility-toggle" role="radiogroup" aria-label="Auto-restoration schedule">
+            <label className="interruptions-admin-radio-line">
+              <input
+                type="radio"
+                name="autoRestore"
+                checked={!form.scheduleAutoRestore}
+                onChange={() =>
+                  setForm((f) => ({
+                    ...f,
+                    scheduleAutoRestore: false,
+                    scheduledRestoreAt: '',
+                    scheduledRestoreRemark: '',
+                  }))
+                }
+              />
+              <span>Manual restoration only</span>
+            </label>
+            <label className="interruptions-admin-radio-line">
+              <input
+                type="radio"
+                name="autoRestore"
+                checked={form.scheduleAutoRestore}
+                onChange={() =>
+                  setForm((f) => ({
+                    ...f,
+                    scheduleAutoRestore: true,
+                    scheduledRestoreAt: f.scheduledRestoreAt || '',
+                    scheduledRestoreRemark: f.scheduledRestoreRemark || '',
+                  }))
+                }
+              />
+              <span>Schedule automatic restoration</span>
+            </label>
+          </div>
+
+          {form.scheduleAutoRestore && (
+            <div className="interruptions-admin-bull-schedule">
+              <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
+                Auto-restore at
+                <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
+                  <InModalDateTimePicker
+                    value={form.scheduledRestoreAt}
+                    onChange={(v) => setForm((f) => ({ ...f, scheduledRestoreAt: v }))}
+                    required
+                    placeholder="Select auto-restoration date and time"
+                    futureOnly
+                  />
+                </div>
+                <DatetimePreview value={form.scheduledRestoreAt} />
+              </label>
+              <label className="interruptions-admin-span2 interruptions-admin-label-tight">
+                <span>
+                  Remark for auto-restoration <strong className="interruptions-admin-status-remark-required">(required)</strong>
+                </span>
+                <textarea
+                  className="interruptions-admin-memo-textarea"
+                  value={form.scheduledRestoreRemark}
+                  onChange={(ev) => setForm((f) => ({ ...f, scheduledRestoreRemark: ev.target.value }))}
+                  rows={2}
+                  placeholder="e.g. Maintenance window complete, power restored per schedule"
+                />
+              </label>
+              <p className="interruptions-admin-field-hint">
+                When the scheduled time arrives, the system will automatically mark this advisory as <strong>Resolved</strong> and log the remark above.
+              </p>
+            </div>
+          )}
+        </fieldset>
+
         {advisoryArchived && (
           <div className="interruptions-admin-callout interruptions-admin-callout--warn" role="status">
             <strong>Archived</strong> — view only.

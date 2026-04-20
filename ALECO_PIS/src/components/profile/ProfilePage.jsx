@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEdit, FaSave, FaLock, FaHistory, FaLink, FaExternalLinkAlt } from 'react-icons/fa';
 import { apiUrl } from '../../utils/api';
+import { authFetch } from '../../utils/authFetch';
 import { clearLocalStoragePreservingPreferences } from '../../utils/clearLocalStoragePreservingPreferences';
 import { getSafeHttpUrl, getSafeResourceUrl } from '../../utils/safeUrl';
 import '../../CSS/ProfilePage.css';
@@ -117,7 +118,7 @@ const ProfilePage = () => {
     const email = localStorage.getItem('userEmail');
     if (!email) { setIsLoading(false); return; }
     try {
-      const res = await fetch(apiUrl(`/api/users/profile?email=${encodeURIComponent(email)}`));
+      const res = await authFetch(apiUrl(`/api/users/profile?email=${encodeURIComponent(email)}`));
       if (!res.ok) throw new Error('fetch failed');
       const data = await res.json();
       setUserData({
@@ -144,7 +145,7 @@ const ProfilePage = () => {
     const email = localStorage.getItem('userEmail');
     if (!email) { setLogsLoading(false); return; }
     try {
-      const res = await fetch(apiUrl(`/api/users/activity?email=${encodeURIComponent(email)}`));
+      const res = await authFetch(apiUrl(`/api/users/activity?email=${encodeURIComponent(email)}`));
       if (!res.ok) throw new Error('fetch failed');
       const data = await res.json();
       setActivityLogs(Array.isArray(data) ? data : []);
@@ -165,7 +166,7 @@ const ProfilePage = () => {
     if (!isEditing) { setIsEditing(true); return; }
     setIsSaving(true);
     try {
-      const res = await fetch(apiUrl('/api/users/profile'), {
+      const res = await authFetch(apiUrl('/api/users/profile'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -201,7 +202,7 @@ const ProfilePage = () => {
     e.preventDefault();
     setPwLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/forgot-password'), {
+      const res = await authFetch(apiUrl('/api/forgot-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userData.email }),
@@ -226,7 +227,7 @@ const ProfilePage = () => {
     if (pwNew.length < 8)   { alert('Password must be at least 8 characters.'); return; }
     setPwLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/reset-password'), {
+      const res = await authFetch(apiUrl('/api/reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userData.email, code: pwCode, newPassword: pwNew }),

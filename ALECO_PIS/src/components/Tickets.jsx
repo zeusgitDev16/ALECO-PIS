@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
+import { authFetch } from '../utils/authFetch';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketsPage.css';
@@ -117,7 +118,7 @@ const AdminTickets = () => {
                 });
                 params.set('includeChildren', 'true');
 
-                const res = await fetch(apiUrl(`/api/filtered-tickets?${params.toString()}`), { signal: ctrl.signal });
+                const res = await authFetch(apiUrl(`/api/filtered-tickets?${params.toString()}`), { signal: ctrl.signal });
                 const data = await res.json();
                 if (!res.ok || !data?.success) {
                     setMapTickets([]);
@@ -143,7 +144,7 @@ const AdminTickets = () => {
     useEffect(() => {
         const fetchCrews = async () => {
             try {
-                const response = await fetch(apiUrl('/api/crews/list'));
+                const response = await authFetch(apiUrl('/api/crews/list'));
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     setAvailableCrews(data);
@@ -178,7 +179,7 @@ const AdminTickets = () => {
     const handleDispatchGroup = async (mainTicketId, dispatchData) => {
         try {
             const body = { ...dispatchData, ...getActor() };
-            const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/dispatch`), {
+            const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/dispatch`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -203,7 +204,7 @@ const AdminTickets = () => {
 
     const executeUngroup = async (mainTicketId) => {
         try {
-            const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/ungroup`), {
+            const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/ungroup`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -228,7 +229,7 @@ const AdminTickets = () => {
 
     const handleDeleteTicket = async (ticketId) => {
         try {
-            const response = await fetch(apiUrl(`/api/tickets/${ticketId}`), {
+            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}`), {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(getActor())
@@ -252,7 +253,7 @@ const AdminTickets = () => {
     const handlePutHold = async (ticketId, holdData) => {
         try {
             const body = { ...holdData, ...getActor() };
-            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/hold`), {
+            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/hold`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -277,7 +278,7 @@ const AdminTickets = () => {
 
     const handleResumeFromHold = async (ticketId) => {
         try {
-            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
+            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(getActor())
@@ -299,7 +300,7 @@ const AdminTickets = () => {
         try {
             if (newStatus === 'Ongoing' && dispatchData) {
                 const body = { ...dispatchData, ...getActor() };
-                const response = await fetch(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
+                const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -372,7 +373,7 @@ const AdminTickets = () => {
             const regularTickets = selectedIds.filter(id => !id?.startsWith('GROUP-'));
 
             for (const mainTicketId of groupMasters) {
-                const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/status`), {
+                const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/status`), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'Restored', ...getActor() })
@@ -385,7 +386,7 @@ const AdminTickets = () => {
             }
 
             if (regularTickets.length > 0) {
-                const response = await fetch(apiUrl('/api/tickets/bulk/restore'), {
+                const response = await authFetch(apiUrl('/api/tickets/bulk/restore'), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ticketIds: regularTickets, ...getActor() })
@@ -681,7 +682,7 @@ const AdminTickets = () => {
                 selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id) && !t.ticket_id?.startsWith('GROUP-'))}
                 onSubmit={async (groupData) => {
                     try {
-                        const response = await fetch(apiUrl('/api/tickets/group/create'), {
+                        const response = await authFetch(apiUrl('/api/tickets/group/create'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(groupData)

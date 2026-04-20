@@ -133,6 +133,8 @@ export function mapRowToDto(row) {
       dateTimeEndEstimated: row.date_time_end_estimated ? toIsoForClient(row.date_time_end_estimated) : null,
       dateTimeRestored: row.date_time_restored ? toIsoForClient(row.date_time_restored) : null,
       publicVisibleAt: row.public_visible_at ? toIsoForClient(row.public_visible_at) : null,
+      scheduledRestoreAt: row.scheduled_restore_at ? toIsoForClient(row.scheduled_restore_at) : null,
+      scheduledRestoreRemark: row.scheduled_restore_remark != null ? String(row.scheduled_restore_remark) : null,
       pulledFromFeedAt: row.pulled_from_feed_at != null ? toIsoForClient(row.pulled_from_feed_at) : null,
       createdAt: toIsoForClient(row.created_at),
       updatedAt: toIsoForClient(row.updated_at),

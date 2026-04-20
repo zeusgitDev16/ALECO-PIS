@@ -6,8 +6,10 @@ import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';
 import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
+import { requireAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
+router.use(requireAdmin);
 
 const upload = multer({
     storage: multer.memoryStorage(),

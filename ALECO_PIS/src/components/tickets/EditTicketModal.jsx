@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
+import { authFetch } from '../../utils/authFetch';
 import { toast } from 'react-toastify';
 import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';
 import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown';
@@ -85,7 +86,7 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
                 actor_email: localStorage.getItem('userEmail') || null,
                 actor_name: localStorage.getItem('userName') || null
             };
-            const response = await fetch(apiUrl(`/api/tickets/${ticket.ticket_id}`), {
+            const response = await authFetch(apiUrl(`/api/tickets/${ticket.ticket_id}`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)

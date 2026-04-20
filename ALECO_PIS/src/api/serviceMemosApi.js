@@ -44,12 +44,18 @@ export async function fetchTicketPreviewForMemo(ticketId, options = {}) {
 }
 
 function authHeaders() {
+  const accessToken =
+    typeof localStorage !== 'undefined' ? localStorage.getItem('accessToken') : null;
   const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
   const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
-  return {
+  const tokenVersion = typeof localStorage !== 'undefined' ? localStorage.getItem('tokenVersion') : null;
+  const h = {
     'X-User-Email': userEmail || '',
     'X-User-Name': userName || '',
   };
+  if (accessToken) h.Authorization = `Bearer ${accessToken}`;
+  if (tokenVersion !== null && tokenVersion !== undefined) h['X-Token-Version'] = String(tokenVersion);
+  return h;
 }
 
 /**

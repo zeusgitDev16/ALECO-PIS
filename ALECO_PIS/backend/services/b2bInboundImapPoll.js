@@ -1,6 +1,7 @@
 import { ImapFlow } from 'imapflow';
 import pool from '../config/db.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
+import { recordB2BMailNotification, B2B_MAIL_EVENT } from '../utils/adminNotifications.js';
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -401,6 +402,15 @@ async function _doPoll() {
                             ]
                         );
                         inserted += 1;
+                        if (link.linked_message_id) {
+                            await recordB2BMailNotification(pool, {
+                                eventType: B2B_MAIL_EVENT.REPLY_FETCHED,
+                                subjectEmail: (fromAddr || 'unknown').slice(0, 255),
+                                subjectName: String(subject || '').slice(0, 200) || null,
+                                detail: `Linked to message #${link.linked_message_id}`,
+                                actorEmail: null,
+                            });
+                        }
                     } catch (e) {
                         if (e?.code !== 'ER_DUP_ENTRY') {
                             console.error('[B2B inbound] insert error:', e?.message || e);
@@ -685,6 +695,15 @@ export async function fetchTargetedReplies(messageId) {
                             ]
                         );
                         found++;
+                        if (link.linked_message_id) {
+                            await recordB2BMailNotification(pool, {
+                                eventType: B2B_MAIL_EVENT.REPLY_FETCHED,
+                                subjectEmail: (fromAddr || 'unknown').slice(0, 255),
+                                subjectName: String(subject || '').slice(0, 200) || null,
+                                detail: `Linked to message #${link.linked_message_id}`,
+                                actorEmail: null,
+                            });
+                        }
                     } catch (e) {
                         if (e?.code !== 'ER_DUP_ENTRY') {
                             console.error('[B2B targeted] insert error:', e?.message || e);

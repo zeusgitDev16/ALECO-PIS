@@ -21,16 +21,18 @@ import {
 } from '../utils/interruptionsDbSupport.js';
 import { clampSqlInt } from '../utils/safeSqlInt.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
+import { recordInterruptionNotification, INTERRUPTIONS_EVENT } from '../utils/adminNotifications.js';
+import { requireAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
 /** Columns for list + single-row fetch (without leading SELECT … FROM). */
 const INTERRUPTION_TABLE_COLS_BASE = `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
   date_time_start, date_time_end_estimated, date_time_restored,
-  public_visible_at, created_at, updated_at`;
+  public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at`;
 const INTERRUPTION_TABLE_COLS_WITH_PULLED = `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
   date_time_start, date_time_end_estimated, date_time_restored,
-  public_visible_at, pulled_from_feed_at, created_at, updated_at`;
+  public_visible_at, scheduled_restore_at, scheduled_restore_remark, pulled_from_feed_at, created_at, updated_at`;
 
 function selectInterruptionRowSql(hasDeletedAt, hasPulledFromFeedAt = true) {
   const cols = hasPulledFromFeedAt ? INTERRUPTION_TABLE_COLS_WITH_PULLED : INTERRUPTION_TABLE_COLS_BASE;
@@ -173,8 +175,23 @@ function buildInterruptionsListWhere(req, hasDeletedAtColumn, hasPulledFromFeedA
   return clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '';
 }
 
+/** If query asks for admin-only views (archive / future / scheduled), enforce admin role. */
+function requireAdminIfListQueryFlags(req, res, next) {
+  const q = req.query || {};
+  const adminList =
+    q.includeDeleted === '1' ||
+    q.includeDeleted === 'true' ||
+    q.deletedOnly === '1' ||
+    q.deletedOnly === 'true' ||
+    q.includeFuture === '1' ||
+    q.includeFuture === 'true' ||
+    q.includeScheduled === '1';
+  if (adminList) return requireAdmin(req, res, next);
+  return next();
+}
+
 /** Public + admin list (default: non-deleted only; admin archive via query flags). */
-router.get('/interruptions', async (req, res) => {
+router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
   try {
     const limit = clampSqlInt(req.query.limit, 1, 200, 100);
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
@@ -187,6 +204,30 @@ router.get('/interruptions', async (req, res) => {
       `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = ? WHERE ${upgradeWhere}`,
       [phNow]
     );
+    // Auto-restore: mark as Restored when scheduled_restore_at has passed
+    {
+      const autoRestoreWhere = hasDel
+        ? "status IN ('Pending','Ongoing') AND deleted_at IS NULL AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= NOW()"
+        : "status IN ('Pending','Ongoing') AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= NOW()";
+      const [dueRows] = await pool.query(
+        `SELECT id, scheduled_restore_remark, feeder FROM aleco_interruptions WHERE ${autoRestoreWhere}`
+      );
+      for (const due of dueRows) {
+        await pool.execute(
+          `UPDATE aleco_interruptions SET status = 'Restored', date_time_restored = ?, scheduled_restore_at = NULL, updated_at = ? WHERE id = ?`,
+          [phNow, phNow, due.id]
+        );
+        const remark = due.scheduled_restore_remark
+          ? String(due.scheduled_restore_remark).trim()
+          : 'Automatically restored per schedule.';
+        await insertSystemUpdate(
+          pool,
+          due.id,
+          `Auto-restored: ${remark}`,
+          { actorEmail: null, actorName: 'System' }
+        );
+      }
+    }
     // Auto-archive Restored advisories after 1 day 12 hours from restoration time
     if (hasDel) {
       await pool.query(
@@ -198,12 +239,13 @@ router.get('/interruptions', async (req, res) => {
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     const visibilityWhere = buildInterruptionsListWhere(req, hasDel, hasPulled);
     const listCols = listInterruptionCols(hasDel, hasPulled);
-    const [rows] = await pool.execute(
+    // Use a literal LIMIT: some MySQL/MariaDB builds reject `LIMIT ?` in prepared statements (ER_WRONG_ARGUMENTS).
+    // `limit` is server-clamped to 1–200 (safe to interpolate).
+    const [rows] = await pool.query(
       `SELECT ${listCols}
        FROM aleco_interruptions${visibilityWhere}
        ORDER BY date_time_start DESC
-       LIMIT ?`,
-      [limit]
+       LIMIT ${limit}`
     );
     const list = Array.isArray(rows) ? rows.map(mapRowToDto).filter(Boolean) : [];
     res.setHeader('Cache-Control', 'no-store');
@@ -215,7 +257,7 @@ router.get('/interruptions', async (req, res) => {
 });
 
 /** Upload image for advisory (optional). Returns imageUrl for form. */
-router.post('/interruptions/upload-image', upload.single('image'), async (req, res) => {
+router.post('/interruptions/upload-image', requireAdmin, upload.single('image'), async (req, res) => {
   try {
     if (!req.file || !req.file.path) {
       return res.status(400).json({ success: false, message: 'No image file uploaded.' });
@@ -282,7 +324,7 @@ router.post('/interruptions/:id/updates', async (req, res) => {
 });
 
 /** Create (admin UI): no restoration time; status derived from type + start */
-router.post('/interruptions', async (req, res) => {
+router.post('/interruptions', requireAdmin, async (req, res) => {
   const errs = validatePayload(req.body, { partial: false });
   if (errs.length) return res.status(400).json({ success: false, message: errs.join(' ') });
 
@@ -337,8 +379,8 @@ router.post('/interruptions', async (req, res) => {
     const phNow = nowPhilippineForMysql();
     const [result] = await pool.execute(
       `INSERT INTO aleco_interruptions
-       (type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         type,
         initialStatus,
@@ -354,6 +396,8 @@ router.post('/interruptions', async (req, res) => {
         endEst,
         restored,
         pubVis,
+        toMysqlDateTime(req.body.scheduledRestoreAt) || null,
+        req.body.scheduledRestoreRemark != null && String(req.body.scheduledRestoreRemark).trim() ? String(req.body.scheduledRestoreRemark).trim() : null,
         phNow,
         phNow,
       ]
@@ -373,6 +417,18 @@ router.post('/interruptions', async (req, res) => {
       `Advisory published by ${actor} at ${createdAtStr}`,
       { actorEmail: actorEmail ?? null, actorName: actorName ?? null }
     );
+
+    const createEvent =
+      type === 'Scheduled'
+        ? INTERRUPTIONS_EVENT.CREATED_SCHEDULED
+        : INTERRUPTIONS_EVENT.CREATED_UNSCHEDULED;
+    await recordInterruptionNotification(pool, {
+      eventType: createEvent,
+      subjectName: String(result.insertId),
+      detail: feederLabelVal || 'Advisory',
+      actorEmail: actorEmail != null && String(actorEmail).trim() ? String(actorEmail).trim() : null,
+    });
+
     res.status(201).json({ success: true, data: dto });
   } catch (error) {
     console.error('Interruptions create error:', error);
@@ -381,7 +437,7 @@ router.post('/interruptions', async (req, res) => {
 });
 
 /** Update */
-router.put('/interruptions/:id', async (req, res) => {
+router.put('/interruptions/:id', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -411,9 +467,9 @@ router.put('/interruptions/:id', async (req, res) => {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const loadCols = hasDel
       ? `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
-       date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, deleted_at`
+       date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, deleted_at`
       : `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
-       date_time_start, date_time_end_estimated, date_time_restored, public_visible_at`;
+       date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark`;
     const [fullRows] = await pool.execute(
       `SELECT ${loadCols}
        FROM aleco_interruptions WHERE id = ?`,
@@ -568,6 +624,16 @@ router.put('/interruptions/:id', async (req, res) => {
           : toMysqlDateTime(publicVisibleAt);
       params.push(pv);
     }
+    if (req.body.scheduledRestoreAt !== undefined) {
+      const sra = req.body.scheduledRestoreAt;
+      fields.push('scheduled_restore_at = ?');
+      params.push(sra && String(sra).trim() ? toMysqlDateTime(sra) : null);
+    }
+    if (req.body.scheduledRestoreRemark !== undefined) {
+      const srr = req.body.scheduledRestoreRemark;
+      fields.push('scheduled_restore_remark = ?');
+      params.push(srr != null && String(srr).trim() ? String(srr).trim() : null);
+    }
 
     if (status !== undefined && status !== 'Restored' && dateTimeRestored === undefined) {
       fields.push('date_time_restored = ?');
@@ -617,6 +683,25 @@ router.put('/interruptions/:id', async (req, res) => {
       }
     }
 
+    const actorForNotif =
+      actorEmail != null && String(actorEmail).trim() ? String(actorEmail).trim() : null;
+    if (type !== undefined && type !== ex.type) {
+      await recordInterruptionNotification(pool, {
+        eventType: INTERRUPTIONS_EVENT.TYPE_CHANGED,
+        subjectName: String(id),
+        detail: `${ex.type} → ${type}`,
+        actorEmail: actorForNotif,
+      });
+    }
+    if (status !== undefined && status !== ex.status) {
+      await recordInterruptionNotification(pool, {
+        eventType: INTERRUPTIONS_EVENT.STATUS_CHANGED,
+        subjectName: String(id),
+        detail: `${ex.status} → ${nextStatus}`,
+        actorEmail: actorForNotif,
+      });
+    }
+
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
@@ -633,7 +718,7 @@ router.put('/interruptions/:id', async (req, res) => {
 /**
  * Soft delete (UX still uses DELETE). Row and remarks remain for reporting.
  */
-router.delete('/interruptions/:id', async (req, res) => {
+router.delete('/interruptions/:id', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -647,6 +732,16 @@ router.delete('/interruptions/:id', async (req, res) => {
       if (result.affectedRows === 0) {
         return res.status(404).json({ success: false, message: 'Interruption not found or already archived.' });
       }
+      const archiver =
+        req.authUser?.email ||
+        (req.body?.actorEmail && String(req.body.actorEmail).trim()) ||
+        null;
+      await recordInterruptionNotification(pool, {
+        eventType: INTERRUPTIONS_EVENT.ARCHIVED,
+        subjectName: String(id),
+        detail: 'Advisory archived',
+        actorEmail: archiver,
+      });
       res.json({ success: true, message: 'Archived.' });
       return;
     }
@@ -696,7 +791,7 @@ router.delete('/interruptions/:id/permanent', async (req, res) => {
 });
 
 /** Restore a soft-deleted advisory (admin). */
-router.patch('/interruptions/:id/restore', async (req, res) => {
+router.patch('/interruptions/:id/restore', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -729,7 +824,7 @@ router.patch('/interruptions/:id/restore', async (req, res) => {
 });
 
 /** Pull advisory out of public feed (temporarily hide without archiving). */
-router.patch('/interruptions/:id/pull-from-feed', async (req, res) => {
+router.patch('/interruptions/:id/pull-from-feed', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -772,7 +867,7 @@ router.patch('/interruptions/:id/pull-from-feed', async (req, res) => {
 });
 
 /** Push advisory back into public feed (make visible again per normal rules). */
-router.patch('/interruptions/:id/push-to-feed', async (req, res) => {
+router.patch('/interruptions/:id/push-to-feed', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 

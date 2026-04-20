@@ -5,6 +5,7 @@
  */
 
 import { nowPhilippineForMysql } from './dateTimeUtils.js';
+import { recordTicketNotification, TICKETS_EVENT } from './adminNotifications.js';
 
 /**
  * @param {import('mysql2/promise').Pool} pool
@@ -53,6 +54,19 @@ export async function insertTicketLog(pool, {
         phNow
       ]
     );
+
+    if (
+      from_status != null &&
+      to_status != null &&
+      String(from_status) !== String(to_status)
+    ) {
+      await recordTicketNotification(pool, {
+        eventType: TICKETS_EVENT.STATUS_CHANGED,
+        subjectName: ticket_id,
+        detail: `${from_status} → ${to_status}`,
+        actorEmail: actor_email || null,
+      });
+    }
   } catch (err) {
     console.error('❌ insertTicketLog failed:', err.message);
   }

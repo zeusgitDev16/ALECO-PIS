@@ -4,8 +4,10 @@ import { sendPhilSMS } from '../utils/sms.js';
 import { insertTicketLog } from '../utils/ticketLogHelper.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
+import { requireAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
+router.use(requireAdmin);
 
 // ============================================================================
 // TICKET GROUPING SYSTEM

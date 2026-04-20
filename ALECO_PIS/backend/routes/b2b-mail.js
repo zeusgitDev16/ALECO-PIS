@@ -13,8 +13,24 @@ import {
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { sendB2BMail } from '../utils/b2bMailProvider.js';
 import { pollB2BInboundOnce, relinkUnlinkedInbound, fetchTargetedReplies } from '../services/b2bInboundImapPoll.js';
+import { recordB2BMailNotification, B2B_MAIL_EVENT } from '../utils/adminNotifications.js';
+import { requireAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
+
+/** IMAP/B2B CRM routes are admin-only; public verification link + inbound webhook skip RBAC. */
+function b2bMailSkipPublicRoutes(req, res, next) {
+  const path = String(req.originalUrl || req.url || '').split('?')[0];
+  if (req.method === 'GET' && path.includes('/b2b-mail/contacts/verify')) return next();
+  if (req.method === 'POST' && path.endsWith('/b2b-mail/inbound/webhook')) return next();
+  return requireAdmin(req, res, next);
+}
+
+router.use(b2bMailSkipPublicRoutes);
+
+function actorEmailFromReq(req) {
+    return req.authUser?.email || String(req.headers['x-user-email'] || '').trim() || null;
+}
 
 /** Prefer X-User-Email / X-User-Name headers (admin clients) over body-only actor fields. */
 function withActorFromReq(req, body) {
@@ -57,9 +73,22 @@ router.get('/b2b-mail/contacts', async (req, res) => {
 
 router.post('/b2b-mail/contacts', async (req, res) => {
     try {
-        const id = await upsertContact(req.body || {});
+        const body = req.body || {};
+        const hadNumericId =
+            body.id != null &&
+            body.id !== '' &&
+            Number.isFinite(Number(body.id)) &&
+            Number(body.id) > 0;
+        const id = await upsertContact(body);
         const rows = await listContacts({});
         const contact = rows.find((r) => Number(r.id) === Number(id)) || null;
+        await recordB2BMailNotification(pool, {
+            eventType: hadNumericId ? B2B_MAIL_EVENT.CONTACT_EDITED : B2B_MAIL_EVENT.CONTACT_CREATED,
+            subjectEmail: contact?.email || null,
+            subjectName: contact?.contact_name || null,
+            detail: id ? `Contact #${id}` : null,
+            actorEmail: actorEmailFromReq(req),
+        });
         return res.status(201).json({ success: true, data: contact });
     } catch (err) {
         if (err instanceof TypeError) return res.status(400).json({ success: false, message: err.message });
@@ -75,6 +104,13 @@ router.put('/b2b-mail/contacts/:id', async (req, res) => {
         await upsertContact({ ...(req.body || {}), id });
         const rows = await listContacts({});
         const contact = rows.find((r) => Number(r.id) === id) || null;
+        await recordB2BMailNotification(pool, {
+            eventType: B2B_MAIL_EVENT.CONTACT_EDITED,
+            subjectEmail: contact?.email || null,
+            subjectName: contact?.contact_name || null,
+            detail: `Contact #${id}`,
+            actorEmail: actorEmailFromReq(req),
+        });
         return res.json({ success: true, data: contact });
     } catch (err) {
         if (err instanceof TypeError) return res.status(400).json({ success: false, message: err.message });
@@ -88,7 +124,25 @@ router.patch('/b2b-mail/contacts/:id/active', async (req, res) => {
         const id = Number(req.params.id);
         const active = req.body?.active;
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
+        const [[row]] = await pool.execute(
+            `SELECT contact_name, email FROM aleco_b2b_contacts WHERE id = ? LIMIT 1`,
+            [id]
+        );
         await setContactActive(id, Boolean(active));
+        const disabling =
+            active === false ||
+            active === 0 ||
+            active === 'false' ||
+            String(active).toLowerCase() === 'false';
+        if (disabling && row) {
+            await recordB2BMailNotification(pool, {
+                eventType: B2B_MAIL_EVENT.CONTACT_DISABLED,
+                subjectEmail: row.email || null,
+                subjectName: row.contact_name || null,
+                detail: `Contact #${id}`,
+                actorEmail: actorEmailFromReq(req),
+            });
+        }
         return res.json({ success: true });
     } catch (err) {
         console.error('❌ PATCH /b2b-mail/contacts/:id/active:', err);
@@ -344,6 +398,17 @@ router.post('/b2b-mail/messages/:id/send', async (req, res) => {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
         const result = await sendMessage(id);
+        if (result && Number(result.sent) > 0) {
+            const [[m]] = await pool.execute(`SELECT subject FROM aleco_b2b_messages WHERE id = ? LIMIT 1`, [id]);
+            const subj = m?.subject ? String(m.subject).slice(0, 200) : 'B2B message';
+            await recordB2BMailNotification(pool, {
+                eventType: B2B_MAIL_EVENT.MESSAGE_SENT,
+                subjectEmail: null,
+                subjectName: subj,
+                detail: `Message #${id} · sent to ${result.sent} recipient(s)`,
+                actorEmail: actorEmailFromReq(req),
+            });
+        }
         return res.json({ success: true, data: result });
     } catch (err) {
         if (err instanceof TypeError) return res.status(400).json({ success: false, message: err.message });
@@ -357,6 +422,17 @@ router.post('/b2b-mail/messages/:id/retry', async (req, res) => {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
         const result = await sendMessage(id, { retryOnlyFailed: true });
+        if (result && Number(result.sent) > 0) {
+            const [[m]] = await pool.execute(`SELECT subject FROM aleco_b2b_messages WHERE id = ? LIMIT 1`, [id]);
+            const subj = m?.subject ? String(m.subject).slice(0, 200) : 'B2B message';
+            await recordB2BMailNotification(pool, {
+                eventType: B2B_MAIL_EVENT.MESSAGE_SENT,
+                subjectEmail: null,
+                subjectName: subj,
+                detail: `Message #${id} · retry · sent to ${result.sent} recipient(s)`,
+                actorEmail: actorEmailFromReq(req),
+            });
+        }
         return res.json({ success: true, data: result });
     } catch (err) {
         if (err instanceof TypeError) return res.status(400).json({ success: false, message: err.message });
@@ -530,6 +606,15 @@ router.post('/b2b-mail/inbound/webhook', async (req, res) => {
                     phNow,
                 ]
             );
+            if (linked_message_id) {
+                await recordB2BMailNotification(pool, {
+                    eventType: B2B_MAIL_EVENT.REPLY_FETCHED,
+                    subjectEmail: fromEmail.slice(0, 255),
+                    subjectName: String(subject || '').slice(0, 200) || null,
+                    detail: `Linked to message #${linked_message_id}`,
+                    actorEmail: null,
+                });
+            }
         } catch (e) {
             if (e?.code === 'ER_DUP_ENTRY') {
                 return res.json({ success: true, data: { duplicate: true } });

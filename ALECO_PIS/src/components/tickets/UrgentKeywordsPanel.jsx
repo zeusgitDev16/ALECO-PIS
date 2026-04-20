@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../../utils/api';
+import { authFetch } from '../../utils/authFetch';
 import { DEFAULT_URGENT_KEYWORDS } from '../../constants/urgentKeywordsDefaults';
 import ConfirmModal from './ConfirmModal';
 import '../../CSS/UrgentKeywordsPanel.css';
@@ -28,7 +29,7 @@ const UrgentKeywordsPanel = () => {
         setLoading(true);
         setShowDefaultsNotice(false);
         try {
-            const res = await fetch(apiUrl('/api/urgent-keywords'));
+            const res = await authFetch(apiUrl('/api/urgent-keywords'));
             const data = await res.json();
             if (!res.ok || !data?.success || !Array.isArray(data.keywords)) {
                 throw new Error(data?.message || 'Failed to load');
@@ -92,7 +93,7 @@ const UrgentKeywordsPanel = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const res = await fetch(apiUrl('/api/urgent-keywords'), {
+            const res = await authFetch(apiUrl('/api/urgent-keywords'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ keywords })

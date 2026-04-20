@@ -7,14 +7,18 @@ import { clearLocalStoragePreservingPreferences } from './clearLocalStoragePrese
 
 const API_BASE = getApiBaseUrl();
 
-const SESSION_FAIL = new Set(['AUTH_REQUIRED', 'AUTH_INVALID', 'AUTH_STALE', 'AUTH_DISABLED']);
+const SESSION_FAIL = new Set([
+  'AUTH_REQUIRED',
+  'AUTH_INVALID',
+  'AUTH_STALE',
+  'AUTH_DISABLED',
+  'AUTH_TOKEN_REQUIRED',
+]);
 
 function appendSessionHeaders(input, init) {
   const email = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
   const tokenVersion = typeof localStorage !== 'undefined' ? localStorage.getItem('tokenVersion') : null;
-  if (!email || tokenVersion === null || tokenVersion === undefined) {
-    return [input, init];
-  }
+  const accessToken = typeof localStorage !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
   let url = typeof input === 'string' ? input : input?.url;
   if (!url) return [input, init];
@@ -29,8 +33,13 @@ function appendSessionHeaders(input, init) {
 
   const nextInit = { ...(init || {}) };
   const h = new Headers(nextInit.headers || {});
-  if (!h.has('X-User-Email')) h.set('X-User-Email', email);
-  if (!h.has('X-Token-Version')) h.set('X-Token-Version', String(tokenVersion));
+  if (accessToken && !h.has('Authorization')) {
+    h.set('Authorization', `Bearer ${accessToken}`);
+  }
+  if (email && !h.has('X-User-Email')) h.set('X-User-Email', email);
+  if (tokenVersion !== null && tokenVersion !== undefined && !h.has('X-Token-Version')) {
+    h.set('X-Token-Version', String(tokenVersion));
+  }
   nextInit.headers = h;
   return [input, nextInit];
 }

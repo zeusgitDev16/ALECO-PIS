@@ -17,14 +17,17 @@ const API = axios.create({
 // 1. Request Interceptor: Triggered when you call API.post/get/etc.
 API.interceptors.request.use((config) => {
     if (typeof localStorage !== 'undefined') {
+        const accessToken = localStorage.getItem('accessToken');
         const email = localStorage.getItem('userEmail');
         const tokenVersion = localStorage.getItem('tokenVersion');
+        config.headers = config.headers || {};
+        if (accessToken && !config.headers.Authorization) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+        }
         if (email) {
-            config.headers = config.headers || {};
             config.headers['X-User-Email'] = email;
         }
         if (tokenVersion !== null && tokenVersion !== undefined) {
-            config.headers = config.headers || {};
             config.headers['X-Token-Version'] = String(tokenVersion);
         }
     }

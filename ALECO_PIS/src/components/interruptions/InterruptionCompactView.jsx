@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNow } from '../../hooks/useNow';
 import { getStatusDisplayLabel } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand } from './AdvisoryActionIcons';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
 import InterruptionAdvisoryDetailModal from './InterruptionAdvisoryDetailModal';
 import '../../CSS/InterruptionCompactView.css';
 
@@ -39,6 +39,7 @@ function truncate(s, max) {
  * @param {(id: number) => void} [props.onPushToFeed]
  * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
+ * @param {(row: object) => void} [props.onUpdate] - Open Update Advisory modal
  * @param {boolean} props.saving
  */
 export default function InterruptionCompactView({
@@ -46,6 +47,7 @@ export default function InterruptionCompactView({
   items,
   totalCount = 0,
   onEdit,
+  onUpdate,
   onDelete,
   onPermanentDelete,
   onPullFromFeed,
@@ -229,11 +231,23 @@ export default function InterruptionCompactView({
                       className="interruptions-compact-btn interruptions-compact-btn--icon"
                       onClick={() => onEdit(item)}
                       disabled={saving}
-                      title={archived ? 'View' : 'Edit'}
-                      aria-label={archived ? 'View' : 'Edit'}
+                      title={archived ? 'View' : 'Edit content'}
+                      aria-label={archived ? 'View' : 'Edit content'}
                     >
                       <IconPencil />
                     </button>
+                    {!archived && onUpdate && (
+                      <button
+                        type="button"
+                        className="interruptions-compact-btn interruptions-compact-btn--icon interruptions-compact-btn--update"
+                        onClick={() => onUpdate(item)}
+                        disabled={saving}
+                        title="Update status & remarks"
+                        aria-label="Update status & remarks"
+                      >
+                        <IconRefreshCw />
+                      </button>
+                    )}
                     {archived && onPermanentDelete && (
                       <button
                         type="button"
@@ -274,6 +288,10 @@ export default function InterruptionCompactView({
             setDetailItem(null);
             onEdit(it);
           }}
+          onUpdate={onUpdate ? (it) => {
+            setDetailItem(null);
+            onUpdate(it);
+          } : undefined}
           onPullFromFeed={onPullFromFeed}
           onPushToFeed={onPushToFeed}
           saving={saving}

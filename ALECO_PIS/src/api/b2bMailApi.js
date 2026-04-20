@@ -3,9 +3,13 @@ import { apiUrl } from '../utils/api';
 function adminHeaders(extra = {}) {
     const h = { ...extra };
     if (typeof localStorage !== 'undefined') {
+        const token = localStorage.getItem('accessToken');
         const e = localStorage.getItem('userEmail');
         const n = localStorage.getItem('userName');
+        const tv = localStorage.getItem('tokenVersion');
+        if (token) h.Authorization = `Bearer ${token}`;
         if (e) h['X-User-Email'] = e;
+        if (tv !== null && tv !== undefined) h['X-Token-Version'] = String(tv);
         if (n) h['X-User-Name'] = n;
     }
     return h;

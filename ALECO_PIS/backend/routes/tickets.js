@@ -11,8 +11,19 @@ import { listUrgentKeywords } from '../utils/urgentKeywordsDb.js';
 import { concernMatchesUrgentKeywords } from '../utils/urgentKeywordMatch.js';
 import { DEFAULT_URGENT_KEYWORDS } from '../constants/defaultUrgentKeywords.js';
 import { clampSqlInt } from '../utils/safeSqlInt.js';
+import {
+  recordPersonnelNotification,
+  PERSONNEL_EVENT,
+  recordTicketNotification,
+  TICKETS_EVENT,
+} from '../utils/adminNotifications.js';
 
 import { sendAppMail } from '../utils/appMail.js';
+import { requireAdmin } from '../middleware/requireRole.js';
+
+function actorEmailFromReq(req) {
+  return req.authUser?.email || String(req.headers['x-user-email'] || '').trim() || null;
+}
 
 async function logPersonnelAction(pool, actorEmail, actorName, action, targetName) {
   try {
@@ -182,6 +193,14 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
 
         await pool.execute(sql, values);
 
+        const locHint = [municipality, district].filter(Boolean).join(', ');
+        await recordTicketNotification(pool, {
+          eventType: TICKETS_EVENT.SUBMITTED_REPORT,
+          subjectName: ticket_id,
+          detail: locHint ? `Report a problem · ${locHint}` : 'Report a problem',
+          actorEmail: null,
+        });
+
         console.log(`✅ TICKET CREATED: ${ticket_id} | ${municipality}, ${district}`);
 
         res.json({ success: true, ticketId: ticket_id });
@@ -237,7 +256,7 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
 });
 
 // --- 2b. EDIT TICKET ROUTE (Dispatcher) ---
-router.put('/tickets/:ticketId', async (req, res) => {
+router.put('/tickets/:ticketId', requireAdmin, async (req, res) => {
     try {
         const { ticketId } = req.params;
         const body = req.body;
@@ -306,7 +325,7 @@ router.put('/tickets/:ticketId', async (req, res) => {
 });
 
 // --- 2c. SOFT DELETE TICKET ROUTE ---
-router.delete('/tickets/:ticketId', async (req, res) => {
+router.delete('/tickets/:ticketId', requireAdmin, async (req, res) => {
     try {
         const { ticketId } = req.params;
 
@@ -370,6 +389,13 @@ router.delete('/tickets/:ticketId', async (req, res) => {
             metadata: null
         });
 
+        await recordTicketNotification(pool, {
+          eventType: TICKETS_EVENT.DELETED,
+          subjectName: ticketId,
+          detail: 'Ticket removed',
+          actorEmail: (actorEmail && String(actorEmail).trim()) || null,
+        });
+
         console.log(`✅ TICKET SOFT DELETED: ${ticketId}`);
         res.json({ success: true, message: `Ticket ${ticketId} deleted.` });
     } catch (error) {
@@ -413,7 +439,7 @@ router.post('/tickets/send-copy', async (req, res) => {
 
 
 // --- ADMIN: DISPATCH TICKET ROUTE (PHILSMS INTEGRATION) ---
-router.put('/tickets/:ticket_id/dispatch', async (req, res) => {
+router.put('/tickets/:ticket_id/dispatch', requireAdmin, async (req, res) => {
     const { ticket_id } = req.params;
     const { assigned_crew, eta, is_consumer_notified, dispatch_notes } = req.body;
 
@@ -563,7 +589,7 @@ ${ticket_id}`;
 });
 
 // --- ADMIN: PUT TICKET ON HOLD (Dispatcher-initiated) ---
-router.put('/tickets/:ticket_id/hold', async (req, res) => {
+router.put('/tickets/:ticket_id/hold', requireAdmin, async (req, res) => {
     const { ticket_id } = req.params;
     const { hold_reason, notify_consumer } = req.body;
 
@@ -638,7 +664,7 @@ router.put('/tickets/:ticket_id/hold', async (req, res) => {
 });
 
 // --- RESUME FROM HOLD (Dispatcher) — clears hold fields and returns ticket to Ongoing ---
-router.put('/tickets/:ticket_id/resume-hold', async (req, res) => {
+router.put('/tickets/:ticket_id/resume-hold', requireAdmin, async (req, res) => {
     const { ticket_id } = req.params;
 
     try {
@@ -1137,7 +1163,7 @@ function levenshteinDistance(str1, str2) {
 // ============================================================================
 // GET ALL TICKET LOGS (System-wide History - must be before /:ticketId/logs)
 // ============================================================================
-router.get('/tickets/logs', async (req, res) => {
+router.get('/tickets/logs', requireAdmin, async (req, res) => {
     try {
         const { ticketId, actor_email, startDate, endDate, limit = 50, offset = 0 } = req.query;
         const conditions = [];
@@ -1170,11 +1196,10 @@ router.get('/tickets/logs', async (req, res) => {
         );
         const total = countRows[0]?.total ?? 0;
 
-        const dataParams = [...params, lim, off];
-        const [rows] = await pool.execute(
+        const [rows] = await pool.query(
             `SELECT id, ticket_id, action, from_status, to_status, actor_type, actor_email, actor_name, metadata, created_at
-             FROM aleco_ticket_logs${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-            dataParams
+             FROM aleco_ticket_logs${whereClause} ORDER BY created_at DESC LIMIT ${lim} OFFSET ${off}`,
+            params
         );
         const data = rows.map(r => {
             let meta = r.metadata;
@@ -1201,7 +1226,7 @@ router.get('/tickets/logs', async (req, res) => {
 // ============================================================================
 // GET TICKET LOGS (Single ticket - History / Audit Trail)
 // ============================================================================
-router.get('/tickets/:ticketId/logs', async (req, res) => {
+router.get('/tickets/:ticketId/logs', requireAdmin, async (req, res) => {
     try {
         const { ticketId } = req.params;
         const [rows] = await pool.execute(
@@ -1290,15 +1315,15 @@ const statusUpdateHandler = async (req, res) => {
     }
 };
 
-router.put('/tickets/:ticketId/status', statusUpdateHandler);
-router.put('/:ticketId/status', statusUpdateHandler); // Legacy - backward compat
+router.put('/tickets/:ticketId/status', requireAdmin, statusUpdateHandler);
+router.put('/:ticketId/status', requireAdmin, statusUpdateHandler); // Legacy - backward compat
 
 // ============================================================================
 // PERSONNEL MANAGEMENT ROUTES (Surgically Updated for 3-Table Architecture)
 // ============================================================================
 
 // --- 1. GET ALL CREWS (With Dynamic Member Counts & Lead Names) ---
-router.get('/crews/list', async (req, res) => {
+router.get('/crews/list', requireAdmin, async (req, res) => {
     try {
         const availableOnly = req.query.availableOnly === 'true';
 
@@ -1360,7 +1385,7 @@ router.get('/crews/list', async (req, res) => {
 });
 
 // --- 2. CREATE NEW CREW (With Junction Table Insertion) ---
-router.post('/crews/add', async (req, res) => {
+router.post('/crews/add', requireAdmin, async (req, res) => {
     const { crew_name, lead_id, phone_number, members } = req.body;
 
     // P1 Conflict validation: Orphaned crew - must have at least one member
@@ -1433,6 +1458,12 @@ router.post('/crews/add', async (req, res) => {
         const actorEmail = req.headers['x-user-email'] || null;
         const actorName  = req.headers['x-user-name']  || null;
         await logPersonnelAction(pool, actorEmail, actorName, 'add_crew', crew_name);
+        await recordPersonnelNotification(pool, {
+          eventType: PERSONNEL_EVENT.CREW_CREATED,
+          subjectName: crew_name,
+          detail: newCrewId ? `Crew #${newCrewId}` : null,
+          actorEmail: actorEmailFromReq(req),
+        });
         res.status(201).json({ success: true, message: 'New crew successfully assembled.' });
     } catch (error) {
         await connection.rollback(); // Undo if something broke
@@ -1444,7 +1475,7 @@ router.post('/crews/add', async (req, res) => {
 });
 
 // --- 3. UPDATE CREW (Wipe old members, insert new ones) ---
-router.put('/crews/update/:id', async (req, res) => {
+router.put('/crews/update/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { crew_name, lead_id, phone_number, status, members } = req.body;
 
@@ -1530,7 +1561,7 @@ router.put('/crews/update/:id', async (req, res) => {
 });
 
 // --- 4. DELETE CREW ---
-router.delete('/crews/delete/:id', async (req, res) => {
+router.delete('/crews/delete/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         const [[crewRow]] = await pool.execute('SELECT crew_name FROM aleco_personnel WHERE id = ?', [id]);
@@ -1539,6 +1570,14 @@ router.delete('/crews/delete/:id', async (req, res) => {
         const actorEmail = req.headers['x-user-email'] || null;
         const actorName  = req.headers['x-user-name']  || null;
         await logPersonnelAction(pool, actorEmail, actorName, 'delete_crew', crewRow?.crew_name || null);
+        if (crewRow?.crew_name) {
+          await recordPersonnelNotification(pool, {
+            eventType: PERSONNEL_EVENT.CREW_DELETED,
+            subjectName: crewRow.crew_name,
+            detail: `Crew #${id}`,
+            actorEmail: actorEmailFromReq(req),
+          });
+        }
         res.status(200).json({ success: true, message: 'Crew removed from system.' });
     } catch (error) {
         console.error("Error deleting crew:", error);
@@ -1552,7 +1591,7 @@ router.delete('/crews/delete/:id', async (req, res) => {
 // ============================================================================
 
 // GET: All Linemen
-router.get('/pool/list', async (req, res) => {
+router.get('/pool/list', requireAdmin, async (req, res) => {
     try {
         const [linemen] = await pool.execute('SELECT * FROM aleco_linemen_pool ORDER BY full_name ASC');
         res.status(200).json(linemen);
@@ -1562,7 +1601,7 @@ router.get('/pool/list', async (req, res) => {
 });
 
 // POST: Add new Lineman
-router.post('/pool/add', async (req, res) => {
+router.post('/pool/add', requireAdmin, async (req, res) => {
     const { full_name, designation, contact_no, status, leave_start, leave_end, leave_reason } = req.body;
     try {
         const formattedPhone = normalizePhoneForDB(contact_no);
@@ -1574,13 +1613,20 @@ router.post('/pool/add', async (req, res) => {
         }
 
         const finalStatus = status || 'Active';
-        await pool.execute(
+        const [insertLineman] = await pool.execute(
             `INSERT INTO aleco_linemen_pool (full_name, designation, contact_no, status, leave_start, leave_end, leave_reason) VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [full_name, designation, formattedPhone, finalStatus, leave_start || null, leave_end || null, leave_reason || null]
         );
+        const newLinemanId = insertLineman.insertId;
         const actorEmail = req.headers['x-user-email'] || null;
         const actorName  = req.headers['x-user-name']  || null;
         await logPersonnelAction(pool, actorEmail, actorName, 'add_lineman', full_name);
+        await recordPersonnelNotification(pool, {
+          eventType: PERSONNEL_EVENT.LINEMAN_CREATED,
+          subjectName: full_name,
+          detail: newLinemanId ? `Lineman #${newLinemanId}` : null,
+          actorEmail: actorEmailFromReq(req),
+        });
         res.status(201).json({ success: true, message: 'Lineman registered.' });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server error." });
@@ -1588,7 +1634,7 @@ router.post('/pool/add', async (req, res) => {
 });
 
 // PUT: Update Lineman
-router.put('/pool/update/:id', async (req, res) => {
+router.put('/pool/update/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { full_name, designation, contact_no, status, leave_start, leave_end, leave_reason } = req.body;
     try {
@@ -1615,7 +1661,7 @@ router.put('/pool/update/:id', async (req, res) => {
 });
 
 // DELETE: Remove lineman from pool (blocked if assigned to a crew or as lead)
-router.delete('/pool/delete/:id', async (req, res) => {
+router.delete('/pool/delete/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const linemanId = Number(id);
     if (!Number.isFinite(linemanId)) {
@@ -1650,6 +1696,12 @@ router.delete('/pool/delete/:id', async (req, res) => {
         const actorEmail = req.headers['x-user-email'] || null;
         const actorName  = req.headers['x-user-name']  || null;
         await logPersonnelAction(pool, actorEmail, actorName, 'delete_lineman', linemanRow?.full_name || null);
+        await recordPersonnelNotification(pool, {
+          eventType: PERSONNEL_EVENT.LINEMAN_DELETED,
+          subjectName: linemanRow?.full_name || null,
+          detail: `Lineman #${linemanId}`,
+          actorEmail: actorEmailFromReq(req),
+        });
         res.status(200).json({ success: true, message: 'Lineman removed from pool.' });
     } catch (error) {
         console.error('Error deleting lineman from pool:', error);

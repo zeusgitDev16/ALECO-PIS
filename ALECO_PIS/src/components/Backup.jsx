@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
+import { authFetch } from '../utils/authFetch';
 import AdminLayout from './AdminLayout';
 import ConfirmModal from './tickets/ConfirmModal';
 import ExportPreviewModal from './backup/ExportPreviewModal';
@@ -194,7 +195,7 @@ const AdminBackup = () => {
             const params = getExportParams();
             const qs = new URLSearchParams(params).toString();
             const basePath = getExportPreviewBasePath();
-            const res = await fetch(apiUrl(`${basePath}?${qs}`));
+            const res = await authFetch(apiUrl(`${basePath}?${qs}`));
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Preview failed');
             setPreviewData(data);
@@ -219,7 +220,7 @@ const AdminBackup = () => {
         setArchiveConfirmOpen(false);
         try {
             const body = getArchiveBody();
-            const res = await fetch(apiUrl('/api/tickets/archive'), {
+            const res = await authFetch(apiUrl('/api/tickets/archive'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -244,7 +245,7 @@ const AdminBackup = () => {
         try {
             const formData = new FormData();
             formData.append('file', importFile);
-            const res = await fetch(apiUrl('/api/tickets/import?dryRun=true'), {
+            const res = await authFetch(apiUrl('/api/tickets/import?dryRun=true'), {
                 method: 'POST',
                 body: formData
             });
@@ -268,7 +269,7 @@ const AdminBackup = () => {
         try {
             const formData = new FormData();
             formData.append('file', importFile);
-            const res = await fetch(apiUrl('/api/tickets/import'), {
+            const res = await authFetch(apiUrl('/api/tickets/import'), {
                 method: 'POST',
                 body: formData
             });

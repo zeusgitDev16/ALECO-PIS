@@ -1,7 +1,5 @@
 import React, { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { apiUrl } from './utils/api';
-import { clearLocalStoragePreservingPreferences } from './utils/clearLocalStoragePreservingPreferences';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
 import AdminLayout from './components/AdminLayout.jsx';
@@ -31,39 +29,9 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 const NavigationWrapper = () => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  
-  // 1. SESSION SECURITY CHECK
-  useEffect(() => {
-    const verifySession = async () => {
-      const email = localStorage.getItem('userEmail');
-      const currentTokenVersion = localStorage.getItem('tokenVersion');
 
-      // If no email is stored, they aren't logged in, so we skip the check
-      if (!email) return;
-
-      try {
-        const response = await fetch(apiUrl('/api/verify-session'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, tokenVersion: currentTokenVersion })
-        });
-
-        const data = await response.json();
-
-        // If the server says 'invalid', it means a "Logout from all devices" was triggered elsewhere
-        if (!response.ok || data.status === 'invalid') {
-          console.log("--- [SECURITY] Session stale. Clearing local data. ---");
-          clearLocalStoragePreservingPreferences();
-          navigate('/'); // Kick to landing page
-        }
-      } catch (error) {
-        console.error("Session verification failed:", error);
-      }
-    };
-
-    verifySession();
-  }, [location.pathname, navigate]); // Runs on every navigation change
+  // Session checks for admin routes live in ProtectedRoute (+ optional API 401 handling).
+  // Avoid verify-session on every pathname change here — it caused false logouts on navigation.
 
   const isAdminPage = location.pathname.startsWith('/admin-');
   const isPublicHome = location.pathname === '/';

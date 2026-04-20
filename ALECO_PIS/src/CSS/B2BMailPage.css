@@ -2015,22 +2015,35 @@
     max-height: calc(500px * var(--b2b-ui-scale, 1));
 }
 
-/* ─── Modal: Detail Header ───────────────────────────────────────────────────── */
-.detail-header {
+/* ─── Modal: Detail Header (scoped — TicketDetailPane.css also uses .detail-header with a blue gradient in light mode) */
+.b2b-message-detail-modal .detail-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: calc(12px * var(--b2b-ui-scale, 1));
     padding: calc(20px * var(--b2b-ui-scale, 1)) calc(24px * var(--b2b-ui-scale, 1));
+    /* Match .b2b-message-detail-modal surface (#ffffff light / #1e2736 dark) */
     background: #ffffff;
     border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    position: relative;
+    overflow: visible;
 }
 
-[data-theme='dark'] .detail-header {
+.b2b-message-detail-modal .detail-header::before {
+    display: none !important;
+    content: none !important;
+}
+
+[data-theme='light'] .b2b-message-detail-modal .detail-header {
+    background: #ffffff;
+}
+
+[data-theme='dark'] .b2b-message-detail-modal .detail-header {
     background: #1e2736;
 }
 
-.detail-header-eyebrow {
+.b2b-message-detail-modal .detail-header-eyebrow {
     font-size: calc(10px * var(--b2b-ui-scale, 1));
     font-weight: 700;
     text-transform: uppercase;
@@ -2039,7 +2052,7 @@
     margin-bottom: calc(5px * var(--b2b-ui-scale, 1));
 }
 
-.detail-header h4 {
+.b2b-message-detail-modal .detail-header h4 {
     margin: 0 0 calc(8px * var(--b2b-ui-scale, 1)) 0;
     font-size: calc(15px * var(--b2b-ui-scale, 1));
     font-weight: 700;
@@ -2048,14 +2061,14 @@
     word-break: break-word;
 }
 
-.detail-header-meta {
+.b2b-message-detail-modal .detail-header-meta {
     display: flex;
     align-items: center;
     gap: calc(10px * var(--b2b-ui-scale, 1));
     flex-wrap: wrap;
 }
 
-.detail-header-stat {
+.b2b-message-detail-modal .detail-header-stat {
     font-size: calc(11px * var(--b2b-ui-scale, 1));
     color: var(--text-secondary);
     display: flex;
@@ -2063,7 +2076,7 @@
     gap: 4px;
 }
 
-.close-detail {
+.b2b-message-detail-modal .close-detail {
     width: calc(30px * var(--b2b-ui-scale, 1));
     height: calc(30px * var(--b2b-ui-scale, 1));
     display: flex;
@@ -2079,20 +2092,20 @@
     flex-shrink: 0;
 }
 
-.close-detail:hover {
+.b2b-message-detail-modal .close-detail:hover {
     background: #fef2f2;
     border-color: #fca5a5;
     color: #dc2626;
 }
 
-[data-theme='dark'] .close-detail:hover {
+[data-theme='dark'] .b2b-message-detail-modal .close-detail:hover {
     background: rgba(239, 68, 68, 0.1);
     border-color: rgba(239, 68, 68, 0.35);
     color: #f87171;
 }
 
 /* ─── Modal: Scrollable Content ──────────────────────────────────────────────── */
-.detail-content {
+.b2b-message-detail-modal .detail-content {
     padding: calc(20px * var(--b2b-ui-scale, 1)) calc(24px * var(--b2b-ui-scale, 1));
     overflow-y: auto;
     display: flex;
@@ -2103,7 +2116,7 @@
     background: #ffffff;
 }
 
-[data-theme='dark'] .detail-content {
+[data-theme='dark'] .b2b-message-detail-modal .detail-content {
     background: #1e2736;
 }
 
@@ -2604,15 +2617,15 @@
         border-radius: calc(10px * var(--b2b-ui-scale, 1));
     }
 
-    .detail-header {
+    .b2b-message-detail-modal .detail-header {
         padding: calc(10px * var(--b2b-ui-scale, 1)) calc(12px * var(--b2b-ui-scale, 1));
     }
 
-    .detail-header h4 {
+    .b2b-message-detail-modal .detail-header h4 {
         font-size: calc(14px * var(--b2b-ui-scale, 1));
     }
 
-    .detail-content {
+    .b2b-message-detail-modal .detail-content {
         padding: calc(12px * var(--b2b-ui-scale, 1));
         gap: calc(10px * var(--b2b-ui-scale, 1));
     }
@@ -2644,11 +2657,11 @@
         font-size: calc(8px * var(--b2b-ui-scale, 1));
     }
 
-    .detail-header {
+    .b2b-message-detail-modal .detail-header {
         padding: calc(8px * var(--b2b-ui-scale, 1)) calc(10px * var(--b2b-ui-scale, 1));
     }
 
-    .detail-content {
+    .b2b-message-detail-modal .detail-content {
         padding: calc(10px * var(--b2b-ui-scale, 1));
     }
 }

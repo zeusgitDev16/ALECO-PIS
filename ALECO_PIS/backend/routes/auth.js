@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import pool from '../config/db.js';
 import { verifyGoogleIdToken } from '../utils/verifyGoogleIdToken.js';
 import { sendAppMail } from '../utils/appMail.js';
+import { recordUserNotification, USER_EVENT } from '../utils/adminNotifications.js';
+import { signAccessToken } from '../utils/sessionJwt.js';
 
 const router = express.Router();
 
@@ -51,6 +53,13 @@ router.post('/setup-account', async (req, res) => {
     // 4. UPDATE STATUS: Mark the invite as "used" (Idempotency guarantee)
     await pool.execute('UPDATE access_codes SET status = ? WHERE email = ?', ['used', cleanEmail]);
 
+    await recordUserNotification(pool, {
+      eventType: USER_EVENT.REGISTERED,
+      subjectEmail: cleanEmail,
+      subjectName: name || 'New User',
+      detail: `Role: ${userRole} · password`,
+    });
+
     console.log(`--- [REGISTRATION] Standard user ${cleanEmail} created as ${userRole} ---`);
     res.status(200).json({ message: "Account setup successful! You can now log in." });
     
@@ -96,9 +105,17 @@ router.post('/login', async (req, res) => {
 
     console.log(`--- Success! ${cleanEmail} has logged in. ---`);
     
-    // 3. SECURE RESPONSE: Send tokenVersion and user info
+    // 3. SECURE RESPONSE: JWT + tokenVersion (SPA sends Bearer token on API calls)
+    let accessToken;
+    try {
+      accessToken = signAccessToken(user.email, user.token_version);
+    } catch (e) {
+      console.error('[login] signAccessToken:', e.message);
+      return res.status(500).json({ error: 'Login failed (session signing).' });
+    }
     return res.status(200).json({ 
       message: "Login successful!",
+      accessToken,
       user: {
         id: user.id,
         name: user.name,
@@ -162,9 +179,16 @@ router.post('/google-login', async (req, res) => {
       [google.picture || user.profile_pic, google.name || user.name, email]
     );
 
-    // 3. SECURE RESPONSE: Include token_version for App.jsx security handshake
+    let accessToken;
+    try {
+      accessToken = signAccessToken(user.email, user.token_version);
+    } catch (e) {
+      console.error('[google-login] signAccessToken:', e.message);
+      return res.status(500).json({ error: 'Login failed (session signing).' });
+    }
     return res.status(200).json({
       message: "Google Login successful!",
+      accessToken,
       user: { 
         id: user.id,
         name: google.name || user.name,
@@ -230,6 +254,13 @@ router.post('/setup-google-account', async (req, res) => {
 
     // 3. UPDATE STATUS: Mark the invitation as "used"
     await pool.execute('UPDATE access_codes SET status = ? WHERE email = ?', ['used', cleanEmail]);
+
+    await recordUserNotification(pool, {
+      eventType: USER_EVENT.REGISTERED,
+      subjectEmail: cleanEmail,
+      subjectName: google.name || 'Google User',
+      detail: `Role: ${userRole} · Google`,
+    });
 
     console.log(`--- [NEW USER] ${cleanEmail} linked Google as ${userRole} (Invite used) ---`);
     res.status(200).json({ message: "Google account linked successfully!" });

@@ -62,6 +62,15 @@ const AdminDashboard = () => {
 
                 {/* Analytics Section */}
                 <div className="analytics-container">
+                    <div className="dashboard-ticket-features-wrapper">
+                        {/* Optional Section Label for better UX */}
+                        <div className="section-label-group">
+                            <h3 className="column-section-title" style={{ marginTop: 0, marginBottom: '8px' }}>
+                                Ticket Overview & Analytics
+                            </h3>
+                            <p className="widget-text" style={{ fontSize: '0.85rem', marginBottom: '10px' }}>Real-time performance metrics and distribution.</p>
+                        </div>
+
                     {/* 1. Top Summary Cards */}
                     <div className="stats-grid">
                         <div className="stat-card total">
@@ -231,6 +240,7 @@ const AdminDashboard = () => {
                                 ))}
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
 

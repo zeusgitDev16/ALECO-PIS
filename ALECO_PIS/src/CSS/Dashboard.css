@@ -127,12 +127,12 @@ body.admin-app-scroll-lock {
 
 /* --- HEADER SECTION --- */
 .dashboard-header {
-    margin-bottom: 12px;
+    margin-bottom: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start; /* Forces alignment to the left */
     text-align: left;
-    padding-top: 5px;
+    padding-top: 2px;
 }
 
 .header-title {
@@ -147,7 +147,7 @@ body.admin-app-scroll-lock {
 
 .header-subtitle {
     color: var(--text-secondary) !important;
-    margin-top: 6px;
+    margin-top: 2px;
     font-size: var(--fs-sm);
     font-weight: 700;
     opacity: 0.75;
@@ -170,27 +170,83 @@ body.admin-app-scroll-lock {
 }
 
 .analytics-container {
+    margin-bottom: 32px;
+}
+
+.dashboard-ticket-features-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 32px;
+    gap: 8px; /* Further reduced gap to bring charts higher into view */
+    width: 100%;
+    padding: 10px 18px 0; /* Erased bottom padding to eliminate unnecessary spacing at the base */
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+
+    /* Enable internal scrolling for the features box */
+    max-height: 75vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable; /* Maintains layout stability */
+}
+
+/* Custom Scrollbar for the Ticket Features Wrapper */
+.dashboard-ticket-features-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 16px 0; /* Keeps thumb away from rounded container edges */
+}
+
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+    border: 2px solid var(--bg-card); /* Creates a 'floating' thumb effect */
+}
+
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* Refine internal "bricks" when nested inside the visible parent box */
+.dashboard-ticket-features-wrapper .stat-card,
+.dashboard-ticket-features-wrapper .chart-card {
+    background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
+    box-shadow: none; /* Flattens internal cards to emphasize the parent section */
+    border: 1px solid var(--border-color);
+}
+
+/* Tighten spacing for labels inside the features box */
+.section-label-group h3 {
+    margin: 0 !important;
+    font-size: 1.1rem;
+}
+
+.section-label-group p {
+    margin: 0 0 2px 0 !important;
+    font-size: 0.75rem;
 }
 
 /* Summary Cards Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 4px;
 }
 
 .stat-card {
     background: var(--bg-card);
-    padding: 10px 14px;
+    padding: 5px 8px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease;
 }
@@ -227,7 +283,7 @@ body.admin-app-scroll-lock {
 .charts-grid-main, .charts-grid-secondary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 12px;
+    gap: 4px;
 }
 
 @media (max-width: 900px) {
@@ -242,11 +298,26 @@ body.admin-app-scroll-lock {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
+/* Specifically expand the bottom of the main chart boxes to better utilize vertical space */
+.charts-grid-main .chart-card {
+    padding-bottom: 0 !important; /* Erased internal bottom spacing to make the box fit the chart perfectly */
+}
+
+/* Force the main charts to a larger height to fill the container boxes perfectly */
+.charts-grid-main .chart-wrapper .recharts-responsive-container {
+    height: 220px !important;
+}
+
+/* Target the internal legend wrapper to remove unnecessary spacing from JSX inline styles */
+.charts-grid-main .recharts-legend-wrapper {
+    padding-top: 0 !important;
+}
+
 .chart-header-group {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 4px;
+    margin-bottom: 10px; /* Increased gap so charts aren't too close to the header */
 }
 
 .chart-header-group h4 {

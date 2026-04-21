@@ -47,7 +47,6 @@
 html.admin-app-scroll-lock {
   height: 100%;
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 body.admin-app-scroll-lock {
@@ -55,7 +54,6 @@ body.admin-app-scroll-lock {
   max-height: 100%;
   min-height: 0;
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 /* Fills viewport under scroll lock; Albay strip + dual pane share this height */
@@ -81,48 +79,57 @@ body.admin-app-scroll-lock {
 
 .admin-dashboard-container {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 1 0; /* Strictly locks height to viewport to prevent content bleed */
   flex-direction: row;
   width: 100%;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .admin-main-wrapper {
-  flex: 1 1 auto;
+  flex: 1 1 0; /* Strictly locks height to viewport */
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
 .admin-content {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 0;
+  display: block;
+  min-height: 0; /* Critical flexbox constraint to enable internal scrolling */
+  height: 100%; /* Anchor height for calculating the full scroll range */
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 /* Custom Scrollbar for Admin Content */
 .admin-content::-webkit-scrollbar {
-  width: 8px;
+  width: 12px; /* Balanced width for easier grabbing and visibility */
 }
 
 .admin-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.admin-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.02); /* Subtle track to help orient the user */
   border-radius: 10px;
 }
 
+.admin-content::-webkit-scrollbar-thumb {
+  /* High-contrast gray handle that works in all themes */
+  background: rgba(128, 128, 128, 0.6); 
+  border-radius: 20px;
+  min-height: 200px; /* Substantially long handle for maximum reach control across the dashboard */
+  border: 3px solid transparent; /* Creates a visual gutter for a modern 'floating' handle look */
+  background-clip: padding-box;
+}
+
 .admin-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(128, 128, 128, 0.6);
 }
 
 /* --- HEADER SECTION --- */
@@ -188,7 +195,7 @@ body.admin-app-scroll-lock {
 /* Scrolling Fix: Ensure the dashboard page has enough bottom clearance 
    to fully reveal the last features when scrolling. */
 .dashboard-page-container {
-    padding-bottom: 500px !important; /* Increased significantly to ensure the Ticket Overview brick can be scrolled fully into view */
+    padding-bottom: 40vh !important; /* Balanced buffer to ensure the analytics section can be centered when scrolling */
 }
 
 /* Remove nested scrollbar conflict: Allow the incident tracking card 
@@ -200,10 +207,10 @@ body.admin-app-scroll-lock {
 }
 
 .analytics-container {
-    margin-bottom: 32px;
+    margin-bottom: 40px; /* Balanced bottom margin for the unified features group */
     display: flex;
     flex-direction: column;
-    gap: 24px; /* Added gap to clearly separate the Power Advisory and Ticket Analytics bricks */
+    gap: 16px; /* Tightened gap for a more unified dashboard appearance */
 }
 
 /* Refine labels inside the Power Advisories container */
@@ -228,19 +235,21 @@ body.admin-app-scroll-lock {
 .dashboard-ticket-features-wrapper {
     display: flex;
     flex-direction: column;
+    min-height: 0; /* Flex constraint to ensure the box respects the max-height limit */
     gap: 8px; /* Further reduced gap to bring charts higher into view */
     width: 100%;
-    padding: 16px 18px 8px; /* Further tightened bottom padding */
+    padding: 20px 20px 32px; /* Adjusted bottom padding for cleaner framing of internal charts */
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 24px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
     box-sizing: border-box;
-    margin-bottom: 16px;
-    max-height: 75vh; /* Restore bounded height for distinct section scrolling */
-    overflow-y: auto;
+    margin-bottom: 0; /* Erased redundant margin to tighten center spacing between features */
+    max-height: 70vh; /* Slightly reduced height so the next section appears sooner during scrolling */
+    overflow-y: auto; /* Re-enable internal scrolling as requested */
     overflow-x: hidden;
-    scrollbar-gutter: stable;
+    scrollbar-gutter: stable; /* Prevents layout shifts when scrollbars appear */
+    scroll-margin-top: 24px; /* Space above section when jumping via navigation */
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -250,29 +259,26 @@ body.admin-app-scroll-lock {
     margin-bottom: 8px !important; /* Minimal margin to eliminate trailing empty space */
 }
 
-/* Custom Scrollbar for the Features Wrappers - Restored visibility */
+/* Custom Scrollbar for the Features Wrappers - Restoring high-visibility handles */
 .dashboard-power-advisories-wrapper::-webkit-scrollbar,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar {
-    width: 8px;
+    width: 12px; /* Wider internal scrollbars for better accessibility and grabbing */
     display: block;
 }
 
 .dashboard-power-advisories-wrapper::-webkit-scrollbar-track,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar-track {
     background: transparent;
-    margin: 16px 0; /* Keeps thumb away from rounded corners */
+    margin: 12px 0;
 }
 
 .dashboard-power-advisories-wrapper::-webkit-scrollbar-thumb,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb {
-    background: var(--border-color);
+    background: rgba(128, 128, 128, 0.6); /* High-contrast handle for clear visibility */
     border-radius: 10px;
-    border: 2px solid var(--bg-card); /* Creates floating effect */
-}
-
-.dashboard-power-advisories-wrapper::-webkit-scrollbar-thumb:hover,
-.dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
+    min-height: 120px; /* Substantially long handle for better reach within analytics cards */
+    border: 3px solid transparent;
+    background-clip: padding-box;
 }
 
 .placeholder-desc {

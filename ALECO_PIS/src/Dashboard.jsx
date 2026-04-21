@@ -72,13 +72,28 @@ const AdminDashboard = () => {
 
     // Dynamic calculations for Power Advisories features
     const interruptionStats = useMemo(() => {
-        const active = interruptions.filter(i => i.status === 'Ongoing').length;
-        const upcoming = interruptions.filter(i => i.status === 'Pending').length;
-        const total = interruptions.length;
+        // Use real data if available, otherwise use placeholders for testing charts/analytics
+        const hasData = interruptions.length > 0;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+        const sourceData = hasData ? interruptions : [
+            { id: 1, status: 'Ongoing', type: 'Unscheduled', feeder: 'BITANO-1', date_time_start: `${todayStr} 08:30`, cause_category: 'Vegetation', affected_areas: '["Rawis", "Bitano"]' },
+            { id: 2, status: 'Ongoing', type: 'Unscheduled', feeder: 'RAWIS-2', date_time_start: `${todayStr} 09:15`, cause_category: 'Equipment Failure', affected_areas: '["Lapu-Lapu"]' },
+            { id: 3, status: 'Pending', type: 'Scheduled', feeder: 'POLANGUI-4', date_time_start: `${todayStr} 13:00`, cause_category: 'Maintenance', affected_areas: '["Ubaliw", "Alnay"]' },
+            { id: 4, status: 'Restored', type: 'Scheduled', feeder: 'TABACO-1', date_time_start: yesterdayStr, date_time_restored: todayStr, cause_category: 'Maintenance', affected_areas: '["San Roque"]' },
+            { id: 5, status: 'Restored', type: 'Unscheduled', feeder: 'LEGAZPI-3', date_time_start: todayStr, date_time_restored: todayStr, cause_category: 'External Factors', affected_areas: '["Albay District"]' }
+        ];
+
+        // Active: Current unscheduled interruptions
+        const active = sourceData.filter(i => i.status === 'Ongoing' && i.type === 'Unscheduled').length;
+        // Upcoming: Scheduled maintenance events
+        const upcoming = sourceData.filter(i => i.status === 'Pending' && i.type === 'Scheduled').length;
+        const total = hasData ? interruptions.length : 52;
         
-        const restored24h = interruptions.filter(i => {
+        const restored24h = sourceData.filter(i => {
             if (i.status !== 'Restored' || !i.date_time_restored) return false;
-            const restoredDate = new Date(i.date_time_restored);
+            const restoredDate = new Date(i.date_time_restored.replace(' ', 'T'));
             const now = new Date();
             return (now - restoredDate) < (24 * 60 * 60 * 1000);
         }).length;
@@ -101,7 +116,7 @@ const AdminDashboard = () => {
             trendMap[dateStr] = { name: daysShort[d.getDay()], count: 0 };
         }
 
-        interruptions.forEach(i => {
+        sourceData.forEach(i => {
             // 1. Feeder Health Logic
             if (i.feeder) {
                 if (!feederMap[i.feeder] || i.status === 'Ongoing') {
@@ -147,7 +162,7 @@ const AdminDashboard = () => {
             .sort((a,b) => (b.status === 'Critical') - (a.status === 'Critical'))
             .slice(0, 4);
 
-        const totalItems = Math.max(1, interruptions.length);
+        const totalItems = Math.max(1, sourceData.length);
         const topAreas = Object.entries(areaMap)
             .sort((a,b) => b[1] - a[1])
             .slice(0, 4)
@@ -171,6 +186,14 @@ const AdminDashboard = () => {
 
     // Dynamic calculations for Support Tickets analytics
     const ticketStats = useMemo(() => {
+        const hasData = tickets.length > 0;
+        const sourceData = hasData ? tickets : [
+            { id: 1, status: 'Pending', category: 'Primary Line No Power', municipality: 'Legazpi', is_urgent: 1, created_at: new Date().toISOString() },
+            { id: 2, status: 'Ongoing', category: 'Metering Issue', municipality: 'Daraga', is_urgent: 0, created_at: new Date().toISOString() },
+            { id: 3, status: 'Restored', category: 'Fallen Pole', municipality: 'Camalig', is_urgent: 0, created_at: new Date().toISOString() },
+            { id: 4, status: 'NoFaultFound', category: 'Other', municipality: 'Guinobatan', is_urgent: 0, created_at: new Date().toISOString() }
+        ];
+
         // 1. Monthly Trends (Last 6 Months)
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const trendMap = {};
@@ -182,7 +205,7 @@ const AdminDashboard = () => {
             trendMap[label] = 0;
         }
 
-        tickets.forEach(t => {
+        sourceData.forEach(t => {
             const date = new Date(t.created_at);
             const label = months[date.getMonth()];
             if (trendMap[label] !== undefined) {
@@ -194,8 +217,8 @@ const AdminDashboard = () => {
 
         // 2. Category Breakdown (Top 5)
         const catMap = {};
-        tickets.forEach(t => {
-            catMap[t.category] = (catMap[t.category] || 0) + 1;
+        sourceData.forEach(t => {
+            catMap[t.category || 'Other'] = (catMap[t.category || 'Other'] || 0) + 1;
         });
         const categoryData = Object.entries(catMap)
             .map(([name, count]) => ({ name, count }))
@@ -204,20 +227,31 @@ const AdminDashboard = () => {
 
         // 3. Top Ticket Locations
         const locMap = {};
-        tickets.forEach(t => {
+        sourceData.forEach(t => {
             const loc = t.municipality || 'Unknown';
             locMap[loc] = (locMap[loc] || 0) + 1;
         });
+        const totalTickets = Math.max(1, sourceData.length);
         const topLocations = Object.entries(locMap)
             .map(([name, count]) => ({ 
                 name, 
                 count, 
-                perc: `${Math.min(100, (count / Math.max(1, tickets.length)) * 100)}%` 
+                perc: `${Math.min(100, (count / totalTickets) * 100)}%` 
             }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 4);
 
-        return { trendData, categoryData, topLocations };
+        // Summary Counts for Cards
+        const total = hasData ? tickets.length : 124;
+        const pending = sourceData.filter(t => t.status === 'Pending').length;
+        const ongoing = sourceData.filter(t => t.status === 'Ongoing').length;
+        const resolved = sourceData.filter(t => ['Restored', 'Resolved'].includes(t.status)).length;
+        const unresolved = sourceData.filter(t => t.status === 'Unresolved').length;
+        const nofault = sourceData.filter(t => t.status === 'NoFaultFound').length;
+        const denied = sourceData.filter(t => t.status === 'AccessDenied').length;
+        const urgent = sourceData.filter(t => t.is_urgent === 1).length;
+
+        return { total, pending, ongoing, resolved, unresolved, nofault, denied, urgent, trendData, categoryData, topLocations };
     }, [tickets]);
 
     return (
@@ -229,12 +263,26 @@ const AdminDashboard = () => {
                         <h2 className="header-title">{greeting}, {userName}</h2>
                         <p className="header-subtitle">{currentDate}</p>
                     </div>
+                    <div className="dashboard-nav-actions">
+                        <button 
+                            className="dash-nav-btn"
+                            onClick={() => document.getElementById('power-grid-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            <FaBolt /> Advisories
+                        </button>
+                        <button 
+                            className="dash-nav-btn"
+                            onClick={() => document.getElementById('ticket-overview-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            <FaChartPie /> Analytics
+                        </button>
+                    </div>
                 </div>
 
                 {/* Analytics Section */}
                 <div className="analytics-container">
                     {/* 1. Power Advisories Container (Interruptions) */}
-                    <div className="dashboard-power-advisories-wrapper">
+                    <div id="power-grid-section" className="dashboard-power-advisories-wrapper">
                         <div className="section-label-group">
                             <h3 className="column-section-title">Power Advisories & Status</h3>
                             <p className="widget-text">Real-time monitoring of power distribution and service advisories.</p>
@@ -369,7 +417,7 @@ const AdminDashboard = () => {
                         )}
                     </div>
 
-                    <div className="dashboard-ticket-features-wrapper">
+                    <div id="ticket-overview-section" className="dashboard-ticket-features-wrapper">
                         {/* Optional Section Label for better UX */}
                         <div className="section-label-group">
                             <h3 className="column-section-title">
@@ -384,7 +432,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-box"><FaTicketAlt /></div>
                             <div className="stat-content">
                                 <span className="stat-label">Total Tickets</span>
-                                <h3 className="stat-number">{tickets.length}</h3>
+                                <h3 className="stat-number">{ticketStats.total}</h3>
                                 <span className="stat-trend positive">+5% from yesterday</span>
                             </div>
                         </div>
@@ -392,7 +440,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-box"><FaClock /></div>
                             <div className="stat-content">
                                 <span className="stat-label">Pending</span>
-                                <h3 className="stat-number">{tickets.filter(t => t.status === 'Pending').length}</h3>
+                                <h3 className="stat-number">{ticketStats.pending}</h3>
                                 <span className="stat-trend negative">Action required</span>
                             </div>
                         </div>
@@ -400,7 +448,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-box"><FaTools /></div>
                             <div className="stat-content">
                                 <span className="stat-label">Ongoing</span>
-                                <h3 className="stat-number">{tickets.filter(t => t.status === 'Ongoing').length}</h3>
+                                <h3 className="stat-number">{ticketStats.ongoing}</h3>
                                 <span className="stat-trend">Crews on field</span>
                             </div>
                         </div>
@@ -408,7 +456,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-box"><FaCheckCircle /></div>
                             <div className="stat-content">
                                 <span className="stat-label">Resolved</span>
-                                <h3 className="stat-number">{tickets.filter(t => ['Restored', 'Resolved'].includes(t.status)).length}</h3>
+                                <h3 className="stat-number">{ticketStats.resolved}</h3>
                                 <span className="stat-trend positive">92% success rate</span>
                             </div>
                         </div>
@@ -416,7 +464,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-box"><FaExclamationCircle /></div>
                             <div className="stat-content">
                                 <span className="stat-label">Unresolved</span>
-                                <h3 className="stat-number">{tickets.filter(t => t.status === 'Unresolved').length}</h3>
+                                <h3 className="stat-number">{ticketStats.unresolved}</h3>
                                 <span className="stat-trend negative">Needs review</span>
                             </div>
                         </div>
@@ -424,7 +472,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-box"><FaSearch /></div>
                             <div className="stat-content">
                                 <span className="stat-label">No Fault Found</span>
-                                <h3 className="stat-number">{tickets.filter(t => t.status === 'NoFaultFound').length}</h3>
+                                <h3 className="stat-number">{ticketStats.nofault}</h3>
                                 <span className="stat-trend">Verified issue</span>
                             </div>
                         </div>
@@ -432,7 +480,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-box"><FaLock /></div>
                             <div className="stat-content">
                                 <span className="stat-label">Access Denied</span>
-                                <h3 className="stat-number">{tickets.filter(t => t.status === 'AccessDenied').length}</h3>
+                                <h3 className="stat-number">{ticketStats.denied}</h3>
                                 <span className="stat-trend negative">Restricted area</span>
                             </div>
                         </div>
@@ -440,7 +488,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-box"><FaExclamationTriangle /></div>
                             <div className="stat-content">
                                 <span className="stat-label">Urgent</span>
-                                <h3 className="stat-number">{tickets.filter(t => t.is_urgent === 1).length}</h3>
+                                <h3 className="stat-number">{ticketStats.urgent}</h3>
                                 <span className="stat-trend negative">High priority</span>
                             </div>
                         </div>
@@ -458,9 +506,9 @@ const AdminDashboard = () => {
                                     <PieChart>
                                         <Pie
                                             data={[
-                                                { name: 'Pending', value: tickets.filter(t => t.status === 'Pending').length },
-                                                { name: 'Ongoing', value: tickets.filter(t => t.status === 'Ongoing').length },
-                                                { name: 'Resolved', value: tickets.filter(t => ['Restored', 'Resolved'].includes(t.status)).length }
+                                                { name: 'Pending', value: ticketStats.pending },
+                                                { name: 'Ongoing', value: ticketStats.ongoing },
+                                                { name: 'Resolved', value: ticketStats.resolved }
                                             ]}
                                             cx="50%"
                                             cy="50%"

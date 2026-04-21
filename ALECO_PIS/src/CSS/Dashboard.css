@@ -129,8 +129,9 @@ body.admin-app-scroll-lock {
 .dashboard-header {
     margin-bottom: 0;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* Forces alignment to the left */
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     text-align: left;
     padding-top: 2px;
 }
@@ -151,6 +152,35 @@ body.admin-app-scroll-lock {
     font-size: var(--fs-sm);
     font-weight: 700;
     opacity: 0.75;
+}
+
+/* --- QUICK NAVIGATION BUTTONS --- */
+.dashboard-nav-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.dash-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dash-nav-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: translateY(-2px);
 }
 
 /* --- WIDGETS / CONTENT --- */
@@ -260,6 +290,43 @@ body.admin-app-scroll-lock {
     background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
     box-shadow: none; /* Flattens internal cards to emphasize the parent section */
     border: 1px solid var(--border-color); 
+}
+
+/* --- POWER GRID STATUS ENHANCEMENTS --- */
+@keyframes active-outage-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.dashboard-power-advisories-wrapper .stat-card {
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Active Outages - Dangerous/Alert state */
+.dashboard-power-advisories-wrapper .stat-card.urgent { 
+    border-bottom-color: #ef4444; 
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%);
+    animation: active-outage-pulse 2s infinite;
+}
+
+/* Upcoming - Warning/Scheduled state */
+.dashboard-power-advisories-wrapper .stat-card.pending { 
+    border-bottom-color: #f59e0b;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(245, 158, 11, 0.05) 100%);
+}
+
+/* Restored - Success/Healthy state */
+.dashboard-power-advisories-wrapper .stat-card.resolved { 
+    border-bottom-color: #22c55e;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.05) 100%);
+}
+
+/* Total Recorded - Informational state */
+.dashboard-power-advisories-wrapper .stat-card.total { 
+    border-bottom-color: #2563eb;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(37, 99, 235, 0.05) 100%);
 }
 
 /* Tighten spacing for labels inside the features box */
@@ -372,6 +439,11 @@ body.admin-app-scroll-lock {
 }
 
 @media (max-width: 900px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
     .charts-grid-main, .charts-grid-secondary { grid-template-columns: 1fr; }
 }
 

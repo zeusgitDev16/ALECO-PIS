@@ -90,23 +90,11 @@ export default function InterruptionAdvisoryForm({
   advisoryArchived = false,
   validationErrors = [],
 }) {
-  const initialLifecyclePreview = useMemo(
-    () => computeInitialStatusPreview(form.type, form.dateTimeStart),
-    [form.type, form.dateTimeStart]
-  );
-
   const unscheduledFutureStart = useMemo(() => {
     if (form.type !== 'Unscheduled') return false;
     const d = datetimeLocalStringToDate(form.dateTimeStart);
     return Boolean(d && d.getTime() > Date.now());
   }, [form.type, form.dateTimeStart]);
-
-  const lifecycleSteps = useMemo(() => {
-    if (form.type === 'Unscheduled') return ['Ongoing', 'Restored'];
-    return ['Pending', 'Ongoing', 'Restored'];
-  }, [form.type]);
-
-  const currentLifecycleStep = editingId ? form.status : initialLifecyclePreview.apiStatus;
 
   const [quickFieldsOpen, setQuickFieldsOpen] = useState(true);
   const [legacyFieldsOpen, setLegacyFieldsOpen] = useState(true);
@@ -346,28 +334,6 @@ export default function InterruptionAdvisoryForm({
                 </button>
               </div>
             </div>
-            <div className="interruptions-admin-span2">
-                <div className="interruptions-admin-lifecycle-preview-title">Lifecycle preview</div>
-                <div className="interruptions-admin-lifecycle-stepper" role="status" aria-live="polite">
-                  {lifecycleSteps.map((step, i) => (
-                    <React.Fragment key={step}>
-                      <div
-                        className={`interruptions-admin-stepper-step${currentLifecycleStep === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
-                      >
-                        <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
-                        <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
-                      </div>
-                      {i < lifecycleSteps.length - 1 && (
-                        <span className="interruptions-admin-stepper-connector" aria-hidden="true" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-                {editingId && (
-                  <p className="interruptions-admin-field-hint">Use the <strong>Update Advisory</strong> action to change lifecycle status.</p>
-                )}
-              </div>
-          </div>
             {unscheduledFutureStart && (
               <div
                 className="interruptions-admin-callout interruptions-admin-callout--warn"

@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/contact-numbers', async (req, res) => {
     try {
         const [rows] = await pool.execute(
-            `SELECT type, label, phone_number, description 
+            `SELECT category, label, phone_number, description 
              FROM aleco_contact_numbers 
              WHERE is_active = 1 
              ORDER BY display_order ASC, id ASC`

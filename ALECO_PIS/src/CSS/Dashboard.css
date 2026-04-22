@@ -196,7 +196,7 @@ body.admin-app-scroll-lock {
 /* Scrolling Fix: Ensure the dashboard page has enough bottom clearance 
    to fully reveal the last features when scrolling. */
 .dashboard-page-container {
-    padding-bottom: 80vh !important; /* Significantly increased buffer to ensure the Tickets section is fully reachable via the main scrollbar */
+    padding-bottom: 40vh !important; /* Balanced buffer ensures the B2B section is reachable without excessive blank scrolling */
 }
 
 /* Remove nested scrollbar conflict: Allow the incident tracking card 
@@ -214,7 +214,7 @@ body.admin-app-scroll-lock {
     gap: 16px; /* Tightened gap for a more unified dashboard appearance */
 }
 
-/* Invisible parent container for both Power Advisories and Ticket Features 
+/* Invisible parent container for Power Advisories, Ticket Features, and B2B Mail 
    to ensure consistent flow and prevent the sections from squashing each other. */
 .dashboard-features-invisible-parent {
     display: flex;
@@ -252,9 +252,10 @@ body.admin-app-scroll-lock {
     font-size: 0.85rem;
 }
 
-/* Unified parent containers for Dashboard Features (Power Advisories & Tickets) */
+/* Unified parent containers for Dashboard Features (Power Advisories and Tickets) */
 .dashboard-power-advisories-wrapper,
-.dashboard-ticket-features-wrapper {
+.dashboard-ticket-features-wrapper,
+.dashboard-b2b-mail-wrapper {
     display: flex;
     flex-direction: column;
     gap: 8px; /* Further reduced gap to bring charts higher into view */
@@ -298,7 +299,8 @@ body.admin-app-scroll-lock {
 
 /* Ensure the last content piece has breathing room so it is fully reachable via scroll */
 .dashboard-power-advisories-wrapper > *:last-child,
-.dashboard-ticket-features-wrapper > *:last-child {
+.dashboard-ticket-features-wrapper > *:last-child,
+.dashboard-b2b-mail-wrapper > *:last-child {
     margin-bottom: 8px !important; /* Minimal margin to eliminate trailing empty space */
 }
 
@@ -313,7 +315,9 @@ body.admin-app-scroll-lock {
 .dashboard-power-advisories-wrapper .stat-card,
 .dashboard-power-advisories-wrapper .chart-card,
 .dashboard-ticket-features-wrapper .stat-card,
-.dashboard-ticket-features-wrapper .chart-card {
+.dashboard-ticket-features-wrapper .chart-card,
+.dashboard-b2b-mail-wrapper .stat-card,
+.dashboard-b2b-mail-wrapper .chart-card {
     background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
     box-shadow: none; /* Flattens internal cards to emphasize the parent section */
     border: 1px solid var(--border-color); 
@@ -358,13 +362,15 @@ body.admin-app-scroll-lock {
 
 /* Tighten spacing for labels inside the features box */
 .dashboard-power-advisories-wrapper .section-label-group h3,
-.dashboard-ticket-features-wrapper .section-label-group h3 {
+.dashboard-ticket-features-wrapper .section-label-group h3,
+.dashboard-b2b-mail-wrapper .section-label-group h3 {
     margin: 0 !important;
     font-size: 1.1rem;
 }
 
 .dashboard-power-advisories-wrapper .section-label-group p,
-.dashboard-ticket-features-wrapper .section-label-group p {
+.dashboard-ticket-features-wrapper .section-label-group p,
+.dashboard-b2b-mail-wrapper .section-label-group p {
     margin: 0 0 10px 0 !important;
     font-size: 0.85rem;
 }
@@ -389,6 +395,109 @@ body.admin-app-scroll-lock {
 @keyframes analytics-fade-pulse {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 1; }
+}
+
+/* ==========================================================================
+   B2B MAIL DASHBOARD SECTION - DEDICATED STANDALONE BOX
+   ========================================================================== */
+.dashboard-b2b-mail-wrapper {
+    /* SIZE PARITY: Ensures it occupies a "big" vertical presence like other boxes */
+    min-height: 700px; /* Noticeably larger vertical presence */
+    max-height: 85vh; /* Expanded height ceiling for a 'big' container feel */
+
+    /* VISIBILITY: Advanced Glassmorphism to ensure background is visible through it */
+    background: var(--bg-glass, rgba(255, 255, 255, 0.25)) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    
+    border-left: 8px solid #3b82f6; /* Heavy blue accent for mail */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dashboard-b2b-mail-wrapper:hover {
+    box-shadow: 0 15px 50px rgba(59, 130, 246, 0.1);
+}
+
+/* --- B2B MAIL DASHBOARD FEATURE COMPONENTS --- */
+
+/* Container for internal B2B analytics components */
+.b2b-analytics-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* Specialized row for delivery success/failure trends */
+.b2b-delivery-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    width: 100%;
+}
+
+/* Recent mail activity list with specialized hover states */
+.b2b-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.b2b-activity-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--bg-body, rgba(128, 128, 128, 0.03));
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    transition: all 0.2s ease;
+}
+
+.b2b-activity-item:hover {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateX(4px);
+}
+
+.b2b-activity-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.b2b-activity-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-header);
+}
+
+.b2b-activity-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.b2b-status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.dashboard-b2b-mail-wrapper .stat-card,
+.dashboard-b2b-mail-wrapper .chart-card {
+    background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+    border-bottom: 3px solid #3b82f6;
+}
+
+.dashboard-b2b-mail-wrapper .stat-card {
+    border-bottom: 3px solid #3b82f6; /* Mail-themed status indicator */
 }
 
 /* Dynamic Feeder Status styles */

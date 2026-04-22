@@ -2,12 +2,14 @@ import React from 'react';
 import InterruptionFeedPostHeader from './InterruptionFeedPostHeader';
 import InterruptionFeedPostBody from './InterruptionFeedPostBody';
 import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
  * Facebook-style feed post card: header + body + infographic.
- * @param {{ item: object, now?: number, onExpand: function, isExpandedView?: boolean }} props - API DTO, now for countdown refresh only
+ * @param {{ item: object, now: number, onExpand?: function, isExpandedView?: boolean }} props - API DTO; `now` from useNow for countdown
  */
-export default function InterruptionFeedPost({ item, now = Date.now(), onExpand, isExpandedView = false }) {
+export default function InterruptionFeedPost({ item, now, onExpand, isExpandedView = false }) {
+  const safePosterUrl = item.posterImageUrl ? getSafeResourceUrl(item.posterImageUrl) : null;
   return (
     <article className="interruption-feed-post">
       {/* The Expand Button Trigger for actual advisory posts */}
@@ -26,6 +28,19 @@ export default function InterruptionFeedPost({ item, now = Date.now(), onExpand,
       )}
       <InterruptionFeedPostHeader item={item} /> {/* onExpand is handled by the button above, not necessarily needed in header now */}
       <InterruptionFeedPostBody item={item} />
+      {safePosterUrl && (
+        <div className="feed-post-poster-thumb">
+          <a
+            href={safePosterUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="feed-post-poster-link"
+            title="Open poster image"
+          >
+            <img src={safePosterUrl} alt="Advisory poster image" loading="lazy" />
+          </a>
+        </div>
+      )}
       <InterruptionAdvisoryInfographic item={item} now={now} />
     </article>
   );

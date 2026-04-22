@@ -307,3 +307,55 @@ export async function addInterruptionUpdate(id, body) {
     message: typeof json?.message === 'string' ? json.message : null,
   };
 }
+
+/**
+ * Stub: set poster_image_url (Cloudinary placeholder when configured, else stub:// or INTERRUPTION_POSTER_STUB_BASE_URL).
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ */
+export async function generateInterruptionPosterStub(id) {
+  let res;
+  try {
+    res = await authFetch(apiUrl(`/api/interruptions/${id}/poster-stub`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  } catch {
+    return { ok: false, success: false, data: null, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    data: json?.data ?? null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
+ * Puppeteer capture of /poster/interruption/:id on the deployed SPA; uploads to Cloudinary.
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ */
+export async function captureInterruptionPoster(id) {
+  let res;
+  try {
+    res = await authFetch(apiUrl(`/api/interruptions/${id}/poster-capture`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  } catch {
+    return { ok: false, success: false, data: null, message: null };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    data: json?.data ?? null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}

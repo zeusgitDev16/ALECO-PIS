@@ -103,3 +103,47 @@ async function probePulledFromFeedAtColumn(pool) {
 export function resetAlecoInterruptionsPulledFromFeedAtCache() {
   pulledFromFeedAtSupportedCache = null;
 }
+
+/** @type {boolean|null} */
+let posterExtrasSupportedCache = null;
+
+/** @type {Promise<boolean>|null} */
+let posterExtrasProbePromise = null;
+
+/**
+ * Whether `affected_areas_grouped` and `poster_image_url` exist (poster alignment migration).
+ * @param {import('mysql2/promise').Pool} pool
+ * @returns {Promise<boolean>}
+ */
+export async function getAlecoInterruptionsPosterExtrasSupported(pool) {
+  if (posterExtrasSupportedCache !== null) {
+    return posterExtrasSupportedCache;
+  }
+  if (!posterExtrasProbePromise) {
+    posterExtrasProbePromise = probePosterExtrasColumns(pool).finally(() => {
+      posterExtrasProbePromise = null;
+    });
+  }
+  return posterExtrasProbePromise;
+}
+
+async function probePosterExtrasColumns(pool) {
+  try {
+    await pool.query('SELECT affected_areas_grouped, poster_image_url FROM aleco_interruptions LIMIT 0');
+    posterExtrasSupportedCache = true;
+    return true;
+  } catch (e) {
+    if (isMissingColumnError(e, 'affected_areas_grouped') || isMissingColumnError(e, 'poster_image_url')) {
+      posterExtrasSupportedCache = false;
+      console.warn(
+        '[interruptions] Poster extras columns missing. Run: node backend/run-migration.js backend/migrations/add_affected_areas_grouped_and_poster_image_url.sql'
+      );
+      return false;
+    }
+    throw e;
+  }
+}
+
+export function resetAlecoInterruptionsPosterExtrasCache() {
+  posterExtrasSupportedCache = null;
+}

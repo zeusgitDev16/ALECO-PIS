@@ -28,7 +28,7 @@ function truncate(s, max) {
 }
 
 /**
- * InterruptionWorkflowView - Workflow columns by status (Upcoming, Ongoing, Energized)
+ * InterruptionWorkflowView - Workflow columns by status (Scheduled, Ongoing, Energized)
  * View-only (no drag) - Edit via button
  * @param {object} props
  * @param {boolean} props.loading
@@ -42,6 +42,7 @@ function truncate(s, max) {
  * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {(row: object) => void} [props.onUpdate] - Open Update Advisory modal
+ * @param {(id: number) => Promise<boolean>} [props.onRestoreAdvisory]
  * @param {boolean} props.saving
  */
 export default function InterruptionWorkflowView({
@@ -56,6 +57,7 @@ export default function InterruptionWorkflowView({
   onPushToFeed,
   onOpenAdvisory,
   listArchiveFilter = 'active',
+  onRestoreAdvisory,
   saving,
 }) {
   const grouped = useMemo(() => groupInterruptionsByStatus(items), [items]);
@@ -301,6 +303,15 @@ export default function InterruptionWorkflowView({
           } : undefined}
           onPullFromFeed={onPullFromFeed}
           onPushToFeed={onPushToFeed}
+          onRestore={
+            onRestoreAdvisory
+              ? async (id) => {
+                  const ok = await onRestoreAdvisory(id);
+                  if (ok) setDetailItem(null);
+                }
+              : undefined
+          }
+          listArchiveFilter={listArchiveFilter}
           saving={saving}
         />
       )}

@@ -40,6 +40,7 @@ function truncate(s, max) {
  * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {(row: object) => void} [props.onUpdate] - Open Update Advisory modal
+ * @param {(id: number) => Promise<boolean>} [props.onRestoreAdvisory]
  * @param {boolean} props.saving
  */
 export default function InterruptionCompactView({
@@ -54,6 +55,7 @@ export default function InterruptionCompactView({
   onPushToFeed,
   onOpenAdvisory,
   listArchiveFilter = 'active',
+  onRestoreAdvisory,
   saving,
 }) {
   const [detailItem, setDetailItem] = useState(null);
@@ -294,6 +296,15 @@ export default function InterruptionCompactView({
           } : undefined}
           onPullFromFeed={onPullFromFeed}
           onPushToFeed={onPushToFeed}
+          onRestore={
+            onRestoreAdvisory
+              ? async (id) => {
+                  const ok = await onRestoreAdvisory(id);
+                  if (ok) setDetailItem(null);
+                }
+              : undefined
+          }
+          listArchiveFilter={listArchiveFilter}
           saving={saving}
         />
       )}

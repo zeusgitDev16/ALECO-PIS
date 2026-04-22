@@ -8,6 +8,7 @@ import {
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
 import AdvisoryLog from './AdvisoryLog';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
+import InterruptionPosterAlignmentPreview from './InterruptionPosterAlignmentPreview';
 
 function getTypeLabel(type) {
   const opt = TYPE_FORM_OPTIONS.find((o) => o.value === type);
@@ -20,8 +21,18 @@ function getTypeLabel(type) {
  * @param {object} [props.detail] - Advisory DTO from API (editDetail)
  * @param {boolean} [props.loading]
  * @param {() => void} props.onClose
+ * @param {() => void} [props.onGeneratePosterStub]
+ * @param {() => void} [props.onCapturePoster]
+ * @param {boolean} [props.posterAssetBusy]
  */
-export default function InterruptionAdvisoryViewOnly({ detail, loading = false, onClose }) {
+export default function InterruptionAdvisoryViewOnly({
+  detail,
+  loading = false,
+  onClose,
+  onGeneratePosterStub,
+  onCapturePoster,
+  posterAssetBusy = false,
+}) {
   if (loading) {
     return (
       <div className="interruptions-admin-view-only interruptions-admin-modal-form">
@@ -56,6 +67,11 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
   const causeCatLabel = getCauseCategoryLabel(d.causeCategory);
   const hasScheduledPublic = Boolean(d.publicVisibleAt && String(d.publicVisibleAt).trim());
   const safeAdvisoryImageUrl = d.imageUrl ? getSafeResourceUrl(d.imageUrl) : null;
+  const safePosterImageUrl =
+    d.posterImageUrl && !String(d.posterImageUrl).startsWith('stub://')
+      ? getSafeResourceUrl(d.posterImageUrl)
+      : null;
+  const grouped = Array.isArray(d.affectedAreasGrouped) ? d.affectedAreasGrouped : [];
 
   return (
     <div className="interruptions-admin-view-only interruptions-admin-modal-form">
@@ -109,6 +125,27 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
                 <dt>Affected areas</dt>
                 <dd>{areasText}</dd>
               </div>
+              {grouped.length > 0 && (
+                <div>
+                  <dt>Poster sections (grouped)</dt>
+                  <dd>
+                    <ul className="interruptions-admin-view-grouped-list">
+                      {grouped.map((block, bi) => (
+                        <li key={bi}>
+                          <strong>{block.heading || '(heading)'}</strong>
+                          {Array.isArray(block.items) && block.items.length > 0 ? (
+                            <ul>
+                              {block.items.map((line, li) => (
+                                <li key={li}>{line}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt>Cause / reason</dt>
                 <dd>{causeText}</dd>
@@ -153,6 +190,56 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
             </p>
           ) : (
             <p className="interruptions-admin-view-text">Show immediately</p>
+          )}
+        </section>
+
+        <details className="interruptions-admin-view-section interruptions-admin-poster-preview-details">
+          <summary className="interruptions-admin-poster-preview-summary">Poster fields preview</summary>
+          <InterruptionPosterAlignmentPreview dto={d} />
+        </details>
+
+        <section className="interruptions-admin-view-section">
+          <h4 className="interruptions-admin-view-section-title">Poster image (read-only)</h4>
+          <p className="interruptions-admin-field-hint">
+            Stored URL for rendered poster capture (e.g. Cloudinary). Stub values are placeholders until Puppeteer runs on
+            the API host.
+          </p>
+          <dl className="interruptions-admin-view-dl">
+            <div>
+              <dt>poster_image_url</dt>
+              <dd>
+                {d.posterImageUrl ? String(d.posterImageUrl) : '—'}
+                {safePosterImageUrl && (
+                  <div className="interruptions-admin-view-image interruptions-admin-view-image--poster">
+                    <img src={safePosterImageUrl} alt="Poster preview" />
+                  </div>
+                )}
+              </dd>
+            </div>
+          </dl>
+          {(typeof onCapturePoster === 'function' || typeof onGeneratePosterStub === 'function') && (
+            <div className="interruptions-admin-poster-stub-actions">
+              {typeof onCapturePoster === 'function' && (
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--submit"
+                  onClick={() => onCapturePoster()}
+                  disabled={posterAssetBusy}
+                >
+                  {posterAssetBusy ? 'Working…' : 'Capture poster (screenshot)'}
+                </button>
+              )}
+              {typeof onGeneratePosterStub === 'function' && (
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  onClick={() => onGeneratePosterStub()}
+                  disabled={posterAssetBusy}
+                >
+                  {posterAssetBusy ? 'Working…' : 'Generate poster stub'}
+                </button>
+              )}
+            </div>
           )}
         </section>
 

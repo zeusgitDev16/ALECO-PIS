@@ -1,9 +1,10 @@
+import { Buffer } from 'node:buffer';
 import express from 'express';
 import pool from '../config/db.js';
-import { upload } from '../../cloudinaryConfig.js';
+import { upload, cloudinary } from '../../cloudinaryConfig.js';
 import {
-  parseAffectedAreas,
   serializeAffectedAreas,
+  serializeAffectedAreasGroupedForDb,
   toMysqlDateTime,
   mapRowToDto,
   computeInitialStatus,
@@ -18,33 +19,70 @@ import {
 import {
   getAlecoInterruptionsDeletedAtSupported,
   getAlecoInterruptionsPulledFromFeedAtSupported,
+  getAlecoInterruptionsPosterExtrasSupported,
 } from '../utils/interruptionsDbSupport.js';
 import { clampSqlInt } from '../utils/safeSqlInt.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 import { INTERRUPTION_TYPES, INTERRUPTION_STATUSES } from '../constants/interruptionFieldEnums.js';
 import { recordInterruptionNotification, INTERRUPTIONS_EVENT } from '../utils/adminNotifications.js';
 import { requireAdmin } from '../middleware/requireRole.js';
+import { getPublicPosterPageUrl } from '../utils/posterCaptureUrl.js';
 
 const router = express.Router();
 
-/** Columns for list + single-row fetch (without leading SELECT … FROM). */
-const INTERRUPTION_TABLE_COLS_BASE = `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
-  date_time_start, date_time_end_estimated, date_time_restored,
-  public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at`;
-const INTERRUPTION_TABLE_COLS_WITH_PULLED = `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
-  date_time_start, date_time_end_estimated, date_time_restored,
-  public_visible_at, scheduled_restore_at, scheduled_restore_remark, pulled_from_feed_at, created_at, updated_at`;
-
-function selectInterruptionRowSql(hasDeletedAt, hasPulledFromFeedAt = true) {
-  const cols = hasPulledFromFeedAt ? INTERRUPTION_TABLE_COLS_WITH_PULLED : INTERRUPTION_TABLE_COLS_BASE;
-  return hasDeletedAt
-    ? `SELECT ${cols}, deleted_at FROM aleco_interruptions`
-    : `SELECT ${cols} FROM aleco_interruptions`;
+/** Columns for list + single-row fetch (see `selectInterruptionRowSql`). */
+function buildInterruptionTableColList({ includeDeletedAt, hasPulledFromFeedAt, hasPosterExtras }) {
+  const parts = ['id', 'type', 'status', 'affected_areas'];
+  if (hasPosterExtras) parts.push('affected_areas_grouped');
+  parts.push('feeder', 'feeder_id', 'cause', 'cause_category', 'body', 'control_no', 'image_url');
+  if (hasPosterExtras) parts.push('poster_image_url');
+  parts.push(
+    'date_time_start',
+    'date_time_end_estimated',
+    'date_time_restored',
+    'public_visible_at',
+    'scheduled_restore_at',
+    'scheduled_restore_remark'
+  );
+  if (hasPulledFromFeedAt) parts.push('pulled_from_feed_at');
+  parts.push('created_at', 'updated_at');
+  if (includeDeletedAt) parts.push('deleted_at');
+  return parts.join(', ');
 }
 
-function listInterruptionCols(hasDeletedAt, hasPulledFromFeedAt) {
-  const cols = hasPulledFromFeedAt ? INTERRUPTION_TABLE_COLS_WITH_PULLED : INTERRUPTION_TABLE_COLS_BASE;
-  return hasDeletedAt ? `${cols}, deleted_at` : cols;
+/** Minimal column set for PUT conflict / load existing row (no pulled_from_feed_at / timestamps for audit). */
+function buildInterruptionUpdateLoadCols(includeDeletedAt, hasPosterExtras) {
+  const parts = ['id', 'type', 'status', 'affected_areas'];
+  if (hasPosterExtras) parts.push('affected_areas_grouped');
+  parts.push('feeder', 'feeder_id', 'cause', 'cause_category', 'body', 'control_no', 'image_url');
+  if (hasPosterExtras) parts.push('poster_image_url');
+  parts.push(
+    'date_time_start',
+    'date_time_end_estimated',
+    'date_time_restored',
+    'public_visible_at',
+    'scheduled_restore_at',
+    'scheduled_restore_remark'
+  );
+  if (includeDeletedAt) parts.push('deleted_at');
+  return parts.join(', ');
+}
+
+function selectInterruptionRowSql(hasDeletedAt, hasPulledFromFeedAt, hasPosterExtras) {
+  const cols = buildInterruptionTableColList({
+    includeDeletedAt: hasDeletedAt,
+    hasPulledFromFeedAt,
+    hasPosterExtras,
+  });
+  return `SELECT ${cols} FROM aleco_interruptions`;
+}
+
+function listInterruptionCols(hasDeletedAt, hasPulledFromFeedAt, hasPosterExtras) {
+  return buildInterruptionTableColList({
+    includeDeletedAt: hasDeletedAt,
+    hasPulledFromFeedAt,
+    hasPosterExtras,
+  });
 }
 
 const TYPES = INTERRUPTION_TYPES;
@@ -128,6 +166,12 @@ function validatePayload(body, { partial = false } = {}) {
   if (body.causeCategory !== undefined) {
     const cc = parseCauseCategoryInput(body.causeCategory);
     if (cc.error) errors.push(cc.error);
+  }
+
+  if (body.affectedAreasGrouped !== undefined && body.affectedAreasGrouped !== null) {
+    if (!Array.isArray(body.affectedAreasGrouped)) {
+      errors.push('affectedAreasGrouped must be an array when provided');
+    }
   }
 
   return errors;
@@ -240,8 +284,9 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
       );
     }
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     const visibilityWhere = buildInterruptionsListWhere(req, hasDel, hasPulled);
-    const listCols = listInterruptionCols(hasDel, hasPulled);
+    const listCols = listInterruptionCols(hasDel, hasPulled, hasPoster);
     // Use a literal LIMIT: some MySQL/MariaDB builds reject `LIMIT ?` in prepared statements (ER_WRONG_ARGUMENTS).
     // `limit` is server-clamped to 1–200 (safe to interpolate).
     const [rows] = await pool.query(
@@ -280,7 +325,8 @@ router.get('/interruptions/:id', async (req, res) => {
   try {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled)} WHERE id = ?`, [id]);
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
     const row = rows[0];
     if (!row) {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
@@ -379,34 +425,75 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
     }
 
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
-    const phNow = nowPhilippineForMysql();
-    const [result] = await pool.execute(
-      `INSERT INTO aleco_interruptions
-       (type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        type,
-        initialStatus,
-        areasText,
-        feederLabelVal,
-        feederIdVal,
-        causeVal,
-        causeCat,
-        bodyVal,
-        controlNoVal,
-        imageUrlVal,
-        start,
-        endEst,
-        restored,
-        pubVis,
-        toMysqlDateTime(req.body.scheduledRestoreAt) || null,
-        req.body.scheduledRestoreRemark != null && String(req.body.scheduledRestoreRemark).trim() ? String(req.body.scheduledRestoreRemark).trim() : null,
-        phNow,
-        phNow,
-      ]
-    );
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled)} WHERE id = ?`, [result.insertId]);
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    const phNow = nowPhilippineForMysql();
+    let insertHeader;
+    if (hasPoster) {
+      const groupedSer = serializeAffectedAreasGroupedForDb(req.body.affectedAreasGrouped ?? []);
+      const [h] = await pool.execute(
+        `INSERT INTO aleco_interruptions
+         (type, status, affected_areas, affected_areas_grouped, feeder, feeder_id, cause, cause_category, body, control_no, image_url, poster_image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          type,
+          initialStatus,
+          areasText,
+          groupedSer,
+          feederLabelVal,
+          feederIdVal,
+          causeVal,
+          causeCat,
+          bodyVal,
+          controlNoVal,
+          imageUrlVal,
+          null,
+          start,
+          endEst,
+          restored,
+          pubVis,
+          toMysqlDateTime(req.body.scheduledRestoreAt) || null,
+          req.body.scheduledRestoreRemark != null && String(req.body.scheduledRestoreRemark).trim()
+            ? String(req.body.scheduledRestoreRemark).trim()
+            : null,
+          phNow,
+          phNow,
+        ]
+      );
+      insertHeader = h;
+    } else {
+      const [h] = await pool.execute(
+        `INSERT INTO aleco_interruptions
+         (type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          type,
+          initialStatus,
+          areasText,
+          feederLabelVal,
+          feederIdVal,
+          causeVal,
+          causeCat,
+          bodyVal,
+          controlNoVal,
+          imageUrlVal,
+          start,
+          endEst,
+          restored,
+          pubVis,
+          toMysqlDateTime(req.body.scheduledRestoreAt) || null,
+          req.body.scheduledRestoreRemark != null && String(req.body.scheduledRestoreRemark).trim()
+            ? String(req.body.scheduledRestoreRemark).trim()
+            : null,
+          phNow,
+          phNow,
+        ]
+      );
+      insertHeader = h;
+    }
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [
+      insertHeader.insertId,
+    ]);
     const row = rows[0];
     const dto = row ? mapRowToDto(row) : null;
     if (!dto) {
@@ -416,7 +503,7 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
     const createdAtStr = dto.createdAt || '';
     await insertSystemUpdate(
       pool,
-      result.insertId,
+      insertHeader.insertId,
       `Advisory published by ${actor} at ${createdAtStr}`,
       { actorEmail: actorEmail ?? null, actorName: actorName ?? null }
     );
@@ -429,7 +516,7 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
           : INTERRUPTIONS_EVENT.CREATED_EMERGENCY;
     await recordInterruptionNotification(pool, {
       eventType: createEvent,
-      subjectName: String(result.insertId),
+      subjectName: String(insertHeader.insertId),
       detail: feederLabelVal || 'Advisory',
       actorEmail: actorEmail != null && String(actorEmail).trim() ? String(actorEmail).trim() : null,
     });
@@ -470,11 +557,8 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
 
   try {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
-    const loadCols = hasDel
-      ? `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
-       date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, deleted_at`
-      : `id, type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url,
-       date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark`;
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    const loadCols = buildInterruptionUpdateLoadCols(hasDel, hasPoster);
     const [fullRows] = await pool.execute(
       `SELECT ${loadCols}
        FROM aleco_interruptions WHERE id = ?`,
@@ -557,6 +641,10 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     if (affectedAreas !== undefined) {
       fields.push('affected_areas = ?');
       params.push(serializeAffectedAreas(affectedAreas));
+    }
+    if (req.body.affectedAreasGrouped !== undefined && hasPoster) {
+      fields.push('affected_areas_grouped = ?');
+      params.push(serializeAffectedAreasGroupedForDb(req.body.affectedAreasGrouped));
     }
     if (feeder !== undefined || req.body?.feederId !== undefined) {
       if (req.body?.feederId !== undefined && req.body?.feederId !== null && String(req.body.feederId).trim() !== '') {
@@ -708,7 +796,9 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     }
 
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled)} WHERE id = ?`, [id]);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [
+      id,
+    ]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     if (!dto) {
       return res.status(500).json({ success: false, message: 'Failed to load updated interruption.' });
@@ -816,7 +906,8 @@ router.patch('/interruptions/:id/restore', requireAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Interruption not found or not archived.' });
     }
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(true, hasPulled)} WHERE id = ?`, [id]);
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(true, hasPulled, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     if (!dto) {
       return res.status(500).json({ success: false, message: 'Failed to load restored interruption.' });
@@ -862,7 +953,8 @@ router.patch('/interruptions/:id/pull-from-feed', requireAdmin, async (req, res)
       'UPDATE aleco_interruptions SET pulled_from_feed_at = ?, updated_at = ? WHERE id = ?',
       [phNow, phNow, id]
     );
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true)} WHERE id = ?`, [id]);
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     res.json({ success: true, data: dto, message: 'Advisory pulled from public feed.' });
   } catch (error) {
@@ -904,12 +996,195 @@ router.patch('/interruptions/:id/push-to-feed', requireAdmin, async (req, res) =
       'UPDATE aleco_interruptions SET pulled_from_feed_at = NULL, updated_at = ? WHERE id = ?',
       [nowPhilippineForMysql(), id]
     );
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true)} WHERE id = ?`, [id]);
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     res.json({ success: true, data: dto, message: 'Advisory pushed back to public feed.' });
   } catch (error) {
     console.error('Push to feed error:', error);
     res.status(500).json({ success: false, message: 'Failed to push advisory to feed.' });
+  }
+});
+
+/**
+ * Capture the public poster page with Puppeteer, upload PNG to Cloudinary, save `poster_image_url`.
+ * Requires `PUBLIC_APP_URL` or `FRONTEND_ORIGIN` (deployed SPA) reachable from this server, and Cloudinary.
+ */
+router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  let browser;
+  try {
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    if (!hasPoster) {
+      return res.status(503).json({
+        success: false,
+        message:
+          'poster_image_url column missing. Run: node backend/run-migration.js backend/migrations/add_affected_areas_grouped_and_poster_image_url.sql',
+      });
+    }
+    const [check] = await pool.execute('SELECT id FROM aleco_interruptions WHERE id = ?', [id]);
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+
+    const posterPageUrl = getPublicPosterPageUrl(id);
+    if (!posterPageUrl) {
+      return res.status(503).json({
+        success: false,
+        message:
+          'Set PUBLIC_APP_URL or FRONTEND_ORIGIN on the API host to your deployed SPA origin so the server can open /poster/interruption/:id.',
+      });
+    }
+
+    const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
+    if (!env.CLOUDINARY_CLOUD_NAME || !cloudinary?.uploader?.upload) {
+      return res.status(503).json({
+        success: false,
+        message: 'Cloudinary must be configured (CLOUDINARY_CLOUD_NAME, etc.) to store poster screenshots.',
+      });
+    }
+
+    const puppeteerMod = await import('puppeteer');
+    const puppeteer = puppeteerMod.default || puppeteerMod;
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
+    const page = await browser.newPage();
+    const vw = Math.min(
+      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_WIDTH || '560'), 10) || 560, 320),
+      1200
+    );
+    const vh = Math.min(
+      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_HEIGHT || '900'), 10) || 900, 400),
+      2000
+    );
+    await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 2 });
+    await page.goto(posterPageUrl, { waitUntil: 'networkidle0', timeout: 90000 });
+    const buf = await page.screenshot({ type: 'png', fullPage: true });
+    const b64 = Buffer.from(buf).toString('base64');
+    const dataUri = `data:image/png;base64,${b64}`;
+    const up = await cloudinary.uploader.upload(dataUri, {
+      folder: 'aleco_posters',
+      public_id: `interruption_${id}_capture`,
+      overwrite: true,
+      resource_type: 'image',
+    });
+    const posterUrl = up?.secure_url || up?.url || null;
+    if (!posterUrl) {
+      return res.status(500).json({ success: false, message: 'Cloudinary did not return a URL.' });
+    }
+
+    const phNow = nowPhilippineForMysql();
+    await pool.execute('UPDATE aleco_interruptions SET poster_image_url = ?, updated_at = ? WHERE id = ?', [
+      posterUrl,
+      phNow,
+      id,
+    ]);
+
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
+    const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+    if (!dto) {
+      return res.status(500).json({ success: false, message: 'Failed to load interruption after capture.' });
+    }
+    return res.json({
+      success: true,
+      data: dto,
+      message: 'Poster screenshot captured and stored.',
+    });
+  } catch (err) {
+    console.error('Interruptions poster-capture error:', err);
+    return res.status(500).json({
+      success: false,
+      message:
+        typeof err?.message === 'string'
+          ? err.message
+          : 'Poster capture failed (ensure the SPA URL is reachable from the API host and try again).',
+    });
+  } finally {
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeErr) {
+        console.warn('[interruptions] poster-capture browser close:', closeErr?.message || closeErr);
+      }
+    }
+  }
+});
+
+/**
+ * Stub: set `poster_image_url` for admin testing until Puppeteer capture + real upload exists.
+ * If Cloudinary is configured, uploads a minimal placeholder image; otherwise uses `stub://` or
+ * `INTERRUPTION_POSTER_STUB_BASE_URL` + id when set.
+ */
+router.post('/interruptions/:id/poster-stub', requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  try {
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    if (!hasPoster) {
+      return res.status(503).json({
+        success: false,
+        message:
+          'poster_image_url column missing. Run: node backend/run-migration.js backend/migrations/add_affected_areas_grouped_and_poster_image_url.sql',
+      });
+    }
+    const [check] = await pool.execute('SELECT id FROM aleco_interruptions WHERE id = ?', [id]);
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+
+    const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
+    let posterUrl = null;
+    if (env.CLOUDINARY_CLOUD_NAME && cloudinary?.uploader?.upload) {
+      try {
+        const dataUri =
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+        const up = await cloudinary.uploader.upload(dataUri, {
+          folder: 'aleco_posters',
+          public_id: `interruption_${id}_stub`,
+          overwrite: true,
+        });
+        posterUrl = up?.secure_url || up?.url || null;
+      } catch (e) {
+        console.warn('[interruptions] Cloudinary poster stub upload failed:', e?.message || e);
+      }
+    }
+    if (!posterUrl) {
+      const base =
+        env.INTERRUPTION_POSTER_STUB_BASE_URL && String(env.INTERRUPTION_POSTER_STUB_BASE_URL).trim()
+          ? String(env.INTERRUPTION_POSTER_STUB_BASE_URL).replace(/\/$/, '')
+          : '';
+      posterUrl = base ? `${base}/interruption-${id}.png` : `stub://interruption-poster/${id}`;
+    }
+
+    const phNow = nowPhilippineForMysql();
+    await pool.execute('UPDATE aleco_interruptions SET poster_image_url = ?, updated_at = ? WHERE id = ?', [
+      posterUrl,
+      phNow,
+      id,
+    ]);
+
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
+    const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+    if (!dto) {
+      return res.status(500).json({ success: false, message: 'Failed to load interruption after poster stub.' });
+    }
+    res.json({
+      success: true,
+      data: dto,
+      message: 'Poster URL set (stub). Replace with real capture when Puppeteer is deployed.',
+    });
+  } catch (error) {
+    console.error('Interruptions poster-stub error:', error);
+    res.status(500).json({ success: false, message: 'Failed to set poster stub URL.' });
   }
 });
 

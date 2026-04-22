@@ -58,6 +58,26 @@
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 2l3 3-3 3'/%3E%3C/svg%3E");
 }
 
+/* Optional Cloudinary / HTTPS poster snapshot (admin capture) */
+.feed-post-poster-thumb {
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}
+
+.feed-post-poster-link {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+}
+
+.feed-post-poster-link img {
+  display: block;
+  width: 100%;
+  max-height: 100px;
+  object-fit: cover;
+}
+
 /* --- Feed Post Card --- */
 .interruption-feed-post {
   background: var(--bg-card);
@@ -535,6 +555,23 @@
   margin: 4px 0;
   overflow-wrap: break-word;
   word-break: break-word;
+}
+
+.feed-infographic-area-block {
+  margin-bottom: 10px;
+}
+
+.feed-infographic-area-block:last-child {
+  margin-bottom: 0;
+}
+
+.feed-infographic-area-heading {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main, #1e3a5f);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .feed-infographic-image {

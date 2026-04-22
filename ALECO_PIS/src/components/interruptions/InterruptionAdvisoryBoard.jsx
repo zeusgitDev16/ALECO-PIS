@@ -30,6 +30,7 @@ function useMatchMedia(query) {
  * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
  * @param {(row: object) => void} [props.onUpdate] - Open Update Advisory modal
+ * @param {(id: number) => Promise<boolean>} [props.onRestoreAdvisory]
  * @param {boolean} props.saving
  */
 export default function InterruptionAdvisoryBoard({
@@ -44,6 +45,7 @@ export default function InterruptionAdvisoryBoard({
   onPushToFeed,
   onOpenAdvisory,
   listArchiveFilter = 'active',
+  onRestoreAdvisory,
   saving,
 }) {
   const [detailItem, setDetailItem] = useState(null);
@@ -129,6 +131,18 @@ export default function InterruptionAdvisoryBoard({
             setDetailItem(null);
             onUpdate(it);
           } : undefined}
+          onPullFromFeed={onPullFromFeed}
+          onPushToFeed={onPushToFeed}
+          onRestore={
+            onRestoreAdvisory
+              ? async (id) => {
+                  const ok = await onRestoreAdvisory(id);
+                  if (ok) setDetailItem(null);
+                }
+              : undefined
+          }
+          listArchiveFilter={listArchiveFilter}
+          saving={saving}
         />
       )}
 

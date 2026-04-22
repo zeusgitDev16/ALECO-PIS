@@ -47,7 +47,6 @@
 html.admin-app-scroll-lock {
   height: 100%;
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 body.admin-app-scroll-lock {
@@ -55,7 +54,6 @@ body.admin-app-scroll-lock {
   max-height: 100%;
   min-height: 0;
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 /* Fills viewport under scroll lock; Albay strip + dual pane share this height */
@@ -81,58 +79,68 @@ body.admin-app-scroll-lock {
 
 .admin-dashboard-container {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 1 0; /* Strictly locks height to viewport to prevent content bleed */
   flex-direction: row;
   width: 100%;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .admin-main-wrapper {
-  flex: 1 1 auto;
+  flex: 1 1 0; /* Strictly locks height to viewport */
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
 .admin-content {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 0;
+  display: block;
+  min-height: 0; /* Critical flexbox constraint to enable internal scrolling */
+  height: 100%; /* Anchor height for calculating the full scroll range */
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 /* Custom Scrollbar for Admin Content */
 .admin-content::-webkit-scrollbar {
-  width: 8px;
+  width: 12px; /* Balanced width for easier grabbing and visibility */
 }
 
 .admin-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.admin-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.02); /* Subtle track to help orient the user */
   border-radius: 10px;
 }
 
+.admin-content::-webkit-scrollbar-thumb {
+  /* High-contrast gray handle that works in all themes */
+  background: rgba(128, 128, 128, 0.6); 
+  border-radius: 20px;
+  min-height: 200px; /* Substantially long handle for maximum reach control across the dashboard */
+  border: 3px solid transparent; /* Creates a visual gutter for a modern 'floating' handle look */
+  background-clip: padding-box;
+}
+
 .admin-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(128, 128, 128, 0.6);
 }
 
 /* --- HEADER SECTION --- */
 .dashboard-header {
-    margin-bottom: 12px;
+    margin-bottom: 0;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* Forces alignment to the left */
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     text-align: left;
-    padding-top: 5px;
+    padding-top: 2px;
 }
 
 .header-title {
@@ -147,10 +155,39 @@ body.admin-app-scroll-lock {
 
 .header-subtitle {
     color: var(--text-secondary) !important;
-    margin-top: 6px;
+    margin-top: 2px;
     font-size: var(--fs-sm);
     font-weight: 700;
     opacity: 0.75;
+}
+
+/* --- QUICK NAVIGATION BUTTONS --- */
+.dashboard-nav-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.dash-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dash-nav-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: translateY(-2px);
 }
 
 /* --- WIDGETS / CONTENT --- */
@@ -158,7 +195,7 @@ body.admin-app-scroll-lock {
 /* Scrolling Fix: Ensure the dashboard page has enough bottom clearance 
    to fully reveal the last features when scrolling. */
 .dashboard-page-container {
-    padding-bottom: 60px !important; 
+    padding-bottom: 40vh !important; /* Balanced buffer to ensure the analytics section can be centered when scrolling */
 }
 
 /* Remove nested scrollbar conflict: Allow the incident tracking card 
@@ -170,27 +207,204 @@ body.admin-app-scroll-lock {
 }
 
 .analytics-container {
+    margin-bottom: 40px; /* Balanced bottom margin for the unified features group */
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 32px;
+    gap: 16px; /* Tightened gap for a more unified dashboard appearance */
+}
+
+/* Refine labels inside the Power Advisories container */
+.dashboard-power-advisories-wrapper .section-label-group {
+    margin-bottom: 6px;
+}
+
+.dashboard-power-advisories-wrapper .column-section-title {
+    margin: 0 !important;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    color: var(--text-header);
+}
+
+.dashboard-power-advisories-wrapper .widget-text {
+    margin: 0 !important;
+    font-size: 0.85rem;
+}
+
+/* Unified parent containers for Dashboard Features (Power Advisories & Tickets) */
+.dashboard-power-advisories-wrapper,
+.dashboard-ticket-features-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Flex constraint to ensure the box respects the max-height limit */
+    gap: 8px; /* Further reduced gap to bring charts higher into view */
+    width: 100%;
+    padding: 20px 20px 32px; /* Adjusted bottom padding for cleaner framing of internal charts */
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+    margin-bottom: 0; /* Erased redundant margin to tighten center spacing between features */
+    max-height: 70vh; /* Slightly reduced height so the next section appears sooner during scrolling */
+    overflow-y: auto; /* Re-enable internal scrolling as requested */
+    overflow-x: hidden;
+    scrollbar-gutter: stable; /* Prevents layout shifts when scrollbars appear */
+    scroll-margin-top: 24px; /* Space above section when jumping via navigation */
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Ensure the last content piece has breathing room so it is fully reachable via scroll */
+.dashboard-power-advisories-wrapper > *:last-child,
+.dashboard-ticket-features-wrapper > *:last-child {
+    margin-bottom: 8px !important; /* Minimal margin to eliminate trailing empty space */
+}
+
+/* Custom Scrollbar for the Features Wrappers - Restoring high-visibility handles */
+.dashboard-power-advisories-wrapper::-webkit-scrollbar,
+.dashboard-ticket-features-wrapper::-webkit-scrollbar {
+    width: 12px; /* Wider internal scrollbars for better accessibility and grabbing */
+    display: block;
+}
+
+.dashboard-power-advisories-wrapper::-webkit-scrollbar-track,
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 12px 0;
+}
+
+.dashboard-power-advisories-wrapper::-webkit-scrollbar-thumb,
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.6); /* High-contrast handle for clear visibility */
+    border-radius: 10px;
+    min-height: 120px; /* Substantially long handle for better reach within analytics cards */
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+.placeholder-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* Refine internal "bricks" when nested inside the visible parent box */
+.dashboard-power-advisories-wrapper .stat-card,
+.dashboard-power-advisories-wrapper .chart-card,
+.dashboard-ticket-features-wrapper .stat-card,
+.dashboard-ticket-features-wrapper .chart-card {
+    background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
+    box-shadow: none; /* Flattens internal cards to emphasize the parent section */
+    border: 1px solid var(--border-color); 
+}
+
+/* --- POWER GRID STATUS ENHANCEMENTS --- */
+@keyframes active-outage-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.dashboard-power-advisories-wrapper .stat-card {
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Active Outages - Dangerous/Alert state */
+.dashboard-power-advisories-wrapper .stat-card.urgent { 
+    border-bottom-color: #ef4444; 
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%);
+    animation: active-outage-pulse 2s infinite;
+}
+
+/* Upcoming - Warning/Scheduled state */
+.dashboard-power-advisories-wrapper .stat-card.pending { 
+    border-bottom-color: #f59e0b;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(245, 158, 11, 0.05) 100%);
+}
+
+/* Restored - Success/Healthy state */
+.dashboard-power-advisories-wrapper .stat-card.resolved { 
+    border-bottom-color: #22c55e;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.05) 100%);
+}
+
+/* Total Recorded - Informational state */
+.dashboard-power-advisories-wrapper .stat-card.total { 
+    border-bottom-color: #2563eb;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(37, 99, 235, 0.05) 100%);
+}
+
+/* Tighten spacing for labels inside the features box */
+.dashboard-power-advisories-wrapper .section-label-group h3,
+.dashboard-ticket-features-wrapper .section-label-group h3 {
+    margin: 0 !important;
+    font-size: 1.1rem;
+}
+
+.dashboard-power-advisories-wrapper .section-label-group p,
+.dashboard-ticket-features-wrapper .section-label-group p {
+    margin: 0 0 10px 0 !important;
+    font-size: 0.85rem;
+}
+
+/* Loading state for analytics */
+.analytics-loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    gap: 8px;
+    text-align: center;
+}
+
+.analytics-pulse {
+    animation: analytics-fade-pulse 2s ease-in-out infinite;
+}
+
+@keyframes analytics-fade-pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Dynamic Feeder Status styles */
+.feeder-status-tag {
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+}
+
+.feeder-status-tag.critical {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.feeder-status-tag.scheduled {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
 }
 
 /* Summary Cards Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 4px;
 }
 
 .stat-card {
     background: var(--bg-card);
-    padding: 10px 14px;
+    padding: 5px 8px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease;
 }
@@ -227,10 +441,15 @@ body.admin-app-scroll-lock {
 .charts-grid-main, .charts-grid-secondary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 12px;
+    gap: 4px;
 }
 
 @media (max-width: 900px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
     .charts-grid-main, .charts-grid-secondary { grid-template-columns: 1fr; }
 }
 
@@ -242,11 +461,33 @@ body.admin-app-scroll-lock {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
+/* Specifically expand the bottom of the main chart boxes to better utilize vertical space */
+.charts-grid-main .chart-card:not(:last-child) {
+    padding-bottom: 0 !important; /* Erased internal bottom spacing to make the box fit the chart perfectly */
+}
+
+/* Force the main charts to a larger height to fill the container boxes perfectly */
+.charts-grid-main .chart-wrapper .recharts-responsive-container {
+    height: 180px !important; /* Reduced further to reclaim bottom space */
+}
+
+/* Target the internal legend wrapper to remove unnecessary spacing from JSX inline styles */
+.charts-grid-main .recharts-legend-wrapper {
+    padding-top: 0 !important;
+    bottom: 8px !important; /* Pulls the legend tighter to the chart */
+}
+
+/* Brute-force remove any margin from the Recharts SVG container */
+.charts-grid-main .recharts-wrapper {
+    margin-bottom: -15px !important; 
+    margin-top: -5px !important;
+}
+
 .chart-header-group {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 4px;
+    margin-bottom: 10px; /* Increased gap so charts aren't too close to the header */
 }
 
 .chart-header-group h4 {
@@ -311,7 +552,7 @@ body.admin-app-scroll-lock {
 
 /* Ensure dashboard scroll area respects mobile safe areas and providing breathing room */
 .admin-content:has(.dashboard-page-container) {
-    scroll-padding-bottom: max(60px, env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: max(140px, env(safe-area-inset-bottom, 0px));
 }
 
 /* Data Management: last workflow step (import) stays reachable when scrolling */

@@ -107,6 +107,7 @@ body.admin-app-scroll-lock {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  scroll-padding-top: 150px; /* Global landing buffer to keep the dashboard header visible after navigation */
 }
 
 /* Custom Scrollbar for Admin Content */
@@ -195,7 +196,7 @@ body.admin-app-scroll-lock {
 /* Scrolling Fix: Ensure the dashboard page has enough bottom clearance 
    to fully reveal the last features when scrolling. */
 .dashboard-page-container {
-    padding-bottom: 40vh !important; /* Balanced buffer to ensure the analytics section can be centered when scrolling */
+    padding-bottom: 80vh !important; /* Significantly increased buffer to ensure the Tickets section is fully reachable via the main scrollbar */
 }
 
 /* Remove nested scrollbar conflict: Allow the incident tracking card 
@@ -211,6 +212,27 @@ body.admin-app-scroll-lock {
     display: flex;
     flex-direction: column;
     gap: 16px; /* Tightened gap for a more unified dashboard appearance */
+}
+
+/* Invisible parent container for both Power Advisories and Ticket Features 
+   to ensure consistent flow and prevent the sections from squashing each other. */
+.dashboard-features-invisible-parent {
+    display: flex;
+    flex-direction: column;
+    gap: 120px; /* Massive gap creates "neutral zones" between sections to easily access main page scroll */
+    width: 100%;
+    background: transparent;
+    padding: 0;
+    overflow: visible;
+}
+
+/* Internal container to wrap all elements inside the scrollable feature boxes.
+   The bottom padding ensures that content isn't cut off by the container's 70vh limit. */
+.feature-content-scroll-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 60px; /* Generous buffer for reachability */
 }
 
 /* Refine labels inside the Power Advisories container */
@@ -235,7 +257,6 @@ body.admin-app-scroll-lock {
 .dashboard-ticket-features-wrapper {
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Flex constraint to ensure the box respects the max-height limit */
     gap: 8px; /* Further reduced gap to bring charts higher into view */
     width: 100%;
     padding: 20px 20px 32px; /* Adjusted bottom padding for cleaner framing of internal charts */
@@ -245,24 +266,18 @@ body.admin-app-scroll-lock {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
     box-sizing: border-box;
     margin-bottom: 0; /* Erased redundant margin to tighten center spacing between features */
-    max-height: 70vh; /* Slightly reduced height so the next section appears sooner during scrolling */
-    overflow-y: auto; /* Re-enable internal scrolling as requested */
+    max-height: 70vh; /* Restored height limit to enable internal scrolling */
+    overflow-y: auto; /* Re-enabled internal vertical scrolling */
     overflow-x: hidden;
     scrollbar-gutter: stable; /* Prevents layout shifts when scrollbars appear */
-    scroll-margin-top: 24px; /* Space above section when jumping via navigation */
+    scroll-margin-top: 180px; /* Significant margin ensures the target box lands lower, leaving an "escape route" to scroll up */
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Ensure the last content piece has breathing room so it is fully reachable via scroll */
-.dashboard-power-advisories-wrapper > *:last-child,
-.dashboard-ticket-features-wrapper > *:last-child {
-    margin-bottom: 8px !important; /* Minimal margin to eliminate trailing empty space */
-}
-
-/* Custom Scrollbar for the Features Wrappers - Restoring high-visibility handles */
+/* Custom Scrollbar for the Features Wrappers - Restored high-visibility handles */
 .dashboard-power-advisories-wrapper::-webkit-scrollbar,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar {
-    width: 12px; /* Wider internal scrollbars for better accessibility and grabbing */
+    width: 12px;
     display: block;
 }
 
@@ -274,11 +289,17 @@ body.admin-app-scroll-lock {
 
 .dashboard-power-advisories-wrapper::-webkit-scrollbar-thumb,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.6); /* High-contrast handle for clear visibility */
+    background: rgba(128, 128, 128, 0.6);
     border-radius: 10px;
-    min-height: 120px; /* Substantially long handle for better reach within analytics cards */
+    min-height: 120px;
     border: 3px solid transparent;
     background-clip: padding-box;
+}
+
+/* Ensure the last content piece has breathing room so it is fully reachable via scroll */
+.dashboard-power-advisories-wrapper > *:last-child,
+.dashboard-ticket-features-wrapper > *:last-child {
+    margin-bottom: 8px !important; /* Minimal margin to eliminate trailing empty space */
 }
 
 .placeholder-desc {

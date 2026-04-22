@@ -58,8 +58,24 @@
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 2l3 3-3 3'/%3E%3C/svg%3E");
 }
 
-/* Optional Cloudinary / HTTPS poster snapshot (admin capture) */
+/* Full-width poster image replacing the infographic when Cloudinary URL exists */
+.feed-post-poster-display {
+  margin: 4px 14px 14px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.1);
+}
+
+.feed-post-poster-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Legacy small thumbnail (kept for backward compat, hidden by default) */
 .feed-post-poster-thumb {
+  display: none;
   padding: 8px 12px 0;
   flex-shrink: 0;
 }

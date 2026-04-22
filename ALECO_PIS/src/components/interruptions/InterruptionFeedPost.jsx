@@ -9,7 +9,8 @@ import { getSafeResourceUrl } from '../../utils/safeUrl';
  * @param {{ item: object, now: number, onExpand?: function, isExpandedView?: boolean }} props - API DTO; `now` from useNow for countdown
  */
 export default function InterruptionFeedPost({ item, now, onExpand, isExpandedView = false }) {
-  const safePosterUrl = item.posterImageUrl ? getSafeResourceUrl(item.posterImageUrl) : null;
+  const isBlankStub = typeof item.posterImageUrl === 'string' && item.posterImageUrl.includes('_stub');
+  const safePosterUrl = (!isBlankStub && item.posterImageUrl) ? getSafeResourceUrl(item.posterImageUrl) : null;
   return (
     <article className="interruption-feed-post">
       {/* The Expand Button Trigger for actual advisory posts */}
@@ -28,20 +29,18 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
       )}
       <InterruptionFeedPostHeader item={item} /> {/* onExpand is handled by the button above, not necessarily needed in header now */}
       <InterruptionFeedPostBody item={item} />
-      {safePosterUrl && (
-        <div className="feed-post-poster-thumb">
-          <a
-            href={safePosterUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="feed-post-poster-link"
-            title="Open poster image"
-          >
-            <img src={safePosterUrl} alt="Advisory poster image" loading="lazy" />
-          </a>
+      {safePosterUrl ? (
+        <div className="feed-post-poster-display">
+          <img
+            src={safePosterUrl}
+            alt="Advisory poster"
+            loading="lazy"
+            className="feed-post-poster-img"
+          />
         </div>
+      ) : (
+        <InterruptionAdvisoryInfographic item={item} now={now} />
       )}
-      <InterruptionAdvisoryInfographic item={item} now={now} />
     </article>
   );
 }

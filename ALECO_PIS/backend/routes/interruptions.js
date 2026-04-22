@@ -1247,9 +1247,9 @@ router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) 
 });
 
 /**
- * Stub: set `poster_image_url` for admin testing until Puppeteer capture + real upload exists.
- * If Cloudinary is configured, uploads a minimal placeholder image; otherwise uses `stub://` or
- * `INTERRUPTION_POSTER_STUB_BASE_URL` + id when set.
+ * Generate poster via HTML fallback (no Puppeteer SPA required).
+ * Uses the same `captureInterruptionPosterForAdmin` path — tries print capture first,
+ * falls back to the HTML template listing. Replaces the old 1×1-blank stub approach.
  */
 router.post('/interruptions/:id/poster-stub', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
@@ -1264,57 +1264,48 @@ router.post('/interruptions/:id/poster-stub', requireAdmin, async (req, res) => 
           'poster_image_url column missing. Run: node backend/run-migration.js backend/migrations/add_affected_areas_grouped_and_poster_image_url.sql',
       });
     }
-    const [check] = await pool.execute('SELECT id FROM aleco_interruptions WHERE id = ?', [id]);
-    if (check.length === 0) {
+
+    const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
+    if (!env.CLOUDINARY_CLOUD_NAME || !cloudinary?.uploader?.upload) {
+      return res.status(503).json({
+        success: false,
+        message: 'Cloudinary must be configured (CLOUDINARY_CLOUD_NAME, etc.) to generate poster images.',
+      });
+    }
+
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const [capRows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
+    const rawRow = capRows[0];
+    if (!rawRow) {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
     }
 
-    const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
-    let posterUrl = null;
-    if (env.CLOUDINARY_CLOUD_NAME && cloudinary?.uploader?.upload) {
-      try {
-        const dataUri =
-          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-        const up = await cloudinary.uploader.upload(dataUri, {
-          folder: 'aleco_posters',
-          public_id: `interruption_${id}_stub`,
-          overwrite: true,
-        });
-        posterUrl = up?.secure_url || up?.url || null;
-      } catch (e) {
-        console.warn('[interruptions] Cloudinary poster stub upload failed:', e?.message || e);
-      }
-    }
-    if (!posterUrl) {
-      const base =
-        env.INTERRUPTION_POSTER_STUB_BASE_URL && String(env.INTERRUPTION_POSTER_STUB_BASE_URL).trim()
-          ? String(env.INTERRUPTION_POSTER_STUB_BASE_URL).replace(/\/$/, '')
-          : '';
-      posterUrl = base ? `${base}/interruption-${id}.png` : `stub://interruption-poster/${id}`;
+    const cap = await captureInterruptionPosterForAdmin(pool, id, rawRow);
+    if (cap.error) {
+      return res.status(500).json({ success: false, message: cap.error });
     }
 
     const phNow = nowPhilippineForMysql();
     await pool.execute('UPDATE aleco_interruptions SET poster_image_url = ?, updated_at = ? WHERE id = ?', [
-      posterUrl,
+      cap.posterUrl,
       phNow,
       id,
     ]);
 
-    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
-    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     if (!dto) {
-      return res.status(500).json({ success: false, message: 'Failed to load interruption after poster stub.' });
+      return res.status(500).json({ success: false, message: 'Failed to load interruption after poster generation.' });
     }
     res.json({
       success: true,
       data: dto,
-      message: 'Poster URL set (stub). Replace with real capture when Puppeteer is deployed.',
+      message: 'Poster image generated and stored.',
     });
   } catch (error) {
     console.error('Interruptions poster-stub error:', error);
-    res.status(500).json({ success: false, message: 'Failed to set poster stub URL.' });
+    res.status(500).json({ success: false, message: 'Failed to generate poster image.' });
   }
 });
 

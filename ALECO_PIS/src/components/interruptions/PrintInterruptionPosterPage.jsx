@@ -14,6 +14,11 @@ export default function PrintInterruptionPosterPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    document.body.classList.add('poster-capture-mode');
+    return () => document.body.classList.remove('poster-capture-mode');
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!Number.isFinite(id) || id <= 0) {

@@ -36,6 +36,9 @@ const NavigationWrapper = () => {
   // Avoid verify-session on every pathname change here — it caused false logouts on navigation.
 
   const isAdminPage = location.pathname.startsWith('/admin-');
+  const isPosterPage =
+    location.pathname.startsWith('/print-interruption/') ||
+    location.pathname.startsWith('/poster/interruption/');
   const isPublicHome = location.pathname === '/';
 
   /* Public home only: smooth scroll + scroll-padding for fixed header */
@@ -80,8 +83,8 @@ const NavigationWrapper = () => {
 
   return (
     <>
-      {/* Public only: fixed Albay strip + navbar. Admin strip lives inside AdminLayout (scroll-locked shell). */}
-      {!isAdminPage && (
+      {/* Public only: fixed Albay strip + navbar. Suppressed on poster/print pages for clean Puppeteer capture. */}
+      {!isAdminPage && !isPosterPage && (
         <div className="fix-container-nav">
           <LandingPage />
           <Navbar />
@@ -131,9 +134,9 @@ const NavigationWrapper = () => {
         } />
       </Routes>
 
-      <CookieBanner />
+      {!isPosterPage && <CookieBanner />}
       {/* Theme toggle: floating on landing page only; inline in dashboard (SearchBarGlobal) */}
-      {!isAdminPage && <DarkLightButton theme={theme} toggleTheme={toggleTheme} />}
+      {!isAdminPage && !isPosterPage && <DarkLightButton theme={theme} toggleTheme={toggleTheme} />}
     </>
   );
 };

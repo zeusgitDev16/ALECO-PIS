@@ -1,179 +1,401 @@
-/* Full-page print poster for Puppeteer (/print-interruption/:id) */
+/* ============================================================
+   ALECO Print Poster — Matching reference design
+   Route: /print-interruption/:id
+   Puppeteer viewport: 900×1400 @2x deviceScaleFactor
+   ============================================================ */
+
+/* ---------- Page wrapper ---------- */
+/* Body-level reset applied by PrintInterruptionPosterPage via class */
+body.poster-capture-mode {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  background: #d4a84b !important;
+  overflow-x: hidden;
+}
 
 .print-poster-page {
-  min-height: 100vh;
   margin: 0;
   padding: 0;
-  background: #fefce8;
+  height: auto;
+  background: #d4a84b;
   box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .print-poster-page--loading,
 .print-poster-page--error {
   padding: 24px;
   font-family: system-ui, sans-serif;
+  color: #1e293b;
 }
 
+/* ---------- Poster root + type-based CSS variables ---------- */
 .aleco-print-poster {
-  padding: 20px 24px 32px;
-  font-family: 'Mulish', system-ui, sans-serif;
-  color: #0f172a;
+  --poster-header-bg:     #0d1f6b;
+  --poster-header-bg2:    #0a1550;
+  --poster-accent-red:    #dc2626;
+  --poster-day-num-color: #dc2626;
+  --poster-feeder-bg:     #1e2d6b;
+  --poster-footer-bg:     #060e38;
+  --poster-reason-bg:     rgba(148, 197, 253, 0.45);
+  --poster-reason-border: rgba(59, 130, 246, 0.35);
+  --poster-areas-bg:      linear-gradient(180deg, rgba(186, 230, 253, 0.5) 0%, rgba(255, 255, 255, 0.2) 100%);
+  --poster-areas-border:  rgba(59, 130, 246, 0.28);
+
+  width: 100%;
+  max-width: 900px;
+  padding: 18px;
+  font-family: 'Mulish', 'Arial Black', 'Arial', system-ui, sans-serif;
+  box-sizing: border-box;
 }
 
+/* Emergency: red */
+.aleco-print-poster--emergency {
+  --poster-header-bg:     #b91c1c;
+  --poster-header-bg2:    #991b1b;
+  --poster-day-num-color: #b91c1c;
+  --poster-feeder-bg:     #7f1d1d;
+  --poster-footer-bg:     #450a0a;
+}
+
+/* NgcScheduled: navy (same as Scheduled) */
+.aleco-print-poster--ngcscheduled {
+  --poster-header-bg:     #0d1f6b;
+  --poster-header-bg2:    #0a1550;
+}
+
+/* Energized: green */
+.aleco-print-poster--energized {
+  --poster-header-bg:     #15803d;
+  --poster-header-bg2:    #166534;
+  --poster-day-num-color: #14532d;
+  --poster-feeder-bg:     #14532d;
+  --poster-footer-bg:     #052e16;
+}
+
+/* ---------- Frame ---------- */
 .aleco-print-poster-frame {
-  max-width: 920px;
-  margin: 0 auto;
-  border: 2px solid #1e3a8a;
-  border-radius: 14px;
+  border: 3px solid var(--poster-header-bg);
+  border-radius: 16px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #f8fafc 100%);
-  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+  background: #e8d89a;
+  box-shadow: 0 8px 40px rgba(10, 20, 80, 0.25);
 }
 
-.aleco-print-poster-header {
+/* ================================================================
+   TWO-COLUMN TOP SECTION
+   Left: [header band] + [reason + feeder]
+   Right: [date card — spans full height]
+   ================================================================ */
+
+.aleco-print-poster-top {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
-  background: linear-gradient(90deg, #1e3a8a 0%, #172554 100%);
-  color: #f8fafc;
+  align-items: stretch;
+}
+
+/* ── Left column ── */
+.aleco-print-poster-col-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Header band — title + control number */
+.aleco-print-poster-header-band {
+  background: var(--poster-header-bg);
+  padding: 20px 16px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
 }
 
 .aleco-print-poster-title {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-size: 2.6rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
-  line-height: 1.25;
+  line-height: 1.05;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  word-break: break-word;
 }
 
 .aleco-print-poster-ref {
-  margin: 6px 0 0;
+  margin: 0;
   font-size: 0.85rem;
-  font-weight: 700;
-  color: #bbf7d0;
-}
-
-.aleco-print-poster-datecard {
-  flex-shrink: 0;
-}
-
-.aleco-print-poster-datecard-inner {
-  min-width: 160px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #fde68a 0%, #bfdbfe 100%);
-  color: #0f172a;
-  text-align: center;
-}
-
-.aleco-print-poster-datecard-line1 {
-  font-weight: 800;
-  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.68);
+  font-style: italic;
   letter-spacing: 0.04em;
 }
 
-.aleco-print-poster-datecard-line2 {
-  margin-top: 4px;
-  font-size: 0.78rem;
-  font-weight: 700;
+/* Body area of left column — reason + feeder on sandy bg */
+.aleco-print-poster-col-left-body {
+  flex: 1;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: transparent;
 }
 
-.aleco-print-poster-reason,
-.aleco-print-poster-feeder {
-  margin: 0;
-  padding: 12px 18px;
+/* ── Right column — date card ── */
+.aleco-print-poster-col-right {
+  flex-shrink: 0;
+  width: 210px;
+  background: var(--poster-header-bg);
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 0;
 }
 
-.aleco-print-poster-reason {
-  background: #93c5fd;
-  color: #0f172a;
+/* Date card inner — fills full height of right column */
+.aleco-print-poster-datecard-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
 }
 
-.aleco-print-poster-feeder {
-  background: #1e3a8a;
-  color: #f8fafc;
+/* Top of date card: blue gradient + MONTH + DAY NUMBER */
+.aleco-print-poster-datecard-top {
+  flex: 1;
+  background: linear-gradient(170deg, #5b86b8 0%, #94bcd8 60%, #c0d8ec 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 10px 10px;
+  text-align: center;
 }
 
-.aleco-print-poster-label {
-  display: block;
-  font-size: 0.72rem;
+/* APRIL */
+.aleco-print-poster-datecard-month {
+  font-size: 1.3rem;
   font-weight: 800;
-  color: #b91c1c;
-  margin-bottom: 6px;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+  line-height: 1;
+  padding-bottom: 6px;
+}
+
+/* 21 or 23-25 — huge red */
+.aleco-print-poster-datecard-daynum {
+  font-size: 5rem;
+  font-weight: 900;
+  line-height: 0.88;
+  color: var(--poster-day-num-color);
+  letter-spacing: -0.03em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  padding-bottom: 6px;
+}
+
+/* Bottom of date card: navy band — TUESDAY + time */
+.aleco-print-poster-datecard-bottom {
+  background: var(--poster-header-bg2);
+  padding: 8px 10px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+/* TUESDAY */
+.aleco-print-poster-datecard-day {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+/* 11:00 PM - 3:00 AM */
+.aleco-print-poster-datecard-time {
+  display: block;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.02em;
+}
+
+/* ================================================================
+   REASON & FEEDER — inside left column body
+   ================================================================ */
+
+/* REASON — light blue rounded card */
+.aleco-print-poster-reason {
+  padding: 10px 14px;
+  background: var(--poster-reason-bg);
+  border-radius: 8px;
+  border: 1.5px solid var(--poster-reason-border);
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* FEEDER — dark navy rounded card */
+.aleco-print-poster-feeder {
+  padding: 9px 14px;
+  background: var(--poster-feeder-bg);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* REASON: / SUBSTATION/FEEDER: labels */
+.aleco-print-poster-label {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--poster-accent-red);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
 }
 
 .aleco-print-poster-feeder .aleco-print-poster-label {
-  color: #fecaca;
+  color: #fca5a5;
 }
 
-.aleco-print-poster-reason-text,
-.aleco-print-poster-feeder-text {
+.aleco-print-poster-reason-text {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.35;
   text-transform: uppercase;
+  color: #0f172a;
 }
 
-.aleco-print-poster-schedule {
-  padding: 10px 18px;
-  font-size: 0.8rem;
-  background: #f1f5f9;
+.aleco-print-poster-feeder-text {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-transform: uppercase;
+  color: #ffffff;
 }
 
-.aleco-print-poster-schedule p {
-  margin: 4px 0;
-}
+/* ================================================================
+   AFFECTED AREAS — full width below the two columns
+   ================================================================ */
 
 .aleco-print-poster-areas {
-  padding: 14px 18px 20px;
-  background: #e0f2fe;
+  margin: 10px 12px 0;
+  padding: 14px 18px 16px;
+  background: var(--poster-areas-bg);
+  border-radius: 10px;
+  border: 1.5px solid var(--poster-areas-border);
 }
 
 .aleco-print-poster-areas-title {
   margin: 0 0 10px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #1e3a8a;
-  letter-spacing: 0.05em;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: var(--poster-header-bg);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .aleco-print-poster-area-heading {
-  margin: 12px 0 6px;
-  font-size: 0.78rem;
+  margin: 10px 0 4px;
+  font-size: 0.83rem;
+  font-weight: 800;
   color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .aleco-print-poster-areas ul {
-  margin: 0 0 0 18px;
+  margin: 0 0 0 20px;
   padding: 0;
-  font-size: 0.78rem;
-  line-height: 1.4;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.aleco-print-poster-areas li {
+  margin: 1px 0;
+}
+
+/* ================================================================
+   DISCLAIMER BLOCK
+   ================================================================ */
+
+.aleco-print-poster-disclaimer-block {
+  margin: 10px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
 }
 
 .aleco-print-poster-disclaimer {
   margin: 0;
-  padding: 12px 18px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-align: center;
-  background: #fefce8;
-  color: #334155;
+  color: #4b5563;
+  font-style: italic;
+  line-height: 1.4;
 }
+
+.aleco-print-poster-disclaimer-bold {
+  margin: 0;
+  font-size: 0.73rem;
+  text-align: center;
+  color: #111827;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.aleco-print-poster-logo {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  object-fit: contain;
+  border: 2px solid var(--poster-header-bg);
+  background: #ffffff;
+}
+
+/* ================================================================
+   FOOTER CONTACT BAR
+   ================================================================ */
 
 .aleco-print-poster-footer {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-around;
-  gap: 8px 12px;
-  padding: 12px 16px;
-  background: #0f172a;
-  color: #f8fafc;
-  font-size: 0.68rem;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 18px;
+  padding: 9px 20px;
+  background: var(--poster-footer-bg);
+  color: #e2e8f0;
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .aleco-print-poster-footer span {

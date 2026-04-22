@@ -330,24 +330,34 @@ export async function sendMessage(messageId, { retryOnlyFailed = false } = {}) {
         if (!email) continue;
         const recipientRowId = emailToRecipientRowId.get(email) || null;
         try {
+            // Fix 1 — Synthetic thread anchor.
+            // Gmail's SMTP relay overwrites Message-ID but PRESERVES the
+            // References header. We embed our own deterministic anchor here
+            // so the inbound poller can match replies without touching Message-ID.
+            // Format: <b2b-msg-{msgId}-rcpt-{recipId}@aleco.ph>
+            const anchor = `<b2b-msg-${id}-rcpt-${recipientRowId ?? 0}@aleco.ph>`;
             const headers = {
                 'X-ALECO-B2B-Message-Id': String(id),
+                'References': anchor,
+                'In-Reply-To': anchor,
             };
             if (recipientRowId != null) {
                 headers['X-ALECO-B2B-Recipient-Id'] = String(recipientRowId);
             }
-            const result = await sendB2BMail({
+            await sendB2BMail({
                 to: email,
                 subject: msg.subject || 'ALECO B2B Advisory',
                 text: msg.body_text || '',
                 html: msg.body_html || undefined,
                 headers,
             });
+            // Store OUR anchor as provider_message_id, not the Google-rewritten one.
+            // linkByAlecoRef() on the inbound poller scans reply References for this pattern.
             await pool.execute(
                 `UPDATE aleco_b2b_message_recipients
                  SET send_status='sent', provider_message_id=?, error_message=NULL, sent_at=?, updated_at=?
                  WHERE message_id=? AND email_snapshot=?`,
-                [result.providerMessageId, phNow, phNow, id, email]
+                [anchor.slice(0, 255), phNow, phNow, id, email]
             );
             sent += 1;
         } catch (err) {

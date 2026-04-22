@@ -3,9 +3,11 @@ import {
   getStatusDisplayLabel,
   getCauseCategoryLabel,
   TYPE_FORM_OPTIONS,
+  isEmergencyOutageType,
 } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
 import AdvisoryLog from './AdvisoryLog';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 function getTypeLabel(type) {
   const opt = TYPE_FORM_OPTIONS.find((o) => o.value === type);
@@ -53,6 +55,7 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
   const causeText = (d.cause && String(d.cause).trim()) || '—';
   const causeCatLabel = getCauseCategoryLabel(d.causeCategory);
   const hasScheduledPublic = Boolean(d.publicVisibleAt && String(d.publicVisibleAt).trim());
+  const safeAdvisoryImageUrl = d.imageUrl ? getSafeResourceUrl(d.imageUrl) : null;
 
   return (
     <div className="interruptions-admin-view-only interruptions-admin-modal-form">
@@ -90,9 +93,9 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
                 <p key={i}>{line || '\u00A0'}</p>
               ))}
             </div>
-            {d.imageUrl && (
+            {safeAdvisoryImageUrl && (
               <div className="interruptions-admin-view-image">
-                <img src={d.imageUrl} alt="Advisory" />
+                <img src={safeAdvisoryImageUrl} alt="Advisory" />
               </div>
             )}
           </section>
@@ -126,7 +129,7 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
               <dd>{d.dateTimeEndEstimated ? formatToPhilippineTime(d.dateTimeEndEstimated) : '—'}</dd>
             </div>
             <div>
-              <dt>Actual restoration</dt>
+              <dt>Energized at</dt>
               <dd>{d.dateTimeRestored ? formatToPhilippineTime(d.dateTimeRestored) : '—'}</dd>
             </div>
             <div>
@@ -138,8 +141,8 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
 
         <section className="interruptions-admin-view-section">
           <h4 className="interruptions-admin-view-section-title">Public bulletin</h4>
-          {d.type === 'Unscheduled' ? (
-            <p className="interruptions-admin-view-text">Shown immediately. Unscheduled outages are always published right away.</p>
+          {isEmergencyOutageType(d.type) ? (
+            <p className="interruptions-admin-view-text">Shown immediately. Emergency outages are always published right away.</p>
           ) : hasScheduledPublic ? (
             <p className="interruptions-admin-view-text">
               {isPublicVisibilityPending(d.publicVisibleAt) ? (

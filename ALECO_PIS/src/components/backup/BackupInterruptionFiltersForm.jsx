@@ -30,7 +30,8 @@ const BackupInterruptionFiltersForm = ({ filters, setFilters, showClear = true }
             >
                 <option value="">All Types</option>
                 <option value="Scheduled">Scheduled</option>
-                <option value="Unscheduled">Unscheduled</option>
+                <option value="Emergency">Emergency</option>
+                <option value="NgcScheduled">NGCP scheduled</option>
             </select>
             <select
                 name="status"
@@ -41,7 +42,7 @@ const BackupInterruptionFiltersForm = ({ filters, setFilters, showClear = true }
                 <option value="">All Status</option>
                 <option value="Pending">Pending</option>
                 <option value="Ongoing">Ongoing</option>
-                <option value="Restored">Restored</option>
+                <option value="Energized">Energized</option>
             </select>
             <button
                 type="button"

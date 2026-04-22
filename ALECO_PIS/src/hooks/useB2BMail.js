@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiUrl } from '../utils/api';
+import { authFetch } from '../utils/authFetch';
 import {
     createB2BContact,
     createB2BTemplate,
@@ -101,7 +102,7 @@ export function useB2BMail() {
 
     const loadFeeders = useCallback(async () => {
         try {
-            const res = await fetch(apiUrl('/api/feeders'));
+            const res = await authFetch(apiUrl('/api/feeders'));
             const json = await res.json().catch(() => null);
             if (res.ok && json?.success && Array.isArray(json.areas)) {
                 setFeeders(json.areas);

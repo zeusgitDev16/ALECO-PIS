@@ -1,19 +1,24 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
-  STATUS_FORM_OPTIONS,
   TYPE_FORM_OPTIONS,
   CAUSE_CATEGORY_FORM_OPTIONS,
   getStatusDisplayLabel,
+  isEmergencyOutageType,
 } from '../../utils/interruptionLabels';
 import {
   datetimeLocalToApi,
   computeInitialStatusPreview,
   datetimeLocalStringToDate,
 } from '../../utils/interruptionFormUtils';
-import { formatPhilippineWallClock } from '../../utils/dateUtils';
+import {
+  formatPhilippineWallClock,
+  formatPhilippineTemplateDateNow,
+  formatPhilippineTemplateTimeNow,
+} from '../../utils/dateUtils';
 import FeederCascadeSelect from './FeederCascadeSelect';
 import InModalDateTimePicker from './InModalDateTimePicker';
 import { uploadInterruptionImage } from '../../api/interruptionsApi';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 const BODY_PLACEHOLDER =
   'Type your advisory like a Facebook post. Include date, time, affected areas, and reason. You can use line breaks and structure.';
@@ -83,32 +88,18 @@ export default function InterruptionAdvisoryForm({
   onSubmit,
   onCancel,
   editingId,
-  baselineStatus,
   detailLoading = false,
   saving,
-  memoSlot = null,
   saveConflict = false,
   onReloadAdvisory,
   advisoryArchived = false,
   validationErrors = [],
 }) {
-  const initialLifecyclePreview = useMemo(
-    () => computeInitialStatusPreview(form.type, form.dateTimeStart),
-    [form.type, form.dateTimeStart]
-  );
-
   const unscheduledFutureStart = useMemo(() => {
-    if (form.type !== 'Unscheduled') return false;
+    if (!isEmergencyOutageType(form.type)) return false;
     const d = datetimeLocalStringToDate(form.dateTimeStart);
     return Boolean(d && d.getTime() > Date.now());
   }, [form.type, form.dateTimeStart]);
-
-  const lifecycleSteps = useMemo(() => {
-    if (form.type === 'Unscheduled') return ['Ongoing', 'Restored'];
-    return ['Pending', 'Ongoing', 'Restored'];
-  }, [form.type]);
-
-  const currentLifecycleStep = editingId ? form.status : initialLifecyclePreview.apiStatus;
 
   const [quickFieldsOpen, setQuickFieldsOpen] = useState(true);
   const [legacyFieldsOpen, setLegacyFieldsOpen] = useState(true);
@@ -123,9 +114,14 @@ export default function InterruptionAdvisoryForm({
   const hasBody = form.body && String(form.body).trim();
   const showLegacyFields = !hasBody;
 
+  const safeImagePreviewUrl = useMemo(
+    () => (form.imageUrl ? getSafeResourceUrl(form.imageUrl) : null),
+    [form.imageUrl]
+  );
+
   const insertTemplate = () => {
-    const apiStart = form.dateTimeStart ? datetimeLocalToApi(form.dateTimeStart) : null;
-    const [datePart = '[Date]', timePart = '[Time]'] = apiStart ? apiStart.split(' ') : [];
+    const datePart = formatPhilippineTemplateDateNow();
+    const timePart = formatPhilippineTemplateTimeNow();
     const template = BODY_TEMPLATE.replace('[Date]', datePart)
       .replace('[Time]', timePart)
       .replace('[Areas]', form.affectedAreasText || '[Areas]')
@@ -149,7 +145,7 @@ export default function InterruptionAdvisoryForm({
     setForm((f) => ({
       ...f,
       type: v,
-      ...(v === 'Unscheduled' ? { schedulePublicLater: false, publicVisibleAt: '' } : {}),
+      ...(isEmergencyOutageType(v) ? { schedulePublicLater: false, publicVisibleAt: '' } : {}),
     }));
   };
 
@@ -321,9 +317,9 @@ export default function InterruptionAdvisoryForm({
                 style={{ display: 'none' }}
               />
               <div className="interruptions-admin-image-row">
-                {form.imageUrl && (
+                {form.imageUrl && safeImagePreviewUrl && (
                   <div className="interruptions-admin-image-preview">
-                    <img src={form.imageUrl} alt="Advisory" />
+                    <img src={safeImagePreviewUrl} alt="Advisory" />
                     <button
                       type="button"
                       className="interruptions-admin-btn interruptions-admin-btn--small"
@@ -343,100 +339,16 @@ export default function InterruptionAdvisoryForm({
                 </button>
               </div>
             </div>
-            {editingId ? (
-              <div className="interruptions-admin-span2">
-                <div className="interruptions-admin-lifecycle-preview-title">Lifecycle</div>
-                <div className="interruptions-admin-lifecycle-stepper" role="status">
-                  {lifecycleSteps.map((step, i) => (
-                    <React.Fragment key={step}>
-                      <div
-                        className={`interruptions-admin-stepper-step${form.status === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
-                      >
-                        <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
-                        <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
-                      </div>
-                      {i < lifecycleSteps.length - 1 && (
-                        <span className="interruptions-admin-stepper-connector" aria-hidden="true" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-                <label className={`interruptions-admin-stepper-select-wrap interruptions-admin-lifecycle-select interruptions-admin-lifecycle-select--${(form.status || '').toLowerCase()}`}>
-                  Lifecycle
-                <select
-                  value={form.status}
-                  className="interruptions-admin-lifecycle-dropdown"
-                  onChange={(ev) => {
-                    const v = ev.target.value;
-                    setForm((f) => {
-                      const next = { ...f, status: v, statusChangeRemark: f.statusChangeRemark || '' };
-                      if (v === 'Restored') {
-                        next.dateTimeRestored = f.dateTimeRestored && String(f.dateTimeRestored).trim()
-                          ? f.dateTimeRestored
-                          : toDatetimeLocalFromDate(new Date());
-                      } else {
-                        next.dateTimeRestored = '';
-                      }
-                      return next;
-                    });
-                  }}
-                >
-                  {STATUS_FORM_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                </label>
-              </div>
-            ) : (
-              <div className="interruptions-admin-span2">
-                <div className="interruptions-admin-lifecycle-preview-title">Lifecycle</div>
-                <div className="interruptions-admin-lifecycle-stepper" role="status" aria-live="polite">
-                  {lifecycleSteps.map((step, i) => (
-                    <React.Fragment key={step}>
-                      <div
-                        className={`interruptions-admin-stepper-step${currentLifecycleStep === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
-                      >
-                        <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
-                        <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
-                      </div>
-                      {i < lifecycleSteps.length - 1 && (
-                        <span className="interruptions-admin-stepper-connector" aria-hidden="true" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
             {unscheduledFutureStart && (
               <div
                 className="interruptions-admin-callout interruptions-admin-callout--warn"
                 role="note"
               >
-                Unscheduled with a future start is unusual—confirm type or start time.
+                Emergency outages with a future start are unusual—confirm type or start time.
               </div>
             )}
           </>
-          )}
-          {editingId && baselineStatus != null && (
-            <label className={`interruptions-admin-status-remark-wrap${form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') ? ' interruptions-admin-status-remark-wrap--required' : ''}`}>
-              <span className="interruptions-admin-status-remark-label">
-                Reason for status change
-                {form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') && (
-                  <span className="interruptions-admin-status-remark-required"> (required)</span>
-                )}
-              </span>
-              <input
-                type="text"
-                value={form.statusChangeRemark || ''}
-                onChange={(ev) => setForm((f) => ({ ...f, statusChangeRemark: ev.target.value }))}
-                placeholder="e.g. Rescheduled to next week, Misinformation corrected, Feeder faulty again"
-                className="interruptions-admin-status-remark-input"
-                aria-required={form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing')}
-              />
-            </label>
           )}
         </fieldset>
 
@@ -485,9 +397,9 @@ export default function InterruptionAdvisoryForm({
           className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--bull"
         >
           <legend>Public bulletin</legend>
-          {form.type === 'Unscheduled' ? (
+          {isEmergencyOutageType(form.type) ? (
             <p className="interruptions-admin-bull-unscheduled-note">
-              Shown immediately. Unscheduled outages are always published right away.
+              Shown immediately. Emergency outages are always published right away.
             </p>
           ) : (
             <>
@@ -558,7 +470,76 @@ export default function InterruptionAdvisoryForm({
           )}
         </fieldset>
 
-        {memoSlot}
+        <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--auto-restore">
+          <legend>Scheduled auto-restoration</legend>
+          <div className="interruptions-admin-visibility-toggle" role="radiogroup" aria-label="Auto-restoration schedule">
+            <label className="interruptions-admin-radio-line">
+              <input
+                type="radio"
+                name="autoRestore"
+                checked={!form.scheduleAutoRestore}
+                onChange={() =>
+                  setForm((f) => ({
+                    ...f,
+                    scheduleAutoRestore: false,
+                    scheduledRestoreAt: '',
+                    scheduledRestoreRemark: '',
+                  }))
+                }
+              />
+              <span>Manual restoration only</span>
+            </label>
+            <label className="interruptions-admin-radio-line">
+              <input
+                type="radio"
+                name="autoRestore"
+                checked={form.scheduleAutoRestore}
+                onChange={() =>
+                  setForm((f) => ({
+                    ...f,
+                    scheduleAutoRestore: true,
+                    scheduledRestoreAt: f.scheduledRestoreAt || '',
+                    scheduledRestoreRemark: f.scheduledRestoreRemark || '',
+                  }))
+                }
+              />
+              <span>Schedule automatic restoration</span>
+            </label>
+          </div>
+
+          {form.scheduleAutoRestore && (
+            <div className="interruptions-admin-bull-schedule">
+              <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
+                Auto-restore at
+                <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
+                  <InModalDateTimePicker
+                    value={form.scheduledRestoreAt}
+                    onChange={(v) => setForm((f) => ({ ...f, scheduledRestoreAt: v }))}
+                    required
+                    placeholder="Select auto-restoration date and time"
+                    futureOnly
+                  />
+                </div>
+                <DatetimePreview value={form.scheduledRestoreAt} />
+              </label>
+              <label className="interruptions-admin-span2 interruptions-admin-label-tight">
+                <span>
+                  Remark for auto-restoration <strong className="interruptions-admin-status-remark-required">(required)</strong>
+                </span>
+                <textarea
+                  className="interruptions-admin-memo-textarea"
+                  value={form.scheduledRestoreRemark}
+                  onChange={(ev) => setForm((f) => ({ ...f, scheduledRestoreRemark: ev.target.value }))}
+                  rows={2}
+                  placeholder="e.g. Maintenance window complete, power restored per schedule"
+                />
+              </label>
+              <p className="interruptions-admin-field-hint">
+                When the scheduled time arrives, the system will automatically mark this advisory as <strong>Energized</strong> and log the remark above.
+              </p>
+            </div>
+          )}
+        </fieldset>
 
         {advisoryArchived && (
           <div className="interruptions-admin-callout interruptions-admin-callout--warn" role="status">
@@ -566,27 +547,6 @@ export default function InterruptionAdvisoryForm({
           </div>
         )}
 
-        {editingId && (
-          <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--resolve">
-            <legend>Resolve</legend>
-            {form.status === 'Restored' ? (
-              <label className="interruptions-admin-span2 interruptions-admin-datetime-field">
-                Actual restoration date and time
-                <div className="interruptions-admin-datetime-wrap">
-                  <InModalDateTimePicker
-                    value={form.dateTimeRestored}
-                    onChange={(v) => setForm((f) => ({ ...f, dateTimeRestored: v }))}
-                    required
-                    placeholder="Select restoration date and time"
-                  />
-                </div>
-                <DatetimePreview value={form.dateTimeRestored} />
-              </label>
-            ) : (
-              <p className="interruptions-admin-resolve-placeholder">Set lifecycle to Resolved to enter restoration time.</p>
-            )}
-          </fieldset>
-        )}
         </>
         )}
         </div>

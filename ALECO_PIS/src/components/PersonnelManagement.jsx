@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../utils/api';
+import { authFetch } from '../utils/authFetch';
 import { useMatchMedia } from '../hooks/useMatchMedia';
 import AdminLayout from './AdminLayout';
 import AddCrew from './personnels/AddCrew';
@@ -41,8 +42,8 @@ const PersonnelManagement = () => {
         setIsLoading(true);
         try {
             const [crewRes, poolRes] = await Promise.all([
-                fetch(apiUrl('/api/crews/list')),
-                fetch(apiUrl('/api/pool/list')),
+                authFetch(apiUrl('/api/crews/list')),
+                authFetch(apiUrl('/api/pool/list')),
             ]);
 
             const crewData = await crewRes.json();
@@ -61,7 +62,7 @@ const PersonnelManagement = () => {
         if (!window.confirm(`Delete crew "${crew.crew_name}"? This cannot be undone.`)) return;
         setIsLoading(true);
         try {
-            const res = await fetch(apiUrl(`/api/crews/delete/${crew.id}`), {
+            const res = await authFetch(apiUrl(`/api/crews/delete/${crew.id}`), {
             method: 'DELETE',
             headers: {
                 'x-user-email': localStorage.getItem('userEmail') || '',
@@ -88,7 +89,7 @@ const PersonnelManagement = () => {
         if (!window.confirm(`Remove "${man.full_name}" from the linemen pool? This cannot be undone.`)) return;
         setIsLoading(true);
         try {
-            const res = await fetch(apiUrl(`/api/pool/delete/${man.id}`), {
+            const res = await authFetch(apiUrl(`/api/pool/delete/${man.id}`), {
             method: 'DELETE',
             headers: {
                 'x-user-email': localStorage.getItem('userEmail') || '',

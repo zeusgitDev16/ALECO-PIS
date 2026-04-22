@@ -1,6 +1,6 @@
 import React from 'react';
 import { isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand } from './AdvisoryActionIcons';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
 
 /**
  * InterruptionCardActionModal - Action menu for mobile (320px).
@@ -11,6 +11,7 @@ export default function InterruptionCardActionModal({
   onClose,
   onViewFull,
   onEdit,
+  onUpdate,
   onArchive,
   onPermanentDelete,
   onPullFromFeed,
@@ -105,12 +106,28 @@ export default function InterruptionCardActionModal({
               onEdit(item);
             }}
             disabled={saving}
-            title={archived ? 'View' : 'Edit'}
-            aria-label={archived ? 'View' : 'Edit'}
+            title={archived ? 'View' : 'Edit content'}
+            aria-label={archived ? 'View' : 'Edit content'}
           >
             <IconPencil />
             <span>{archived ? 'View' : 'Edit'}</span>
           </button>
+          {!archived && onUpdate && (
+            <button
+              type="button"
+              className="interruption-card-action-btn interruption-card-action-btn--icon interruption-card-action-btn--update"
+              onClick={() => {
+                onClose();
+                onUpdate(item);
+              }}
+              disabled={saving}
+              title="Update status & remarks"
+              aria-label="Update status & remarks"
+            >
+              <IconRefreshCw />
+              <span>Update</span>
+            </button>
+          )}
           {archived && onPermanentDelete ? (
             <button
               type="button"

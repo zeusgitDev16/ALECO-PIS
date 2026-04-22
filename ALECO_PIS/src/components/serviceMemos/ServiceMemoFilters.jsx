@@ -100,13 +100,13 @@ const ServiceMemoFilters = ({ filters, onFilterChange, onClose }) => {
           </div>
 
           <div className="service-memo-filter-group">
-            <label htmlFor="owner">Owner Email</label>
+            <label htmlFor="owner">Received by (email)</label>
             <input
               id="owner"
               type="email"
               value={filters.owner}
               onChange={handleOwnerChange}
-              placeholder="Filter by owner email..."
+              placeholder="Filter by who received / recorded the memo…"
             />
           </div>
         </div>

@@ -1,4 +1,8 @@
-import { getStatusDisplayLabel } from './interruptionLabels.js';
+import {
+  getStatusDisplayLabel,
+  isEmergencyOutageType,
+  isScheduledLikeOutageType,
+} from './interruptionLabels.js';
 import { isoToDatetimeLocalPhilippine, toMysqlFormatPhilippine } from './dateUtils.js';
 
 /** Alias for backwards compatibility; delegates to dateUtils. */
@@ -6,10 +10,10 @@ export function toMysqlFormatForConcurrency(isoString) {
   return toMysqlFormatPhilippine(isoString);
 }
 
-/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string }} InterruptionFormState */
+/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
 
 export const emptyForm = {
-  type: 'Unscheduled',
+  type: 'Emergency',
   status: 'Pending',
   statusChangeRemark: '',
   affectedAreasText: '',
@@ -25,6 +29,9 @@ export const emptyForm = {
   body: '',
   controlNo: '',
   imageUrl: '',
+  scheduleAutoRestore: false,
+  scheduledRestoreAt: '',
+  scheduledRestoreRemark: '',
 };
 
 /** API DTO datetime → datetime-local input. Handles ISO (UTC) and legacy "YYYY-MM-DD HH:mm". */
@@ -79,7 +86,7 @@ export function datetimeLocalToApi(s) {
 
 /**
  * Mirrors server {@link computeInitialStatus} for UI preview on create.
- * @param {string} type - Scheduled | Unscheduled
+ * @param {string} type - Scheduled | Emergency | NgcScheduled
  * @param {string} dateTimeStartLocal - datetime-local value
  * @returns {{ apiStatus: 'Pending' | 'Ongoing', displayLabel: string }}
  */
@@ -88,7 +95,7 @@ export function computeInitialStatusPreview(type, dateTimeStartLocal) {
   if (!d || Number.isNaN(d.getTime())) {
     return { apiStatus: 'Ongoing', displayLabel: getStatusDisplayLabel('Ongoing') };
   }
-  if (type === 'Scheduled' && d.getTime() > Date.now()) {
+  if (isScheduledLikeOutageType(type) && d.getTime() > Date.now()) {
     return { apiStatus: 'Pending', displayLabel: getStatusDisplayLabel('Pending') };
   }
   return { apiStatus: 'Ongoing', displayLabel: getStatusDisplayLabel('Ongoing') };
@@ -96,17 +103,17 @@ export function computeInitialStatusPreview(type, dateTimeStartLocal) {
 
 /**
  * @param {InterruptionFormState} form
- * @param {{ editingId: number|null, baselineUpdatedAt?: string|null, baselineStatus?: string }} opts
+ * @param {{ editingId: number|null, baselineUpdatedAt?: string|null }} opts
  * @returns {object} POST/PUT body for /api/interruptions
  */
-export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt, baselineStatus } = {}) {
+export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } = {}) {
   const affectedAreas = form.affectedAreasText
     .split(',')
     .map((x) => x.trim())
     .filter(Boolean);
 
   const publicVisibleAt =
-    form.type === 'Unscheduled'
+    isEmergencyOutageType(form.type)
       ? null
       : form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()
         ? datetimeLocalToApi(form.publicVisibleAt)
@@ -131,24 +138,27 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt, b
     imageUrl: form.imageUrl && String(form.imageUrl).trim() ? String(form.imageUrl).trim() : null,
   };
 
+  // Scheduled auto-restoration
+  if (form.scheduleAutoRestore && form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim()) {
+    payload.scheduledRestoreAt = datetimeLocalToApi(form.scheduledRestoreAt);
+    payload.scheduledRestoreRemark = form.scheduledRestoreRemark && String(form.scheduledRestoreRemark).trim()
+      ? String(form.scheduledRestoreRemark).trim()
+      : null;
+  } else {
+    payload.scheduledRestoreAt = null;
+    payload.scheduledRestoreRemark = null;
+  }
+
   if (!editingId) {
     const { apiStatus } = computeInitialStatusPreview(form.type, form.dateTimeStart);
     payload.status = apiStatus;
     return payload;
   }
 
-  payload.status = form.status;
-
-  const statusIsChanging = baselineStatus != null && form.status !== baselineStatus;
-  const isPendingToOngoing = baselineStatus === 'Pending' && form.status === 'Ongoing';
-  if (statusIsChanging && !isPendingToOngoing && form.statusChangeRemark) {
-    payload.statusChangeRemark = String(form.statusChangeRemark).trim();
-  }
-
-  if (form.status === 'Restored') {
+  // When editing, don't change status — status is managed via UpdateAdvisoryModal
+  // Just pass through dateTimeRestored if it exists on the form (from previous save)
+  if (form.dateTimeRestored && String(form.dateTimeRestored).trim()) {
     payload.dateTimeRestored = datetimeLocalToApi(form.dateTimeRestored);
-  } else {
-    payload.dateTimeRestored = null;
   }
 
   const base = baselineUpdatedAt != null ? String(baselineUpdatedAt).trim() : '';
@@ -163,12 +173,11 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt, b
 /**
  * Validates form before submit. Returns array of error messages.
  * Requires: feeder (always), and either body OR cause.
- * When status changes (except Pending→Ongoing), requires statusChangeRemark.
+ * Status changes are now handled in UpdateAdvisoryModal, not here.
  * @param {InterruptionFormState} form
- * @param {{ baselineStatus?: string }} [opts]
  * @returns {string[]}
  */
-export function validateInterruptionForm(form, { baselineStatus } = {}) {
+export function validateInterruptionForm(form) {
   const errors = [];
   const hasBody = form.body && String(form.body).trim();
   const hasCause = form.cause && String(form.cause).trim();
@@ -186,15 +195,6 @@ export function validateInterruptionForm(form, { baselineStatus } = {}) {
   if (!hasBody && !hasCause) {
     errors.push('Provide either a post body (content) or a cause/reason. At least one is required.');
   }
-
-  const statusIsChanging = baselineStatus != null && form.status !== baselineStatus;
-  const isPendingToOngoing = baselineStatus === 'Pending' && form.status === 'Ongoing';
-  if (statusIsChanging && !isPendingToOngoing) {
-    const remark = form.statusChangeRemark && String(form.statusChangeRemark).trim();
-    if (!remark) {
-      errors.push('A remark is required when changing status. Enter the reason in the "Reason for status change" field below the Lifecycle dropdown (not in the advisory body).');
-    }
-  }
   if (!hasDateTimeStart) {
     errors.push('Start date and time is required.');
   }
@@ -202,6 +202,19 @@ export function validateInterruptionForm(form, { baselineStatus } = {}) {
     const p = datetimeLocalStringToDate(form.publicVisibleAt);
     if (p && p.getTime() <= Date.now()) {
       errors.push('Goes live at must be a future date and time.');
+    }
+  }
+  if (form.scheduleAutoRestore) {
+    if (!form.scheduledRestoreAt || !String(form.scheduledRestoreAt).trim()) {
+      errors.push('Scheduled auto-restoration requires a date and time.');
+    } else {
+      const r = datetimeLocalStringToDate(form.scheduledRestoreAt);
+      if (r && r.getTime() <= Date.now()) {
+        errors.push('Scheduled restoration time must be in the future.');
+      }
+    }
+    if (!form.scheduledRestoreRemark || !String(form.scheduledRestoreRemark).trim()) {
+      errors.push('A remark is required for scheduled auto-restoration (it will be logged when auto-restored).');
     }
   }
   return errors;
@@ -227,5 +240,8 @@ export function rowToFormState(row) {
     body: row.body ? String(row.body) : '',
     controlNo: row.controlNo ? String(row.controlNo) : '',
     imageUrl: row.imageUrl ? String(row.imageUrl) : '',
+    scheduleAutoRestore: Boolean(row.scheduledRestoreAt && String(row.scheduledRestoreAt).trim()),
+    scheduledRestoreAt: displayToDatetimeLocal(row.scheduledRestoreAt),
+    scheduledRestoreRemark: row.scheduledRestoreRemark ? String(row.scheduledRestoreRemark) : '',
   };
 }

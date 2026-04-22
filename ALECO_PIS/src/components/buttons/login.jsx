@@ -83,6 +83,9 @@ const Login = () => {
                 const response = await API.post('/api/google-login', { idToken });
                 if (response.status === 200) {
                     const u = response.data.user;
+                    if (response.data.accessToken) {
+                        localStorage.setItem('accessToken', response.data.accessToken);
+                    }
                     localStorage.setItem('userRole', u.role);
                     localStorage.setItem('googleProfilePic', u.profilePic || '');
                     localStorage.setItem('userName', u.name || 'User');
@@ -156,6 +159,9 @@ const Login = () => {
             try {
                 const response = await API.post('/api/login', { email: email, password: password });
                 if (response.status === 200) {
+                    if (response.data.accessToken) {
+                        localStorage.setItem('accessToken', response.data.accessToken);
+                    }
                     localStorage.setItem('userRole', response.data.user.role);
                     localStorage.setItem('googleProfilePic', response.data.user.profilePic);
                     localStorage.setItem('userName', response.data.user.name || 'User');

@@ -1,23 +1,25 @@
 import React from 'react';
-import { getStatusDisplayLabel, getCauseCategoryLabel } from '../../utils/interruptionLabels';
+import { getStatusDisplayLabel, getCauseCategoryLabel, getTypeDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive } from './AdvisoryActionIcons';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconRefreshCw } from './AdvisoryActionIcons';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
  * InterruptionAdvisoryDetailModal - Full advisory view in a modal (read-only).
  * Displays the advisory exactly as a full card - same structure as the card content,
  * but in a modal for detailed viewing. Not edit mode, not the plain-text view with audit logs.
  */
-export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit, onPullFromFeed, onPushToFeed, saving }) {
+export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit, onUpdate, onPullFromFeed, onPushToFeed, saving }) {
   if (!item) return null;
 
   const archived = Boolean(item.deletedAt);
   const statusLabel = getStatusDisplayLabel(item.status);
-  const statusClass = String(item.status || '').toLowerCase();
+  const statusClass = interruptionStatusForCssClass(item.status);
   const feederDisplay = String(item.feeder || '').trim() || '—';
   const areasFull = (item.affectedAreas || []).join(', ') || '—';
   const hasBody = item.body && String(item.body).trim();
   const bodyDisplay = hasBody ? String(item.body).trim() : '';
+  const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
 
   return (
     <div
@@ -39,7 +41,7 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
           <article className={`interruptions-admin-card interruptions-admin-card--detail-modal${archived ? ' interruptions-admin-card--archived' : ''}`}>
             <div className="interruptions-admin-card-head">
               <span className={`interruptions-admin-status-chip status-${statusClass}`}>{statusLabel}</span>
-              <span className="interruptions-admin-type-pill">{item.type}</span>
+              <span className="interruptions-admin-type-pill">{getTypeDisplayLabel(item.type)}</span>
               {archived && (
                 <span className="interruptions-admin-archived-chip" title="Not shown on the public home page">
                   Archived
@@ -88,9 +90,9 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
               </>
             )}
 
-            {item.imageUrl && (
+            {safeAdvisoryImageUrl && (
               <div className="interruptions-admin-card-image">
-                <img src={item.imageUrl} alt="Advisory" />
+                <img src={safeAdvisoryImageUrl} alt="Advisory" />
               </div>
             )}
 
@@ -110,7 +112,7 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
                   </dd>
                 </div>
                 <div>
-                  <dt>Actual restore</dt>
+                  <dt>Energized at</dt>
                   <dd>
                     {item.dateTimeRestored ? formatToPhilippineTime(item.dateTimeRestored) : '—'}
                   </dd>
@@ -183,8 +185,20 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
                 </button>
               )}
               {onEdit && (
-                <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={() => onEdit(item)} disabled={saving} title="Edit" aria-label="Edit">
+                <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={() => onEdit(item)} disabled={saving} title="Edit content" aria-label="Edit content">
                   <IconPencil />
+                </button>
+              )}
+              {!archived && onUpdate && (
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--update"
+                  onClick={() => onUpdate(item)}
+                  disabled={saving}
+                  title="Update status & remarks"
+                  aria-label="Update status & remarks"
+                >
+                  <IconRefreshCw />
                 </button>
               )}
               <button type="button" className="interruptions-admin-btn" onClick={onClose}>

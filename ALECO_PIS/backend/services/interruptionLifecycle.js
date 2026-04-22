@@ -2,6 +2,7 @@ import { mapUpdateRowToDto } from '../utils/interruptionsDto.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
+import { INTERRUPTION_SCHEDULED_LIKE_TYPES } from '../constants/interruptionFieldEnums.js';
 
 const SYSTEM_START_REMARK =
   'Status set to Ongoing automatically at scheduled outage start time.';
@@ -93,7 +94,7 @@ export async function insertSystemUpdateConn(conn, interruptionId, remark) {
 }
 
 /**
- * Auto-archive Restored advisories that have been resolved for more than 1 day 12 hours (36h).
+ * Auto-archive Energized advisories past the resolved display window (36h from date_time_restored).
  * Runs independently of API requests so public display hides them even if nobody fetches.
  * @param {import('mysql2/promise').Pool} pool
  * @returns {Promise<{ archived: number }>}
@@ -103,13 +104,13 @@ export async function autoArchiveResolvedInterruptions(pool) {
   if (!hasDel) return { archived: 0 };
   const phNow = nowPhilippineForMysql();
   const [result] = await pool.query(
-    `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = 'Restored' AND deleted_at IS NULL
+    `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = 'Energized' AND deleted_at IS NULL
      AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= ?`,
     [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
   );
   const archived = result?.affectedRows ?? 0;
   if (archived > 0) {
-    console.log(`[interruptions] Auto-archived ${archived} Resolved advisory(ies) past ${RESOLVED_ARCHIVE_HOURS}h.`);
+    console.log(`[interruptions] Auto-archived ${archived} Energized advisory(ies) past ${RESOLVED_ARCHIVE_HOURS}h.`);
   }
   return { archived };
 }
@@ -124,9 +125,12 @@ export async function transitionScheduledStarts(pool) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
+    const scheduledTypes = Array.from(INTERRUPTION_SCHEDULED_LIKE_TYPES)
+      .map((t) => `'${t}'`)
+      .join(',');
     const [pending] = await conn.query(
       `SELECT id FROM aleco_interruptions
-       WHERE type = 'Scheduled' AND status = 'Pending' AND date_time_start <= NOW()${delClause}
+       WHERE type IN (${scheduledTypes}) AND status = 'Pending' AND date_time_start <= NOW()${delClause}
        FOR UPDATE`
     );
     const rows = Array.isArray(pending) ? pending : [];

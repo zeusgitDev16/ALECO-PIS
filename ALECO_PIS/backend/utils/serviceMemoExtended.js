@@ -96,7 +96,14 @@ export function mergeMemoForResponse(row, ticket) {
     out.location = ticket.address ?? '';
     out.contact_no = ticket.phone_number ?? '';
     out.action_desired = ticket.action_desired ?? '';
+    const savedCat = row.category != null ? String(row.category).trim() : '';
+    const ticketCat = ticket.category != null ? String(ticket.category).trim() : '';
+    out.category = savedCat !== '' ? savedCat : ticketCat;
+  } else {
+    out.category = row.category != null ? String(row.category).trim() : '';
   }
+
+  delete out.ticket_category;
 
   return out;
 }

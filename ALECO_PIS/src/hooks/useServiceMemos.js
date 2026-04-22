@@ -3,6 +3,7 @@ import {
   listServiceMemos,
   updateServiceMemo,
   closeServiceMemo,
+  deleteServiceMemo,
 } from '../api/serviceMemosApi.js';
 
 /**
@@ -34,6 +35,10 @@ export function useServiceMemos() {
     const r = await listServiceMemos({
       tab: activeTab,
       search: filters.search,
+      searchMemo: filters.searchMemo,
+      searchAccount: filters.searchAccount,
+      searchCustomer: filters.searchName,
+      searchAddress: filters.searchAddress,
       status: filters.status,
       startDate: filters.startDate,
       endDate: filters.endDate,
@@ -116,6 +121,34 @@ export function useServiceMemos() {
     [fetchList]
   );
 
+  /**
+   * @param {number} id
+   * @returns {Promise<{ deleted: boolean }>}
+   */
+  const deleteMemo = useCallback(
+    async (id) => {
+      setSaving(true);
+      setMessage(null);
+      try {
+        const r = await deleteServiceMemo(id);
+        if (!r.success) {
+          setMessage({ type: 'err', text: r.message || 'Delete failed.' });
+          return { deleted: false };
+        }
+        setMessage({ type: 'ok', text: 'Service memo deleted.' });
+        window.dispatchEvent(new Event('service-memo-deleted'));
+        await fetchList();
+        return { deleted: true };
+      } catch {
+        setMessage({ type: 'err', text: 'Network error.' });
+        return { deleted: false };
+      } finally {
+        setSaving(false);
+      }
+    },
+    [fetchList]
+  );
+
   return {
     memos,
     loading,
@@ -130,5 +163,6 @@ export function useServiceMemos() {
     setFilters,
     updateMemo,
     closeMemo,
+    deleteMemo,
   };
 }

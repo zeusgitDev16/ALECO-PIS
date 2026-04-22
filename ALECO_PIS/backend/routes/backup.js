@@ -6,6 +6,7 @@ import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';
 import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
+import { requireAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
@@ -200,7 +201,7 @@ async function fetchPersonnelExportData(ds, de) {
 }
 
 // --- EXPORT PREVIEW (JSON for View in browser) - must be before /tickets/export ---
-router.get('/tickets/export/preview', async (req, res) => {
+router.get('/tickets/export/preview', requireAdmin, async (req, res) => {
     try {
         const { preset, startDate, endDate, category, district, municipality, status, groupFilter, isNew, isUrgent } = req.query;
         const dateFilter = buildDateFilter(preset, startDate, endDate);
@@ -234,7 +235,7 @@ router.get('/tickets/export/preview', async (req, res) => {
 });
 
 // --- EXPORT ROUTE (must be before /tickets/:ticketId to avoid conflict) ---
-router.get('/tickets/export', async (req, res) => {
+router.get('/tickets/export', requireAdmin, async (req, res) => {
     try {
         const { preset, startDate, endDate, format, category, district, municipality, status, groupFilter, isNew, isUrgent } = req.query;
         const fmt = (format || 'excel').toLowerCase();
@@ -340,7 +341,7 @@ router.get('/tickets/export', async (req, res) => {
 });
 
 // --- INTERRUPTIONS EXPORT PREVIEW ---
-router.get('/interruptions/export/preview', async (req, res) => {
+router.get('/interruptions/export/preview', requireAdmin, async (req, res) => {
     try {
         const { preset, startDate, endDate, type, status, includeArchived } = req.query;
         const dateFilter = buildDateFilter(preset, startDate, endDate);
@@ -378,7 +379,7 @@ router.get('/interruptions/export/preview', async (req, res) => {
 });
 
 // --- INTERRUPTIONS EXPORT ---
-router.get('/interruptions/export', async (req, res) => {
+router.get('/interruptions/export', requireAdmin, async (req, res) => {
     try {
         const { preset, startDate, endDate, format, type, status, includeArchived } = req.query;
         const fmt = (format || 'excel').toLowerCase();
@@ -493,7 +494,7 @@ router.get('/interruptions/export', async (req, res) => {
 });
 
 // --- USERS EXPORT PREVIEW ---
-router.get('/users/export/preview', async (req, res) => {
+router.get('/users/export/preview', requireAdmin, async (req, res) => {
     try {
         const { preset, startDate, endDate, role, status } = req.query;
         const dateFilter = buildDateFilter(preset, startDate, endDate);
@@ -513,7 +514,7 @@ router.get('/users/export/preview', async (req, res) => {
 });
 
 // --- USERS EXPORT ---
-router.get('/users/export', async (req, res) => {
+router.get('/users/export', requireAdmin, async (req, res) => {
     try {
         const { preset, startDate, endDate, format, role, status } = req.query;
         const fmt = (format || 'excel').toLowerCase();
@@ -595,7 +596,7 @@ router.get('/users/export', async (req, res) => {
 });
 
 // --- PERSONNEL EXPORT PREVIEW ---
-router.get('/personnel/export/preview', async (req, res) => {
+router.get('/personnel/export/preview', requireAdmin, async (req, res) => {
     try {
         const { preset, startDate, endDate } = req.query;
         const dateFilter = buildDateFilter(preset, startDate, endDate);
@@ -620,7 +621,7 @@ router.get('/personnel/export/preview', async (req, res) => {
 
 // --- PERSONNEL EXPORT ---
 // Excel: all sheets. CSV: crews only (primary table), same pattern as interruptions.
-router.get('/personnel/export', async (req, res) => {
+router.get('/personnel/export', requireAdmin, async (req, res) => {
     try {
         const { preset, startDate, endDate, format } = req.query;
         const fmt = (format || 'excel').toLowerCase();
@@ -730,7 +731,7 @@ router.get('/personnel/export', async (req, res) => {
 });
 
 // --- ARCHIVE ROUTE ---
-router.post('/tickets/archive', async (req, res) => {
+router.post('/tickets/archive', requireAdmin, async (req, res) => {
     try {
         const { startDate, endDate, preset, category, district, municipality, status, groupFilter, isNew, isUrgent } = req.body;
 
@@ -830,7 +831,7 @@ function parseCsvFile(buffer) {
 }
 
 // --- IMPORT ROUTE ---
-router.post('/tickets/import', upload.single('file'), async (req, res) => {
+router.post('/tickets/import', requireAdmin, upload.single('file'), async (req, res) => {
     try {
         if (!req.file || !req.file.buffer) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });

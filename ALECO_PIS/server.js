@@ -18,12 +18,14 @@ import interruptionsRoutes from './backend/routes/interruptions.js';
 import feedersRoutes from './backend/routes/feeders.js';
 import b2bMailRoutes from './backend/routes/b2b-mail.js';
 import serviceMemosRoutes from './backend/routes/service-memos.js';
+import notificationsRoutes from './backend/routes/notifications.js';
 import pool from './backend/config/db.js';
 import {
   transitionScheduledStarts,
   autoArchiveResolvedInterruptions,
 } from './backend/services/interruptionLifecycle.js';
 import { pollB2BInboundOnce } from './backend/services/b2bInboundImapPoll.js';
+import { requireApiSession } from './backend/middleware/requireApiSession.js';
 
 dotenv.config();
 
@@ -55,13 +57,22 @@ const corsOptions = {
         return callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Email', 'X-User-Name'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Email', 'X-User-Name', 'X-Token-Version'],
     exposedHeaders: ['Content-Disposition'],
 };
 
 // 2. Middleware (The Guards)
 app.use(cors(corsOptions));
 app.use(express.json());
+
+/** Uptime / load balancer — no DB (Render health checks). Must be registered before the API session gate. */
+app.get('/api/health', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, service: 'aleco-pis-api', ts: new Date().toISOString() });
+});
+
+// Protected API routes require X-User-Email + X-Token-Version (see requireApiSession.js public allowlist).
+app.use('/api', requireApiSession);
 
 // 3. Mount the Lego Bricks
 // Every route you had before still perfectly exists at the exact same /api URL
@@ -77,16 +88,12 @@ app.use('/api', urgentKeywordsRoutes);
 app.use('/api', feedersRoutes);
 app.use('/api', b2bMailRoutes);
 app.use('/api', serviceMemosRoutes);
-
-/** Uptime / load balancer — no DB (Render health checks can target this). */
-app.get('/api/health', (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    res.json({ ok: true, service: 'aleco-pis-api', ts: new Date().toISOString() });
-});
+app.use('/api', notificationsRoutes);
 
 app.get('/api/debug/routes', (req, res) => {
     res.json({
-        message: 'Route inventory (Express mounts at /api/*). Auth is stateless JSON + localStorage on client.',
+        message:
+            'Route inventory (Express mounts at /api/*). Protected routes require Authorization: Bearer JWT (login/google-login) and/or legacy X-User-Email + X-Token-Version; admin dashboards use DB role checks (see backend/middleware/requireApiSession.js, requireRole.js).',
         health: 'GET /api/health',
         auth: [
             'POST /api/setup-account',
@@ -128,6 +135,15 @@ app.get('/api/debug/routes', (req, res) => {
             'GET /api/users',
             'PUT /api/users/profile',
             'POST /api/users/toggle-status',
+            'GET /api/notifications?tab=user',
+            'GET /api/notifications?tab=personnel',
+            'GET /api/notifications?tab=b2b-mail',
+            'GET /api/notifications?tab=tickets',
+            'GET /api/notifications?tab=interruptions',
+            'GET /api/notifications?tab=memo',
+            'GET /api/notifications/counts',
+            'POST /api/notifications/mark-all-read',
+            'PATCH /api/notifications/:id/read',
         ],
         interruptions: [
             'GET /api/interruptions',

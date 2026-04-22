@@ -10,6 +10,7 @@ import HoldTicketModal from './HoldTicketModal';
 import EditTicketModal from './EditTicketModal';
 import ConfirmModal from './ConfirmModal';
 import TicketHistoryLogs from './TicketHistoryLogs';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
@@ -33,6 +34,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
 
     const isGroupMaster = ticket?.ticket_id?.startsWith('GROUP-');
     const isGroupChild = !!ticket?.parent_ticket_id;
+    const safeEvidenceImageUrl = ticket?.image_url ? getSafeResourceUrl(ticket.image_url) : null;
     const mainTicketId = isGroupMaster ? ticket.ticket_id : ticket?.parent_ticket_id;
     const children = groupData?.children || [];
 
@@ -279,15 +281,15 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         </div>
                     )}
 
-                    {ticket.image_url && (
+                    {safeEvidenceImageUrl && (
                         <div className="detail-group evidence-section">
                             <label>Attached Evidence</label>
                             <div className="image-wrapper">
                                 <img 
-                                    src={ticket.image_url} 
+                                    src={safeEvidenceImageUrl} 
                                     alt="Technical Evidence" 
                                     className="evidence-img" 
-                                    onClick={() => window.open(ticket.image_url, '_blank')}
+                                    onClick={() => window.open(safeEvidenceImageUrl, '_blank', 'noopener,noreferrer')}
                                 />
                                 <span className="image-hint">Click image to expand</span>
                             </div>

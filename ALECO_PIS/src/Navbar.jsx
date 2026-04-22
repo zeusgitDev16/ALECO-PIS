@@ -63,26 +63,30 @@ const Navbar = () => {
           </a>
         </div>
 
-        <div className="nav-links-container">
-          <ul className="nav-links">
-            {navItems.map((item, index) => (
-              <li key={index}>
-                <a
-                  href={item.href}
-                  className="nav-item"
-                  target={item.href.startsWith('http') ? '_blank' : undefined}
-                  rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                  title={item.label}
-                  aria-label={item.label}
-                  onClick={(e) => handleNavClick(e, item.href)}
-                >
-                  <span className="nav-item-text">{item.label}</span>
-                  <span className="nav-item-icon">{NavIcons[item.icon]}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-          <Login />
+        <div className="nav-links-outer">
+          <div className="nav-links-container">
+            <ul className="nav-links">
+              {navItems.map((item, index) => (
+                <li key={index}>
+                  <a
+                    href={item.href}
+                    className="nav-item"
+                    target={item.href.startsWith('http') ? '_blank' : undefined}
+                    rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    title={item.label}
+                    aria-label={item.label}
+                    onClick={(e) => handleNavClick(e, item.href)}
+                  >
+                    <span className="nav-item-text">{item.label}</span>
+                    <span className="nav-item-icon">{NavIcons[item.icon]}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="nav-login-slot">
+            <Login />
+          </div>
         </div>
       </div>
     </nav>

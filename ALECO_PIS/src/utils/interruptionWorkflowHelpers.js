@@ -1,6 +1,8 @@
+import { isInterruptionEnergizedStatus } from './interruptionLabels';
+
 /**
  * Interruption Workflow Helpers - Group advisories by status
- * Statuses: Pending (Upcoming), Ongoing, Restored (Resolved)
+ * Statuses: Pending (Upcoming), Ongoing, Energized (legacy DB rows may still be Restored)
  */
 
 export function groupInterruptionsByStatus(items) {
@@ -8,7 +10,7 @@ export function groupInterruptionsByStatus(items) {
   return {
     Pending: safe.filter((i) => (i.status || 'Pending') === 'Pending'),
     Ongoing: safe.filter((i) => (i.status || '') === 'Ongoing'),
-    Restored: safe.filter((i) => (i.status || '') === 'Restored'),
+    Energized: safe.filter((i) => isInterruptionEnergizedStatus(i.status)),
   };
 }
 
@@ -16,6 +18,6 @@ export function getInterruptionColumnConfig() {
   return {
     Pending: { id: 'Pending', title: 'Upcoming', icon: '📅', color: '#f59e0b' },
     Ongoing: { id: 'Ongoing', title: 'Ongoing', icon: '⚡', color: '#3b82f6' },
-    Restored: { id: 'Restored', title: 'Resolved', icon: '✓', color: '#22c55e' },
+    Energized: { id: 'Energized', title: 'Energized', icon: '✓', color: '#22c55e' },
   };
 }

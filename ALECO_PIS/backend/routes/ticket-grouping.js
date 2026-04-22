@@ -4,6 +4,7 @@ import { sendPhilSMS } from '../utils/sms.js';
 import { insertTicketLog } from '../utils/ticketLogHelper.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
+import { requireAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ const router = express.Router();
  * Generates a main ticket ID and links all selected tickets to it using parent_ticket_id
  * POST /api/tickets/group/create
  */
-router.post('/tickets/group/create', async (req, res) => {
+router.post('/tickets/group/create', requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
@@ -153,7 +154,7 @@ router.post('/tickets/group/create', async (req, res) => {
  * Returns all ticket groups with their member tickets
  * GET /api/tickets/groups
  */
-router.get('/tickets/groups', async (req, res) => {
+router.get('/tickets/groups', requireAdmin, async (req, res) => {
     try {
         // Get all master tickets (groups)
         const [groups] = await pool.execute(
@@ -192,7 +193,7 @@ router.get('/tickets/groups', async (req, res) => {
  * Returns the group master with its children (for detail pane when viewing a parent)
  * GET /api/tickets/group/:mainTicketId
  */
-router.get('/tickets/group/:mainTicketId', async (req, res) => {
+router.get('/tickets/group/:mainTicketId', requireAdmin, async (req, res) => {
     const { mainTicketId } = req.params;
 
     if (!mainTicketId || !mainTicketId.startsWith('GROUP-')) {
@@ -238,7 +239,7 @@ router.get('/tickets/group/:mainTicketId', async (req, res) => {
  * Dissolves a group: clears parent_ticket_id and visit_order for all children, deletes GROUP master
  * PUT /api/tickets/group/:mainTicketId/ungroup
  */
-router.put('/tickets/group/:mainTicketId/ungroup', async (req, res) => {
+router.put('/tickets/group/:mainTicketId/ungroup', requireAdmin, async (req, res) => {
     const { mainTicketId } = req.params;
 
     if (!mainTicketId || !mainTicketId.startsWith('GROUP-')) {
@@ -289,7 +290,7 @@ router.put('/tickets/group/:mainTicketId/ungroup', async (req, res) => {
  * Dispatches same crew/ETA/notes to all child tickets in the group
  * PUT /api/tickets/group/:mainTicketId/dispatch
  */
-router.put('/tickets/group/:mainTicketId/dispatch', async (req, res) => {
+router.put('/tickets/group/:mainTicketId/dispatch', requireAdmin, async (req, res) => {
     const { mainTicketId } = req.params;
     const { assigned_crew, eta, is_consumer_notified, dispatch_notes } = req.body;
 
@@ -449,7 +450,7 @@ ${mainTicketId}`;
  * Updates the status of a ticket group and all its member tickets
  * PUT /api/tickets/group/:mainTicketId/status
  */
-router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
+router.put('/tickets/group/:mainTicketId/status', requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
@@ -536,7 +537,7 @@ router.put('/tickets/group/:mainTicketId/status', async (req, res) => {
  * Marks multiple tickets as Restored (using correct enum value)
  * PUT /api/tickets/bulk/restore
  */
-router.put('/tickets/bulk/restore', async (req, res) => {
+router.put('/tickets/bulk/restore', requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
 
     try {

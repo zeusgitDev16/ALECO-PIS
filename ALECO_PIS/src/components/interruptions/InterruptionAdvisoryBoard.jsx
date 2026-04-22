@@ -29,6 +29,7 @@ function useMatchMedia(query) {
  * @param {(id: number) => void} [props.onPushToFeed]
  * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
+ * @param {(row: object) => void} [props.onUpdate] - Open Update Advisory modal
  * @param {boolean} props.saving
  */
 export default function InterruptionAdvisoryBoard({
@@ -36,6 +37,7 @@ export default function InterruptionAdvisoryBoard({
   items,
   totalCount = 0,
   onEdit,
+  onUpdate,
   onDelete,
   onPermanentDelete,
   onPullFromFeed,
@@ -80,7 +82,7 @@ export default function InterruptionAdvisoryBoard({
           </h3>
           <p className="widget-text">
             {archivedEmpty
-              ? 'Archived advisories appear here after you archive them from the active list, or when Resolved advisories are auto-archived after 1 day 12 hours.'
+              ? 'Archived advisories appear here after you archive them from the active list, or when Energized advisories are auto-archived after 1 day 12 hours.'
               : allEmpty
                 ? 'Create a new advisory or switch back to Active to see published items.'
                 : noData
@@ -101,6 +103,7 @@ export default function InterruptionAdvisoryBoard({
               key={item.id}
               item={item}
               onEdit={() => onEdit(item)}
+              onUpdate={onUpdate ? () => onUpdate(item) : undefined}
               onDelete={() => onDelete(item.id)}
               onPermanentDelete={onPermanentDelete ? () => onPermanentDelete(item.id) : undefined}
               onExpand={() => openDetail(item)}
@@ -122,6 +125,10 @@ export default function InterruptionAdvisoryBoard({
             setDetailItem(null);
             onEdit(it);
           }}
+          onUpdate={onUpdate ? (it) => {
+            setDetailItem(null);
+            onUpdate(it);
+          } : undefined}
         />
       )}
 
@@ -138,6 +145,10 @@ export default function InterruptionAdvisoryBoard({
             setActionModalItem(null);
             onEdit(it);
           }}
+          onUpdate={onUpdate ? (it) => {
+            setActionModalItem(null);
+            onUpdate(it);
+          } : undefined}
           onArchive={(id) => {
             setActionModalItem(null);
             onDelete(id);

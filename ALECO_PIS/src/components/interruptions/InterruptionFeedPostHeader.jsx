@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
-import { getStatusDisplayLabel } from '../../utils/interruptionLabels';
+import { getStatusDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 
 /**
  * Facebook-style post header: ALECO branding, status, Record (Posted/Updated), visibility.
@@ -15,7 +15,7 @@ export default function InterruptionFeedPostHeader({ item, onExpand, isExpandedV
   const showUpdated = updatedAt && createdAt && String(updatedAt).trim() !== String(createdAt).trim();
   const status = item?.status || 'Ongoing';
   const statusLabel = getStatusDisplayLabel(status);
-  const statusClass = String(status).toLowerCase();
+  const statusClass = interruptionStatusForCssClass(status);
 
   return (
     <div className="feed-post-header">

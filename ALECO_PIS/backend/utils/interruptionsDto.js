@@ -2,6 +2,8 @@
  * Shared mapping for aleco_interruptions + aleco_interruption_updates rows.
  */
 
+import { INTERRUPTION_SCHEDULED_LIKE_TYPES } from '../constants/interruptionFieldEnums.js';
+
 /** Parse DB text: JSON array or comma-separated */
 export function parseAffectedAreas(text) {
   if (text == null || text === '') return [];
@@ -160,8 +162,8 @@ export function mapUpdateRowToDto(row) {
 }
 
 /**
- * Initial status for new advisories: Scheduled + future start → Pending; else Ongoing.
- * @param {string} type - Scheduled | Unscheduled
+ * Initial status for new advisories: scheduled-like type + future start → Pending; else Ongoing.
+ * @param {string} type - Scheduled | Emergency | NgcScheduled
  * @param {string|null} startMysql - YYYY-MM-DD HH:mm:ss
  */
 export function computeInitialStatus(type, startMysql) {
@@ -178,6 +180,6 @@ export function computeInitialStatus(type, startMysql) {
     0
   ).getTime();
   if (Number.isNaN(startMs)) return 'Ongoing';
-  if (type === 'Scheduled' && startMs > Date.now()) return 'Pending';
+  if (INTERRUPTION_SCHEDULED_LIKE_TYPES.has(type) && startMs > Date.now()) return 'Pending';
   return 'Ongoing';
 }

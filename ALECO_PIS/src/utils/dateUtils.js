@@ -69,6 +69,20 @@ export const formatPhilippineNow = (opts = {}) => {
 };
 
 /**
+ * Current Philippine calendar date (long form), evaluated at call time.
+ * @returns {string} e.g. "April 22, 2026"
+ */
+export const formatPhilippineTemplateDateNow = () =>
+    dayjs.utc().add(PH_OFFSET_HOURS, 'hour').format('MMMM D, YYYY');
+
+/**
+ * Current Philippine wall-clock time (12h), evaluated at call time.
+ * @returns {string} e.g. "3:45 PM"
+ */
+export const formatPhilippineTemplateTimeNow = () =>
+    dayjs.utc().add(PH_OFFSET_HOURS, 'hour').format('h:mm A');
+
+/**
  * Format API datetime (ISO or "YYYY-MM-DD HH:mm" Philippine) for display.
  * Handles both UTC ISO strings and wall-clock Philippine time from forms.
  * @param {string|null|undefined} apiLike - ISO string or "YYYY-MM-DD HH:mm"
@@ -157,7 +171,7 @@ export function isCurrentlyOnPublicFeed(item, now = Date.now()) {
     if (item.pulledFromFeedAt) return false;
     const pv = item.publicVisibleAt ? dayjs.utc(item.publicVisibleAt).valueOf() : 0;
     if (pv > 0 && pv > now) return false;
-    if (item.status === 'Restored') {
+    if (item.status === 'Restored' || item.status === 'Energized') {
         const restored = item.dateTimeRestored ? dayjs.utc(item.dateTimeRestored).valueOf() : 0;
         if (!restored) return false;
         if (now >= restored + RESOLVED_DISPLAY_MS) return false;

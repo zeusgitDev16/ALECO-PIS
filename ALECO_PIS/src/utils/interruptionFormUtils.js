@@ -1,4 +1,8 @@
-import { getStatusDisplayLabel } from './interruptionLabels.js';
+import {
+  getStatusDisplayLabel,
+  isEmergencyOutageType,
+  isScheduledLikeOutageType,
+} from './interruptionLabels.js';
 import { isoToDatetimeLocalPhilippine, toMysqlFormatPhilippine } from './dateUtils.js';
 
 /** Alias for backwards compatibility; delegates to dateUtils. */
@@ -9,7 +13,7 @@ export function toMysqlFormatForConcurrency(isoString) {
 /** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
 
 export const emptyForm = {
-  type: 'Unscheduled',
+  type: 'Emergency',
   status: 'Pending',
   statusChangeRemark: '',
   affectedAreasText: '',
@@ -82,7 +86,7 @@ export function datetimeLocalToApi(s) {
 
 /**
  * Mirrors server {@link computeInitialStatus} for UI preview on create.
- * @param {string} type - Scheduled | Unscheduled
+ * @param {string} type - Scheduled | Emergency | NgcScheduled
  * @param {string} dateTimeStartLocal - datetime-local value
  * @returns {{ apiStatus: 'Pending' | 'Ongoing', displayLabel: string }}
  */
@@ -91,7 +95,7 @@ export function computeInitialStatusPreview(type, dateTimeStartLocal) {
   if (!d || Number.isNaN(d.getTime())) {
     return { apiStatus: 'Ongoing', displayLabel: getStatusDisplayLabel('Ongoing') };
   }
-  if (type === 'Scheduled' && d.getTime() > Date.now()) {
+  if (isScheduledLikeOutageType(type) && d.getTime() > Date.now()) {
     return { apiStatus: 'Pending', displayLabel: getStatusDisplayLabel('Pending') };
   }
   return { apiStatus: 'Ongoing', displayLabel: getStatusDisplayLabel('Ongoing') };
@@ -109,7 +113,7 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
     .filter(Boolean);
 
   const publicVisibleAt =
-    form.type === 'Unscheduled'
+    isEmergencyOutageType(form.type)
       ? null
       : form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()
         ? datetimeLocalToApi(form.publicVisibleAt)

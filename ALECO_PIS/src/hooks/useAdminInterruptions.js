@@ -198,7 +198,7 @@ export function useAdminInterruptions() {
           setMessage({ type: 'err', text: r.message || 'Restore failed.' });
           return false;
         }
-        setMessage({ type: 'ok', text: 'Restored.' });
+        setMessage({ type: 'ok', text: 'Advisory unarchived.' });
         await fetchList();
         return true;
       } catch {

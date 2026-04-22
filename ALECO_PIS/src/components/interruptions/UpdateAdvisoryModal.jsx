@@ -2,6 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   STATUS_FORM_OPTIONS,
   getStatusDisplayLabel,
+  getTypeDisplayLabel,
+  isEmergencyOutageType,
+  isInterruptionEnergizedStatus,
+  interruptionStatusForCssClass,
 } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isoToDatetimeLocalPhilippine } from '../../utils/dateUtils';
 import InModalDateTimePicker from './InModalDateTimePicker';
@@ -24,6 +28,12 @@ function DatetimePreview({ value }) {
       {formatPhilippineWallClock(api)}
     </p>
   );
+}
+
+/** Pending is labeled "Scheduled" in this modal only (elsewhere remains "Upcoming"). */
+function updateModalStatusLabel(status) {
+  if (String(status || '') === 'Pending') return 'Scheduled';
+  return getStatusDisplayLabel(status);
 }
 
 /**
@@ -52,7 +62,9 @@ export default function UpdateAdvisoryModal({
   onSaveStatus,
   onClose,
 }) {
-  const [newStatus, setNewStatus] = useState(item?.status || 'Ongoing');
+  const [newStatus, setNewStatus] = useState(() =>
+    isInterruptionEnergizedStatus(item?.status) ? 'Energized' : item?.status || 'Ongoing'
+  );
   const [remark, setRemark] = useState('');
   const [dateTimeRestored, setDateTimeRestored] = useState('');
   const [memoDraft, setMemoDraft] = useState('');
@@ -60,7 +72,8 @@ export default function UpdateAdvisoryModal({
 
   useEffect(() => {
     if (item) {
-      setNewStatus(item.status);
+      const st = item.status;
+      setNewStatus(isInterruptionEnergizedStatus(st) ? 'Energized' : st);
       setRemark('');
       setDateTimeRestored(
         item.dateTimeRestored
@@ -71,14 +84,15 @@ export default function UpdateAdvisoryModal({
     }
   }, [item?.id]);
 
-  const statusIsChanging = newStatus !== item?.status;
+  const normalizedCurrentStatus = isInterruptionEnergizedStatus(item?.status) ? 'Energized' : item?.status;
+  const statusIsChanging = newStatus !== normalizedCurrentStatus;
   const isPendingToOngoing = item?.status === 'Pending' && newStatus === 'Ongoing';
   const remarkRequired = statusIsChanging && !isPendingToOngoing;
-  const showRestoredFields = newStatus === 'Restored';
+  const showEnergizedFields = newStatus === 'Energized';
 
   const lifecycleSteps = useMemo(() => {
-    if (item?.type === 'Unscheduled') return ['Ongoing', 'Restored'];
-    return ['Pending', 'Ongoing', 'Restored'];
+    if (isEmergencyOutageType(item?.type)) return ['Ongoing', 'Energized'];
+    return ['Pending', 'Ongoing', 'Energized'];
   }, [item?.type]);
 
   const handleSubmitStatus = async (e) => {
@@ -95,9 +109,9 @@ export default function UpdateAdvisoryModal({
       return;
     }
 
-    if (showRestoredFields) {
+    if (showEnergizedFields) {
       if (!dateTimeRestored || !String(dateTimeRestored).trim()) {
-        setValidationError('Enter the actual restoration date and time before marking as Resolved.');
+        setValidationError('Enter the actual re-energization date and time before marking as Energized.');
         return;
       }
     }
@@ -110,7 +124,7 @@ export default function UpdateAdvisoryModal({
       payload.statusChangeRemark = remark.trim();
     }
 
-    if (showRestoredFields && dateTimeRestored) {
+    if (showEnergizedFields && dateTimeRestored) {
       payload.dateTimeRestored = datetimeLocalToApi(dateTimeRestored);
     }
 
@@ -167,10 +181,10 @@ export default function UpdateAdvisoryModal({
           <div className="interruptions-admin-modal-body-scroll">
             {/* Advisory identity header */}
             <div className="update-advisory-identity">
-              <span className={`interruptions-admin-status-chip status-${(item.status || '').toLowerCase()}`}>
-                {getStatusDisplayLabel(item.status)}
+              <span className={`interruptions-admin-status-chip status-${interruptionStatusForCssClass(item.status)}`}>
+                {updateModalStatusLabel(item.status)}
               </span>
-              <span className="interruptions-admin-type-pill">{item.type}</span>
+              <span className="interruptions-admin-type-pill">{getTypeDisplayLabel(item.type)}</span>
               <h4 className="update-advisory-feeder">{item.feeder || '—'}</h4>
               {item.controlNo && (
                 <span className="update-advisory-control-no">{item.controlNo}</span>
@@ -188,7 +202,7 @@ export default function UpdateAdvisoryModal({
                       className={`interruptions-admin-stepper-step${newStatus === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
                     >
                       <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
-                      <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
+                      <span className="interruptions-admin-stepper-label">{updateModalStatusLabel(step)}</span>
                     </div>
                     {i < lifecycleSteps.length - 1 && (
                       <span className="interruptions-admin-stepper-connector" aria-hidden="true" />
@@ -207,14 +221,14 @@ export default function UpdateAdvisoryModal({
                       const v = ev.target.value;
                       setNewStatus(v);
                       setValidationError('');
-                      if (v === 'Restored' && !dateTimeRestored) {
+                      if (v === 'Energized' && !dateTimeRestored) {
                         setDateTimeRestored(toDatetimeLocalFromDate(new Date()));
                       }
                     }}
                   >
                     {STATUS_FORM_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
-                        {o.label}
+                        {updateModalStatusLabel(o.value)}
                       </option>
                     ))}
                   </select>
@@ -235,15 +249,15 @@ export default function UpdateAdvisoryModal({
                   </label>
                 )}
 
-                {showRestoredFields && (
+                {showEnergizedFields && (
                   <label className="interruptions-admin-span2 interruptions-admin-datetime-field">
-                    Actual restoration date and time
+                    Actual re-energization date and time
                     <div className="interruptions-admin-datetime-wrap">
                       <InModalDateTimePicker
                         value={dateTimeRestored}
                         onChange={(v) => { setDateTimeRestored(v); setValidationError(''); }}
                         required
-                        placeholder="Select restoration date and time"
+                        placeholder="Select re-energization date and time"
                       />
                     </div>
                     <DatetimePreview value={dateTimeRestored} />
@@ -264,7 +278,7 @@ export default function UpdateAdvisoryModal({
                   onClick={handleSubmitStatus}
                   disabled={saving || !statusIsChanging}
                 >
-                  {saving ? 'Saving…' : `Update to ${getStatusDisplayLabel(newStatus)}`}
+                  {saving ? 'Saving…' : `Update to ${updateModalStatusLabel(newStatus)}`}
                 </button>
               </div>
             </fieldset>

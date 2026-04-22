@@ -1,30 +1,56 @@
 /**
  * Power advisory display labels vs API/DB values.
- * DB status: Pending | Ongoing | Restored → user-facing: Upcoming | Ongoing | Resolved
+ * DB status: Pending | Ongoing | Energized (legacy rows may still read Restored until migrated).
+ * DB type: Scheduled | Emergency | NgcScheduled (legacy: Unscheduled → Emergency).
  */
+
+/** Types that use scheduled lifecycle (Pending before start) and optional bulletin scheduling. */
+export const INTERRUPTION_SCHEDULED_LIKE_TYPES = new Set(['Scheduled', 'NgcScheduled']);
+
+/** @param {string} type */
+export function isScheduledLikeOutageType(type) {
+  return INTERRUPTION_SCHEDULED_LIKE_TYPES.has(String(type || ''));
+}
+
+/** Immediate-publish outage (no staged bulletin by type). */
+export function isEmergencyOutageType(type) {
+  const t = String(type || '');
+  return t === 'Emergency' || t === 'Unscheduled';
+}
 
 /** @param {string} status */
 export function getStatusDisplayLabel(status) {
   const s = String(status || '');
   if (s === 'Pending') return 'Upcoming';
-  if (s === 'Restored') return 'Resolved';
+  if (s === 'Energized') return 'Energized';
+  if (s === 'Restored') return 'Energized';
   if (s === 'Ongoing') return 'Ongoing';
   return s || '—';
+}
+
+/** @param {string|null|undefined} type */
+export function getTypeDisplayLabel(type) {
+  const t = String(type || '');
+  const o = TYPE_FORM_OPTIONS.find((x) => x.value === t);
+  if (o) return o.label;
+  if (t === 'Unscheduled') return 'emergency';
+  return t || '—';
 }
 
 /** Options for admin <select>: value is API enum, label is user-facing */
 export const STATUS_FORM_OPTIONS = [
   { value: 'Pending', label: 'Upcoming' },
   { value: 'Ongoing', label: 'Ongoing' },
-  { value: 'Restored', label: 'Resolved' },
+  { value: 'Energized', label: 'Energized' },
 ];
 
-/** Lifecycle options when creating an advisory (no resolve at create time) */
-export const STATUS_FORM_OPTIONS_CREATE = STATUS_FORM_OPTIONS.filter((o) => o.value !== 'Restored');
+/** Lifecycle options when creating an advisory (no finalize status at create time) */
+export const STATUS_FORM_OPTIONS_CREATE = STATUS_FORM_OPTIONS.filter((o) => o.value !== 'Energized');
 
 export const TYPE_FORM_OPTIONS = [
-  { value: 'Scheduled', label: 'Scheduled interruption' },
-  { value: 'Unscheduled', label: 'Unscheduled outage' },
+  { value: 'Scheduled', label: 'scheduled' },
+  { value: 'Emergency', label: 'emergency' },
+  { value: 'NgcScheduled', label: 'NGCP scheduled' },
 ];
 
 /** Optional structured cause tag (API / DB `causeCategory`); first value '' = none */
@@ -52,5 +78,21 @@ export const FILTER_CHIPS = [
   { key: 'all', label: 'All', apiStatus: null },
   { key: 'pending', label: 'Upcoming', apiStatus: 'Pending' },
   { key: 'ongoing', label: 'Ongoing', apiStatus: 'Ongoing' },
-  { key: 'restored', label: 'Resolved', apiStatus: 'Restored' },
+  { key: 'energized', label: 'Energized', apiStatus: 'Energized' },
 ];
+
+/** True when advisory is in the post-outage / re-energized lifecycle state (for display windows, etc.). */
+export function isInterruptionEnergizedStatus(status) {
+  const s = String(status || '');
+  return s === 'Energized' || s === 'Restored';
+}
+
+/**
+ * CSS class suffix for status chips (maps legacy Restored + Energized → energized).
+ * @param {string|null|undefined} status
+ */
+export function interruptionStatusForCssClass(status) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'restored' || s === 'energized') return 'energized';
+  return s;
+}

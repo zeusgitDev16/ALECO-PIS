@@ -3,13 +3,18 @@ import {
   TYPE_FORM_OPTIONS,
   CAUSE_CATEGORY_FORM_OPTIONS,
   getStatusDisplayLabel,
+  isEmergencyOutageType,
 } from '../../utils/interruptionLabels';
 import {
   datetimeLocalToApi,
   computeInitialStatusPreview,
   datetimeLocalStringToDate,
 } from '../../utils/interruptionFormUtils';
-import { formatPhilippineWallClock } from '../../utils/dateUtils';
+import {
+  formatPhilippineWallClock,
+  formatPhilippineTemplateDateNow,
+  formatPhilippineTemplateTimeNow,
+} from '../../utils/dateUtils';
 import FeederCascadeSelect from './FeederCascadeSelect';
 import InModalDateTimePicker from './InModalDateTimePicker';
 import { uploadInterruptionImage } from '../../api/interruptionsApi';
@@ -91,7 +96,7 @@ export default function InterruptionAdvisoryForm({
   validationErrors = [],
 }) {
   const unscheduledFutureStart = useMemo(() => {
-    if (form.type !== 'Unscheduled') return false;
+    if (!isEmergencyOutageType(form.type)) return false;
     const d = datetimeLocalStringToDate(form.dateTimeStart);
     return Boolean(d && d.getTime() > Date.now());
   }, [form.type, form.dateTimeStart]);
@@ -115,8 +120,8 @@ export default function InterruptionAdvisoryForm({
   );
 
   const insertTemplate = () => {
-    const apiStart = form.dateTimeStart ? datetimeLocalToApi(form.dateTimeStart) : null;
-    const [datePart = '[Date]', timePart = '[Time]'] = apiStart ? apiStart.split(' ') : [];
+    const datePart = formatPhilippineTemplateDateNow();
+    const timePart = formatPhilippineTemplateTimeNow();
     const template = BODY_TEMPLATE.replace('[Date]', datePart)
       .replace('[Time]', timePart)
       .replace('[Areas]', form.affectedAreasText || '[Areas]')
@@ -140,7 +145,7 @@ export default function InterruptionAdvisoryForm({
     setForm((f) => ({
       ...f,
       type: v,
-      ...(v === 'Unscheduled' ? { schedulePublicLater: false, publicVisibleAt: '' } : {}),
+      ...(isEmergencyOutageType(v) ? { schedulePublicLater: false, publicVisibleAt: '' } : {}),
     }));
   };
 
@@ -334,12 +339,13 @@ export default function InterruptionAdvisoryForm({
                 </button>
               </div>
             </div>
+          </div>
             {unscheduledFutureStart && (
               <div
                 className="interruptions-admin-callout interruptions-admin-callout--warn"
                 role="note"
               >
-                Unscheduled with a future start is unusual—confirm type or start time.
+                Emergency outages with a future start are unusual—confirm type or start time.
               </div>
             )}
           </>
@@ -391,9 +397,9 @@ export default function InterruptionAdvisoryForm({
           className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--bull"
         >
           <legend>Public bulletin</legend>
-          {form.type === 'Unscheduled' ? (
+          {isEmergencyOutageType(form.type) ? (
             <p className="interruptions-admin-bull-unscheduled-note">
-              Shown immediately. Unscheduled outages are always published right away.
+              Shown immediately. Emergency outages are always published right away.
             </p>
           ) : (
             <>
@@ -529,7 +535,7 @@ export default function InterruptionAdvisoryForm({
                 />
               </label>
               <p className="interruptions-admin-field-hint">
-                When the scheduled time arrives, the system will automatically mark this advisory as <strong>Resolved</strong> and log the remark above.
+                When the scheduled time arrives, the system will automatically mark this advisory as <strong>Energized</strong> and log the remark above.
               </p>
             </div>
           )}

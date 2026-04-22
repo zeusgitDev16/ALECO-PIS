@@ -1,5 +1,5 @@
 import React from 'react';
-import { getStatusDisplayLabel } from '../../utils/interruptionLabels';
+import { getStatusDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
 import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
 
@@ -32,7 +32,7 @@ function truncate(s, max) {
 export default function InterruptionAdvisoryCard({ item, onEdit, onUpdate, onDelete, onPermanentDelete, onExpand, onCardClick, feedIndicator, onPullFromFeed, onPushToFeed, saving }) {
   const archived = Boolean(item.deletedAt);
   const statusLabel = getStatusDisplayLabel(item.status);
-  const statusClass = String(item.status || '').toLowerCase();
+  const statusClass = interruptionStatusForCssClass(item.status);
   const feederDisplay = String(item.feeder || '').trim() || '—';
   const areasFull = (item.affectedAreas || []).join(', ') || '—';
   const areasShort = truncate(areasFull, 50);

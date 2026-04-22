@@ -1,5 +1,5 @@
 import React from 'react';
-import { getStatusDisplayLabel, getCauseCategoryLabel } from '../../utils/interruptionLabels';
+import { getStatusDisplayLabel, getCauseCategoryLabel, getTypeDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
 import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconRefreshCw } from './AdvisoryActionIcons';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
@@ -14,7 +14,7 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
 
   const archived = Boolean(item.deletedAt);
   const statusLabel = getStatusDisplayLabel(item.status);
-  const statusClass = String(item.status || '').toLowerCase();
+  const statusClass = interruptionStatusForCssClass(item.status);
   const feederDisplay = String(item.feeder || '').trim() || '—';
   const areasFull = (item.affectedAreas || []).join(', ') || '—';
   const hasBody = item.body && String(item.body).trim();
@@ -41,7 +41,7 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
           <article className={`interruptions-admin-card interruptions-admin-card--detail-modal${archived ? ' interruptions-admin-card--archived' : ''}`}>
             <div className="interruptions-admin-card-head">
               <span className={`interruptions-admin-status-chip status-${statusClass}`}>{statusLabel}</span>
-              <span className="interruptions-admin-type-pill">{item.type}</span>
+              <span className="interruptions-admin-type-pill">{getTypeDisplayLabel(item.type)}</span>
               {archived && (
                 <span className="interruptions-admin-archived-chip" title="Not shown on the public home page">
                   Archived
@@ -112,7 +112,7 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
                   </dd>
                 </div>
                 <div>
-                  <dt>Actual restore</dt>
+                  <dt>Energized at</dt>
                   <dd>
                     {item.dateTimeRestored ? formatToPhilippineTime(item.dateTimeRestored) : '—'}
                   </dd>

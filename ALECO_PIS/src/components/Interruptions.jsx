@@ -4,7 +4,7 @@ import '../CSS/AdminPageLayout.css';
 import '../CSS/Buttons.css';
 import '../CSS/InterruptionsAdmin.css';
 import '../CSS/InterruptionUIScale.css';
-import { FILTER_CHIPS } from '../utils/interruptionLabels';
+import { FILTER_CHIPS, isInterruptionEnergizedStatus } from '../utils/interruptionLabels';
 import { emptyForm, buildInterruptionPayload, rowToFormState, validateInterruptionForm } from '../utils/interruptionFormUtils';
 import { useAdminInterruptions } from '../hooks/useAdminInterruptions';
 import InterruptionAdvisoryFilters from './interruptions/InterruptionAdvisoryFilters';
@@ -135,7 +135,11 @@ const AdminInterruptions = () => {
     let list = interruptions;
     const chip = FILTER_CHIPS.find((c) => c.key === activeChipKey);
     if (chip?.apiStatus) {
-      list = list.filter((i) => i.status === chip.apiStatus);
+      if (chip.apiStatus === 'Energized') {
+        list = list.filter((i) => isInterruptionEnergizedStatus(i.status));
+      } else {
+        list = list.filter((i) => i.status === chip.apiStatus);
+      }
     }
     const q = searchQuery.trim().toLowerCase();
     if (q) {

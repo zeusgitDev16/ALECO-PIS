@@ -82,7 +82,7 @@ export default function InterruptionAdvisoryBoard({
           </h3>
           <p className="widget-text">
             {archivedEmpty
-              ? 'Archived advisories appear here after you archive them from the active list, or when Resolved advisories are auto-archived after 1 day 12 hours.'
+              ? 'Archived advisories appear here after you archive them from the active list, or when Energized advisories are auto-archived after 1 day 12 hours.'
               : allEmpty
                 ? 'Create a new advisory or switch back to Active to see published items.'
                 : noData

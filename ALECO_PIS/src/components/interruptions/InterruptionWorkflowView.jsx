@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useNow } from '../../hooks/useNow';
 import { groupInterruptionsByStatus, getInterruptionColumnConfig } from '../../utils/interruptionWorkflowHelpers';
 import { formatToPhilippineTime, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
+import { getTypeDisplayLabel } from '../../utils/interruptionLabels';
 import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
 import InterruptionAdvisoryDetailModal from './InterruptionAdvisoryDetailModal';
 import InterruptionCardActionModal from './InterruptionCardActionModal';
@@ -27,7 +28,7 @@ function truncate(s, max) {
 }
 
 /**
- * InterruptionWorkflowView - Workflow columns by status (Upcoming, Ongoing, Resolved)
+ * InterruptionWorkflowView - Workflow columns by status (Upcoming, Ongoing, Energized)
  * View-only (no drag) - Edit via button
  * @param {object} props
  * @param {boolean} props.loading
@@ -108,7 +109,7 @@ export default function InterruptionWorkflowView({
     );
   }
 
-  const columns = ['Pending', 'Ongoing', 'Restored'];
+  const columns = ['Pending', 'Ongoing', 'Energized'];
 
   return (
     <div className="interruption-workflow-wrapper">
@@ -166,7 +167,7 @@ export default function InterruptionWorkflowView({
                         <div className="interruption-workflow-card-feeder">
                           {String(item.feeder || '').trim() || '—'}
                         </div>
-                        <div className="interruption-workflow-card-type">{item.type}</div>
+                        <div className="interruption-workflow-card-type">{getTypeDisplayLabel(item.type)}</div>
                         <div className="interruption-workflow-card-body" title={bodyOrCause}>
                           {bodyShort}
                         </div>

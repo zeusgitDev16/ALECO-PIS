@@ -47,7 +47,9 @@ const TICKETS_EVENT_LABELS = {
 
 const INTERRUPTIONS_EVENT_LABELS = {
   interruption_created_scheduled: 'Scheduled advisory',
-  interruption_created_unscheduled: 'Unscheduled advisory',
+  interruption_created_emergency: 'Emergency advisory',
+  interruption_created_ngc_scheduled: 'NGCP scheduled advisory',
+  interruption_created_unscheduled: 'Emergency advisory (legacy)',
   interruption_archived: 'Archived',
   interruption_type_changed: 'Type changed',
   interruption_status_changed: 'Status changed',

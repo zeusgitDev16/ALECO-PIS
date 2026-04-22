@@ -5,13 +5,14 @@ import './CSS/InterruptionFeed.css';
 import { usePublicInterruptions } from './hooks/usePublicInterruptions';
 import { useNow } from './hooks/useNow';
 import { RESOLVED_DISPLAY_MS } from './constants/interruptionConstants';
+import { isInterruptionEnergizedStatus } from './utils/interruptionLabels';
 import InterruptionFeedPost from './components/interruptions/InterruptionFeedPost';
 import VerticalProgressIndicator from './components/interruptions/VerticalProgressIndicator';
 import AsOfDateTracker from './components/interruptions/AsOfDateTracker';
 
-/** True if a Resolved advisory should be hidden (past the display window). */
+/** True if an Energized advisory should be hidden (past the display window). */
 function isResolvedPastDisplayWindow(item, now) {
-  if (item?.status !== 'Restored') return false;
+  if (!isInterruptionEnergizedStatus(item?.status)) return false;
   const restored = item?.dateTimeRestored ? new Date(item.dateTimeRestored).getTime() : 0;
   if (!restored) return false;
   const cutoff = restored + RESOLVED_DISPLAY_MS;
@@ -21,7 +22,6 @@ function isResolvedPastDisplayWindow(item, now) {
 function InterruptionList() {
   const feedRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [expandedItem, setExpandedItem] = useState(null); // State to hold the item to expand
   const { interruptions, loading, listUnavailable, refetch } = usePublicInterruptions();
   const upcomingItems = useMemo(
     () => interruptions.filter((i) => i.status === 'Pending'),
@@ -38,46 +38,15 @@ function InterruptionList() {
     });
   }, [interruptions, now]);
 
-  // Memoize date calculation so it only runs when we actually need to show the empty state
-  const bulletinDateFull = useMemo(() => {
-    if (!loading && !listUnavailable && visibleInterruptions.length === 0) {
-      return formatPhilippineNow({ weekday: true, month: true, day: true, year: true });
-    }
-    return '';
-  }, [loading, listUnavailable, visibleInterruptions.length]);
+  const bulletinDateFull = formatPhilippineNow({ weekday: true, month: true, day: true, year: true });
 
   const handleScroll = () => {
     const el = feedRef.current;
     if (!el) return;
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    const totalScroll = scrollWidth - clientWidth;
-    const progress = totalScroll > 0 ? (scrollLeft / totalScroll) * 100 : 0;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const totalScroll = scrollHeight - clientHeight;
+    const progress = totalScroll > 0 ? (scrollTop / totalScroll) * 100 : 0;
     setScrollProgress(progress);
-  };
-
-  const scroll = (direction) => {
-    const el = feedRef.current;
-    if (!el || !el.firstChild) return;
-
-    // Dynamically calculate the width of the first card and the gap from CSS
-    const firstCard = el.querySelector('.interruption-feed-post, .interruption-card--feed');
-    if (!firstCard) return;
-
-    const gap = parseFloat(window.getComputedStyle(el).gap) || 0;
-    const scrollAmount = firstCard.offsetWidth + gap;
-
-    const amount = direction === 'left' ? -scrollAmount : scrollAmount;
-    el.scrollBy({ left: amount, behavior: 'smooth' });
-  };
-
-  const handleExpand = (item) => {
-    setExpandedItem(item);
-    document.body.style.overflow = 'hidden'; // Prevent body scroll when modal is open
-  };
-
-  const handleCloseExpand = () => {
-    setExpandedItem(null);
-    document.body.style.overflow = 'unset'; // Restore body scroll
   };
 
   useEffect(() => {
@@ -90,6 +59,11 @@ function InterruptionList() {
     <div className="interruption-list-container">
       <h2 className="section-title">Power Outages Updates (Brownout)</h2>
 
+      <div className="feed-controls">
+        <VerticalProgressIndicator scrollProgress={scrollProgress} />
+        <AsOfDateTracker />
+      </div>
+
       <div
         className="interruption-feed"
         ref={feedRef}
@@ -97,17 +71,6 @@ function InterruptionList() {
       >
         {loading && (
           <div className="interruption-card interruption-card--bulletin interruption-card--feed" aria-busy="true">
-            <button
-              type="button"
-              className="feed-post-expand-btn"
-              title="Expand"
-              aria-label="Expand"
-              onClick={() => handleExpand({ type: 'loading' })}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-              </svg>
-            </button>
             <div className="blob blob-pending" aria-hidden />
             <div className="bg">
               <h3 className="status-header status-pending">One moment…</h3>
@@ -120,17 +83,6 @@ function InterruptionList() {
 
         {!loading && listUnavailable && (
           <div className="interruption-card interruption-card--bulletin interruption-card--feed" role="status">
-            <button
-              type="button"
-              className="feed-post-expand-btn"
-              title="Expand"
-              aria-label="Expand"
-              onClick={() => handleExpand({ type: 'unavailable' })}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-              </svg>
-            </button>
             <div className="blob blob-pending" aria-hidden />
             <div className="bg">
               <h3 className="status-header status-pending">Updates will be back soon</h3>
@@ -149,16 +101,6 @@ function InterruptionList() {
 
         {!loading && !listUnavailable && visibleInterruptions.length === 0 && (
           <div className="interruption-card interruption-card--bulletin interruption-card--good-news interruption-card--feed">
-            <button
-              type="button"
-              className="feed-post-expand-btn"
-              title="View Bulletin Details"
-              onClick={() => handleExpand({ type: 'good-news' })}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-              </svg>
-            </button>
             <div className="blob blob-restored" aria-hidden />
             <div className="bg interruption-good-news-inner">
               <div className="interruption-good-news-icon" aria-hidden>
@@ -201,131 +143,14 @@ function InterruptionList() {
 
         {hasAdvisoryCards &&
           visibleInterruptions.map((item) => (
-            <InterruptionFeedPost
-              key={item.id}
-              item={item}
-              now={now}
-              onExpand={() => handleExpand(item)} // Pass the item to the expand handler
-            />
+            <InterruptionFeedPost key={item.id} item={item} now={now} />
           ))}
       </div>
 
-      <div className="feed-controls">
-        <VerticalProgressIndicator scrollProgress={scrollProgress} />
-        {hasAdvisoryCards && (
-          <div className="feed-nav-buttons-bottom">
-            <button
-              type="button"
-              className="feed-nav-btn-bottom"
-              onClick={() => scroll('left')}
-              aria-label="Scroll feed left"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              className="feed-nav-btn-bottom"
-              onClick={() => scroll('right')}
-              aria-label="Scroll feed right"
-            >
-              ›
-            </button>
-          </div>
-        )}
-        <AsOfDateTracker />
-      </div>
-
       <hr className="section-separator" aria-hidden="true" />
-
-      {/* --- Full Card Expansion Modal --- */}
-      {expandedItem && (
-        <div className="interruption-modal-overlay" onClick={handleCloseExpand}>
-          <div className="interruption-modal-container" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="interruption-modal-close-btn"
-              onClick={handleCloseExpand}
-              aria-label="Close"
-            >
-              &times;
-            </button>
-
-            {/* 1. Expansion for Data-driven Post (Standard Advisories) */}
-            {expandedItem.id && (
-              <InterruptionFeedPost
-                item={expandedItem}
-                now={now}
-                isExpandedView={true} // Indicate that this is an expanded view
-              />
-            )}
-
-            {/* 2. Expansion for Loading State */}
-            {expandedItem.type === 'loading' && (
-              <div className="interruption-card interruption-card--bulletin interruption-card--feed">
-                <div className="blob blob-pending" aria-hidden />
-                <div className="bg">
-                  <h3 className="status-header status-pending">Checking for updates...</h3>
-                  <div className="card-details card-details--bulletin">
-                    <p>We are currently fetching the latest power interruption advisories from the ALECO system. Please wait a moment.</p>
-                    <p>This automated board updates in real-time as soon as technical teams publish new information.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 3. Expansion for Unavailable State */}
-            {expandedItem.type === 'unavailable' && (
-              <div className="interruption-card interruption-card--bulletin interruption-card--feed">
-                <div className="blob blob-pending" aria-hidden />
-                <div className="bg">
-                  <h3 className="status-header status-pending">Updates Unavailable</h3>
-                  <div className="card-details card-details--bulletin">
-                    <p>The system is currently unable to sync with the advisory database. This may be due to a temporary network interruption.</p>
-                    <button type="button" className="interruption-bulletin-btn" onClick={() => { handleCloseExpand(); refetch(); }}>
-                      Retry Connection
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 4. Expansion for Good News State */}
-            {expandedItem.type === 'good-news' && (
-              <div className="interruption-card interruption-card--bulletin interruption-card--good-news interruption-card--feed">
-                <div className="blob blob-restored" aria-hidden />
-                <div className="bg interruption-good-news-inner">
-                  <div className="interruption-good-news-icon" aria-hidden>
-                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" opacity="0.35" />
-                      <path d="M14 24.5l7 7 13-16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <span className="interruption-good-news-badge">Status Report</span>
-                  <h3 className="status-header status-restored interruption-good-news-headline">
-                    Grid Status: Stable
-                  </h3>
-                  <p className="interruption-good-news-date">{bulletinDateFull}</p>
-                  <div className="card-details card-details--bulletin card-details--good-news">
-                    <p className="interruption-good-news-lead">
-                      <strong>There are no scheduled work or reported wide-area outages at this time.</strong>
-                    </p>
-                    <p className="interruption-good-news-body">
-                      This board serves as the official announcement channel for planned maintenance, emergency repairs, and large-scale power restorations.
-                      If your area is experiencing a localized outage not listed here, it might be due to a specific circuit issue.
-                    </p>
-                    <p className="interruption-good-news-help">
-                      Are you experiencing an outage? Please use our <strong>Report a Problem</strong> tool or contact the <strong>ALECO Hotline</strong> directly so technical crews can assist you.
-                    </p>
-                    <p className="interruption-bulletin-enjoy" style={{ fontSize: '1.2rem' }}>All Systems Normal</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 export default InterruptionList;
+

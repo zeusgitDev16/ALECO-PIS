@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNow } from '../../hooks/useNow';
-import { getStatusDisplayLabel } from '../../utils/interruptionLabels';
+import { getStatusDisplayLabel, getTypeDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
 import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
 import InterruptionAdvisoryDetailModal from './InterruptionAdvisoryDetailModal';
@@ -169,7 +169,7 @@ export default function InterruptionCompactView({
               const feedIndicator = archived ? 'archived' : isCurrentlyOnPublicFeed(item, now) ? 'on-feed' : 'not-on-feed';
               const areasFull = (item.affectedAreas || []).join(', ') || '—';
               const areasShort = truncate(areasFull, 50);
-              const statusClass = String(item.status || '').toLowerCase();
+              const statusClass = interruptionStatusForCssClass(item.status);
               return (
                 <tr
                   key={item.id}
@@ -180,7 +180,7 @@ export default function InterruptionCompactView({
                   onKeyDown={isClickableLayout ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } } : undefined}
                 >
                   <td className="col-feeder">{String(item.feeder || '').trim() || '—'}</td>
-                  <td className="col-type">{item.type || '—'}</td>
+                  <td className="col-type">{getTypeDisplayLabel(item.type)}</td>
                   <td className="col-status">
                     <span className={`interruptions-compact-status-badge status-${statusClass}`}>
                       {getStatusDisplayLabel(item.status)}

@@ -129,13 +129,16 @@ export const INTERRUPTIONS_TAB = 'interruptions';
 export const INTERRUPTIONS_EVENT = {
   /** New advisory with type Scheduled */
   CREATED_SCHEDULED: 'interruption_created_scheduled',
-  /** New advisory with type Unscheduled */
+  /** New advisory with type Emergency (legacy notifications may still use interruption_created_unscheduled) */
+  CREATED_EMERGENCY: 'interruption_created_emergency',
   CREATED_UNSCHEDULED: 'interruption_created_unscheduled',
+  /** New advisory with type NgcScheduled */
+  CREATED_NGC_SCHEDULED: 'interruption_created_ngc_scheduled',
   /** Soft-deleted (archived) */
   ARCHIVED: 'interruption_archived',
-  /** Scheduled ↔ Unscheduled changed on edit */
+  /** Outage type changed on edit */
   TYPE_CHANGED: 'interruption_type_changed',
-  /** Pending / Ongoing / Restored transition */
+  /** Pending / Ongoing / Energized transition */
   STATUS_CHANGED: 'interruption_status_changed',
 };
 

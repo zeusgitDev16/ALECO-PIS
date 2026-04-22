@@ -3,6 +3,7 @@ import {
   getStatusDisplayLabel,
   getCauseCategoryLabel,
   TYPE_FORM_OPTIONS,
+  isEmergencyOutageType,
 } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
 import AdvisoryLog from './AdvisoryLog';
@@ -128,7 +129,7 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
               <dd>{d.dateTimeEndEstimated ? formatToPhilippineTime(d.dateTimeEndEstimated) : '—'}</dd>
             </div>
             <div>
-              <dt>Actual restoration</dt>
+              <dt>Energized at</dt>
               <dd>{d.dateTimeRestored ? formatToPhilippineTime(d.dateTimeRestored) : '—'}</dd>
             </div>
             <div>
@@ -140,8 +141,8 @@ export default function InterruptionAdvisoryViewOnly({ detail, loading = false, 
 
         <section className="interruptions-admin-view-section">
           <h4 className="interruptions-admin-view-section-title">Public bulletin</h4>
-          {d.type === 'Unscheduled' ? (
-            <p className="interruptions-admin-view-text">Shown immediately. Unscheduled outages are always published right away.</p>
+          {isEmergencyOutageType(d.type) ? (
+            <p className="interruptions-admin-view-text">Shown immediately. Emergency outages are always published right away.</p>
           ) : hasScheduledPublic ? (
             <p className="interruptions-admin-view-text">
               {isPublicVisibilityPending(d.publicVisibleAt) ? (

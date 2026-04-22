@@ -21,6 +21,7 @@ import {
 } from '../utils/interruptionsDbSupport.js';
 import { clampSqlInt } from '../utils/safeSqlInt.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
+import { INTERRUPTION_TYPES, INTERRUPTION_STATUSES } from '../constants/interruptionFieldEnums.js';
 import { recordInterruptionNotification, INTERRUPTIONS_EVENT } from '../utils/adminNotifications.js';
 import { requireAdmin } from '../middleware/requireRole.js';
 
@@ -46,8 +47,8 @@ function listInterruptionCols(hasDeletedAt, hasPulledFromFeedAt) {
   return hasDeletedAt ? `${cols}, deleted_at` : cols;
 }
 
-const TYPES = new Set(['Scheduled', 'Unscheduled']);
-const STATUSES = new Set(['Pending', 'Ongoing', 'Restored']);
+const TYPES = INTERRUPTION_TYPES;
+const STATUSES = INTERRUPTION_STATUSES;
 const CAUSE_CATEGORY_VALUES = new Set([
   'Maintenance',
   'Equipment',
@@ -83,10 +84,12 @@ function validatePayload(body, { partial = false } = {}) {
   const dateTimeStart = body.dateTimeStart;
 
   if (!partial || type !== undefined) {
-    if (!type || !TYPES.has(type)) errors.push('type must be Scheduled or Unscheduled');
+    if (!type || !TYPES.has(type)) {
+      errors.push('type must be Scheduled, Emergency, or NgcScheduled');
+    }
   }
   if (!partial || status !== undefined) {
-    if (!status || !STATUSES.has(status)) errors.push('status must be Pending, Ongoing, or Restored');
+    if (!status || !STATUSES.has(status)) errors.push('status must be Pending, Ongoing, or Energized');
   }
   if (!partial || feeder !== undefined || feederIdRaw !== undefined) {
     const hasFeederText = feeder != null && String(feeder).trim() !== '';
@@ -204,7 +207,7 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
       `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = ? WHERE ${upgradeWhere}`,
       [phNow]
     );
-    // Auto-restore: mark as Restored when scheduled_restore_at has passed
+    // Auto-restore: mark as Energized when scheduled_restore_at has passed
     {
       const autoRestoreWhere = hasDel
         ? "status IN ('Pending','Ongoing') AND deleted_at IS NULL AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= NOW()"
@@ -214,7 +217,7 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
       );
       for (const due of dueRows) {
         await pool.execute(
-          `UPDATE aleco_interruptions SET status = 'Restored', date_time_restored = ?, scheduled_restore_at = NULL, updated_at = ? WHERE id = ?`,
+          `UPDATE aleco_interruptions SET status = 'Energized', date_time_restored = ?, scheduled_restore_at = NULL, updated_at = ? WHERE id = ?`,
           [phNow, phNow, due.id]
         );
         const remark = due.scheduled_restore_remark
@@ -228,10 +231,10 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
         );
       }
     }
-    // Auto-archive Restored advisories after 1 day 12 hours from restoration time
+    // Auto-archive Energized advisories after 1 day 12 hours from restoration time
     if (hasDel) {
       await pool.query(
-        `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = 'Restored' AND deleted_at IS NULL
+        `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = 'Energized' AND deleted_at IS NULL
          AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= ?`,
         [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
       );
@@ -421,7 +424,9 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
     const createEvent =
       type === 'Scheduled'
         ? INTERRUPTIONS_EVENT.CREATED_SCHEDULED
-        : INTERRUPTIONS_EVENT.CREATED_UNSCHEDULED;
+        : type === 'NgcScheduled'
+          ? INTERRUPTIONS_EVENT.CREATED_NGC_SCHEDULED
+          : INTERRUPTIONS_EVENT.CREATED_EMERGENCY;
     await recordInterruptionNotification(pool, {
       eventType: createEvent,
       subjectName: String(result.insertId),
@@ -514,14 +519,14 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
       dateTimeRestored !== null &&
       String(dateTimeRestored).trim() !== '';
 
-    if (hasNonEmptyRestored && nextStatus !== 'Restored') {
+    if (hasNonEmptyRestored && nextStatus !== 'Energized') {
       return res.status(400).json({
         success: false,
-        message: 'dateTimeRestored is only allowed when status is Resolved (Restored).',
+        message: 'dateTimeRestored is only allowed when status is Energized.',
       });
     }
 
-    if (nextStatus === 'Restored') {
+    if (nextStatus === 'Energized') {
       let restoredMysql = null;
       if (hasNonEmptyRestored) {
         restoredMysql = toMysqlDateTime(dateTimeRestored);
@@ -531,7 +536,7 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
       if (!restoredMysql) {
         return res.status(400).json({
           success: false,
-          message: 'Resolved status requires actual restoration date/time (dateTimeRestored).',
+          message: 'Energized status requires actual restoration date/time (dateTimeRestored).',
         });
       }
     }
@@ -601,7 +606,7 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
       params.push(dateTimeEndEstimated ? toMysqlDateTime(dateTimeEndEstimated) : null);
     }
     if (dateTimeRestored !== undefined) {
-      if (nextStatus === 'Restored') {
+      if (nextStatus === 'Energized') {
         const v = hasNonEmptyRestored
           ? toMysqlDateTime(dateTimeRestored)
           : ex.date_time_restored
@@ -635,7 +640,7 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
       params.push(srr != null && String(srr).trim() ? String(srr).trim() : null);
     }
 
-    if (status !== undefined && status !== 'Restored' && dateTimeRestored === undefined) {
+    if (status !== undefined && status !== 'Energized' && dateTimeRestored === undefined) {
       fields.push('date_time_restored = ?');
       params.push(null);
     }
@@ -671,7 +676,7 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     if (statusIsChanging && !isPendingToOngoing && statusChangeRemark) {
       const remarkText = String(statusChangeRemark).trim();
       if (remarkText) {
-        const statusLabels = { Pending: 'Upcoming', Ongoing: 'Ongoing', Restored: 'Resolved' };
+        const statusLabels = { Pending: 'Upcoming', Ongoing: 'Ongoing', Energized: 'Energized' };
         const fromLabel = statusLabels[ex.status] ?? ex.status;
         const toLabel = statusLabels[nextStatus] ?? nextStatus;
         const fullRemark = `Status changed from ${fromLabel} to ${toLabel}: ${remarkText}`;

@@ -2,6 +2,8 @@
 
 **Purpose:** Compare the **reference posters** (scheduled ALECO, emergency ALECO, NGCP scheduled) with what the **interruption dashboard** and **`aleco_interruptions`** row can supply today, so poster work and admin changes stay aligned.
 
+**Last revised:** 2026-04-22 — cross-check with full repo scan; consolidated gaps and API/auth notes live in **`docs/INTERRUPTION_POSTER_ADMIN_ALIGNMENT_GAPS.md`**.
+
 **Sources:** Poster layouts described for public advisories; data model from `backend/utils/interruptionsDto.js` (`mapRowToDto`), `backend/routes/interruptions.js`, `src/utils/interruptionFormUtils.js`, `src/components/interruptions/InterruptionAdvisoryForm.jsx`.
 
 ---
@@ -116,6 +118,8 @@ From `InterruptionAdvisoryForm` + `buildInterruptionPayload`:
 
 ## 6. Related documents
 
+- `docs/INTERRUPTION_POSTER_PRODUCT_DECISIONS.md` — stakeholder decisions (Facebook, generation timing, fallbacks, sizing, hosting)  
+- `docs/INTERRUPTION_POSTER_ADMIN_ALIGNMENT_GAPS.md` — finalized inventory: DB, API, auth, capture, poster gaps  
 - `docs/ADMIN_INTERRUPTIONS_DASHBOARD_AUDIT.md` — overall admin screen behavior  
 - Implementation: `src/utils/interruptionFormUtils.js`, `backend/routes/interruptions.js`, `backend/utils/interruptionsDto.js`
 
@@ -124,3 +128,5 @@ From `InterruptionAdvisoryForm` + `buildInterruptionPayload`:
 ## 7. Short conclusion
 
 The dashboard already supports **most ALECO scheduled/emergency poster slots** with **REASON precedence** and **time-range helpers** in `src/utils/interruptionPosterFields.js`. **Grouped affected areas** use `affected_areas_grouped` with a flat-list fallback. **NGCP** extended content uses **strategy 4A** (rich **`body`**). **Poster preview** lives in admin (`InterruptionPosterAlignmentPreview`). **Public print route:** `/poster/interruption/:id` for Puppeteer. **Poster stub API:** `POST /api/interruptions/:id/poster-stub` sets `poster_image_url` (Cloudinary placeholder when configured, else `stub://` or `INTERRUPTION_POSTER_STUB_BASE_URL`).
+
+**Operational caveat:** The print page loads one advisory via **`GET /api/interruptions/:id`**, which **requires an authenticated session** (not on the public allowlist with `GET /api/interruptions`). Headless **Puppeteer** hitting the deployed SPA typically has **no JWT in `localStorage`**, so capture may fail unless the API exposes a **signed/public read**, server-side render, or injected credentials. Treat this as part of the poster pipeline design—see **`docs/INTERRUPTION_POSTER_ADMIN_ALIGNMENT_GAPS.md`** §4.7 / Appendix C.

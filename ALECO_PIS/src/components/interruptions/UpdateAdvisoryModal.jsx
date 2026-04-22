@@ -47,6 +47,8 @@ function updateModalStatusLabel(status) {
  * @param {boolean} props.saving
  * @param {boolean} props.memoSaving
  * @param {{ type: string, text: string }|null} props.memoMessage
+ * @param {{ type: string, text: string }|null} [props.saveMessage] - page-level message from saveAdvisory (errors)
+ * @param {() => void} [props.onClearSaveMessage] - clear saveMessage when user edits the form
  * @param {(id: number, remark: string) => Promise<boolean>} props.onAddMemo
  * @param {(payload: object) => Promise<{ saved: boolean }>} props.onSaveStatus
  * @param {() => void} props.onClose
@@ -58,6 +60,8 @@ export default function UpdateAdvisoryModal({
   saving = false,
   memoSaving = false,
   memoMessage = null,
+  saveMessage = null,
+  onClearSaveMessage,
   onAddMemo,
   onSaveStatus,
   onClose,
@@ -221,6 +225,7 @@ export default function UpdateAdvisoryModal({
                       const v = ev.target.value;
                       setNewStatus(v);
                       setValidationError('');
+                      onClearSaveMessage?.();
                       if (v === 'Energized' && !dateTimeRestored) {
                         setDateTimeRestored(toDatetimeLocalFromDate(new Date()));
                       }
@@ -242,7 +247,11 @@ export default function UpdateAdvisoryModal({
                     <input
                       type="text"
                       value={remark}
-                      onChange={(ev) => { setRemark(ev.target.value); setValidationError(''); }}
+                      onChange={(ev) => {
+                        setRemark(ev.target.value);
+                        setValidationError('');
+                        onClearSaveMessage?.();
+                      }}
                       placeholder="e.g. Power restored ahead of schedule, Crew confirmed re-energization…"
                       className="interruptions-admin-status-remark-input"
                     />
@@ -255,7 +264,11 @@ export default function UpdateAdvisoryModal({
                     <div className="interruptions-admin-datetime-wrap">
                       <InModalDateTimePicker
                         value={dateTimeRestored}
-                        onChange={(v) => { setDateTimeRestored(v); setValidationError(''); }}
+                        onChange={(v) => {
+                          setDateTimeRestored(v);
+                          setValidationError('');
+                          onClearSaveMessage?.();
+                        }}
                         required
                         placeholder="Select re-energization date and time"
                       />
@@ -270,6 +283,14 @@ export default function UpdateAdvisoryModal({
                   {validationError}
                 </div>
               )}
+
+              {saveMessage &&
+                (saveMessage.type === 'err' || saveMessage.type === 'conflict') &&
+                saveMessage.text && (
+                  <div className="interruptions-admin-callout interruptions-admin-callout--warn" role="alert">
+                    {saveMessage.text}
+                  </div>
+                )}
 
               <div className="update-advisory-status-actions">
                 <button

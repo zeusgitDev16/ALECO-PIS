@@ -8,6 +8,7 @@ import {
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
 import AdvisoryLog from './AdvisoryLog';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
+import { apiUrl } from '../../utils/api';
 import InterruptionPosterAlignmentPreview from './InterruptionPosterAlignmentPreview';
 
 function getTypeLabel(type) {
@@ -242,6 +243,46 @@ export default function InterruptionAdvisoryViewOnly({
             </div>
           )}
         </section>
+
+        {d.id != null && Number.isFinite(Number(d.id)) && (
+          <section className="interruptions-admin-view-section interruptions-admin-poster-share-panel">
+            <h4 className="interruptions-admin-view-section-title">Share links</h4>
+            <p className="interruptions-admin-field-hint">
+              For Facebook, share the <strong>HTML share page</strong> so crawlers read <code>og:image</code>. Use the
+              direct image URL when you only need the raster.
+            </p>
+            <p className="interruptions-admin-share-line">
+              <span className="interruptions-admin-share-label">Share (HTML / OG)</span>
+              <code className="interruptions-admin-share-url">{apiUrl(`/api/share/interruption/${d.id}`)}</code>
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                onClick={() => {
+                  const u = apiUrl(`/api/share/interruption/${d.id}`);
+                  navigator.clipboard?.writeText(u).catch(() => {});
+                }}
+              >
+                Copy
+              </button>
+            </p>
+            {d.posterImageUrl && String(d.posterImageUrl).trim().startsWith('http') ? (
+              <p className="interruptions-admin-share-line">
+                <span className="interruptions-admin-share-label">Direct image</span>
+                <code className="interruptions-admin-share-url">{String(d.posterImageUrl).trim()}</code>
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  onClick={() => {
+                    const u = String(d.posterImageUrl).trim();
+                    navigator.clipboard?.writeText(u).catch(() => {});
+                  }}
+                >
+                  Copy
+                </button>
+              </p>
+            ) : null}
+          </section>
+        )}
 
         <AdvisoryLog
           updates={d.updates || []}

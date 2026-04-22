@@ -5,6 +5,7 @@ import Footer from './Footer.jsx'
 import AdminLayout from './components/AdminLayout.jsx';
 import InterruptionList from './InterruptionList.jsx'
 import PublicInterruptionPosterPage from './components/interruptions/PublicInterruptionPosterPage.jsx';
+import PrintInterruptionPosterPage from './components/interruptions/PrintInterruptionPosterPage.jsx';
 import LandingPage from './components/headers/landingPage.jsx';
 import './CSS/BodyLandPage.css';
 import CookieBanner from './components/CookieBanner.jsx';
@@ -100,6 +101,7 @@ const NavigationWrapper = () => {
         } />
 
         <Route path="/poster/interruption/:id" element={<PublicInterruptionPosterPage />} />
+        <Route path="/print-interruption/:id" element={<PrintInterruptionPosterPage />} />
 
         {/* ADMIN ROUTES — session required (password or Google via login.jsx only) */}
         <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

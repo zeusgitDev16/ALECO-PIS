@@ -128,13 +128,15 @@ const AdminInterruptions = () => {
     }
   }, [viewMode]);
 
+  // Load detail for the Edit modal only. Do not clear editDetail while the Update-advisory modal is open
+  // (update flow also uses editDetail + loadEditDetail); clearing here used to race and wipe data mid-load.
   useEffect(() => {
     if (modalOpen && editingId) {
       loadEditDetail(editingId);
-    } else {
+    } else if (!updateModalId) {
       clearEditDetail();
     }
-  }, [modalOpen, editingId, loadEditDetail, clearEditDetail]);
+  }, [modalOpen, editingId, updateModalId, loadEditDetail, clearEditDetail]);
 
   useEffect(() => {
     if (!modalOpen || !editingId) {
@@ -229,6 +231,7 @@ const AdminInterruptions = () => {
 
   const openUpdate = (row) => {
     if (row?.id != null) addOpened(row.id);
+    setMessage(null);
     setUpdateModalId(row.id);
     loadEditDetail(row.id);
   };
@@ -745,6 +748,8 @@ const AdminInterruptions = () => {
             saving={saving}
             memoSaving={memoSaving}
             memoMessage={memoMessage}
+            saveMessage={message}
+            onClearSaveMessage={() => setMessage(null)}
             onAddMemo={addMemo}
             onSaveStatus={handleSaveStatus}
             onClose={closeUpdateModal}

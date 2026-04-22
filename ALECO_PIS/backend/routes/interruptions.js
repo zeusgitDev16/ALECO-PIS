@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import express from 'express';
 import pool from '../config/db.js';
 import { upload, cloudinary } from '../../cloudinaryConfig.js';
@@ -20,15 +19,48 @@ import {
   getAlecoInterruptionsDeletedAtSupported,
   getAlecoInterruptionsPulledFromFeedAtSupported,
   getAlecoInterruptionsPosterExtrasSupported,
+  getAlecoInterruptionsTypeDbEnum,
+  getAlecoInterruptionsStatusDbEnum,
 } from '../utils/interruptionsDbSupport.js';
+import { apiInterruptionTypeToDbLiteral, apiInterruptionStatusToDbLiteral } from '../utils/interruptionTypeDbEnum.js';
 import { clampSqlInt } from '../utils/safeSqlInt.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 import { INTERRUPTION_TYPES, INTERRUPTION_STATUSES } from '../constants/interruptionFieldEnums.js';
 import { recordInterruptionNotification, INTERRUPTIONS_EVENT } from '../utils/adminNotifications.js';
 import { requireAdmin } from '../middleware/requireRole.js';
-import { getPublicPosterPageUrl } from '../utils/posterCaptureUrl.js';
+import { getPublicAppBaseUrl } from '../utils/posterCaptureUrl.js';
+import {
+  maybeRegeneratePosterAfterMutation,
+  captureInterruptionPosterForAdmin,
+} from '../services/interruptionPosterCapture.js';
+import { escapeHtmlAttr, shareHeadlineFromType, shareDescriptionFromDto } from '../utils/interruptionShareHtml.js';
 
 const router = express.Router();
+
+/**
+ * @param {import('express').Request} req
+ * @param {number} id
+ */
+function sharePageAbsoluteUrl(req, id) {
+  const proto = String(req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
+  if (!host) return '';
+  return `${proto}://${host}/api/share/interruption/${id}`;
+}
+
+/**
+ * @param {import('mysql2/promise').Pool} pool
+ * @param {number} id
+ */
+async function loadPublicVisibleInterruptionRowById(pool, id) {
+  const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+  const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+  const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+  const vis = publicInterruptionVisibilityAndClauses(hasDel, hasPulled).join(' AND ');
+  const sql = `${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ? AND ${vis}`;
+  const [rows] = await pool.execute(sql, [id]);
+  return rows[0] || null;
+}
 
 /** Columns for list + single-row fetch (see `selectInterruptionRowSql`). */
 function buildInterruptionTableColList({ includeDeletedAt, hasPulledFromFeedAt, hasPosterExtras }) {
@@ -222,6 +254,23 @@ function buildInterruptionsListWhere(req, hasDeletedAtColumn, hasPulledFromFeedA
   return clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '';
 }
 
+/**
+ * AND fragments for rows visible on the public bulletin (same as default `GET /interruptions` list).
+ * @param {boolean} hasDeletedAtColumn
+ * @param {boolean} hasPulledFromFeedAtColumn
+ * @returns {string[]}
+ */
+function publicInterruptionVisibilityAndClauses(hasDeletedAtColumn, hasPulledFromFeedAtColumn) {
+  const clauses = ['(public_visible_at IS NULL OR public_visible_at <= NOW())'];
+  if (hasPulledFromFeedAtColumn) {
+    clauses.push('pulled_from_feed_at IS NULL');
+  }
+  if (hasDeletedAtColumn) {
+    clauses.push('deleted_at IS NULL');
+  }
+  return clauses;
+}
+
 /** If query asks for admin-only views (archive / future / scheduled), enforce admin role. */
 function requireAdminIfListQueryFlags(req, res, next) {
   const q = req.query || {};
@@ -317,6 +366,96 @@ router.post('/interruptions/upload-image', requireAdmin, upload.single('image'),
   }
 });
 
+/**
+ * Public read-only advisory DTO for poster SPA / Puppeteer (no `updates[]`).
+ * Same visibility rules as default public list: not archived, not pulled, public_visible_at passed.
+ */
+router.get('/public/interruptions/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid id.' });
+  }
+
+  try {
+    const row = await loadPublicVisibleInterruptionRowById(pool, id);
+    if (!row) {
+      return res.status(404).json({ success: false, message: 'Advisory not found or not public.' });
+    }
+    const dto = mapRowToDto(row);
+    if (!dto) {
+      return res.status(404).json({ success: false, message: 'Advisory not found or not public.' });
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: dto });
+  } catch (error) {
+    console.error('Public interruption snapshot error:', error);
+    res.status(500).json({ success: false, message: 'Failed to load advisory.' });
+  }
+});
+
+/**
+ * Minimal HTML for Facebook / Open Graph (crawlers do not execute SPA meta).
+ */
+router.get('/share/interruption/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).type('text/plain').send('Invalid id.');
+  }
+
+  try {
+    const row = await loadPublicVisibleInterruptionRowById(pool, id);
+    if (!row) {
+      return res.status(404).type('text/html').send('<!DOCTYPE html><html><body>Not found</body></html>');
+    }
+    const dto = mapRowToDto(row);
+    if (!dto) {
+      return res.status(404).type('text/html').send('<!DOCTYPE html><html><body>Not found</body></html>');
+    }
+
+    const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
+    const shareUrl = sharePageAbsoluteUrl(req, id);
+    const spaBase = getPublicAppBaseUrl();
+    const spaLink = spaBase ? `${spaBase.replace(/\/$/, '')}/` : '/';
+    const title = escapeHtmlAttr(`${shareHeadlineFromType(dto.type)} | ALECO`);
+    const desc = escapeHtmlAttr(shareDescriptionFromDto(dto));
+    let image = dto.posterImageUrl && /^https?:\/\//i.test(String(dto.posterImageUrl).trim())
+      ? String(dto.posterImageUrl).trim()
+      : '';
+    if (!image && env.INTERRUPTION_OG_FALLBACK_IMAGE_URL && String(env.INTERRUPTION_OG_FALLBACK_IMAGE_URL).trim()) {
+      image = String(env.INTERRUPTION_OG_FALLBACK_IMAGE_URL).trim();
+    }
+    const ogImageBlock =
+      image !== ''
+        ? `<meta property="og:image" content="${escapeHtmlAttr(image)}">
+<meta property="og:image:secure_url" content="${escapeHtmlAttr(image)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${escapeHtmlAttr(image)}">`
+        : '';
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>${title}</title>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="${title}"/>
+<meta property="og:description" content="${desc}"/>
+<meta property="og:url" content="${escapeHtmlAttr(shareUrl)}"/>
+${ogImageBlock}
+</head>
+<body>
+<p><a href="${escapeHtmlAttr(spaLink)}">View on ALECO PIS</a></p>
+</body>
+</html>`;
+    res.setHeader('Cache-Control', 'no-store');
+    res.type('html').send(html);
+  } catch (error) {
+    console.error('Share interruption page error:', error);
+    res.status(500).type('text/plain').send('Server error');
+  }
+});
+
 /** Single advisory + remarks/updates (admin) */
 router.get('/interruptions/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
@@ -342,7 +481,7 @@ router.get('/interruptions/:id', async (req, res) => {
 });
 
 /** Append remark (optional notes for advisory) */
-router.post('/interruptions/:id/updates', async (req, res) => {
+router.post('/interruptions/:id/updates', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -424,6 +563,13 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'feeder is required' });
     }
 
+    const typeDbEnum = await getAlecoInterruptionsTypeDbEnum(pool);
+    const typeWrite = apiInterruptionTypeToDbLiteral(type, typeDbEnum);
+    if (typeWrite.error) {
+      return res.status(400).json({ success: false, message: typeWrite.error });
+    }
+    const typeForDb = typeWrite.type;
+
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
@@ -436,7 +582,7 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
          (type, status, affected_areas, affected_areas_grouped, feeder, feeder_id, cause, cause_category, body, control_no, image_url, poster_image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          type,
+          typeForDb,
           initialStatus,
           areasText,
           groupedSer,
@@ -467,7 +613,7 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
          (type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          type,
+          typeForDb,
           initialStatus,
           areasText,
           feederLabelVal,
@@ -519,6 +665,13 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
       subjectName: String(insertHeader.insertId),
       detail: feederLabelVal || 'Advisory',
       actorEmail: actorEmail != null && String(actorEmail).trim() ? String(actorEmail).trim() : null,
+    });
+
+    const newId = insertHeader.insertId;
+    setImmediate(() => {
+      maybeRegeneratePosterAfterMutation(pool, newId, null, row).catch((e) =>
+        console.warn('[poster] post-create regen:', e?.message || e)
+      );
     });
 
     res.status(201).json({ success: true, data: dto });
@@ -630,13 +783,23 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
 
     if (type !== undefined) {
       if (!TYPES.has(type)) return res.status(400).json({ success: false, message: 'Invalid type.' });
+      const typeDbEnum = await getAlecoInterruptionsTypeDbEnum(pool);
+      const typeWrite = apiInterruptionTypeToDbLiteral(type, typeDbEnum);
+      if (typeWrite.error) {
+        return res.status(400).json({ success: false, message: typeWrite.error });
+      }
       fields.push('type = ?');
-      params.push(type);
+      params.push(typeWrite.type);
     }
     if (status !== undefined) {
       if (!STATUSES.has(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
+      const statusDbEnum = await getAlecoInterruptionsStatusDbEnum(pool);
+      const statusWrite = apiInterruptionStatusToDbLiteral(status, statusDbEnum);
+      if (statusWrite.error) {
+        return res.status(400).json({ success: false, message: statusWrite.error });
+      }
       fields.push('status = ?');
-      params.push(status);
+      params.push(statusWrite.status);
     }
     if (affectedAreas !== undefined) {
       fields.push('affected_areas = ?');
@@ -764,7 +927,7 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     if (statusIsChanging && !isPendingToOngoing && statusChangeRemark) {
       const remarkText = String(statusChangeRemark).trim();
       if (remarkText) {
-        const statusLabels = { Pending: 'Upcoming', Ongoing: 'Ongoing', Energized: 'Energized' };
+        const statusLabels = { Pending: 'Upcoming', Ongoing: 'Ongoing', Energized: 'Energized', Restored: 'Energized' };
         const fromLabel = statusLabels[ex.status] ?? ex.status;
         const toLabel = statusLabels[nextStatus] ?? nextStatus;
         const fullRemark = `Status changed from ${fromLabel} to ${toLabel}: ${remarkText}`;
@@ -803,6 +966,12 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     if (!dto) {
       return res.status(500).json({ success: false, message: 'Failed to load updated interruption.' });
     }
+    const nextRaw = rows[0];
+    setImmediate(() => {
+      maybeRegeneratePosterAfterMutation(pool, id, ex, nextRaw).catch((e) =>
+        console.warn('[poster] post-update regen:', e?.message || e)
+      );
+    });
     res.json({ success: true, data: dto });
   } catch (error) {
     console.error('Interruptions update error:', error);
@@ -852,7 +1021,7 @@ router.delete('/interruptions/:id', requireAdmin, async (req, res) => {
 });
 
 /** Permanently delete an archived advisory. Only allowed when deleted_at IS NOT NULL. */
-router.delete('/interruptions/:id/permanent', async (req, res) => {
+router.delete('/interruptions/:id/permanent', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -1007,14 +1176,14 @@ router.patch('/interruptions/:id/push-to-feed', requireAdmin, async (req, res) =
 });
 
 /**
- * Capture the public poster page with Puppeteer, upload PNG to Cloudinary, save `poster_image_url`.
- * Requires `PUBLIC_APP_URL` or `FRONTEND_ORIGIN` (deployed SPA) reachable from this server, and Cloudinary.
+ * Capture poster image to Cloudinary and save `poster_image_url`.
+ * Uses the live print page when the advisory is public-visible; otherwise (or if print fails) uses an HTML fallback.
+ * For the print path, set `PUBLIC_APP_URL` or `FRONTEND_ORIGIN` to the deployed SPA origin.
  */
 router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
-  let browser;
   try {
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     if (!hasPoster) {
@@ -1024,18 +1193,14 @@ router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) 
           'poster_image_url column missing. Run: node backend/run-migration.js backend/migrations/add_affected_areas_grouped_and_poster_image_url.sql',
       });
     }
-    const [check] = await pool.execute('SELECT id FROM aleco_interruptions WHERE id = ?', [id]);
-    if (check.length === 0) {
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const [capRows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [
+      id,
+    ]);
+    const rawRow = capRows[0];
+    if (!rawRow) {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
-    }
-
-    const posterPageUrl = getPublicPosterPageUrl(id);
-    if (!posterPageUrl) {
-      return res.status(503).json({
-        success: false,
-        message:
-          'Set PUBLIC_APP_URL or FRONTEND_ORIGIN on the API host to your deployed SPA origin so the server can open /poster/interruption/:id.',
-      });
     }
 
     const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
@@ -1046,36 +1211,11 @@ router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) 
       });
     }
 
-    const puppeteerMod = await import('puppeteer');
-    const puppeteer = puppeteerMod.default || puppeteerMod;
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
-    const page = await browser.newPage();
-    const vw = Math.min(
-      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_WIDTH || '560'), 10) || 560, 320),
-      1200
-    );
-    const vh = Math.min(
-      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_HEIGHT || '900'), 10) || 900, 400),
-      2000
-    );
-    await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 2 });
-    await page.goto(posterPageUrl, { waitUntil: 'networkidle0', timeout: 90000 });
-    const buf = await page.screenshot({ type: 'png', fullPage: true });
-    const b64 = Buffer.from(buf).toString('base64');
-    const dataUri = `data:image/png;base64,${b64}`;
-    const up = await cloudinary.uploader.upload(dataUri, {
-      folder: 'aleco_posters',
-      public_id: `interruption_${id}_capture`,
-      overwrite: true,
-      resource_type: 'image',
-    });
-    const posterUrl = up?.secure_url || up?.url || null;
-    if (!posterUrl) {
-      return res.status(500).json({ success: false, message: 'Cloudinary did not return a URL.' });
+    const cap = await captureInterruptionPosterForAdmin(pool, id, rawRow);
+    if (cap.error) {
+      return res.status(500).json({ success: false, message: cap.error });
     }
+    const posterUrl = cap.posterUrl;
 
     const phNow = nowPhilippineForMysql();
     await pool.execute('UPDATE aleco_interruptions SET poster_image_url = ?, updated_at = ? WHERE id = ?', [
@@ -1084,8 +1224,6 @@ router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) 
       id,
     ]);
 
-    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
-    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
     if (!dto) {
@@ -1105,14 +1243,6 @@ router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) 
           ? err.message
           : 'Poster capture failed (ensure the SPA URL is reachable from the API host and try again).',
     });
-  } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (closeErr) {
-        console.warn('[interruptions] poster-capture browser close:', closeErr?.message || closeErr);
-      }
-    }
   }
 });
 

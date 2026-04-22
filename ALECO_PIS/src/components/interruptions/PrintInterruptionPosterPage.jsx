@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getPublicInterruptionSnapshot } from '../../api/interruptionsApi';
-import { useNow } from '../../hooks/useNow';
-import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
-import '../../CSS/InterruptionFeed.css';
-import '../../CSS/PublicInterruptionPosterPage.css';
+import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
+import '../../CSS/InterruptionPrintPoster.css';
 
 /**
- * Minimal public page for print / headless capture (Puppeteer). Uses the same infographic as the home feed.
+ * Full ALECO print layout for server-side Puppeteer capture (`/print-interruption/:id`).
  */
-export default function PublicInterruptionPosterPage() {
+export default function PrintInterruptionPosterPage() {
   const { id: idParam } = useParams();
   const id = parseInt(String(idParam || ''), 10);
   const [item, setItem] = useState(null);
   const [error, setError] = useState(null);
-  const now = useNow([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +37,7 @@ export default function PublicInterruptionPosterPage() {
 
   if (error) {
     return (
-      <div className="public-poster-page public-poster-page--error" role="alert">
+      <div className="print-poster-page print-poster-page--error" role="alert">
         <p>{error}</p>
       </div>
     );
@@ -48,15 +45,15 @@ export default function PublicInterruptionPosterPage() {
 
   if (!item) {
     return (
-      <div className="public-poster-page public-poster-page--loading" aria-live="polite">
+      <div className="print-poster-page print-poster-page--loading" aria-live="polite">
         <p>Loading…</p>
       </div>
     );
   }
 
   return (
-    <div className="public-poster-page">
-      <InterruptionAdvisoryInfographic item={item} now={now} />
+    <div className="print-poster-page">
+      <InterruptionAlecoPrintPoster item={item} />
     </div>
   );
 }

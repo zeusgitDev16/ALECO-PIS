@@ -181,8 +181,8 @@ export function mapRowToDto(row) {
   try {
     return {
       id: row.id,
-      type: row.type,
-      status: row.status,
+      type: row.type === 'Unscheduled' ? 'Emergency' : row.type,
+      status: row.status === 'Restored' ? 'Energized' : row.status,
       affectedAreas: parseAffectedAreas(row.affected_areas),
       affectedAreasGrouped: parseAffectedAreasGroupedFromDb(row.affected_areas_grouped),
       feederId: row.feeder_id != null ? Number(row.feeder_id) : null,

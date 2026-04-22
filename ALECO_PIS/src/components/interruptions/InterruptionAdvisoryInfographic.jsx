@@ -4,6 +4,7 @@ import {
   getPosterHeadlineText,
   getPosterReasonTextUpper,
   getPosterAffectedAreasGrouped,
+  getPosterReferenceDisplay,
 } from '../../utils/interruptionPosterFields';
 import {
   formatToPhilippineTime,
@@ -31,11 +32,19 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
   const groupedAreas = getPosterAffectedAreasGrouped(item);
   const [showFullImage, setShowFullImage] = useState(false);
   const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
+  const refLine = getPosterReferenceDisplay(item.controlNo);
 
   return (
     <div className="feed-advisory-infographic">
       <div className="feed-infographic-header-bar">
-        <span>{headerText}</span>
+        <div className="feed-infographic-header-lead">
+          <span className="feed-infographic-header-title">{headerText}</span>
+          {refLine ? (
+            <span className="feed-infographic-ref" title="Control / reference number">
+              {refLine}
+            </span>
+          ) : null}
+        </div>
         {countdown && (
           <span className="feed-infographic-countdown" role="status">
             <strong>Starts in</strong> {countdown.hours > 0 ? `${countdown.hours}h ` : ''}{countdown.minutes}m

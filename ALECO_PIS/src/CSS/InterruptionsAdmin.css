@@ -3088,6 +3088,74 @@
   font-size: max(0.65rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
 }
 
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-poster-share-panel {
+  margin-top: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-share-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0 0;
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-share-label {
+  flex: 0 0 auto;
+  font-size: max(0.65rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #5a6b7d);
+  padding-top: 0.35em;
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-share-url {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-size: max(0.65rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  line-height: 1.4;
+  word-break: break-all;
+  padding: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  background: var(--bg-muted, rgba(0, 0, 0, 0.04));
+  border: max(1px, calc(1px * var(--im-field-scale, var(--interruption-ui-scale, 1)))) solid
+    var(--border-subtle, rgba(0, 0, 0, 0.08));
+}
+
+.interruptions-page-container .interruptions-admin-view-only .interruptions-admin-share-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0 0;
+}
+
+.interruptions-page-container .interruptions-admin-view-only .interruptions-admin-share-label {
+  flex: 0 0 auto;
+  font-size: max(0.65rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #5a6b7d);
+  padding-top: 0.35em;
+}
+
+.interruptions-page-container .interruptions-admin-view-only .interruptions-admin-share-url {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-size: max(0.65rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  line-height: 1.4;
+  word-break: break-all;
+  padding: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  background: var(--bg-muted, rgba(0, 0, 0, 0.04));
+  border: max(1px, calc(1px * var(--im-field-scale, var(--interruption-ui-scale, 1)))) solid
+    var(--border-subtle, rgba(0, 0, 0, 0.08));
+}
+
 .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-grouped-areas {
   display: flex;
   flex-direction: column;

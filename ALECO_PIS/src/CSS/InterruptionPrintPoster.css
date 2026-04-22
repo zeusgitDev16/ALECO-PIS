@@ -1,0 +1,181 @@
+/* Full-page print poster for Puppeteer (/print-interruption/:id) */
+
+.print-poster-page {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #fefce8;
+  box-sizing: border-box;
+}
+
+.print-poster-page--loading,
+.print-poster-page--error {
+  padding: 24px;
+  font-family: system-ui, sans-serif;
+}
+
+.aleco-print-poster {
+  padding: 20px 24px 32px;
+  font-family: 'Mulish', system-ui, sans-serif;
+  color: #0f172a;
+}
+
+.aleco-print-poster-frame {
+  max-width: 920px;
+  margin: 0 auto;
+  border: 2px solid #1e3a8a;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #f8fafc 100%);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+}
+
+.aleco-print-poster-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(90deg, #1e3a8a 0%, #172554 100%);
+  color: #f8fafc;
+}
+
+.aleco-print-poster-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.25;
+}
+
+.aleco-print-poster-ref {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #bbf7d0;
+}
+
+.aleco-print-poster-datecard {
+  flex-shrink: 0;
+}
+
+.aleco-print-poster-datecard-inner {
+  min-width: 160px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fde68a 0%, #bfdbfe 100%);
+  color: #0f172a;
+  text-align: center;
+}
+
+.aleco-print-poster-datecard-line1 {
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+.aleco-print-poster-datecard-line2 {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.aleco-print-poster-reason,
+.aleco-print-poster-feeder {
+  margin: 0;
+  padding: 12px 18px;
+}
+
+.aleco-print-poster-reason {
+  background: #93c5fd;
+  color: #0f172a;
+}
+
+.aleco-print-poster-feeder {
+  background: #1e3a8a;
+  color: #f8fafc;
+}
+
+.aleco-print-poster-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #b91c1c;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.aleco-print-poster-feeder .aleco-print-poster-label {
+  color: #fecaca;
+}
+
+.aleco-print-poster-reason-text,
+.aleco-print-poster-feeder-text {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.aleco-print-poster-schedule {
+  padding: 10px 18px;
+  font-size: 0.8rem;
+  background: #f1f5f9;
+}
+
+.aleco-print-poster-schedule p {
+  margin: 4px 0;
+}
+
+.aleco-print-poster-areas {
+  padding: 14px 18px 20px;
+  background: #e0f2fe;
+}
+
+.aleco-print-poster-areas-title {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  letter-spacing: 0.05em;
+}
+
+.aleco-print-poster-area-heading {
+  margin: 12px 0 6px;
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+.aleco-print-poster-areas ul {
+  margin: 0 0 0 18px;
+  padding: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.aleco-print-poster-disclaimer {
+  margin: 0;
+  padding: 12px 18px;
+  font-size: 0.72rem;
+  text-align: center;
+  background: #fefce8;
+  color: #334155;
+}
+
+.aleco-print-poster-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 8px 12px;
+  padding: 12px 16px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.68rem;
+}
+
+.aleco-print-poster-footer span {
+  white-space: nowrap;
+}

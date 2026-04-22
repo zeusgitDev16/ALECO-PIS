@@ -70,6 +70,35 @@ export async function listInterruptions({
 }
 
 /**
+ * Public advisory DTO (no auth). Same visibility as public bulletin list.
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ */
+export async function getPublicInterruptionSnapshot(id) {
+  const nid = parseInt(String(id), 10);
+  if (!Number.isFinite(nid) || nid <= 0) {
+    return { ok: false, success: false, data: null, message: 'Invalid id.' };
+  }
+  let res;
+  try {
+    res = await fetch(apiUrl(`/api/public/interruptions/${nid}`), {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+  } catch {
+    return { ok: false, success: false, data: null, message: 'Network error.' };
+  }
+  const json = await res.json().catch(() => null);
+  const success = res.ok && json && json.success === true;
+  return {
+    ok: res.ok,
+    success,
+    data: success ? json.data ?? null : null,
+    message: typeof json?.message === 'string' ? json.message : null,
+  };
+}
+
+/**
  * @param {object} body - POST body (camelCase per backend)
  * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
  */

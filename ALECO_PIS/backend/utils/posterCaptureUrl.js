@@ -11,10 +11,16 @@ export function getPublicAppBaseUrl() {
 
 /**
  * @param {number} id - interruption id
- * @returns {string|null} Absolute URL to minimal poster page, or null if env not set
+ * @param {'print'|'infographic'} [variant] - `print` = full ALECO layout for capture; `infographic` = feed-style block
+ * @returns {string|null} Absolute URL to poster page, or null if env not set
  */
-export function getPublicPosterPageUrl(id) {
+export function getPublicPosterPageUrl(id, variant = 'print') {
   const base = getPublicAppBaseUrl();
   if (!base) return null;
-  return `${base}/poster/interruption/${id}`;
+  const n = Number(id);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  if (variant === 'infographic') {
+    return `${base}/poster/interruption/${n}`;
+  }
+  return `${base}/print-interruption/${n}`;
 }

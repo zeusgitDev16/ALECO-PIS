@@ -136,6 +136,11 @@ export default function InterruptionFeedPostBody({ item }) {
           <strong>Category:</strong> {getCauseCategoryLabel(item.causeCategory)}
         </p>
       )}
+      {item.controlNo && (
+        <p className="feed-post-control-no">
+          <strong>Control #:</strong> <strong>{item.controlNo}</strong>
+        </p>
+      )}
     </div>
   );
 }

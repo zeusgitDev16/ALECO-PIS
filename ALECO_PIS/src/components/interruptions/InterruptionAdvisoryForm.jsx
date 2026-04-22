@@ -18,6 +18,7 @@ import {
 import FeederCascadeSelect from './FeederCascadeSelect';
 import InModalDateTimePicker from './InModalDateTimePicker';
 import { uploadInterruptionImage } from '../../api/interruptionsApi';
+import { apiUrl } from '../../utils/api';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
 import { useNow } from '../../hooks/useNow';
 
@@ -625,9 +626,10 @@ export default function InterruptionAdvisoryForm({
         {editingId && (typeof onGeneratePosterStub === 'function' || typeof onCapturePoster === 'function') && (
           <div className="interruptions-admin-poster-stub-panel">
             <p className="interruptions-admin-field-hint">
-              Poster image URL (read-only in form). <strong>Capture poster</strong> opens the public print page on the
-              deployed SPA (set <code>PUBLIC_APP_URL</code> on the API) and uploads a screenshot to Cloudinary. Use{' '}
-              <strong>stub</strong> for a quick placeholder without Puppeteer.
+              Poster image URL (read-only in form). <strong>Capture poster</strong> screenshots the{' '}
+              <code>/print-interruption/</code> page on the deployed SPA (set <code>PUBLIC_APP_URL</code> or{' '}
+              <code>FRONTEND_ORIGIN</code> on the API) and uploads to Cloudinary. Use <strong>stub</strong> for a quick
+              placeholder without Puppeteer.
             </p>
             {form.posterImageUrl ? (
               <p className="interruptions-admin-poster-stub-current">
@@ -658,6 +660,45 @@ export default function InterruptionAdvisoryForm({
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {editingId && (
+          <div className="interruptions-admin-poster-stub-panel interruptions-admin-poster-share-panel">
+            <p className="interruptions-admin-field-hint">
+              <strong>Share for Facebook:</strong> use the <strong>share page</strong> URL so the crawler reads{' '}
+              <code>og:image</code> (your Cloudinary poster). You can also copy the direct image URL.
+            </p>
+            <p className="interruptions-admin-share-line">
+              <span className="interruptions-admin-share-label">Share (HTML / OG)</span>
+              <code className="interruptions-admin-share-url">{apiUrl(`/api/share/interruption/${editingId}`)}</code>
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                onClick={() => {
+                  const u = apiUrl(`/api/share/interruption/${editingId}`);
+                  navigator.clipboard?.writeText(u).catch(() => {});
+                }}
+              >
+                Copy
+              </button>
+            </p>
+            {form.posterImageUrl && String(form.posterImageUrl).trim().startsWith('http') ? (
+              <p className="interruptions-admin-share-line">
+                <span className="interruptions-admin-share-label">Direct image</span>
+                <code className="interruptions-admin-share-url">{String(form.posterImageUrl).trim()}</code>
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  onClick={() => {
+                    const u = String(form.posterImageUrl).trim();
+                    navigator.clipboard?.writeText(u).catch(() => {});
+                  }}
+                >
+                  Copy
+                </button>
+              </p>
+            ) : null}
           </div>
         )}
 

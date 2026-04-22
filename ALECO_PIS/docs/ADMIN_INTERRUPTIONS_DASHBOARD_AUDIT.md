@@ -2,7 +2,7 @@
 
 **Scope:** `src/components/Interruptions.jsx` (default export `AdminInterruptions`), its data hook, API client, and directly mounted child modules.  
 **Route:** `/admin-interruptions` (protected) in `src/App.jsx`.  
-**Audit date:** 2026-04-22.
+**Audit date:** 2026-04-22. **Last revised:** 2026-04-22 (full-stack rescan; see `docs/INTERRUPTION_POSTER_ADMIN_ALIGNMENT_GAPS.md`).
 
 This document describes how the admin “Power advisories” screen works today, what it depends on, and gaps relevant to future work (e.g. poster preview, Puppeteer/Cloudinary exports).
 
@@ -128,7 +128,7 @@ Defined in `interruptionFormUtils.js` (`emptyForm` / `InterruptionFormState`):
 
 - **Classification:** `type`, `status`, `cause`, `causeCategory`, `controlNo`, `feeder`, `feederId`, `affectedAreasText`
 - **Schedule:** `dateTimeStart`, `dateTimeEndEstimated`, `dateTimeRestored`, `publicVisibleAt`, `schedulePublicLater`
-- **Content:** `body`, `imageUrl`
+- **Content:** `body`, `imageUrl`, **`affectedAreasGrouped`** (poster sections), **`posterImageUrl`** (read-only; set via stub/capture API)
 - **Lifecycle note:** `statusChangeRemark` (when applicable in payload)
 - **Auto-energize:** `scheduleAutoRestore`, `scheduledRestoreAt`, `scheduledRestoreRemark`
 
@@ -142,9 +142,10 @@ This set aligns with `mapRowToDto` fields and is the **authoritative input surfa
 
 | ID | Finding | Severity |
 |----|---------|----------|
-| G-1 | **`restoreAdvisory` is implemented in `useAdminInterruptions` and exported but never destructured or used in `Interruptions.jsx` or any child searched.** `restoreInterruption` API exists. Archive copy claims advisories can be “restored from the Archived list,” but **no unarchive control** was found on the dashboard or `InterruptionAdvisoryDetailModal`. | **High** — possible dead product promise |
+| G-1 | ~~**`restoreAdvisory` not wired**~~ **Resolved:** `Interruptions.jsx` destructures `restoreAdvisory` and passes **`onRestoreAdvisory`** into **`RecentOpenedAdvisories`**, **`InterruptionAdvisoryBoard`**, **`InterruptionCompactView`**, and **`InterruptionWorkflowView`** (unarchive from archived scope / archived cards). `InterruptionAdvisoryDetailModal` still exposes **`onRestore`** when provided by callers—confirm every entry path passes it if you rely on the detail modal for restore. | ~~High~~ — **closed** for main list paths; verify detail modal callers |
 | G-2 | **List cap:** Admin list hard-limited to **200** rows per query. Large histories may be incomplete without pagination or higher cap. | Medium |
-| G-3 | **Search coverage:** Query does not include `body`, `controlNo`, or `status`/`type` strings; long advisories may be hard to find. | Low–medium |
+| G-3 | **Search coverage:** Client filter does not include `body`, `controlNo`, or `status`/`type` strings; long advisories may be hard to find. | Low–medium |
+| G-4 | **API RBAC gaps (backend):** `DELETE /api/interruptions/:id/permanent` has **no `requireAdmin`** (only `requireApiSession`). `POST /api/interruptions/:id/updates` has **no `requireAdmin`**—any authenticated session could append remarks if they know an id. Tighten with `requireAdmin` (or role) to match product intent. | **High** (security / integrity) |
 
 ### 7.2 UX / maintainability
 
@@ -160,25 +161,30 @@ This set aligns with `mapRowToDto` fields and is the **authoritative input surfa
 |----|---------|------|
 | P-1 | **No dedicated “public poster preview”** in admin; staff see cards/compact/workflow + form, not the final public poster layout. | Add shared `InterruptionAdvisoryPoster` + optional layout/tab |
 | P-2 | **Structured “affected areas by municipality”** is not a first-class form model; poster designs may need richer data or conventions in `body`/`affectedAreasText`. | Schema/product decision |
-| P-3 | **Puppeteer/Cloudinary** would live **outside** this component (API + stored URL); admin would trigger “Generate poster” and display resulting URL. | Backend + env on Render |
+| P-3 | **Puppeteer/Cloudinary** is implemented on the API (`poster-stub`, `poster-capture`); admin triggers from the modal. **Caveat:** the SPA print route loads detail via **`GET /api/interruptions/:id`**, which is **not** on the public API allowlist—**anonymous** browsers (and default headless Puppeteer with no injected session) may **401** unless you add a safe public read, tokenized URL, or server-rendered capture. See `docs/INTERRUPTION_POSTER_ADMIN_ALIGNMENT_GAPS.md` §4.7 / Appendix C. | Product + infra |
 
 ---
 
 ## 8. Security and deployment notes
 
-- All mutations go through **`authFetch`** (`interruptionsApi.js`); page is behind **`ProtectedRoute`**.
+- Admin UI mutations go through **`authFetch`** (`interruptionsApi.js`); the admin page is behind **`ProtectedRoute`**.
+- **Public list:** `GET /api/interruptions` (no admin query flags) is **session-optional** per `isPublicApiRoute` in `backend/middleware/requireApiSession.js`.
+- **Single-row GET:** `GET /api/interruptions/:id` requires a **valid session**—relevant for `/poster/interruption/:id` and **Puppeteer** unless capture injects auth or uses a dedicated public/signed endpoint.
 - **Environment:** List/detail endpoints target the same `apiUrl` as the rest of the app (see deployment docs: UI Vercel, API Render).
 
 ---
 
 ## 9. Summary
 
-The admin interruptions dashboard is a **single orchestrator** (`Interruptions.jsx`) on top of a **focused hook** (`useAdminInterruptions`) and a **consistent REST client**. Layout and filtering are solid for day-to-day ops; the main **integrity gap** identified in this audit is **unarchive (`restoreAdvisory`) not being wired in the UI** despite API/hook support. For the **poster revamp**, the dashboard already centralizes **form fields** and **detail loading**; the next step is a **shared poster component** plus optional **admin preview** and **export pipeline** without duplicating business rules.
+The admin interruptions dashboard is a **single orchestrator** (`Interruptions.jsx`) on top of a **focused hook** (`useAdminInterruptions`) and a **consistent REST client**. Layout and filtering are solid for day-to-day ops; **unarchive is wired** on list layouts and recents. Remaining high-priority items: **RBAC on permanent delete and memo POST** (**G-4**), **poster capture vs authenticated detail GET** (**P-3**), list cap/search (**G-2**, **G-3**). For the **poster revamp**, centralize a **print DOM** and align capture/auth with that route.
 
 ---
 
 ## 10. Related docs
 
+- `docs/INTERRUPTION_POSTER_PRODUCT_DECISIONS.md` — poster/Facebook/capture/hosting product decisions  
+- `docs/INTERRUPTION_POSTER_ADMIN_ALIGNMENT_GAPS.md` — finalized poster/admin/database/API audit
+- `docs/ADMIN_INTERRUPTIONS_POSTER_FIELD_GAP.md` — field matrix vs posters
 - `docs/DEPLOYMENT_VERCEL_RENDER.md` — hosting split
 - `docs/DATA_MANAGEMENT_SCAN.md` — broader data-management context (if interruptions are cross-referenced)
 - Backend: `backend/routes/interruptions.js`, `backend/utils/interruptionsDto.js`

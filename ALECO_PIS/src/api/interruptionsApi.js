@@ -56,6 +56,7 @@ export async function listInterruptions({
       ok: true,
       success: true,
       data: Array.isArray(json.data) ? json.data : [],
+      meta: json.meta ?? null,
       message: null,
       unavailable: false,
     };

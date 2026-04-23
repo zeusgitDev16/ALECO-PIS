@@ -8,6 +8,7 @@ import {
   mapRowToDto,
   computeInitialStatus,
   toMysqlDateTimeFromRow,
+  toIsoForClient,
 } from '../utils/interruptionsDto.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import {
@@ -239,7 +240,7 @@ function buildInterruptionsListWhere(req, hasDeletedAtColumn, hasPulledFromFeedA
 
   const clauses = [];
   if (!includeFuture) {
-    clauses.push('(public_visible_at IS NULL OR public_visible_at <= NOW())');
+    clauses.push('(public_visible_at IS NULL OR public_visible_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))');
     if (hasPulledFromFeedAtColumn) {
       clauses.push('pulled_from_feed_at IS NULL');
     }
@@ -261,7 +262,7 @@ function buildInterruptionsListWhere(req, hasDeletedAtColumn, hasPulledFromFeedA
  * @returns {string[]}
  */
 function publicInterruptionVisibilityAndClauses(hasDeletedAtColumn, hasPulledFromFeedAtColumn) {
-  const clauses = ['(public_visible_at IS NULL OR public_visible_at <= NOW())'];
+  const clauses = ['(public_visible_at IS NULL OR public_visible_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))'];
   if (hasPulledFromFeedAtColumn) {
     clauses.push('pulled_from_feed_at IS NULL');
   }
@@ -291,10 +292,13 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
   try {
     const limit = clampSqlInt(req.query.limit, 1, 200, 100);
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    // Resolve 'Energized' vs 'Restored' depending on what the DB ENUM actually contains
+    const statusDbEnum = await getAlecoInterruptionsStatusDbEnum(pool);
+    const energizedDbLiteral = apiInterruptionStatusToDbLiteral('Energized', statusDbEnum).status ?? 'Energized';
     // Auto-upgrade Pending -> Ongoing when go-live (publicVisibleAt or dateTimeStart) has passed
     const upgradeWhere = hasDel
-      ? "status = 'Pending' AND deleted_at IS NULL AND (COALESCE(public_visible_at, date_time_start) <= NOW())"
-      : "status = 'Pending' AND (COALESCE(public_visible_at, date_time_start) <= NOW())";
+      ? "status = 'Pending' AND deleted_at IS NULL AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))"
+      : "status = 'Pending' AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))";
     const phNow = nowPhilippineForMysql();
     await pool.query(
       `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = ? WHERE ${upgradeWhere}`,
@@ -303,14 +307,14 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
     // Auto-restore: mark as Energized when scheduled_restore_at has passed
     {
       const autoRestoreWhere = hasDel
-        ? "status IN ('Pending','Ongoing') AND deleted_at IS NULL AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= NOW()"
-        : "status IN ('Pending','Ongoing') AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= NOW()";
+        ? "status IN ('Pending','Ongoing') AND deleted_at IS NULL AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)"
+        : "status IN ('Pending','Ongoing') AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)";
       const [dueRows] = await pool.query(
         `SELECT id, scheduled_restore_remark, feeder FROM aleco_interruptions WHERE ${autoRestoreWhere}`
       );
       for (const due of dueRows) {
         await pool.execute(
-          `UPDATE aleco_interruptions SET status = 'Energized', date_time_restored = ?, scheduled_restore_at = NULL, updated_at = ? WHERE id = ?`,
+          `UPDATE aleco_interruptions SET status = '${energizedDbLiteral}', date_time_restored = ?, scheduled_restore_at = NULL, updated_at = ? WHERE id = ?`,
           [phNow, phNow, due.id]
         );
         const remark = due.scheduled_restore_remark
@@ -327,7 +331,7 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
     // Auto-archive Energized advisories after 1 day 12 hours from restoration time
     if (hasDel) {
       await pool.query(
-        `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = 'Energized' AND deleted_at IS NULL
+        `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = '${energizedDbLiteral}' AND deleted_at IS NULL
          AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= ?`,
         [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
       );
@@ -345,8 +349,18 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
        LIMIT ${limit}`
     );
     const list = Array.isArray(rows) ? rows.map(mapRowToDto).filter(Boolean) : [];
+
+    // Fetch earliest future public_visible_at so public page can schedule a precise refetch.
+    const nextWhere = ['public_visible_at > DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)'];
+    if (hasDel) nextWhere.push('deleted_at IS NULL');
+    if (hasPulled) nextWhere.push('pulled_from_feed_at IS NULL');
+    const [[schedRow]] = await pool.query(
+      `SELECT MIN(public_visible_at) AS next_at FROM aleco_interruptions WHERE ${nextWhere.join(' AND ')}`
+    );
+    const nextScheduledAt = schedRow?.next_at ? toIsoForClient(schedRow.next_at) : null;
+
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, data: list });
+    res.json({ success: true, data: list, meta: { nextScheduledAt } });
   } catch (error) {
     console.error('Interruptions fetch error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch interruptions.' });

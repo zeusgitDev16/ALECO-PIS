@@ -12,8 +12,7 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
   const isBlankStub = typeof item.posterImageUrl === 'string' && item.posterImageUrl.includes('_stub');
   const safePosterUrl = (!isBlankStub && item.posterImageUrl) ? getSafeResourceUrl(item.posterImageUrl) : null;
   return (
-    <article className="interruption-feed-post">
-      {/* The Expand Button Trigger for actual advisory posts */}
+    <article className={`interruption-feed-post${safePosterUrl ? ' interruption-feed-post--poster' : ''}`}>
       {!isExpandedView && onExpand && (
         <button
           type="button"
@@ -27,8 +26,7 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
           </svg>
         </button>
       )}
-      <InterruptionFeedPostHeader item={item} /> {/* onExpand is handled by the button above, not necessarily needed in header now */}
-      <InterruptionFeedPostBody item={item} />
+      <InterruptionFeedPostHeader item={item} />
       {safePosterUrl ? (
         <div className="feed-post-poster-display">
           <img
@@ -39,7 +37,10 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
           />
         </div>
       ) : (
-        <InterruptionAdvisoryInfographic item={item} now={now} />
+        <>
+          <InterruptionFeedPostBody item={item} />
+          <InterruptionAdvisoryInfographic item={item} now={now} />
+        </>
       )}
     </article>
   );

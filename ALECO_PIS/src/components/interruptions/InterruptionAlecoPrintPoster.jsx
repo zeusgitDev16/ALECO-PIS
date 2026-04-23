@@ -68,7 +68,11 @@ export default function InterruptionAlecoPrintPoster({ item }) {
             <div className="aleco-print-poster-datecard-inner">
               <div className="aleco-print-poster-datecard-top">
                 {monthBadge && <div className="aleco-print-poster-datecard-month">{monthBadge}</div>}
-                {dayNumBadge && <div className="aleco-print-poster-datecard-daynum">{dayNumBadge}</div>}
+                {dayNumBadge && (
+                  <div className={`aleco-print-poster-datecard-daynum${dayNumBadge.includes('-') ? ' aleco-print-poster-datecard-daynum--range' : ''}`}>
+                    {dayNumBadge}
+                  </div>
+                )}
               </div>
               <div className="aleco-print-poster-datecard-bottom">
                 {dayBadge && <span className="aleco-print-poster-datecard-day">{dayBadge}</span>}

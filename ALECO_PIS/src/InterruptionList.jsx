@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+const InterruptionFeedExpandedView = lazy(() => import('./components/interruptions/InterruptionFeedExpandedView'));
 import { formatPhilippineNow } from './utils/dateUtils';
 import './CSS/BodyLandPage.css';
 import './CSS/InterruptionFeed.css';
@@ -22,6 +23,13 @@ function isResolvedPastDisplayWindow(item, now) {
 function InterruptionList() {
   const feedRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [expandedItem, setExpandedItem] = useState(null);
+
+  const handleExpand = useCallback((item) => setExpandedItem(item), []);
+  const handleClose = useCallback(() => setExpandedItem(null), []);
+
   const { interruptions, loading, listUnavailable, refetch } = usePublicInterruptions();
   const upcomingItems = useMemo(
     () => interruptions.filter((i) => i.status === 'Pending'),
@@ -40,114 +48,161 @@ function InterruptionList() {
 
   const bulletinDateFull = formatPhilippineNow({ weekday: true, month: true, day: true, year: true });
 
-  const handleScroll = () => {
+  const updateScrollState = useCallback(() => {
     const el = feedRef.current;
     if (!el) return;
-    const { scrollTop, scrollHeight, clientHeight } = el;
-    const totalScroll = scrollHeight - clientHeight;
-    const progress = totalScroll > 0 ? (scrollTop / totalScroll) * 100 : 0;
-    setScrollProgress(progress);
-  };
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const total = scrollWidth - clientWidth;
+    setScrollProgress(total > 0 ? (scrollLeft / total) * 100 : 0);
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft < total - 4);
+  }, []);
 
   useEffect(() => {
-    handleScroll();
-  }, [visibleInterruptions, loading, listUnavailable]);
+    updateScrollState();
+    const t = setTimeout(updateScrollState, 120);
+    return () => clearTimeout(t);
+  }, [visibleInterruptions, loading, listUnavailable, updateScrollState]);
+
+  const scrollFeed = useCallback((dir) => {
+    const el = feedRef.current;
+    if (!el) return;
+    const card = el.querySelector('.interruption-feed-post');
+    const step = card ? card.offsetWidth + 32 : 412;
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }, []);
 
   const hasAdvisoryCards = !loading && !listUnavailable && visibleInterruptions.length > 0;
 
   return (
     <div className="interruption-list-container">
-      <h2 className="section-title">Power Outages Updates (Brownout)</h2>
 
+      {/* ── Section heading: title + subtitle both above separator ────── */}
+      <div className="feed-section-heading">
+        <h2 className="feed-section-heading-title">Power Outage Advisories</h2>
+        <p className="feed-section-heading-sub">Published by Albay Electric Cooperative, Inc.</p>
+      </div>
+
+      {/* ── Advisory cards feed ───────────────────────────────────────── */}
+      <div className="interruption-feed" ref={feedRef} onScroll={updateScrollState}>
+          {loading && (
+            <div className="interruption-card interruption-card--bulletin interruption-card--feed" aria-busy="true">
+              <div className="blob blob-pending" aria-hidden />
+              <div className="bg">
+                <h3 className="status-header status-pending">One moment…</h3>
+                <div className="card-details card-details--bulletin">
+                  <p>We&apos;re checking for the latest brownout updates from ALECO.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!loading && listUnavailable && (
+            <div className="interruption-card interruption-card--bulletin interruption-card--feed" role="status">
+              <div className="blob blob-pending" aria-hidden />
+              <div className="bg">
+                <h3 className="status-header status-pending">Updates will be back soon</h3>
+                <div className="card-details card-details--bulletin">
+                  <p>
+                    We can&apos;t show the outage bulletin right now. This doesn&apos;t mean your power is
+                    out—only this page needs a quick refresh.
+                  </p>
+                  <button type="button" className="interruption-bulletin-btn" onClick={() => refetch()}>
+                    Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!loading && !listUnavailable && visibleInterruptions.length === 0 && (
+            <div className="interruption-card interruption-card--bulletin interruption-card--good-news interruption-card--feed">
+              <div className="blob blob-restored" aria-hidden />
+              <div className="bg interruption-good-news-inner">
+                <div className="interruption-good-news-icon" aria-hidden>
+                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" opacity="0.35" />
+                    <path
+                      d="M14 24.5l7 7 13-16"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <span className="interruption-good-news-badge">Good news</span>
+                <h3 className="status-header status-restored interruption-good-news-headline">
+                  No power advisories to report
+                </h3>
+                <p className="interruption-good-news-date">{bulletinDateFull}</p>
+                <div className="card-details card-details--bulletin card-details--good-news">
+                  <p className="interruption-good-news-lead">
+                    <strong>This board shares brownouts and planned outages</strong>—so when you see cards here,
+                    it means there is something the cooperative wants customers to know.{' '}
+                    <strong>Right now there are no new posts, and that&apos;s a good thing.</strong>
+                  </p>
+                  <p className="interruption-good-news-body">
+                    ALECO will publish advisories here whenever there&apos;s scheduled work or widespread
+                    interruptions worth announcing. Your lights might still flicker for other reasons—if you need
+                    help, we&apos;re still here for you.
+                  </p>
+                  <p className="interruption-good-news-help">
+                    Questions or an outage at home? Use <strong>Report a Problem</strong> or call{' '}
+                    <strong>ALECO</strong> so they can assist you directly.
+                  </p>
+                  <p className="interruption-bulletin-enjoy">Enjoy your day!</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {hasAdvisoryCards &&
+            visibleInterruptions.map((item) => (
+              <InterruptionFeedPost key={item.id} item={item} now={now} onExpand={() => handleExpand(item)} />
+            ))}
+      </div>
+
+      {/* ── Bottom: [progress] [◀ ▶] [As of Month, Year!] ─────────────── */}
       <div className="feed-controls">
         <VerticalProgressIndicator scrollProgress={scrollProgress} />
+        <div className="feed-nav-controls">
+          <button
+            type="button"
+            className="feed-nav-btn feed-nav-btn--prev"
+            onClick={() => scrollFeed(-1)}
+            aria-label="Previous advisory"
+            disabled={!canScrollLeft}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                 strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="feed-nav-btn feed-nav-btn--next"
+            onClick={() => scrollFeed(1)}
+            aria-label="Next advisory"
+            disabled={!canScrollRight}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                 strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </div>
         <AsOfDateTracker />
       </div>
 
-      <div
-        className="interruption-feed"
-        ref={feedRef}
-        onScroll={handleScroll}
-      >
-        {loading && (
-          <div className="interruption-card interruption-card--bulletin interruption-card--feed" aria-busy="true">
-            <div className="blob blob-pending" aria-hidden />
-            <div className="bg">
-              <h3 className="status-header status-pending">One moment…</h3>
-              <div className="card-details card-details--bulletin">
-                <p>We&apos;re checking for the latest brownout updates from ALECO.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!loading && listUnavailable && (
-          <div className="interruption-card interruption-card--bulletin interruption-card--feed" role="status">
-            <div className="blob blob-pending" aria-hidden />
-            <div className="bg">
-              <h3 className="status-header status-pending">Updates will be back soon</h3>
-              <div className="card-details card-details--bulletin">
-                <p>
-                  We can&apos;t show the outage bulletin right now. This doesn&apos;t mean your power is
-                  out—only this page needs a quick refresh.
-                </p>
-                <button type="button" className="interruption-bulletin-btn" onClick={() => refetch()}>
-                  Refresh
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!loading && !listUnavailable && visibleInterruptions.length === 0 && (
-          <div className="interruption-card interruption-card--bulletin interruption-card--good-news interruption-card--feed">
-            <div className="blob blob-restored" aria-hidden />
-            <div className="bg interruption-good-news-inner">
-              <div className="interruption-good-news-icon" aria-hidden>
-                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" opacity="0.35" />
-                  <path
-                    d="M14 24.5l7 7 13-16"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <span className="interruption-good-news-badge">Good news</span>
-              <h3 className="status-header status-restored interruption-good-news-headline">
-                No power advisories to report
-              </h3>
-              <p className="interruption-good-news-date">{bulletinDateFull}</p>
-              <div className="card-details card-details--bulletin card-details--good-news">
-                <p className="interruption-good-news-lead">
-                  <strong>This board shares brownouts and planned outages</strong>—so when you see cards here,
-                  it means there is something the cooperative wants customers to know.{' '}
-                  <strong>Right now there are no new posts, and that&apos;s a good thing.</strong>
-                </p>
-                <p className="interruption-good-news-body">
-                  ALECO will publish advisories here whenever there&apos;s scheduled work or widespread
-                  interruptions worth announcing. Your lights might still flicker for other reasons—if you need
-                  help, we&apos;re still here for you.
-                </p>
-                <p className="interruption-good-news-help">
-                  Questions or an outage at home? Use <strong>Report a Problem</strong> or call{' '}
-                  <strong>ALECO</strong> so they can assist you directly.
-                </p>
-                <p className="interruption-bulletin-enjoy">Enjoy your day!</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {hasAdvisoryCards &&
-          visibleInterruptions.map((item) => (
-            <InterruptionFeedPost key={item.id} item={item} now={now} />
-          ))}
-      </div>
-
       <hr className="section-separator" aria-hidden="true" />
+
+      {/* ── Fullscreen expanded view ───────────────────────────────────── */}
+      {expandedItem && (
+        <Suspense fallback={null}>
+          <InterruptionFeedExpandedView item={expandedItem} now={now} onClose={handleClose} />
+        </Suspense>
+      )}
     </div>
   );
 }

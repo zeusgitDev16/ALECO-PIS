@@ -4,6 +4,8 @@ import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
 import AdminLayout from './components/AdminLayout.jsx';
 import InterruptionList from './InterruptionList.jsx'
+import PublicInterruptionPosterPage from './components/interruptions/PublicInterruptionPosterPage.jsx';
+import PrintInterruptionPosterPage from './components/interruptions/PrintInterruptionPosterPage.jsx';
 import LandingPage from './components/headers/landingPage.jsx';
 import './CSS/BodyLandPage.css';
 import CookieBanner from './components/CookieBanner.jsx';
@@ -34,6 +36,9 @@ const NavigationWrapper = () => {
   // Avoid verify-session on every pathname change here — it caused false logouts on navigation.
 
   const isAdminPage = location.pathname.startsWith('/admin-');
+  const isPosterPage =
+    location.pathname.startsWith('/print-interruption/') ||
+    location.pathname.startsWith('/poster/interruption/');
   const isPublicHome = location.pathname === '/';
 
   /* Public home only: smooth scroll + scroll-padding for fixed header */
@@ -78,8 +83,8 @@ const NavigationWrapper = () => {
 
   return (
     <>
-      {/* Public only: fixed Albay strip + navbar. Admin strip lives inside AdminLayout (scroll-locked shell). */}
-      {!isAdminPage && (
+      {/* Public only: fixed Albay strip + navbar. Suppressed on poster/print pages for clean Puppeteer capture. */}
+      {!isAdminPage && !isPosterPage && (
         <div className="fix-container-nav">
           <LandingPage />
           <Navbar />
@@ -97,6 +102,9 @@ const NavigationWrapper = () => {
             <Footer />
           </div>
         } />
+
+        <Route path="/poster/interruption/:id" element={<PublicInterruptionPosterPage />} />
+        <Route path="/print-interruption/:id" element={<PrintInterruptionPosterPage />} />
 
         {/* ADMIN ROUTES — session required (password or Google via login.jsx only) */}
         <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
@@ -126,9 +134,9 @@ const NavigationWrapper = () => {
         } />
       </Routes>
 
-      <CookieBanner />
+      {!isPosterPage && <CookieBanner />}
       {/* Theme toggle: floating on landing page only; inline in dashboard (SearchBarGlobal) */}
-      {!isAdminPage && <DarkLightButton theme={theme} toggleTheme={toggleTheme} />}
+      {!isAdminPage && !isPosterPage && <DarkLightButton theme={theme} toggleTheme={toggleTheme} />}
     </>
   );
 };

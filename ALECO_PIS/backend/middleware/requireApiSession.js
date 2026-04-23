@@ -73,6 +73,12 @@ export function isPublicApiRoute(req) {
     return !adminList;
   }
 
+  /** Public advisory snapshot (poster page, share meta) — numeric id only */
+  if (m === 'GET' && /^\/api\/public\/interruptions\/[0-9]+$/i.test(path)) return true;
+
+  /** HTML share page for Open Graph (Facebook crawler) */
+  if (m === 'GET' && /^\/api\/share\/interruption\/[0-9]+$/i.test(path)) return true;
+
   if (m === 'GET' && /^\/api\/contact-numbers$/i.test(path)) return true;
   if (m === 'GET' && /^\/api\/urgent-keywords$/i.test(path)) return true;
   if (m === 'GET' && /^\/api\/feeders$/i.test(path)) return true;

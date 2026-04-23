@@ -1,10 +1,11 @@
 /* ==========================================================================
-   INTERRUPTION WORKFLOW VIEW - Compact status columns (Upcoming, Ongoing, Resolved)
-   Smaller than Personnel Kanban for denser advisory display
+   INTERRUPTION WORKFLOW VIEW - Status columns (Scheduled, Ongoing, Energized)
    ========================================================================== */
 .interruption-workflow-wrapper {
+    width: 100%;
     padding-bottom: 16px;
     overflow-x: auto;
+    min-width: 0;
 }
 
 .interruption-workflow-wrapper .interruption-workflow-loading {
@@ -20,13 +21,15 @@
 
 .interruption-workflow-board {
     display: flex;
+    width: 100%;
     gap: 10px;
-    min-width: min-content;
+    min-width: 0;
+    align-items: stretch;
 }
 
 .interruption-workflow-column {
-    flex: 0 0 180px;
-    min-width: 180px;
+    flex: 1 1 0;
+    min-width: 0;
     background: var(--bg-body);
     border-radius: 8px;
     border: 1px solid var(--border-color);
@@ -50,7 +53,7 @@
 
 .interruption-workflow-column-title {
     flex: 1;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: var(--text-header);
     margin: 0;
@@ -125,12 +128,12 @@
 }
 
 .interruption-workflow-card-body {
-    font-size: 0.65rem;
+    font-size: 0.68rem;
     color: var(--text-secondary);
     line-height: 1.35;
     margin-top: 4px;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -169,8 +172,8 @@
     }
 
     .interruption-workflow-column {
-        flex: 0 0 120px;
-        min-width: 120px;
+        flex: 1 1 0;
+        min-width: 0;
         max-height: 50vh;
     }
 

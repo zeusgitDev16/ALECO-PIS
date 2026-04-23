@@ -1,14 +1,14 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import InterruptionPosterAlignmentPreview from './InterruptionPosterAlignmentPreview';
 import {
   TYPE_FORM_OPTIONS,
   CAUSE_CATEGORY_FORM_OPTIONS,
-  getStatusDisplayLabel,
   isEmergencyOutageType,
 } from '../../utils/interruptionLabels';
 import {
   datetimeLocalToApi,
-  computeInitialStatusPreview,
   datetimeLocalStringToDate,
+  formStateToPosterPreviewDto,
 } from '../../utils/interruptionFormUtils';
 import {
   formatPhilippineWallClock,
@@ -18,7 +18,9 @@ import {
 import FeederCascadeSelect from './FeederCascadeSelect';
 import InModalDateTimePicker from './InModalDateTimePicker';
 import { uploadInterruptionImage } from '../../api/interruptionsApi';
+import { apiUrl } from '../../utils/api';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
+import { useNow } from '../../hooks/useNow';
 
 const BODY_PLACEHOLDER =
   'Type your advisory like a Facebook post. Include date, time, affected areas, and reason. You can use line breaks and structure.';
@@ -94,12 +96,16 @@ export default function InterruptionAdvisoryForm({
   onReloadAdvisory,
   advisoryArchived = false,
   validationErrors = [],
+  onGeneratePosterStub,
+  onCapturePoster,
+  posterAssetBusy = false,
 }) {
+  const now = useNow([]);
   const unscheduledFutureStart = useMemo(() => {
     if (!isEmergencyOutageType(form.type)) return false;
     const d = datetimeLocalStringToDate(form.dateTimeStart);
-    return Boolean(d && d.getTime() > Date.now());
-  }, [form.type, form.dateTimeStart]);
+    return Boolean(d && d.getTime() > now);
+  }, [form.type, form.dateTimeStart, now]);
 
   const [quickFieldsOpen, setQuickFieldsOpen] = useState(true);
   const [legacyFieldsOpen, setLegacyFieldsOpen] = useState(true);
@@ -118,6 +124,8 @@ export default function InterruptionAdvisoryForm({
     () => (form.imageUrl ? getSafeResourceUrl(form.imageUrl) : null),
     [form.imageUrl]
   );
+
+  const posterPreviewDto = useMemo(() => formStateToPosterPreviewDto(form), [form]);
 
   const insertTemplate = () => {
     const datePart = formatPhilippineTemplateDateNow();
@@ -379,6 +387,72 @@ export default function InterruptionAdvisoryForm({
                 placeholder="Legazpi City, Daraga"
               />
             </label>
+            <div className="interruptions-admin-span2 interruptions-admin-grouped-areas">
+              <span className="interruptions-admin-grouped-areas-label">Poster sections (optional)</span>
+              <p className="interruptions-admin-field-hint">
+                Section heading plus one bullet per line. If empty, the comma-separated list above is used on the poster.
+              </p>
+              {(form.affectedAreasGrouped || []).map((block, bi) => (
+                <div key={bi} className="interruptions-admin-grouped-block">
+                  <label>
+                    Section heading
+                    <input
+                      type="text"
+                      value={block.heading || ''}
+                      onChange={(ev) =>
+                        setForm((f) => {
+                          const g = [...(f.affectedAreasGrouped || [])];
+                          g[bi] = { ...g[bi], heading: ev.target.value };
+                          return { ...f, affectedAreasGrouped: g };
+                        })
+                      }
+                      placeholder="e.g. PORTION OF LEGAZPI CITY"
+                    />
+                  </label>
+                  <label>
+                    Bullets (one per line)
+                    <textarea
+                      className="interruptions-admin-grouped-bullets-textarea"
+                      rows={4}
+                      value={(block.items || []).join('\n')}
+                      onChange={(ev) => {
+                        const lines = ev.target.value.split('\n').map((x) => x.trim()).filter(Boolean);
+                        setForm((f) => {
+                          const g = [...(f.affectedAreasGrouped || [])];
+                          g[bi] = { ...g[bi], items: lines.length ? lines : [] };
+                          return { ...f, affectedAreasGrouped: g };
+                        });
+                      }}
+                      placeholder={'Barangay A\nBarangay B'}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="interruptions-admin-btn interruptions-admin-btn--small interruptions-admin-btn--secondary"
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        affectedAreasGrouped: (f.affectedAreasGrouped || []).filter((_, i) => i !== bi),
+                      }))
+                    }
+                  >
+                    Remove section
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                onClick={() =>
+                  setForm((f) => ({
+                    ...f,
+                    affectedAreasGrouped: [...(f.affectedAreasGrouped || []), { heading: '', items: [] }],
+                  }))
+                }
+              >
+                Add section
+              </button>
+            </div>
             <label className="interruptions-admin-span2">
               Cause / reason
               <input
@@ -387,6 +461,9 @@ export default function InterruptionAdvisoryForm({
                 onChange={(ev) => setForm((f) => ({ ...f, cause: ev.target.value }))}
                 placeholder="Maintenance, fault, weather…"
               />
+              <span className="interruptions-admin-field-hint">
+                Shown on the poster as REASON when filled; otherwise the advisory body is used.
+              </span>
             </label>
           </div>
           )}
@@ -540,6 +617,90 @@ export default function InterruptionAdvisoryForm({
             </div>
           )}
         </fieldset>
+
+        <details className="interruptions-admin-fieldset interruptions-admin-poster-preview-details">
+          <summary className="interruptions-admin-poster-preview-summary">Poster fields preview</summary>
+          <InterruptionPosterAlignmentPreview dto={posterPreviewDto} />
+        </details>
+
+        {editingId && (typeof onGeneratePosterStub === 'function' || typeof onCapturePoster === 'function') && (
+          <div className="interruptions-admin-poster-stub-panel">
+            <p className="interruptions-admin-field-hint">
+              Poster image URL (read-only in form). <strong>Capture poster</strong> screenshots the{' '}
+              <code>/print-interruption/</code> page on the deployed SPA (set <code>PUBLIC_APP_URL</code> or{' '}
+              <code>FRONTEND_ORIGIN</code> on the API) and uploads to Cloudinary. Use <strong>stub</strong> for a quick
+              placeholder without Puppeteer.
+            </p>
+            {form.posterImageUrl ? (
+              <p className="interruptions-admin-poster-stub-current">
+                <strong>Current:</strong> <code>{form.posterImageUrl}</code>
+              </p>
+            ) : (
+              <p className="interruptions-admin-poster-stub-current">No poster URL stored yet.</p>
+            )}
+            <div className="interruptions-admin-poster-stub-actions">
+              {typeof onCapturePoster === 'function' && (
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--submit"
+                  onClick={() => onCapturePoster()}
+                  disabled={posterAssetBusy || saving || detailLoading}
+                >
+                  {posterAssetBusy ? 'Working…' : 'Capture poster (screenshot)'}
+                </button>
+              )}
+              {typeof onGeneratePosterStub === 'function' && (
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  onClick={() => onGeneratePosterStub()}
+                  disabled={posterAssetBusy || saving || detailLoading}
+                >
+                  {posterAssetBusy ? 'Working…' : 'Generate poster stub'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {editingId && (
+          <div className="interruptions-admin-poster-stub-panel interruptions-admin-poster-share-panel">
+            <p className="interruptions-admin-field-hint">
+              <strong>Share for Facebook:</strong> use the <strong>share page</strong> URL so the crawler reads{' '}
+              <code>og:image</code> (your Cloudinary poster). You can also copy the direct image URL.
+            </p>
+            <p className="interruptions-admin-share-line">
+              <span className="interruptions-admin-share-label">Share (HTML / OG)</span>
+              <code className="interruptions-admin-share-url">{apiUrl(`/api/share/interruption/${editingId}`)}</code>
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                onClick={() => {
+                  const u = apiUrl(`/api/share/interruption/${editingId}`);
+                  navigator.clipboard?.writeText(u).catch(() => {});
+                }}
+              >
+                Copy
+              </button>
+            </p>
+            {form.posterImageUrl && String(form.posterImageUrl).trim().startsWith('http') ? (
+              <p className="interruptions-admin-share-line">
+                <span className="interruptions-admin-share-label">Direct image</span>
+                <code className="interruptions-admin-share-url">{String(form.posterImageUrl).trim()}</code>
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  onClick={() => {
+                    const u = String(form.posterImageUrl).trim();
+                    navigator.clipboard?.writeText(u).catch(() => {});
+                  }}
+                >
+                  Copy
+                </button>
+              </p>
+            ) : null}
+          </div>
+        )}
 
         {advisoryArchived && (
           <div className="interruptions-admin-callout interruptions-admin-callout--warn" role="status">

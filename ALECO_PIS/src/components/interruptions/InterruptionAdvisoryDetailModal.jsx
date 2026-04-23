@@ -9,7 +9,17 @@ import { getSafeResourceUrl } from '../../utils/safeUrl';
  * Displays the advisory exactly as a full card - same structure as the card content,
  * but in a modal for detailed viewing. Not edit mode, not the plain-text view with audit logs.
  */
-export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit, onUpdate, onPullFromFeed, onPushToFeed, saving }) {
+export default function InterruptionAdvisoryDetailModal({
+  item,
+  onClose,
+  onEdit,
+  onUpdate,
+  onPullFromFeed,
+  onPushToFeed,
+  onRestore,
+  listArchiveFilter = 'active',
+  saving,
+}) {
   if (!item) return null;
 
   const archived = Boolean(item.deletedAt);
@@ -199,6 +209,17 @@ export default function InterruptionAdvisoryDetailModal({ item, onClose, onEdit,
                   aria-label="Update status & remarks"
                 >
                   <IconRefreshCw />
+                </button>
+              )}
+              {archived && listArchiveFilter === 'archived' && typeof onRestore === 'function' && (
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  onClick={() => onRestore(item.id)}
+                  disabled={saving}
+                  title="Unarchive and return this advisory to the active list"
+                >
+                  Restore
                 </button>
               )}
               <button type="button" className="interruptions-admin-btn" onClick={onClose}>

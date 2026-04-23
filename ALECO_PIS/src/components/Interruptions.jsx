@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { generateInterruptionPosterStub, captureInterruptionPoster } from '../api/interruptionsApi';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/Buttons.css';
@@ -36,6 +37,7 @@ const AdminInterruptions = () => {
     setListArchiveFilter,
     saveAdvisory,
     removeAdvisory,
+    restoreAdvisory,
     permanentDeleteAdvisory,
     pullFromFeedAdvisory,
     pushToFeedAdvisory,
@@ -63,7 +65,62 @@ const AdminInterruptions = () => {
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('interruptionViewMode') || 'card');
   const [updateModalId, setUpdateModalId] = useState(null);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [posterAssetBusy, setPosterAssetBusy] = useState(false);
   const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedAdvisories();
+
+  const handleRestoreFromDetailModal = useCallback(
+    async (id) => {
+      const ok = await restoreAdvisory(id);
+      return ok;
+    },
+    [restoreAdvisory]
+  );
+
+  const applyPosterUrlFromResponse = useCallback(
+    async (r, fallbackErr) => {
+      if (r.success && r.data) {
+        const url = r.data.posterImageUrl ? String(r.data.posterImageUrl) : '';
+        setForm((f) => ({ ...f, posterImageUrl: url }));
+        setBaselineForm((b) => (b ? { ...b, posterImageUrl: url } : b));
+        setMessage({ type: 'ok', text: r.message || 'Poster URL updated.' });
+        await loadEditDetail(editingId);
+      } else if (r.success) {
+        setMessage({ type: 'ok', text: r.message || 'Poster URL updated.' });
+        await loadEditDetail(editingId);
+      } else {
+        setMessage({ type: 'err', text: r.message || fallbackErr });
+      }
+    },
+    [editingId, loadEditDetail]
+  );
+
+  const handlePosterStub = useCallback(async () => {
+    if (!editingId) return;
+    setPosterAssetBusy(true);
+    setMessage(null);
+    try {
+      const r = await generateInterruptionPosterStub(editingId);
+      await applyPosterUrlFromResponse(r, 'Could not set poster stub.');
+    } catch {
+      setMessage({ type: 'err', text: 'Network error.' });
+    } finally {
+      setPosterAssetBusy(false);
+    }
+  }, [editingId, applyPosterUrlFromResponse]);
+
+  const handlePosterCapture = useCallback(async () => {
+    if (!editingId) return;
+    setPosterAssetBusy(true);
+    setMessage(null);
+    try {
+      const r = await captureInterruptionPoster(editingId);
+      await applyPosterUrlFromResponse(r, 'Poster capture failed.');
+    } catch {
+      setMessage({ type: 'err', text: 'Network error.' });
+    } finally {
+      setPosterAssetBusy(false);
+    }
+  }, [editingId, applyPosterUrlFromResponse]);
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
@@ -71,13 +128,15 @@ const AdminInterruptions = () => {
     }
   }, [viewMode]);
 
+  // Load detail for the Edit modal only. Do not clear editDetail while the Update-advisory modal is open
+  // (update flow also uses editDetail + loadEditDetail); clearing here used to race and wipe data mid-load.
   useEffect(() => {
     if (modalOpen && editingId) {
       loadEditDetail(editingId);
-    } else {
+    } else if (!updateModalId) {
       clearEditDetail();
     }
-  }, [modalOpen, editingId, loadEditDetail, clearEditDetail]);
+  }, [modalOpen, editingId, updateModalId, loadEditDetail, clearEditDetail]);
 
   useEffect(() => {
     if (!modalOpen || !editingId) {
@@ -172,6 +231,7 @@ const AdminInterruptions = () => {
 
   const openUpdate = (row) => {
     if (row?.id != null) addOpened(row.id);
+    setMessage(null);
     setUpdateModalId(row.id);
     loadEditDetail(row.id);
   };
@@ -366,6 +426,8 @@ const AdminInterruptions = () => {
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
           onSelectAdvisory={openEdit}
+          listArchiveFilter={listArchiveFilter}
+          onRestoreAdvisory={handleRestoreFromDetailModal}
           onPullFromFeed={pullFromFeedAdvisory}
           onPushToFeed={pushToFeedAdvisory}
           onDelete={handleArchiveRequest}
@@ -388,6 +450,7 @@ const AdminInterruptions = () => {
             onEdit={openEdit}
             onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
+            onRestoreAdvisory={handleRestoreFromDetailModal}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -407,6 +470,7 @@ const AdminInterruptions = () => {
             onEdit={openEdit}
             onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
+            onRestoreAdvisory={handleRestoreFromDetailModal}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -426,6 +490,7 @@ const AdminInterruptions = () => {
             onEdit={openEdit}
             onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
+            onRestoreAdvisory={handleRestoreFromDetailModal}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -475,6 +540,9 @@ const AdminInterruptions = () => {
                   detail={editDetail}
                   loading={detailLoading}
                   onClose={requestCloseModal}
+                  onGeneratePosterStub={handlePosterStub}
+                  onCapturePoster={handlePosterCapture}
+                  posterAssetBusy={posterAssetBusy}
                 />
               ) : (
               <InterruptionAdvisoryForm
@@ -489,6 +557,9 @@ const AdminInterruptions = () => {
                 saveConflict={message?.type === 'conflict'}
                 onReloadAdvisory={handleReloadAdvisory}
                 advisoryArchived={advisoryArchived}
+                onGeneratePosterStub={editingId ? handlePosterStub : undefined}
+                onCapturePoster={editingId ? handlePosterCapture : undefined}
+                posterAssetBusy={posterAssetBusy}
               />
               )}
             </div>
@@ -677,6 +748,8 @@ const AdminInterruptions = () => {
             saving={saving}
             memoSaving={memoSaving}
             memoMessage={memoMessage}
+            saveMessage={message}
+            onClearSaveMessage={() => setMessage(null)}
             onAddMemo={addMemo}
             onSaveStatus={handleSaveStatus}
             onClose={closeUpdateModal}

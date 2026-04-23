@@ -5,10 +5,10 @@
   gap: 32px; /* Increased gap for better card separation */
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 15px 40px 25px 40px; /* Added room for navigation arrows at the ends */
+  padding: 8px 2px 18px 2px;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 .interruption-feed::-webkit-scrollbar {
@@ -56,6 +56,42 @@
   border-left: 4px solid transparent;
   border-right: 14px solid transparent; /* Spacing from right edge */
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 2l3 3-3 3'/%3E%3C/svg%3E");
+}
+
+/* Full-width poster image replacing the infographic when Cloudinary URL exists */
+.feed-post-poster-display {
+  margin: 4px 14px 14px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.1);
+}
+
+.feed-post-poster-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Legacy small thumbnail (kept for backward compat, hidden by default) */
+.feed-post-poster-thumb {
+  display: none;
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}
+
+.feed-post-poster-link {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+}
+
+.feed-post-poster-link img {
+  display: block;
+  width: 100%;
+  max-height: 100px;
+  object-fit: cover;
 }
 
 /* --- Feed Post Card --- */
@@ -425,10 +461,31 @@
   background-clip: padding-box; /* Ensures the background gradient stays inside the border boundaries */
 }
 
-.feed-infographic-header-bar > span {
+.feed-infographic-header-lead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.feed-infographic-header-title {
   font-weight: 800;
-  font-size: 0.75rem; /* Smaller, readable title */
+  font-size: 0.75rem;
   letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.feed-infographic-ref {
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  color: #bbf7d0;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .feed-infographic-countdown {
@@ -535,6 +592,23 @@
   margin: 4px 0;
   overflow-wrap: break-word;
   word-break: break-word;
+}
+
+.feed-infographic-area-block {
+  margin-bottom: 10px;
+}
+
+.feed-infographic-area-block:last-child {
+  margin-bottom: 0;
+}
+
+.feed-infographic-area-heading {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main, #1e3a5f);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .feed-infographic-image {
@@ -649,14 +723,14 @@
   transition: filter 0.3s ease;
 }
 
-/* --- Feed Controls (Progress + Date) --- */
+/* --- Feed Controls (Progress + Date) — now at bottom ─ */
 .feed-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 8px;
-  margin-bottom: 12px;
-  padding: 0 10px;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  padding: 0 4px;
   gap: 12px;
 }
 
@@ -673,13 +747,13 @@
 
 .feed-progress-indicator {
   height: 100%;
-  background-color: #3b82f6;
+  background-color: #8b1a1a;
   border-radius: 10px;
-  transition: width 0.25s ease-out; /* Smoother transition for the progress bar */
+  transition: width 0.25s ease-out;
 }
 
 [data-theme='dark'] .feed-progress-indicator {
-  background-color: #facc15;
+  background-color: #e05252;
 }
 
 .feed-date-tracker {
@@ -690,6 +764,355 @@
   color: var(--text-secondary);
   font-style: italic;
   flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   SECTION HEADING: title + subtitle above separator line
+   ───────────────────────────────────────────────────────────────── */
+.feed-section-heading {
+  margin-top: 0;
+  margin-bottom: calc(30px * var(--public-section-scale, 1));
+  border-bottom: max(2px, calc(3px * var(--public-section-scale, 1))) solid var(--text-secondary);
+  padding-bottom: calc(10px * var(--public-section-scale, 1));
+}
+
+.feed-section-heading-title {
+  font-size: calc(2.2rem * var(--public-section-scale, 1));
+  color: var(--text-header);
+  font-family: var(--font-header);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 calc(4px * var(--public-section-scale, 1));
+}
+
+.feed-section-heading-sub {
+  font-size: calc(0.9rem * var(--public-section-scale, 1));
+  color: var(--text-secondary);
+  margin: 0;
+  font-style: italic;
+}
+
+/* ============================================================
+   NAV BUTTON PAIR (inside .feed-controls bottom bar)
+   ============================================================ */
+.feed-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--public-section-scale, 1));
+  flex-shrink: 0;
+}
+
+.feed-nav-btn {
+  width: calc(36px * var(--public-section-scale, 1));
+  height: calc(36px * var(--public-section-scale, 1));
+  min-width: calc(36px * var(--public-section-scale, 1));
+  border-radius: 50%;
+  background: var(--text-header);
+  border: none;
+  color: var(--bg-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  padding: 0;
+}
+
+.feed-nav-btn svg {
+  width: calc(16px * var(--public-section-scale, 1));
+  height: calc(16px * var(--public-section-scale, 1));
+}
+
+.feed-nav-btn:hover:not(:disabled) {
+  opacity: 0.78;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.feed-nav-btn:disabled {
+  opacity: 0.2;
+  cursor: default;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* ============================================================
+   POSTER-FORWARD CARD MODIFIER
+   ============================================================ */
+.interruption-feed-post--poster {
+  height: auto;
+  overflow-y: visible;
+  overflow-x: hidden;
+}
+
+.interruption-feed-post--poster .feed-post-poster-display {
+  margin: 0;
+  border-radius: 0 0 15px 15px;
+  overflow: hidden;
+  border: none;
+  box-shadow: none;
+}
+
+.interruption-feed-post--poster .feed-post-poster-img {
+  border-radius: 0 0 15px 15px;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ============================================================
+   CARD — top accent border matching poster color palette
+   ============================================================ */
+.interruption-feed-post {
+  border-top: 3px solid #8b1a1a;
+}
+
+[data-theme='dark'] .interruption-feed-post {
+  border-top-color: #ef4444;
+}
+
+/* Feed controls row keeps the three items evenly spaced */
+.feed-controls {
+  justify-content: space-between;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   FULLSCREEN EXPANDED VIEW MODAL  (all sizes use --public-section-scale)
+   ───────────────────────────────────────────────────────────────── */
+.feed-expanded-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: calc(20px * var(--public-section-scale, 1)) calc(12px * var(--public-section-scale, 1)) calc(40px * var(--public-section-scale, 1));
+  backdrop-filter: blur(4px);
+}
+
+.feed-expanded-panel {
+  background: var(--bg-card);
+  border-radius: calc(16px * var(--public-section-scale, 1));
+  max-width: 700px;
+  width: 100%;
+  margin: auto;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-color);
+}
+
+.feed-expanded-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(12px * var(--public-section-scale, 1)) calc(16px * var(--public-section-scale, 1));
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-body);
+  gap: calc(10px * var(--public-section-scale, 1));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.feed-expanded-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--public-section-scale, 1));
+  flex-wrap: wrap;
+}
+
+.feed-expanded-type {
+  font-size: calc(0.75rem * var(--public-section-scale, 1));
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.feed-expanded-ref {
+  font-size: calc(0.75rem * var(--public-section-scale, 1));
+  color: var(--text-secondary);
+  font-family: monospace;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  padding: calc(1px * var(--public-section-scale, 1)) calc(6px * var(--public-section-scale, 1));
+  border-radius: calc(4px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-close {
+  width: calc(32px * var(--public-section-scale, 1));
+  height: calc(32px * var(--public-section-scale, 1));
+  min-width: calc(32px * var(--public-section-scale, 1));
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-header);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.feed-expanded-close svg {
+  width: calc(16px * var(--public-section-scale, 1));
+  height: calc(16px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-close:hover {
+  background: rgba(139, 26, 26, 0.1);
+  border-color: #8b1a1a;
+  color: #8b1a1a;
+}
+
+[data-theme='dark'] .feed-expanded-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.feed-expanded-poster-wrap {
+  background: #d4a84b;
+  padding: calc(10px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-poster-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: calc(8px * var(--public-section-scale, 1));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.feed-expanded-infographic-wrap {
+  padding: 0;
+  overflow: hidden;
+}
+
+.feed-expanded-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.feed-expanded-section {
+  padding: calc(14px * var(--public-section-scale, 1)) calc(18px * var(--public-section-scale, 1));
+  border-bottom: 1px solid var(--border-color);
+}
+
+.feed-expanded-section:last-child {
+  border-bottom: none;
+}
+
+.feed-expanded-section-title {
+  font-size: calc(0.68rem * var(--public-section-scale, 1));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #8b1a1a;
+  margin: 0 0 calc(10px * var(--public-section-scale, 1));
+}
+
+[data-theme='dark'] .feed-expanded-section-title {
+  color: #e05252;
+}
+
+.feed-expanded-row {
+  display: flex;
+  gap: calc(10px * var(--public-section-scale, 1));
+  margin-bottom: calc(6px * var(--public-section-scale, 1));
+  align-items: baseline;
+}
+
+.feed-expanded-row:last-child { margin-bottom: 0; }
+
+.feed-expanded-label {
+  font-size: calc(0.78rem * var(--public-section-scale, 1));
+  color: var(--text-secondary);
+  font-weight: 600;
+  min-width: calc(116px * var(--public-section-scale, 1));
+  flex-shrink: 0;
+}
+
+.feed-expanded-value {
+  font-size: calc(0.85rem * var(--public-section-scale, 1));
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.feed-expanded-value--restored {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .feed-expanded-value--restored {
+  color: #4ade80;
+}
+
+.feed-expanded-pill {
+  display: inline-block;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: calc(6px * var(--public-section-scale, 1));
+  padding: calc(5px * var(--public-section-scale, 1)) calc(12px * var(--public-section-scale, 1));
+  font-size: calc(0.84rem * var(--public-section-scale, 1));
+  font-weight: 600;
+  color: var(--text-header);
+  margin: 0;
+}
+
+.feed-expanded-group {
+  margin-bottom: calc(10px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-group:last-child { margin-bottom: 0; }
+
+.feed-expanded-group-heading {
+  font-size: calc(0.78rem * var(--public-section-scale, 1));
+  font-weight: 700;
+  color: var(--text-header);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 calc(5px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-area-list {
+  margin: 0;
+  padding-left: calc(16px * var(--public-section-scale, 1));
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(2px * var(--public-section-scale, 1)) calc(24px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-area-list li {
+  font-size: calc(0.84rem * var(--public-section-scale, 1));
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.feed-expanded-body-text {
+  font-size: calc(0.84rem * var(--public-section-scale, 1));
+  color: var(--text-main);
+  line-height: 1.65;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.feed-expanded-section--meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(6px * var(--public-section-scale, 1)) calc(20px * var(--public-section-scale, 1));
+  background: var(--bg-body);
+}
+
+.feed-expanded-meta-item {
+  font-size: calc(0.76rem * var(--public-section-scale, 1));
+  color: var(--text-secondary);
 }
 
 /* --- Bottom Navigation (Outside Cards) --- */
@@ -922,9 +1345,13 @@
     gap: 4px;
   }
 
-  .feed-infographic-header-bar > span {
-    font-size: 0.65rem; /* Readable but very compact for tiny screens */
+  .feed-infographic-header-title {
+    font-size: 0.65rem;
     letter-spacing: 0.03em;
+  }
+
+  .feed-infographic-ref {
+    font-size: 0.58rem;
   }
 
   .feed-infographic-date-badge {
@@ -1058,8 +1485,12 @@
     padding: 10px 12px;
   }
 
-  .feed-infographic-header-bar > span {
+  .feed-infographic-header-title {
     font-size: 0.75rem;
+  }
+
+  .feed-infographic-ref {
+    font-size: 0.62rem;
   }
 
   .feed-infographic-date-badge {
@@ -1181,8 +1612,12 @@
     padding: 10px 14px;
   }
 
-  .feed-infographic-header-bar > span {
+  .feed-infographic-header-title {
     font-size: 0.8rem;
+  }
+
+  .feed-infographic-ref {
+    font-size: 0.68rem;
   }
 
   .feed-infographic-date-badge {
@@ -1212,10 +1647,6 @@
 
   .feed-infographic-image img {
     max-height: 90px;
-  }
-
-  .feed-progress-track {
-    /* Removed max-width to allow flexible growth */
   }
 
   .feed-date-tracker {

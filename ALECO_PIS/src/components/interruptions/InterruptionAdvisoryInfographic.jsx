@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getCauseCategoryLabel, isEmergencyOutageType } from '../../utils/interruptionLabels';
+import {
+  getPosterHeadlineText,
+  getPosterReasonTextUpper,
+  getPosterAffectedAreasGrouped,
+  getPosterReferenceDisplay,
+} from '../../utils/interruptionPosterFields';
 import {
   formatToPhilippineTime,
   formatToPhilippineDateRangeShort,
@@ -16,25 +21,30 @@ import { getSafeResourceUrl } from '../../utils/safeUrl';
  * @param {{ item: object, now?: number }} props
  */
 export default function InterruptionAdvisoryInfographic({ item, now = Date.now() }) {
-  const type = item.type || 'Emergency';
-  let headerText = 'POWER INTERRUPTION';
-  if (type === 'Scheduled') headerText = 'SCHEDULED POWER INTERRUPTION';
-  else if (type === 'NgcScheduled') headerText = 'NGCP SCHEDULED INTERRUPTION';
-  else if (isEmergencyOutageType(type)) headerText = 'EMERGENCY OUTAGE';
+  const headerText = getPosterHeadlineText(item);
   const countdown = getCountdownToStart(item, now);
   const dateBadge = formatToPhilippineDateRangeShort(item.dateTimeStart, item.dateTimeEndEstimated);
   const timeBadge = formatToPhilippineTimeRangeShort(item.dateTimeStart, item.dateTimeEndEstimated);
   const dayBadge = formatToPhilippineDayRangeShort(item.dateTimeStart, item.dateTimeEndEstimated);
-  const reasonText = item.cause || getCauseCategoryLabel(item.causeCategory) || '—';
+  const reasonText = getPosterReasonTextUpper(item);
   const feederText = item.feeder || '—';
   const areas = item.affectedAreas || [];
+  const groupedAreas = getPosterAffectedAreasGrouped(item);
   const [showFullImage, setShowFullImage] = useState(false);
   const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
+  const refLine = getPosterReferenceDisplay(item.controlNo);
 
   return (
     <div className="feed-advisory-infographic">
       <div className="feed-infographic-header-bar">
-        <span>{headerText}</span>
+        <div className="feed-infographic-header-lead">
+          <span className="feed-infographic-header-title">{headerText}</span>
+          {refLine ? (
+            <span className="feed-infographic-ref" title="Control / reference number">
+              {refLine}
+            </span>
+          ) : null}
+        </div>
         {countdown && (
           <span className="feed-infographic-countdown" role="status">
             <strong>Starts in</strong> {countdown.hours > 0 ? `${countdown.hours}h ` : ''}{countdown.minutes}m
@@ -70,14 +80,29 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
           )}
         </div>
       )}
-      {areas.length > 0 && (
+      {(groupedAreas.length > 0 || areas.length > 0) && (
         <div className="feed-infographic-areas">
           <h4 className="feed-infographic-areas-title">AFFECTED AREAS</h4>
-          <ul>
-            {areas.map((area, i) => (
-              <li key={i}>{area}</li>
-            ))}
-          </ul>
+          {groupedAreas.length > 0 ? (
+            groupedAreas.map((block, bi) => (
+              <div key={bi} className="feed-infographic-area-block">
+                {block.heading ? (
+                  <p className="feed-infographic-area-heading">{block.heading}</p>
+                ) : null}
+                <ul>
+                  {block.items.map((area, i) => (
+                    <li key={`${bi}-${i}`}>{area}</li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          ) : (
+            <ul>
+              {areas.map((area, i) => (
+                <li key={i}>{area}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
       {safeAdvisoryImageUrl && (

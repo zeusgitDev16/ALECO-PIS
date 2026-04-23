@@ -15,6 +15,7 @@ export function usePublicInterruptions() {
   const [interruptions, setInterruptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [listUnavailable, setListUnavailable] = useState(false);
+  const [nextScheduledAt, setNextScheduledAt] = useState(null);
   const initialDone = useRef(false);
 
   const load = useCallback(async ({ showSpinner = false } = {}) => {
@@ -27,13 +28,16 @@ export function usePublicInterruptions() {
       if (r.success && !r.unavailable) {
         setListUnavailable(false);
         setInterruptions(r.data);
+        setNextScheduledAt(r.meta?.nextScheduledAt ?? null);
       } else {
         setListUnavailable(true);
         setInterruptions([]);
+        setNextScheduledAt(null);
       }
     } catch {
       setListUnavailable(true);
       setInterruptions([]);
+      setNextScheduledAt(null);
     } finally {
       initialDone.current = true;
       setLoading(false);
@@ -71,6 +75,21 @@ export function usePublicInterruptions() {
     }, intervalMs);
     return () => window.clearInterval(id);
   }, [load, interruptions]);
+
+  // When the backend reports a future advisory, schedule a precise refetch ~1s after it goes live.
+  useEffect(() => {
+    if (!nextScheduledAt) return;
+    const goLiveMs = new Date(nextScheduledAt).getTime();
+    const delay = goLiveMs - Date.now() + 1_000;
+    if (delay <= 0) {
+      load({ showSpinner: false });
+      return;
+    }
+    const id = window.setTimeout(() => {
+      if (document.visibilityState === 'visible') load({ showSpinner: false });
+    }, delay);
+    return () => window.clearTimeout(id);
+  }, [nextScheduledAt, load]);
 
   const refetch = useCallback(() => load({ showSpinner: true }), [load]);
 

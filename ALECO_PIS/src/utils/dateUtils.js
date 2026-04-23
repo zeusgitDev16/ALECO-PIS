@@ -216,6 +216,28 @@ export const formatToPhilippineTimeRangeShort = (startApi, endApi) => {
     return `${startStr} - ${end.format('h:mm A')}`;
 };
 
+/** Month name only for poster date card, e.g. "APRIL". */
+export const formatToPhilippineMonthOnly = (startApi) => {
+    const start = toPhilippineDayjs(startApi);
+    if (!start) return '';
+    return start.format('MMMM').toUpperCase();
+};
+
+/** Day number(s) only for poster date card, e.g. "23" or "23-25". */
+export const formatToPhilippineDayNumberRange = (startApi, endApi) => {
+    const start = toPhilippineDayjs(startApi);
+    if (!start) return '';
+    const dayStart = start.date();
+    if (endApi) {
+        const end = toPhilippineDayjs(endApi);
+        if (end && end.isValid() && end.month() === start.month() && end.year() === start.year()) {
+            const dayEnd = end.date();
+            if (dayEnd !== dayStart) return `${dayStart}-${dayEnd}`;
+        }
+    }
+    return String(dayStart);
+};
+
 /** Day-of-week short, e.g. "MON-WED". */
 export const formatToPhilippineDayRangeShort = (startApi, endApi) => {
     const start = toPhilippineDayjs(startApi);

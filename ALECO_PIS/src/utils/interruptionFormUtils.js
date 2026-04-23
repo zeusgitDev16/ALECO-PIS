@@ -10,13 +10,14 @@ export function toMysqlFormatForConcurrency(isoString) {
   return toMysqlFormatPhilippine(isoString);
 }
 
-/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
+/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, affectedAreasGrouped: { heading: string, items: string[] }[], feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, posterImageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
 
 export const emptyForm = {
   type: 'Emergency',
   status: 'Pending',
   statusChangeRemark: '',
   affectedAreasText: '',
+  affectedAreasGrouped: [],
   feeder: '',
   feederId: null,
   cause: '',
@@ -29,6 +30,7 @@ export const emptyForm = {
   body: '',
   controlNo: '',
   imageUrl: '',
+  posterImageUrl: '',
   scheduleAutoRestore: false,
   scheduledRestoreAt: '',
   scheduledRestoreRemark: '',
@@ -85,6 +87,19 @@ export function datetimeLocalToApi(s) {
 }
 
 /**
+ * Philippine civil wall time (API "YYYY-MM-DD HH:mm" or datetime-local) → ISO with +08:00 for poster/dateUtils.
+ * @param {string|null|undefined} wall
+ * @returns {string|null}
+ */
+export function wallClockApiToPosterIso(wall) {
+  if (!wall || !String(wall).trim()) return null;
+  const s = String(wall).trim().replace('T', ' ');
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})/);
+  if (!m) return null;
+  return `${m[1]}T${m[2]}:${m[3]}:00+08:00`;
+}
+
+/**
  * Mirrors server {@link computeInitialStatus} for UI preview on create.
  * @param {string} type - Scheduled | Emergency | NgcScheduled
  * @param {string} dateTimeStartLocal - datetime-local value
@@ -136,6 +151,7 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
     body: form.body && String(form.body).trim() ? String(form.body).trim() : null,
     controlNo: form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
     imageUrl: form.imageUrl && String(form.imageUrl).trim() ? String(form.imageUrl).trim() : null,
+    affectedAreasGrouped: Array.isArray(form.affectedAreasGrouped) ? form.affectedAreasGrouped : [],
   };
 
   // Scheduled auto-restoration
@@ -198,6 +214,12 @@ export function validateInterruptionForm(form) {
   if (!hasDateTimeStart) {
     errors.push('Start date and time is required.');
   }
+  if (isScheduledLikeOutageType(form.type)) {
+    const cn = form.controlNo && String(form.controlNo).trim();
+    if (!cn) {
+      errors.push('Control # is required for scheduled advisories (poster reference).');
+    }
+  }
   if (form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()) {
     const p = datetimeLocalStringToDate(form.publicVisibleAt);
     if (p && p.getTime() <= Date.now()) {
@@ -220,6 +242,35 @@ export function validateInterruptionForm(form) {
   return errors;
 }
 
+/**
+ * Map edit form state → DTO-shaped object for poster preview helpers (datetime as API wall-clock strings).
+ * @param {InterruptionFormState} form
+ * @returns {object}
+ */
+export function formStateToPosterPreviewDto(form) {
+  const affectedAreas = String(form.affectedAreasText || '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const toApi = (local) => (local && String(local).trim() ? datetimeLocalToApi(local) : null);
+  const toIso = (local) => wallClockApiToPosterIso(toApi(local));
+  return {
+    type: form.type,
+    status: form.status,
+    controlNo: form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
+    cause: form.cause && String(form.cause).trim() ? String(form.cause).trim() : null,
+    body: form.body && String(form.body).trim() ? String(form.body).trim() : null,
+    causeCategory: form.causeCategory && String(form.causeCategory).trim() ? String(form.causeCategory).trim() : null,
+    feeder: form.feeder || '',
+    dateTimeStart: toIso(form.dateTimeStart),
+    dateTimeEndEstimated: toIso(form.dateTimeEndEstimated),
+    dateTimeRestored: toIso(form.dateTimeRestored),
+    affectedAreas,
+    affectedAreasGrouped: Array.isArray(form.affectedAreasGrouped) ? form.affectedAreasGrouped : [],
+    posterImageUrl: form.posterImageUrl && String(form.posterImageUrl).trim() ? String(form.posterImageUrl).trim() : null,
+  };
+}
+
 /** @param {object} row - interruption DTO from API */
 export function rowToFormState(row) {
   const hasSchedule = Boolean(row.publicVisibleAt && String(row.publicVisibleAt).trim());
@@ -228,6 +279,7 @@ export function rowToFormState(row) {
     status: row.status,
     statusChangeRemark: '',
     affectedAreasText: (row.affectedAreas || []).join(', '),
+    affectedAreasGrouped: Array.isArray(row.affectedAreasGrouped) ? row.affectedAreasGrouped : [],
     feeder: row.feeder || '',
     feederId: row.feederId != null ? Number(row.feederId) : null,
     cause: row.cause || '',
@@ -240,6 +292,7 @@ export function rowToFormState(row) {
     body: row.body ? String(row.body) : '',
     controlNo: row.controlNo ? String(row.controlNo) : '',
     imageUrl: row.imageUrl ? String(row.imageUrl) : '',
+    posterImageUrl: row.posterImageUrl ? String(row.posterImageUrl) : '',
     scheduleAutoRestore: Boolean(row.scheduledRestoreAt && String(row.scheduledRestoreAt).trim()),
     scheduledRestoreAt: displayToDatetimeLocal(row.scheduledRestoreAt),
     scheduledRestoreRemark: row.scheduledRestoreRemark ? String(row.scheduledRestoreRemark) : '',

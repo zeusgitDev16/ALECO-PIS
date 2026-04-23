@@ -2,15 +2,17 @@ import React from 'react';
 import InterruptionFeedPostHeader from './InterruptionFeedPostHeader';
 import InterruptionFeedPostBody from './InterruptionFeedPostBody';
 import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
  * Facebook-style feed post card: header + body + infographic.
- * @param {{ item: object, now?: number, onExpand: function, isExpandedView?: boolean }} props - API DTO, now for countdown refresh only
+ * @param {{ item: object, now: number, onExpand?: function, isExpandedView?: boolean }} props - API DTO; `now` from useNow for countdown
  */
-export default function InterruptionFeedPost({ item, now = Date.now(), onExpand, isExpandedView = false }) {
+export default function InterruptionFeedPost({ item, now, onExpand, isExpandedView = false }) {
+  const isBlankStub = typeof item.posterImageUrl === 'string' && item.posterImageUrl.includes('_stub');
+  const safePosterUrl = (!isBlankStub && item.posterImageUrl) ? getSafeResourceUrl(item.posterImageUrl) : null;
   return (
-    <article className="interruption-feed-post">
-      {/* The Expand Button Trigger for actual advisory posts */}
+    <article className={`interruption-feed-post${safePosterUrl ? ' interruption-feed-post--poster' : ''}`}>
       {!isExpandedView && onExpand && (
         <button
           type="button"
@@ -24,9 +26,22 @@ export default function InterruptionFeedPost({ item, now = Date.now(), onExpand,
           </svg>
         </button>
       )}
-      <InterruptionFeedPostHeader item={item} /> {/* onExpand is handled by the button above, not necessarily needed in header now */}
-      <InterruptionFeedPostBody item={item} />
-      <InterruptionAdvisoryInfographic item={item} now={now} />
+      <InterruptionFeedPostHeader item={item} />
+      {safePosterUrl ? (
+        <div className="feed-post-poster-display">
+          <img
+            src={safePosterUrl}
+            alt="Advisory poster"
+            loading="lazy"
+            className="feed-post-poster-img"
+          />
+        </div>
+      ) : (
+        <>
+          <InterruptionFeedPostBody item={item} />
+          <InterruptionAdvisoryInfographic item={item} now={now} />
+        </>
+      )}
     </article>
   );
 }

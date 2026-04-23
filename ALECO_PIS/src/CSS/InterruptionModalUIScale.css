@@ -170,6 +170,13 @@
   min-height: calc(48px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
+/* Poster sections — bullets list (several lines; slightly taller than generic memo fields) */
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-grouped-bullets-textarea {
+  min-height: max(72px, calc(96px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  line-height: 1.45;
+  resize: vertical;
+}
+
 .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-textarea {
   box-sizing: border-box;
   font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));

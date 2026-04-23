@@ -170,42 +170,6 @@
   border-color: var(--accent-primary);
 }
 
-/* --- Expand Button (Anchored to Sticky Header) --- */
-.feed-post-expand-btn {
-  position: sticky;
-  top: 12px !important;
-  margin-left: auto; /* Aligns the button to the right side of the flex container */
-  margin-right: 28px !important; /* Maintains the 12px gap from the vertical scrollbar */
-  margin-bottom: -32px; /* Offsets height so content slides underneath, staying "pinnable" */
-  z-index: 100 !important; /* Maximum priority to stay above headers and content */
-  width: 32px !important;
-  height: 32px !important;
-  aspect-ratio: 1 / 1;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--bg-card) !important;
-  border: 1px solid var(--border-color);
-  color: var(--text-header) !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 1.1rem; 
-  line-height: 1; 
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  padding: 0;
-  pointer-events: auto;
-  visibility: visible !important;
-}
-
-.feed-post-expand-btn:hover {
-  transform: scale(1.1) translateY(-2px);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary) !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-}
-
 /* --- Feed Post Header --- */
 .feed-post-header {
   display: flex;
@@ -840,26 +804,167 @@
 }
 
 /* ============================================================
-   FLOATING STATUS BANNER  (hangs at top-center of the card)
+   FLOATING STATUS BANNER  (compact top-right ribbon)
    ============================================================ */
 .feed-post-status-banner {
   position: absolute;
-  top: 1px;
-  right: 14px;
+  top: 0;
+  right: 12px;
   left: auto;
-  transform: translateY(-100%);
+  transform: translateY(-44%);
   z-index: 10;
   pointer-events: none;
   white-space: nowrap;
 }
 
 .feed-post-status-banner .feed-post-status-chip {
-  font-size: 0.7rem;
+  --banner-bg: #15803d;
+  --banner-fg: #ecfdf5;
+  --banner-hang: rgba(15, 23, 42, 0.62);
+  --banner-hang-ring: rgba(248, 250, 252, 0.2);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(80px, calc(100px * var(--public-section-scale, 1)), 108px);
+  height: clamp(16px, calc(20px * var(--public-section-scale, 1)), 22px);
+  font-size: clamp(0.48rem, calc(0.6rem * var(--public-section-scale, 1)), 0.64rem);
   font-weight: 800;
-  padding: 4px 14px;
-  border-radius: 999px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-  letter-spacing: 0.06em;
+  padding: 0 clamp(6px, calc(9px * var(--public-section-scale, 1)), 10px);
+  border-radius: 4px;
+  background: var(--banner-bg);
+  color: var(--banner-fg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
+  letter-spacing: 0.045em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.feed-post-status-banner .feed-post-status-chip::before,
+.feed-post-status-banner .feed-post-status-chip::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  width: 7px;
+  height: 4px;
+  border-radius: 2px 2px 0 0;
+  background: var(--banner-hang);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px var(--banner-hang-ring);
+}
+
+.feed-post-status-banner .feed-post-status-chip::before {
+  left: 10px;
+}
+
+.feed-post-status-banner .feed-post-status-chip::after {
+  right: 10px;
+}
+
+.feed-post-status-banner .feed-post-status-chip--pending {
+  --banner-bg: #d97706;
+  --banner-fg: #fff7ed;
+}
+
+.feed-post-status-banner .feed-post-status-chip--ongoing {
+  --banner-bg: #b91c1c;
+  --banner-fg: #fef2f2;
+}
+
+.feed-post-status-banner .feed-post-status-chip--restored,
+.feed-post-status-banner .feed-post-status-chip--energized {
+  --banner-bg: #15803d;
+  --banner-fg: #ecfdf5;
+}
+
+[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip--pending {
+  --banner-bg: #f59e0b;
+  --banner-fg: #431407;
+}
+
+[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip--ongoing {
+  --banner-bg: #ef4444;
+  --banner-fg: #fff1f2;
+}
+
+[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip--restored,
+[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip--energized {
+  --banner-bg: #22c55e;
+  --banner-fg: #052e16;
+}
+
+[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip {
+  --banner-hang: rgba(241, 245, 249, 0.78);
+  --banner-hang-ring: rgba(2, 6, 23, 0.35);
+}
+
+@media (max-width: 600px) {
+  .feed-post-status-banner {
+    right: 10px;
+    transform: translateY(-112%);
+  }
+
+  .feed-post-status-banner .feed-post-status-chip {
+    min-width: 66px;
+    height: 14px;
+    font-size: 0.42rem;
+    padding: 0 6px;
+    letter-spacing: 0.035em;
+    border-radius: 3px;
+  }
+
+  .feed-post-status-banner .feed-post-status-chip::before,
+  .feed-post-status-banner .feed-post-status-chip::after {
+    top: -3px;
+    width: 6px;
+    height: 3px;
+  }
+
+  .feed-post-status-banner .feed-post-status-chip::before {
+    left: 8px;
+  }
+
+  .feed-post-status-banner .feed-post-status-chip::after {
+    right: 8px;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 600px) {
+  .feed-post-status-banner {
+    transform: translateY(-56%);
+  }
+
+  .feed-post-status-banner .feed-post-status-chip::before,
+  .feed-post-status-banner .feed-post-status-chip::after {
+    top: -1px;
+  }
+}
+
+@media (max-width: 374px) {
+  .feed-post-status-banner {
+    transform: translateY(-44%);
+  }
+
+  .feed-post-status-banner .feed-post-status-chip::before,
+  .feed-post-status-banner .feed-post-status-chip::after {
+    top: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .feed-post-status-banner {
+    right: 8px;
+    transform: translateY(-36%);
+  }
+
+  .feed-post-status-banner .feed-post-status-chip {
+    min-width: 58px;
+    height: 12px;
+    font-size: 0.37rem;
+    padding: 0 5px;
+    letter-spacing: 0.03em;
+  }
 }
 
 /* Non-poster cards: push content below the floating banner */
@@ -877,10 +982,14 @@
    ============================================================ */
 .interruption-feed-post--poster {
   height: calc(380px * var(--public-section-scale, 1));
+  width: max-content; /* Card follows poster's natural width at the fixed height */
+  min-width: 0;
+  max-width: none;
   overflow: visible;
 }
 
 .interruption-feed-post--poster .feed-post-poster-display {
+  width: max-content;
   height: 100%; /* fill the fixed card height exactly */
   flex: none;
   overflow: hidden;
@@ -1277,13 +1386,19 @@
 /* --- Mobile --- */
 @media (max-width: 600px) {
   .interruption-feed {
-    padding: 12px 8px;
+    padding: 44px 8px 18px 8px;
   }
 
   .interruption-feed-post {
-    width: min(360px, 92vw); /* Adaptive sizing for 425px devices */
-    height: auto;
-    min-height: 380px;
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(300px * var(--public-section-scale, 1));
+    gap: 0;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(300px * var(--public-section-scale, 1));
   }
 
   .feed-infographic-header-bar {
@@ -1301,17 +1416,6 @@
     padding: 0;
   }
 
-  /* Expand button for mobile */
-  .feed-post-expand-btn {
-    top: 10px !important;
-    margin-left: auto;
-    margin-right: 10px !important;
-    margin-bottom: -28px;
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 0.9rem;
-  }
-
   .interruption-card--feed .status-header {
     padding: 12px;
     border-radius: 12px 12px 0 0;
@@ -1321,17 +1425,22 @@
 /* --- 320px and below: ultra-compact --- */
 @media (max-width: 320px) {
   .interruption-feed {
-    padding: 8px 6px;
+    padding: 44px 6px 18px 6px;
     gap: 16px;
   }
 
   .interruption-feed-post {
-    width: min(300px, 85vw);
-    /* Fluid width for ultra-compact devices */
-    height: 340px; /* Fixed height for ultra-compact */
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(230px * var(--public-section-scale, 1));
     padding: 0;
-    gap: 8px;
-    scroll-snap-align: center;
+    gap: 0;
+    scroll-snap-align: start;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(230px * var(--public-section-scale, 1));
   }
 
   .feed-post-header {
@@ -1460,29 +1569,25 @@
     font-size: 0.75rem;
   }
 
-  /* Expand button for ultra-compact mobile */
-  .feed-post-expand-btn {
-    top: 8px !important;
-    margin-left: auto;
-    margin-right: 8px !important;
-    margin-bottom: -24px;
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 0.8rem;
-  }
 }
 
 /* --- 321px - 359px: small mobile --- */
 @media (min-width: 321px) and (max-width: 359px) {
   .interruption-feed {
-    padding: 10px 12px;
+    padding: 44px 12px 18px 12px;
     gap: 14px;
   }
 
   .interruption-feed-post {
-    width: 280px; /* Fixed width for small mobile */
-    height: 340px;
-    gap: 10px;
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(245px * var(--public-section-scale, 1));
+    gap: 0;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(245px * var(--public-section-scale, 1));
   }
 
   .feed-post-header {
@@ -1579,29 +1684,25 @@
     font-size: 0.8rem;
   }
 
-  /* Expand button for small mobile */
-  .feed-post-expand-btn {
-    top: 10px !important;
-    margin-left: auto;
-    margin-right: 10px !important;
-    margin-bottom: -26px;
-    width: 26px !important;
-    height: 26px !important;
-    font-size: 0.85rem;
-  }
 }
 
 /* --- 360px - 479px: mid-mobile --- */
 @media (min-width: 360px) and (max-width: 479px) {
   .interruption-feed {
-    padding: 12px 8px;
+    padding: 44px 8px 18px 8px;
     gap: 16px;
   }
 
   .interruption-feed-post {
-    width: 330px; /* Fixed width for mid-mobile */
-    height: 380px;
-    border-radius: 14px; /* Synchronized with header radius */
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(270px * var(--public-section-scale, 1));
+    border-radius: 16px;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(270px * var(--public-section-scale, 1));
   }
 
   .feed-post-header {
@@ -1691,23 +1792,45 @@
     font-size: 0.85rem;
   }
 
-  /* Expand button for mid-mobile */
-  .feed-post-expand-btn {
-    top: 12px !important;
-    margin-left: auto;
-    margin-right: 12px !important;
-    margin-bottom: -30px;
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 1rem;
+}
+
+/* --- <= 375px: freeze poster/card size (do not shrink further) --- */
+@media (max-width: 375px) {
+  .interruption-feed {
+    padding: 44px 8px 18px 8px;
+    gap: 16px;
+  }
+
+  .interruption-feed-post {
+    width: fit-content;
+    min-width: 280px;
+    max-width: 345px; /* 92vw of 375px; keep this as the smallest locked card width profile */
+    height: calc(270px * var(--public-section-scale, 1)); /* freeze at 375-profile height */
+    padding: 0;
+    gap: 0;
+    scroll-snap-align: start;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(270px * var(--public-section-scale, 1)); /* freeze at 375-profile height */
+  }
+
+  .interruption-card.interruption-card--feed {
+    width: 345px;
+    padding: 0;
   }
 }
 
 /* --- 480px - 599px: large mobile --- */
 @media (min-width: 480px) and (max-width: 599px) {
   .interruption-feed {
-    padding: 14px 10px;
+    padding: 44px 10px 18px 10px;
     gap: 18px;
+  }
+
+  .interruption-feed-post,
+  .interruption-feed-post--poster {
+    height: calc(300px * var(--public-section-scale, 1));
   }
 
 
@@ -1769,44 +1892,31 @@
     font-size: 0.88rem;
   }
 
-  /* Expand button for large mobile */
-  .feed-post-expand-btn {
-    top: 12px !important;
-    margin-right: 28px !important;
-    margin-bottom: -26px;
-    width: 26px;
-    height: 26px;
-    font-size: 0.9rem;
-  }
 }
 
 /* --- 768px - 1023px: tablet landscape --- */
 @media (min-width: 768px) and (max-width: 1023px) {
   .interruption-feed {
-    padding: 18px 12px;
+    padding: 44px 12px 18px 12px;
     gap: 22px;
   }
 
   .interruption-feed-post {
-    width: 380px;
-    height: 400px;
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(340px * var(--public-section-scale, 1));
     padding: 0;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(340px * var(--public-section-scale, 1));
   }
 
   .interruption-card.interruption-card--feed {
     width: 380px;
     height: 400px;
     padding: 0;
-  }
-
-  /* Expand button for tablet landscape */
-  .feed-post-expand-btn {
-    top: 14px !important;
-    margin-right: 28px !important;
-    margin-bottom: -30px;
-    width: 30px;
-    height: 30px;
-    font-size: 1.05rem;
   }
 
   .interruption-card--feed .status-header {
@@ -1926,11 +2036,6 @@
     align-self: start;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Subtle lift for the technical column */
   }
-}
-
-/* Hide the expand button when the card is already in the modal view */
-.interruption-modal-container .feed-post-expand-btn {
-  display: none !important;
 }
 
 /* --- Modal Navigation "Scroll" Buttons (Gallery Browsing) --- */

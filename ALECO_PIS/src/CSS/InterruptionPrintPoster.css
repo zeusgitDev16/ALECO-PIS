@@ -39,8 +39,9 @@ body.poster-capture-mode {
   --poster-header-bg2:    #0a1550;
   --poster-accent-red:    #1d4ed8;  /* blue for scheduled (default) — overridden red for emergency */
   --poster-day-num-color: #1d4ed8;  /* blue for scheduled — overridden red for emergency */
-  --poster-feeder-bg:     #1e2d6b;
-  --poster-footer-bg:     #060e38;
+  --poster-feeder-bg:           #1e2d6b;
+  --poster-datecard-bottom-bg:  #162040;
+  --poster-footer-bg:           #060e38;
   --poster-reason-bg:     rgba(148, 197, 253, 0.45);
   --poster-reason-border: rgba(59, 130, 246, 0.35);
   --poster-areas-bg:      linear-gradient(180deg, rgba(186, 230, 253, 0.5) 0%, rgba(255, 255, 255, 0.2) 100%);
@@ -61,6 +62,12 @@ body.poster-capture-mode {
   --poster-day-num-color: #c41818;
   --poster-footer-bg:     #2d0707;
   /* --poster-feeder-bg intentionally NOT overridden — stays dark navy */
+}
+
+/* Scheduled: blue header + red feeder/datecard-bottom for a bold contrast */
+.aleco-print-poster--scheduled {
+  --poster-feeder-bg:          #c41818;
+  --poster-datecard-bottom-bg: #c41818;
 }
 
 /* NgcScheduled: navy (same as Scheduled) */
@@ -209,9 +216,9 @@ body.poster-capture-mode {
   line-height: 0.95;
 }
 
-/* Bottom of date card: ALWAYS dark navy — TUESDAY + time (independent of type color) */
+/* Bottom of date card — colour controlled by type via CSS variable */
 .aleco-print-poster-datecard-bottom {
-  background: #162040;
+  background: var(--poster-datecard-bottom-bg);
   padding: 8px 10px 12px;
   text-align: center;
   display: flex;

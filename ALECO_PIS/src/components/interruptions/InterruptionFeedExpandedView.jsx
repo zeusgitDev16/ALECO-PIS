@@ -6,7 +6,8 @@ import {
   interruptionStatusForCssClass,
   getCauseCategoryLabel,
 } from '../../utils/interruptionLabels';
-import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
+import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
+import '../../CSS/InterruptionPrintPoster.css';
 
 /**
  * Fullscreen modal overlay: poster image (or infographic) + all advisory details.
@@ -83,8 +84,8 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
             />
           </div>
         ) : (
-          <div className="feed-expanded-infographic-wrap">
-            <InterruptionAdvisoryInfographic item={item} now={now} />
+          <div className="feed-expanded-poster-wrap">
+            <InterruptionAlecoPrintPoster item={item} />
           </div>
         )}
 

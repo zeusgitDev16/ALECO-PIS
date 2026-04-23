@@ -5,7 +5,7 @@
   gap: 32px; /* Increased gap for better card separation */
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 8px 2px 18px 2px;
+  padding: 44px 2px 18px 2px; /* top room for the floating status banner */
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
   align-items: flex-start;
@@ -102,12 +102,13 @@
   border: 1px solid var(--border-color);
   scroll-snap-align: start;
   flex-shrink: 0;
-  width: min(380px, 94vw); /* Capped at 380px for desktop, scales fluidly for mobile/tablet */
-  height: 400px; /* Fixed height for desktop/laptop view */
+  width: fit-content; /* Adapts to each poster's natural width at the fixed height */
+  min-width: min(280px, 92vw);
+  max-width: min(720px, 92vw);
+  height: calc(380px * var(--public-section-scale, 1)); /* Fixed equal height — top/bottom never change */
   box-sizing: border-box;
-  padding: 0; /* Padding moved to internal elements to prevent content leaking on scroll */
-  overflow-y: auto;
-  overflow-x: hidden; /* Prevent horizontal jitter */
+  padding: 0;
+  overflow: visible; /* Allow floating status banner to extend above the top border */
   display: flex;
   flex-direction: column;
   gap: 0; 
@@ -839,38 +840,81 @@
 }
 
 /* ============================================================
+   FLOATING STATUS BANNER  (hangs at top-center of the card)
+   ============================================================ */
+.feed-post-status-banner {
+  position: absolute;
+  top: 1px;
+  right: 14px;
+  left: auto;
+  transform: translateY(-100%);
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.feed-post-status-banner .feed-post-status-chip {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.06em;
+}
+
+/* Non-poster cards: push content below the floating banner */
+.feed-post-no-image-body {
+  padding-top: 42px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ============================================================
    POSTER-FORWARD CARD MODIFIER
    ============================================================ */
 .interruption-feed-post--poster {
-  height: auto;
-  overflow-y: visible;
-  overflow-x: hidden;
+  height: calc(380px * var(--public-section-scale, 1));
+  overflow: visible;
 }
 
 .interruption-feed-post--poster .feed-post-poster-display {
-  margin: 0;
-  border-radius: 0 0 15px 15px;
+  height: 100%; /* fill the fixed card height exactly */
+  flex: none;
   overflow: hidden;
+  border-radius: 16px;
+  background: var(--bg-card);
+  margin: 0;
   border: none;
   box-shadow: none;
 }
 
 .interruption-feed-post--poster .feed-post-poster-img {
-  border-radius: 0 0 15px 15px;
   display: block;
-  width: 100%;
-  height: auto;
+  height: 100%; /* scale to card height */
+  width: auto;  /* natural proportional width — no cropping */
+  border-radius: 16px;
 }
 
 /* ============================================================
-   CARD — top accent border matching poster color palette
+   CARD — top accent border by advisory type
    ============================================================ */
 .interruption-feed-post {
   border-top: 3px solid #8b1a1a;
 }
-
 [data-theme='dark'] .interruption-feed-post {
   border-top-color: #ef4444;
+}
+
+.interruption-feed-post--type-scheduled,
+.interruption-feed-post--type-ngcscheduled {
+  border-top-color: #1d4ed8;
+}
+[data-theme='dark'] .interruption-feed-post--type-scheduled,
+[data-theme='dark'] .interruption-feed-post--type-ngcscheduled {
+  border-top-color: #3b82f6;
 }
 
 /* Feed controls row keeps the three items evenly spaced */
@@ -980,6 +1024,12 @@
 .feed-expanded-poster-wrap {
   background: #d4a84b;
   padding: calc(10px * var(--public-section-scale, 1));
+  display: flex;
+  justify-content: center;
+}
+
+.feed-expanded-poster-wrap .aleco-print-poster {
+  width: 100%;
 }
 
 .feed-expanded-poster-img {
@@ -988,11 +1038,6 @@
   height: auto;
   border-radius: calc(8px * var(--public-section-scale, 1));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-}
-
-.feed-expanded-infographic-wrap {
-  padding: 0;
-  overflow: hidden;
 }
 
 .feed-expanded-details {
@@ -1318,9 +1363,6 @@
     gap: 4px;
   }
 
-  .feed-post-body {
-    /* margin-bottom is removed to rely on the parent's 'gap' property */
-  }
 
   .feed-post-headline {
     font-size: 0.8rem;
@@ -1533,10 +1575,6 @@
     padding: 0 8px;
   }
 
-  .feed-progress-track {
-    /* Removed max-width to allow flexible growth */
-  }
-
   .feed-date-tracker {
     font-size: 0.8rem;
   }
@@ -1672,9 +1710,6 @@
     gap: 18px;
   }
 
-  .interruption-feed-post {
-    /* Base width min(380px, 94vw) is already good for this range */
-  }
 
   .interruption-card.interruption-card--feed {
     width: min(380px, 94vw); /* Match new card width */
@@ -1728,10 +1763,6 @@
 
   .feed-infographic-image img {
     max-height: 100px;
-  }
-
-  .feed-progress-track {
-    /* Removed max-width to allow flexible growth */
   }
 
   .feed-date-tracker {

@@ -196,7 +196,7 @@ body.admin-app-scroll-lock {
 /* Scrolling Fix: Ensure the dashboard page has enough bottom clearance 
    to fully reveal the last features when scrolling. */
 .dashboard-page-container {
-    padding-bottom: 40vh !important; /* Balanced buffer ensures the B2B section is reachable without excessive blank scrolling */
+    padding-bottom: 120vh !important; /* MASSIVE RUNWAY: Forces the scroll area to extend more than a full screen height past the content */
 }
 
 /* Remove nested scrollbar conflict: Allow the incident tracking card 
@@ -224,6 +224,7 @@ body.admin-app-scroll-lock {
     background: transparent;
     padding: 0;
     overflow: visible;
+    margin-bottom: 100px; /* Adds a physical gap before the empty padding starts to ensure the last widget isn't "stuck" */
 }
 
 /* Internal container to wrap all elements inside the scrollable feature boxes.
@@ -254,8 +255,7 @@ body.admin-app-scroll-lock {
 
 /* Unified parent containers for Dashboard Features (Power Advisories and Tickets) */
 .dashboard-power-advisories-wrapper,
-.dashboard-ticket-features-wrapper,
-.dashboard-b2b-mail-wrapper {
+.dashboard-ticket-features-wrapper {
     display: flex;
     flex-direction: column;
     gap: 8px; /* Further reduced gap to bring charts higher into view */
@@ -398,24 +398,58 @@ body.admin-app-scroll-lock {
 }
 
 /* ==========================================================================
-   B2B MAIL DASHBOARD SECTION - DEDICATED STANDALONE BOX
+   B2B MAIL OVERVIEW SECTION - Standard Card Style
    ========================================================================== */
 .dashboard-b2b-mail-wrapper {
-    /* SIZE PARITY: Ensures it occupies a "big" vertical presence like other boxes */
-    min-height: 700px; /* Noticeably larger vertical presence */
-    max-height: 85vh; /* Expanded height ceiling for a 'big' container feel */
-
-    /* VISIBILITY: Advanced Glassmorphism to ensure background is visible through it */
-    background: var(--bg-glass, rgba(255, 255, 255, 0.25)) !important;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    
-    border-left: 8px solid #3b82f6; /* Heavy blue accent for mail */
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin-top: 32px; /* Distinct spacing from the Incident Tracking section above */
+    padding: 20px !important;
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboard-b2b-mail-wrapper:hover {
-    box-shadow: 0 15px 50px rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Header styling for the B2B Overview section */
+.b2b-overview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.b2b-overview-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-header);
+    margin: 0;
+}
+
+/* Placeholder UI state for the B2B Mail features */
+.b2b-placeholder-container {
+    padding: 60px 20px;
+    text-align: center;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius-md);
+    background-color: rgba(128, 128, 128, 0.02);
+    color: var(--text-secondary);
+}
+
+.b2b-placeholder-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0;
 }
 
 /* --- B2B MAIL DASHBOARD FEATURE COMPONENTS --- */
@@ -591,9 +625,9 @@ body.admin-app-scroll-lock {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-/* Specifically expand the bottom of the main chart boxes to better utilize vertical space */
-.charts-grid-main .chart-card:not(:last-child) {
-    padding-bottom: 0 !important; /* Erased internal bottom spacing to make the box fit the chart perfectly */
+/* Re-enable internal padding for chart cards to ensure legends and bottom axis labels are fully visible and not "cut" */
+.charts-grid-main .chart-card {
+    padding-bottom: 24px !important; 
 }
 
 /* Force the main charts to a larger height to fill the container boxes perfectly */
@@ -682,7 +716,7 @@ body.admin-app-scroll-lock {
 
 /* Ensure dashboard scroll area respects mobile safe areas and providing breathing room */
 .admin-content:has(.dashboard-page-container) {
-    scroll-padding-bottom: max(140px, env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: 500px; /* Increased buffer to allow bottom content to be scrolled much higher up the screen */
 }
 
 /* Data Management: last workflow step (import) stays reachable when scrolling */

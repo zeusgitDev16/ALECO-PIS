@@ -3,7 +3,7 @@ import AdminLayout from './components/AdminLayout';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     PieChart, Pie, Cell, LineChart, Line, Legend 
-} from 'recharts';
+} from 'recharts'; // Ensure PieChart, Cell, LineChart, Line, Legend are imported
 import { 
     FaTicketAlt, FaClock, FaCheckCircle, FaExclamationTriangle, 
     FaMapMarkerAlt, FaChartPie, FaChartLine, FaListUl,
@@ -12,6 +12,7 @@ import {
 import axios from 'axios';
 import { apiUrl } from './utils/api';
 import useTickets from './utils/useTickets';
+import { FaEnvelope, FaPaperPlane, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa'; // New B2B icons
 import './CSS/AdminPageLayout.css';
 import './CSS/Dashboard.css';
 
@@ -254,6 +255,48 @@ const AdminDashboard = () => {
         return { total, pending, ongoing, resolved, unresolved, nofault, denied, urgent, trendData, categoryData, topLocations };
     }, [tickets]);
 
+    // Dynamic calculations for B2B Mail features
+    const b2bMailStats = useMemo(() => {
+        // Mock data for B2B Mail
+        const totalSent = 1250;
+        const delivered = 1180;
+        const failed = 50;
+        const pending = 20;
+
+        const deliveryData = [
+            { name: 'Sent', value: totalSent, fill: 'var(--accent-primary)' },
+            { name: 'Delivered', value: delivered, fill: 'var(--accent-success)' },
+            { name: 'Failed', value: failed, fill: 'var(--accent-danger)' },
+            { name: 'Pending', value: pending, fill: 'var(--accent-warning)' },
+        ];
+
+        const recentActivity = [
+            { id: 1, subject: 'Advisory: Scheduled Maintenance', recipient: 'ABC Corp', status: 'Sent', time: '2 min ago' },
+            { id: 2, subject: 'Invoice: Q1 2024', recipient: 'XYZ Ltd', status: 'Failed', time: '15 min ago' },
+            { id: 3, subject: 'Notification: Power Restoration', recipient: 'PQR Inc', status: 'Delivered', time: '1 hour ago' },
+            { id: 4, subject: 'Advisory: Unscheduled Outage', recipient: 'LMN Co', status: 'Pending', time: '3 hours ago' },
+            { id: 5, subject: 'Report: Monthly Consumption', recipient: 'DEF Group', status: 'Sent', time: 'Yesterday' },
+        ];
+
+        // NEW: Mock data for Daily Mail Activity (last 7 days)
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const dailyTrendData = days.map((day, index) => ({
+            name: day,
+            sent: 100 + index * 10 + Math.floor(Math.random() * 20),
+            delivered: 90 + index * 10 + Math.floor(Math.random() * 15),
+            failed: 5 + Math.floor(Math.random() * 5),
+        }));
+
+        // NEW: Mock data for Contact Verification Insights
+        const verificationData = [
+            { name: 'Verified', value: 94, fill: 'var(--accent-success)' },
+            { name: 'Unverified', value: 6, fill: 'var(--accent-warning)' }
+        ];
+
+        return { totalSent, delivered, failed, pending, deliveryData, recentActivity, dailyTrendData, verificationData };
+    }, []);
+
+
     return (
         <AdminLayout activePage="home">
             <div className="admin-page-container dashboard-page-container">
@@ -276,11 +319,18 @@ const AdminDashboard = () => {
                         >
                             <FaChartPie /> Analytics
                         </button>
+                        <button 
+                            className="dash-nav-btn"
+                            onClick={() => document.getElementById('b2b-mail-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            <FaListUl /> B2B Mail
+                        </button>
                     </div>
                 </div>
 
                 {/* Analytics Section */}
                 <div className="analytics-container">
+                    <div className="dashboard-features-grid">
                     {/* 1. Power Advisories Container (Interruptions) */}
                     <div id="power-grid-section" className="dashboard-power-advisories-wrapper">
                         <div className="section-label-group">
@@ -587,8 +637,110 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     </div>
-                </div>
 
+                    {/* 3. B2B Mail Overview Container */}
+                    <div id="b2b-mail-section" className="dashboard-b2b-mail-wrapper">
+                        <div className="section-label-group">
+                            <h3 className="column-section-title">B2B Mail Overview</h3>
+                            <p className="widget-text">Tracking of outgoing business notifications and partner communications.</p>
+                        </div>
+                        
+                        <div className="b2b-analytics-layout">
+                            {/* B2B Mail Summary Stats */}
+                            <div className="stats-grid">
+                                <div className="stat-card total">
+                                    <div className="stat-icon-box"><FaEnvelope /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Total Sent</span>
+                                        <h3 className="stat-number">{b2bMailStats.totalSent}</h3>
+                                        <span className="stat-trend">All Time</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card resolved">
+                                    <div className="stat-icon-box"><FaPaperPlane /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Delivered</span>
+                                        <h3 className="stat-number">{b2bMailStats.delivered}</h3>
+                                        <span className="stat-trend positive">Success Rate</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card urgent">
+                                    <div className="stat-icon-box"><FaTimesCircle /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Failed</span>
+                                        <h3 className="stat-number">{b2bMailStats.failed}</h3>
+                                        <span className="stat-trend negative">Needs Attention</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card pending">
+                                    <div className="stat-icon-box"><FaHourglassHalf /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Pending</span>
+                                        <h3 className="stat-number">{b2bMailStats.pending}</h3>
+                                        <span className="stat-trend">In Queue</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* B2B Mail Delivery Status Chart */}
+                            <div className="charts-grid-main">
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaChartPie className="chart-icon" />
+                                        <h4>Delivery Status</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        <ResponsiveContainer width="100%" height={180}>
+                                            <BarChart data={b2bMailStats.deliveryData} layout="vertical">
+                                                <XAxis type="number" hide />
+                                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} width={80} />
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Bar dataKey="value" barSize={20} radius={[0, 4, 4, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* B2B Contact Verification Health Analytics */}
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaCheckCircle className="chart-icon" />
+                                        <h4>Contact Verification Health</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        <ResponsiveContainer width="100%" height={180}>
+                                            <PieChart>
+                                                <Pie data={b2bMailStats.verificationData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                    {b2bMailStats.verificationData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Recent Mail Activity List */}
+                            <div className="b2b-activity-list">
+                                {b2bMailStats.recentActivity.map(activity => (
+                                    <div key={activity.id} className="b2b-activity-item">
+                                        <div className="b2b-activity-content">
+                                            <span className="b2b-activity-label">{activity.subject}</span>
+                                            <span className="b2b-activity-time">To: {activity.recipient} • {activity.time}</span>
+                                        </div>
+                                        <span className={`feeder-status-tag ${activity.status.toLowerCase()}`}>
+                                            {activity.status}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
                 {/* Existing Incident Tracking Feed below */}
                 <div className="main-content-card">
                     <div className="placeholder-content">

@@ -255,7 +255,8 @@ body.admin-app-scroll-lock {
 
 /* Unified parent containers for Dashboard Features (Power Advisories and Tickets) */
 .dashboard-power-advisories-wrapper,
-.dashboard-ticket-features-wrapper {
+.dashboard-ticket-features-wrapper,
+.dashboard-b2b-mail-wrapper {
     display: flex;
     flex-direction: column;
     gap: 8px; /* Further reduced gap to bring charts higher into view */
@@ -277,19 +278,22 @@ body.admin-app-scroll-lock {
 
 /* Custom Scrollbar for the Features Wrappers - Restored high-visibility handles */
 .dashboard-power-advisories-wrapper::-webkit-scrollbar,
-.dashboard-ticket-features-wrapper::-webkit-scrollbar {
+.dashboard-ticket-features-wrapper::-webkit-scrollbar,
+.dashboard-b2b-mail-wrapper::-webkit-scrollbar {
     width: 12px;
     display: block;
 }
 
 .dashboard-power-advisories-wrapper::-webkit-scrollbar-track,
-.dashboard-ticket-features-wrapper::-webkit-scrollbar-track {
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-track,
+.dashboard-b2b-mail-wrapper::-webkit-scrollbar-track {
     background: transparent;
     margin: 12px 0;
 }
 
 .dashboard-power-advisories-wrapper::-webkit-scrollbar-thumb,
-.dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb {
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb,
+.dashboard-b2b-mail-wrapper::-webkit-scrollbar-thumb {
     background: rgba(128, 128, 128, 0.6);
     border-radius: 10px;
     min-height: 120px;
@@ -401,17 +405,19 @@ body.admin-app-scroll-lock {
    B2B MAIL OVERVIEW SECTION - Standard Card Style
    ========================================================================== */
 .dashboard-b2b-mail-wrapper {
-    margin-top: 32px; /* Distinct spacing from the Incident Tracking section above */
-    padding: 20px !important;
+    margin-top: 0; /* Spacing is managed by the .dashboard-features-invisible-parent gap */
+    padding: 20px 20px 32px !important; /* Harmonized with Feature Wrapper padding */
     background: var(--bg-card);
     border-radius: var(--border-radius-lg);
     border: 1px solid var(--border-color);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     width: 100%;
+    flex: 0 0 auto;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    scroll-margin-top: 180px; /* Buffer for sticky headers during quick-nav scrolling */
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -550,6 +556,27 @@ body.admin-app-scroll-lock {
 }
 
 .feeder-status-tag.scheduled {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+/* B2B Mail specific status tags */
+.feeder-status-tag.sent {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.feeder-status-tag.delivered {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.feeder-status-tag.failed {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.feeder-status-tag.pending {
     background: rgba(245, 158, 11, 0.15);
     color: #f59e0b;
 }

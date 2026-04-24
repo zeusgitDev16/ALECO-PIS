@@ -16,6 +16,38 @@ const TARGET_TYPE_LABELS = {
   interruption_linked: 'Interruption-Linked',
 };
 
+/** Clean raw MIME body for display — handles multipart, quoted-printable, quoted replies. */
+function cleanReplyBody(raw) {
+  if (!raw) return '';
+  let text = raw;
+
+  // Extract text/plain from multipart MIME
+  const bLine = text.match(/^--.+$/m);
+  if (bLine) {
+    const boundary = bLine[0].trim();
+    const parts = text.split(boundary);
+    for (const part of parts) {
+      if (/Content-Type:\s*text\/plain/i.test(part)) {
+        const blank = part.search(/\n\s*\n/);
+        if (blank !== -1) { text = part.slice(blank).trim(); break; }
+      }
+    }
+  }
+
+  // Decode quoted-printable
+  text = text.replace(/=\r?\n/g, '').replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+
+  // Strip "On ... wrote:" quoted reply block
+  const onWrote = text.search(/\nOn\s[^\n]+wrote:\s*\n/i);
+  if (onWrote !== -1) text = text.slice(0, onWrote);
+
+  // Remove > quoted lines and MIME boundary artifacts
+  text = text.split('\n').filter((l) => !l.startsWith('>')).join('\n');
+  text = text.replace(/--[\w-]+--?\s*/g, '').trim();
+
+  return text || '(No content)';
+}
+
 /**
  * Comprehensive Messages View with layered UI
  * @param {object} props
@@ -38,15 +70,26 @@ export default function B2BMessagesView({
   const [inboundReplies, setInboundReplies] = useState([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [refreshingReplies, setRefreshingReplies] = useState(false);
+  const [repliesError, setRepliesError] = useState(null);
+  const [totalInbound, setTotalInbound] = useState(null);
 
   const handleRefreshReplies = async () => {
     if (!selectedMessage?.id || refreshingReplies) return;
     setRefreshingReplies(true);
+    setRepliesError(null);
     try {
       const res = await refreshB2BInbound({ messageId: selectedMessage.id });
       if (res.success && Array.isArray(res.data)) {
         setInboundReplies(res.data);
+        setRepliesError(null);
+        if (res.totalInbound != null) setTotalInbound(res.totalInbound);
+      } else {
+        console.warn('[B2B Replies] refresh failed:', res);
+        setRepliesError(res.status === 0 ? 'Cannot connect to server' : res.message || 'Refresh failed');
       }
+    } catch (err) {
+      console.error('[B2B Replies] refresh error:', err);
+      setRepliesError('Unexpected error during refresh');
     } finally {
       setRefreshingReplies(false);
     }
@@ -61,12 +104,17 @@ export default function B2BMessagesView({
     let isMounted = true;
     const fetchReplies = async () => {
       setLoadingReplies(true);
+      setRepliesError(null);
       const res = await listB2BInbound({ messageId: selectedMessage.id });
       if (isMounted) {
         if (res.success && Array.isArray(res.data)) {
           setInboundReplies(res.data);
+          setRepliesError(null);
+          if (res.totalInbound != null) setTotalInbound(res.totalInbound);
         } else {
+          console.warn('[B2B Replies] fetch failed:', res);
           setInboundReplies([]);
+          setRepliesError(res.status === 0 ? 'Cannot connect to server' : res.message || 'Failed to load replies');
         }
         setLoadingReplies(false);
       }
@@ -257,7 +305,33 @@ export default function B2BMessagesView({
           >
             <div className="b2b-modal b2b-message-detail-modal">
               <div className="detail-header">
-                <h4>Message Details</h4>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="detail-header-eyebrow">Message Details</div>
+                  <h4>{selectedMessage.subject || '(No subject)'}</h4>
+                  <div className="detail-header-meta">
+                    <span
+                      className="detail-header-stat"
+                      style={{
+                        fontWeight: 700,
+                        color: MESSAGE_STATUS[selectedMessage.status]?.color || 'var(--text-secondary)',
+                        background: MESSAGE_STATUS[selectedMessage.status]?.bg || 'transparent',
+                        padding: '2px 10px',
+                        borderRadius: '12px',
+                        fontSize: '0.7rem',
+                      }}
+                    >
+                      {MESSAGE_STATUS[selectedMessage.status]?.label || selectedMessage.status}
+                    </span>
+                    <span className="detail-header-stat">
+                      👥 {selectedMessage.recipients_count || 0} recipient{selectedMessage.recipients_count !== 1 ? 's' : ''}
+                    </span>
+                    {selectedMessage.sent_at && (
+                      <span className="detail-header-stat">
+                        📅 {formatDate(selectedMessage.sent_at)}
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <button
                   type="button"
                   className="close-detail"
@@ -267,75 +341,80 @@ export default function B2BMessagesView({
                 </button>
               </div>
               <div className="detail-content">
-                <div className="detail-row">
-                  <label>Subject</label>
-                  <span>{selectedMessage.subject || '(No subject)'}</span>
-                </div>
-                <div className="detail-row">
-                  <label>Status</label>
-                  <span className="detail-status">
-                    {MESSAGE_STATUS[selectedMessage.status]?.label || selectedMessage.status}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <label>Target</label>
-                  <span>{TARGET_TYPE_LABELS[selectedMessage.target_mode] || 'Unknown'}</span>
-                </div>
-                <div className="detail-row">
-                  <label>Recipients</label>
-                  <span>{selectedMessage.recipients_count || 0}</span>
-                </div>
-                <div className="detail-row">
-                  <label>Created</label>
-                  <span>{formatDate(selectedMessage.created_at)}</span>
-                </div>
-                {selectedMessage.sent_at && (
+                <div className="detail-meta-grid">
                   <div className="detail-row">
-                    <label>Sent</label>
-                    <span>{formatDate(selectedMessage.sent_at)}</span>
+                    <label>Target Audience</label>
+                    <span>{TARGET_TYPE_LABELS[selectedMessage.target_mode] || 'Unknown'}</span>
                   </div>
-                )}
+                  <div className="detail-row">
+                    <label>Recipients</label>
+                    <span>{selectedMessage.recipients_count || 0}</span>
+                  </div>
+                  <div className="detail-row">
+                    <label>Created</label>
+                    <span>{formatDate(selectedMessage.created_at)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <label>Delivery Status</label>
+                    <span className="detail-status" style={{ color: MESSAGE_STATUS[selectedMessage.status]?.color }}>
+                      {MESSAGE_STATUS[selectedMessage.status]?.label || selectedMessage.status}
+                    </span>
+                  </div>
+                </div>
                 <div className="detail-message-body">
-                  <label>Original Message Content</label>
+                  <label>Message Content</label>
                   <pre>{selectedMessage.body_text || 'No content'}</pre>
                 </div>
 
                 {/* Inbound Replies Thread */}
-                <div className="b2b-inbound-replies">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <label style={{ margin: 0 }}>Replies ({inboundReplies.length})</label>
+                <div>
+                  <div className="replies-section-header">
+                    <span className="replies-section-title">Replies</span>
+                    <span className={`replies-count-badge${inboundReplies.length === 0 ? ' empty' : ''}`}>
+                      {inboundReplies.length}
+                    </span>
                     <button
                       type="button"
+                      className="refresh-replies-btn"
                       onClick={handleRefreshReplies}
                       disabled={refreshingReplies || loadingReplies}
-                      style={{
-                        marginLeft: 'auto', fontSize: '0.75rem', padding: '2px 10px',
-                        borderRadius: '6px', border: '1px solid var(--border-color, #ddd)',
-                        background: 'var(--surface, #fff)', cursor: refreshingReplies ? 'wait' : 'pointer',
-                        color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px',
-                      }}
-                      title="Poll inbox for new replies"
+                      title="Fetch new replies from inbox"
                     >
                       <span style={{ display: 'inline-block', animation: refreshingReplies ? 'spin 1s linear infinite' : 'none' }}>↻</span>
-                      {refreshingReplies ? 'Checking…' : 'Refresh Replies'}
+                      {refreshingReplies ? 'Checking…' : 'Refresh'}
                     </button>
                   </div>
+
+                  {repliesError && (
+                    <div className="replies-error-banner">{repliesError}</div>
+                  )}
+
                   {loadingReplies ? (
-                    <div className="replies-loading">Loading replies...</div>
+                    <div className="replies-loading">Loading replies…</div>
                   ) : inboundReplies.length === 0 ? (
-                    <div className="replies-empty">No replies received yet.</div>
+                    <div className="replies-empty-state">
+                      <div className="empty-title">No replies yet</div>
+                      <div className="empty-hint">
+                        Click <strong>Refresh</strong> after the recipient has responded.
+                        {totalInbound != null && totalInbound > 0 && (
+                          <span> Poller has captured {totalInbound} inbound email{totalInbound !== 1 ? 's' : ''} total.</span>
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <div className="replies-list">
                       {inboundReplies.map((reply) => (
                         <div key={reply.id} className="reply-card">
-                          <div className="reply-header">
-                            <span className="reply-from">{reply.from_email || 'Unknown sender'}</span>
-                            <span className="reply-date">{formatRelativeTime(reply.received_at)}</span>
+                          <div className="reply-avatar">
+                            {(reply.from_email || '?')[0].toUpperCase()}
                           </div>
-                          {reply.subject && (
-                            <div className="reply-subject">Re: {reply.subject.replace(/^(Re:\s*)+/i, '')}</div>
-                          )}
-                          <pre className="reply-body">{reply.body_text || '(No text content)'}</pre>
+                          <div className="reply-card-content">
+                            <div className="reply-card-header">
+                              <span className="reply-from">{reply.from_email || 'Unknown sender'}</span>
+                              <span className="reply-date">{formatDate(reply.received_at)}</span>
+                            </div>
+                            <div className="reply-body">{cleanReplyBody(reply.body_text)}</div>
+                          </div>
                         </div>
                       ))}
                     </div>

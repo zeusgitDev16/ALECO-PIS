@@ -1,5 +1,11 @@
-import React from 'react';
-import { getCauseCategoryLabel } from '../../utils/interruptionLabels';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  getPosterHeadlineText,
+  getPosterReasonTextUpper,
+  getPosterAffectedAreasGrouped,
+  getPosterReferenceDisplay,
+} from '../../utils/interruptionPosterFields';
 import {
   formatToPhilippineTime,
   formatToPhilippineDateRangeShort,
@@ -7,6 +13,7 @@ import {
   formatToPhilippineDayRangeShort,
 } from '../../utils/dateUtils';
 import { getCountdownToStart } from '../../utils/interruptionStatusUtils';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
  * Structured advisory infographic: header bar, date/time badges, reason/feeder pills, affected areas.
@@ -14,20 +21,31 @@ import { getCountdownToStart } from '../../utils/interruptionStatusUtils';
  * @param {{ item: object, now?: number }} props
  */
 export default function InterruptionAdvisoryInfographic({ item, now = Date.now() }) {
-  const type = item.type || 'Unscheduled';
-  const headerText = type === 'Scheduled' ? 'SCHEDULED POWER INTERRUPTION' : 'UNSCHEDULED OUTAGE';
+  const headerText = getPosterHeadlineText(item);
   const countdown = getCountdownToStart(item, now);
   const dateBadge = formatToPhilippineDateRangeShort(item.dateTimeStart, item.dateTimeEndEstimated);
   const timeBadge = formatToPhilippineTimeRangeShort(item.dateTimeStart, item.dateTimeEndEstimated);
   const dayBadge = formatToPhilippineDayRangeShort(item.dateTimeStart, item.dateTimeEndEstimated);
-  const reasonText = item.cause || getCauseCategoryLabel(item.causeCategory) || '—';
+  const reasonText = getPosterReasonTextUpper(item);
   const feederText = item.feeder || '—';
   const areas = item.affectedAreas || [];
+  const groupedAreas = getPosterAffectedAreasGrouped(item);
+  const [showFullImage, setShowFullImage] = useState(false);
+  const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
+  const refLine = getPosterReferenceDisplay(item.controlNo);
+  const additionalDetails = item.body && String(item.body).trim() ? String(item.body).trim() : '';
 
   return (
     <div className="feed-advisory-infographic">
       <div className="feed-infographic-header-bar">
-        <span>{headerText}</span>
+        <div className="feed-infographic-header-lead">
+          <span className="feed-infographic-header-title">{headerText}</span>
+          {refLine ? (
+            <span className="feed-infographic-ref" title="Control / reference number">
+              {refLine}
+            </span>
+          ) : null}
+        </div>
         {countdown && (
           <span className="feed-infographic-countdown" role="status">
             <strong>Starts in</strong> {countdown.hours > 0 ? `${countdown.hours}h ` : ''}{countdown.minutes}m
@@ -49,6 +67,11 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
         <span className="feed-infographic-pill feed-infographic-pill--feeder">
           SUBSTATION/FEEDER: {feederText.toUpperCase()}
         </span>
+        {additionalDetails && (
+          <div className="feed-infographic-pill feed-infographic-pill--details">
+            <strong>ADDITIONAL DETAILS:</strong> {additionalDetails}
+          </div>
+        )}
       </div>
       {(item.dateTimeStart || item.dateTimeEndEstimated || item.dateTimeRestored) && (
         <div className="feed-infographic-schedule">
@@ -59,24 +82,57 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
             <p><strong>Estimated restoration:</strong> <strong>{formatToPhilippineTime(item.dateTimeEndEstimated)}</strong></p>
           )}
           {item.dateTimeRestored && (
-            <p><strong>Power restored:</strong> <strong>{formatToPhilippineTime(item.dateTimeRestored)}</strong></p>
+            <p><strong>Energized:</strong> <strong>{formatToPhilippineTime(item.dateTimeRestored)}</strong></p>
           )}
         </div>
       )}
-      {areas.length > 0 && (
+      {(groupedAreas.length > 0 || areas.length > 0) && (
         <div className="feed-infographic-areas">
           <h4 className="feed-infographic-areas-title">AFFECTED AREAS</h4>
-          <ul>
-            {areas.map((area, i) => (
-              <li key={i}>{area}</li>
-            ))}
-          </ul>
+          {groupedAreas.length > 0 ? (
+            groupedAreas.map((block, bi) => (
+              <div key={bi} className="feed-infographic-area-block">
+                {block.heading ? (
+                  <p className="feed-infographic-area-heading">{block.heading}</p>
+                ) : null}
+                <ul>
+                  {block.items.map((area, i) => (
+                    <li key={`${bi}-${i}`}>{area}</li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          ) : (
+            <ul>
+              {areas.map((area, i) => (
+                <li key={i}>{area}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
-      {item.imageUrl && (
-        <div className="feed-infographic-image">
-          <img src={item.imageUrl} alt="Advisory" />
-        </div>
+      {safeAdvisoryImageUrl && (
+        <>
+          <div 
+            className="feed-infographic-image" 
+            onClick={() => setShowFullImage(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowFullImage(true)}
+          >
+            <img src={safeAdvisoryImageUrl} alt="Advisory" />
+          </div>
+
+          {showFullImage && createPortal(
+            <div 
+              className="full-screen-image-overlay" 
+              onClick={() => setShowFullImage(false)}
+            >
+              <img src={safeAdvisoryImageUrl} alt="Full advisory view" />
+            </div>,
+            document.body
+          )}
+        </>
       )}
     </div>
   );

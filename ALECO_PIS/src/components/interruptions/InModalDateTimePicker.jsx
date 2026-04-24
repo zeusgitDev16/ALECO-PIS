@@ -28,6 +28,8 @@ function to24h(hour12, pm) {
  * In-modal date + time picker. Date from calendar (no portal), time from manual input + AM/PM.
  * Output: YYYY-MM-DDTHH:mm (datetime-local format).
  * When futureOnly=true, prevents past dates and times (for "Goes live at" scheduling).
+ * When strictlyAfter is set (e.g. ERT), the chosen instant must be strictly after that time;
+ *   values on or before it are nudged to the next full minute.
  */
 export default function InModalDateTimePicker({
   value,
@@ -37,11 +39,23 @@ export default function InModalDateTimePicker({
   placeholder = 'Select date and time',
   id,
   futureOnly = false,
+  strictlyAfter = null,
 }) {
   const now = new Date();
-  const minDate = futureOnly
-    ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    : null;
+  const startOfLocalDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const today0 = startOfLocalDay(new Date());
+  const minDate =
+    futureOnly || strictlyAfter
+      ? (() => {
+          const ert0 = strictlyAfter ? startOfLocalDay(strictlyAfter) : null;
+          if (futureOnly && ert0) {
+            return new Date(Math.max(today0.getTime(), ert0.getTime()));
+          }
+          if (futureOnly) return today0;
+          if (ert0) return ert0;
+          return null;
+        })()
+      : null;
 
   const parsed = datetimeLocalStringToDate(value);
   const [datePart, setDatePart] = useState(parsed || null);
@@ -83,7 +97,7 @@ export default function InModalDateTimePicker({
     let hour24 = h;
     if (nextPm && h < 12) hour24 = h + 12;
     else if (!nextPm && h === 12) hour24 = 0;
-    const combined = new Date(
+    let combined = new Date(
       nextDate.getFullYear(),
       nextDate.getMonth(),
       nextDate.getDate(),
@@ -92,6 +106,9 @@ export default function InModalDateTimePicker({
       0,
       0
     );
+    if (strictlyAfter && combined.getTime() <= strictlyAfter.getTime()) {
+      combined = new Date(strictlyAfter.getTime() + 60 * 1000);
+    }
     if (futureOnly && combined.getTime() <= now.getTime()) {
       const soonest = new Date(now.getTime() + 60000);
       return dateToDatetimeLocalString(soonest);

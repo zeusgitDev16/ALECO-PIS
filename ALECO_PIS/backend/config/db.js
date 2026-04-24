@@ -19,6 +19,9 @@ const pool = mysql.createPool({
   },
   timezone: '+08:00',
   dateStrings: true,
+  charset: 'utf8mb4',
+  /** Disallow `;` stacked statements in a single query (defense in depth). */
+  multipleStatements: false,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { apiUrl } from './utils/api';
-import { clearLocalStoragePreservingPreferences } from './utils/clearLocalStoragePreservingPreferences';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
 import AdminLayout from './components/AdminLayout.jsx';
 import InterruptionList from './InterruptionList.jsx'
+import PublicInterruptionPosterPage from './components/interruptions/PublicInterruptionPosterPage.jsx';
+import PrintInterruptionPosterPage from './components/interruptions/PrintInterruptionPosterPage.jsx';
 import LandingPage from './components/headers/landingPage.jsx';
 import './CSS/BodyLandPage.css';
 import CookieBanner from './components/CookieBanner.jsx';
@@ -23,6 +23,7 @@ import AdminBackup from './components/Backup.jsx';
 import ProfilePage from './components/profile/ProfilePage.jsx';
 import PersonnelManagement from './components/PersonnelManagement.jsx';
 import B2BMail from './components/B2BMail.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 
 
@@ -30,41 +31,14 @@ import B2BMail from './components/B2BMail.jsx';
 const NavigationWrapper = () => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  
-  // 1. SESSION SECURITY CHECK
-  useEffect(() => {
-    const verifySession = async () => {
-      const email = localStorage.getItem('userEmail');
-      const currentTokenVersion = localStorage.getItem('tokenVersion');
 
-      // If no email is stored, they aren't logged in, so we skip the check
-      if (!email) return;
-
-      try {
-        const response = await fetch(apiUrl('/api/verify-session'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, tokenVersion: currentTokenVersion })
-        });
-
-        const data = await response.json();
-
-        // If the server says 'invalid', it means a "Logout from all devices" was triggered elsewhere
-        if (!response.ok || data.status === 'invalid') {
-          console.log("--- [SECURITY] Session stale. Clearing local data. ---");
-          clearLocalStoragePreservingPreferences();
-          navigate('/'); // Kick to landing page
-        }
-      } catch (error) {
-        console.error("Session verification failed:", error);
-      }
-    };
-
-    verifySession();
-  }, [location.pathname, navigate]); // Runs on every navigation change
+  // Session checks for admin routes live in ProtectedRoute (+ optional API 401 handling).
+  // Avoid verify-session on every pathname change here — it caused false logouts on navigation.
 
   const isAdminPage = location.pathname.startsWith('/admin-');
+  const isPosterPage =
+    location.pathname.startsWith('/print-interruption/') ||
+    location.pathname.startsWith('/poster/interruption/');
   const isPublicHome = location.pathname === '/';
 
   /* Public home only: smooth scroll + scroll-padding for fixed header */
@@ -109,8 +83,8 @@ const NavigationWrapper = () => {
 
   return (
     <>
-      {/* Public only: fixed Albay strip + navbar. Admin strip lives inside AdminLayout (scroll-locked shell). */}
-      {!isAdminPage && (
+      {/* Public only: fixed Albay strip + navbar. Suppressed on poster/print pages for clean Puppeteer capture. */}
+      {!isAdminPage && !isPosterPage && (
         <div className="fix-container-nav">
           <LandingPage />
           <Navbar />
@@ -129,35 +103,40 @@ const NavigationWrapper = () => {
           </div>
         } />
 
-        {/* ADMIN ROUTES */}
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/admin-users" element={<AdminUsers />} />
-        <Route path="/admin-tickets" element={<AdminTickets />} />
-        <Route path="/admin-interruptions" element={<AdminInterruptions />} />
-        <Route path="/admin-history" element={<AdminHistory />} />
-        <Route path="/admin-backup" element={<AdminBackup />} />
+        <Route path="/poster/interruption/:id" element={<PublicInterruptionPosterPage />} />
+        <Route path="/print-interruption/:id" element={<PrintInterruptionPosterPage />} />
+
+        {/* ADMIN ROUTES — session required (password or Google via login.jsx only) */}
+        <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin-users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
+        <Route path="/admin-tickets" element={<ProtectedRoute><AdminTickets /></ProtectedRoute>} />
+        <Route path="/admin-interruptions" element={<ProtectedRoute><AdminInterruptions /></ProtectedRoute>} />
+        <Route path="/admin-history" element={<ProtectedRoute><AdminHistory /></ProtectedRoute>} />
+        <Route path="/admin-backup" element={<ProtectedRoute><AdminBackup /></ProtectedRoute>} />
 
         {/* PROFILE ROUTE */}
         <Route path="/admin-profile" element={ 
-          <AdminLayout activePage="profile"> 
-            <ProfilePage /> 
-          </AdminLayout> 
+          <ProtectedRoute>
+            <AdminLayout activePage="profile"> 
+              <ProfilePage /> 
+            </AdminLayout>
+          </ProtectedRoute>
         } />
 
         {/* PERSONNEL MANAGEMENT ROUTE */}
         <Route path="/admin-personnel" element={
-          <PersonnelManagement />
+          <ProtectedRoute><PersonnelManagement /></ProtectedRoute>
         } />
 
         {/* B2B MAIL ROUTE */}
         <Route path="/admin-b2b-mail" element={
-          <B2BMail />
+          <ProtectedRoute><B2BMail /></ProtectedRoute>
         } />
       </Routes>
 
-      <CookieBanner />
+      {!isPosterPage && <CookieBanner />}
       {/* Theme toggle: floating on landing page only; inline in dashboard (SearchBarGlobal) */}
-      {!isAdminPage && <DarkLightButton theme={theme} toggleTheme={toggleTheme} />}
+      {!isAdminPage && !isPosterPage && <DarkLightButton theme={theme} toggleTheme={toggleTheme} />}
     </>
   );
 };

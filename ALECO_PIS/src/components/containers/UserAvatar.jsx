@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 const userInitial = (user) => {
   const s = (user.name || user.email || '?').trim();
@@ -12,11 +13,12 @@ const UserAvatar = ({ user, imgClassName = '', fallbackClassName = '' }) => {
   const [failed, setFailed] = useState(false);
   const raw = user.profile_pic ?? user.profilePic;
   const url = raw && String(raw).trim();
+  const safeUrl = url ? getSafeResourceUrl(url) : null;
 
-  if (url && !failed) {
+  if (safeUrl && !failed) {
     return (
       <img
-        src={url}
+        src={safeUrl}
         alt=""
         className={imgClassName}
         referrerPolicy="no-referrer"

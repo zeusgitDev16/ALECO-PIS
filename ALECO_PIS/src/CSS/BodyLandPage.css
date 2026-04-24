@@ -253,7 +253,8 @@ html.public-home-smooth-scroll {
 
 .blob-ongoing { background-color: #dc2626; }
 .blob-pending, .blob-scheduled { background-color: #f59e0b; }
-.blob-restored { background-color: #16a34a; }
+.blob-restored,
+.blob-energized { background-color: #16a34a; }
 
 @keyframes blob-bounce {
   0% { transform: translate(-100%, -100%) translate3d(0, 0, 0); }
@@ -301,7 +302,8 @@ html.public-home-smooth-scroll {
 
 .status-ongoing { color: #dc2626; }
 .status-pending { color: #d97706; }
-.status-restored { color: #16a34a; }
+.status-restored,
+.status-energized { color: #16a34a; }
 
 .card-details {
   font-size: 0.8rem;
@@ -343,6 +345,13 @@ html.public-home-smooth-scroll {
   object-fit: contain;
   border-radius: 8px;
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  cursor: zoom-in;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.card-details-image img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Wider “bulletin” cards: good news / loading / refresh — same blob + glass as advisory cards */

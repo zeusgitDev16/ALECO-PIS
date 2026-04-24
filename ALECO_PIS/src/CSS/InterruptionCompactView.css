@@ -187,7 +187,8 @@ body.modal-open .interruptions-compact-table-header {
   color: #b91c1c;
 }
 
-.interruptions-compact-status-badge.status-restored {
+.interruptions-compact-status-badge.status-restored,
+.interruptions-compact-status-badge.status-energized {
   background: rgba(22, 163, 74, 0.15);
   color: #15803d;
 }

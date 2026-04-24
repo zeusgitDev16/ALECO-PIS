@@ -1,4 +1,8 @@
-import { getStatusDisplayLabel } from './interruptionLabels.js';
+import {
+  getStatusDisplayLabel,
+  isEmergencyOutageType,
+  isScheduledLikeOutageType,
+} from './interruptionLabels.js';
 import { isoToDatetimeLocalPhilippine, toMysqlFormatPhilippine } from './dateUtils.js';
 
 /** Alias for backwards compatibility; delegates to dateUtils. */
@@ -6,13 +10,14 @@ export function toMysqlFormatForConcurrency(isoString) {
   return toMysqlFormatPhilippine(isoString);
 }
 
-/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string }} InterruptionFormState */
+/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, affectedAreasGrouped: { heading: string, items: string[] }[], feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, posterImageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
 
 export const emptyForm = {
-  type: 'Unscheduled',
+  type: 'Emergency',
   status: 'Pending',
   statusChangeRemark: '',
   affectedAreasText: '',
+  affectedAreasGrouped: [],
   feeder: '',
   feederId: null,
   cause: '',
@@ -25,6 +30,10 @@ export const emptyForm = {
   body: '',
   controlNo: '',
   imageUrl: '',
+  posterImageUrl: '',
+  scheduleAutoRestore: false,
+  scheduledRestoreAt: '',
+  scheduledRestoreRemark: '',
 };
 
 /** API DTO datetime → datetime-local input. Handles ISO (UTC) and legacy "YYYY-MM-DD HH:mm". */
@@ -78,8 +87,21 @@ export function datetimeLocalToApi(s) {
 }
 
 /**
+ * Philippine civil wall time (API "YYYY-MM-DD HH:mm" or datetime-local) → ISO with +08:00 for poster/dateUtils.
+ * @param {string|null|undefined} wall
+ * @returns {string|null}
+ */
+export function wallClockApiToPosterIso(wall) {
+  if (!wall || !String(wall).trim()) return null;
+  const s = String(wall).trim().replace('T', ' ');
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})/);
+  if (!m) return null;
+  return `${m[1]}T${m[2]}:${m[3]}:00+08:00`;
+}
+
+/**
  * Mirrors server {@link computeInitialStatus} for UI preview on create.
- * @param {string} type - Scheduled | Unscheduled
+ * @param {string} type - Scheduled | Emergency | NgcScheduled
  * @param {string} dateTimeStartLocal - datetime-local value
  * @returns {{ apiStatus: 'Pending' | 'Ongoing', displayLabel: string }}
  */
@@ -88,7 +110,7 @@ export function computeInitialStatusPreview(type, dateTimeStartLocal) {
   if (!d || Number.isNaN(d.getTime())) {
     return { apiStatus: 'Ongoing', displayLabel: getStatusDisplayLabel('Ongoing') };
   }
-  if (type === 'Scheduled' && d.getTime() > Date.now()) {
+  if (isScheduledLikeOutageType(type) && d.getTime() > Date.now()) {
     return { apiStatus: 'Pending', displayLabel: getStatusDisplayLabel('Pending') };
   }
   return { apiStatus: 'Ongoing', displayLabel: getStatusDisplayLabel('Ongoing') };
@@ -96,17 +118,18 @@ export function computeInitialStatusPreview(type, dateTimeStartLocal) {
 
 /**
  * @param {InterruptionFormState} form
- * @param {{ editingId: number|null, baselineUpdatedAt?: string|null, baselineStatus?: string }} opts
+ * @param {{ editingId: number|null, baselineUpdatedAt?: string|null }} opts
  * @returns {object} POST/PUT body for /api/interruptions
  */
-export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt, baselineStatus } = {}) {
+export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } = {}) {
+  const isNgcpScheduled = form.type === 'NgcScheduled';
   const affectedAreas = form.affectedAreasText
     .split(',')
     .map((x) => x.trim())
     .filter(Boolean);
 
   const publicVisibleAt =
-    form.type === 'Unscheduled'
+    isEmergencyOutageType(form.type)
       ? null
       : form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()
         ? datetimeLocalToApi(form.publicVisibleAt)
@@ -119,36 +142,44 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt, b
   const payload = {
     type: form.type,
     affectedAreas,
-    feeder: form.feeder,
-    feederId: form.feederId != null && String(form.feederId).trim() !== '' ? Number(form.feederId) : null,
-    cause: form.cause,
+    feeder: isNgcpScheduled ? null : form.feeder,
+    feederId: isNgcpScheduled
+      ? null
+      : form.feederId != null && String(form.feederId).trim() !== '' ? Number(form.feederId) : null,
+    cause: isNgcpScheduled ? null : form.cause,
     dateTimeStart: datetimeLocalToApi(form.dateTimeStart),
-    dateTimeEndEstimated: datetimeLocalToApi(form.dateTimeEndEstimated),
-    publicVisibleAt,
-    causeCategory,
+    dateTimeEndEstimated: isNgcpScheduled ? null : datetimeLocalToApi(form.dateTimeEndEstimated),
+    causeCategory: isNgcpScheduled ? null : causeCategory,
     body: form.body && String(form.body).trim() ? String(form.body).trim() : null,
-    controlNo: form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
+    controlNo: isNgcpScheduled
+      ? null
+      : form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
     imageUrl: form.imageUrl && String(form.imageUrl).trim() ? String(form.imageUrl).trim() : null,
+    affectedAreasGrouped: Array.isArray(form.affectedAreasGrouped) ? form.affectedAreasGrouped : [],
   };
 
+  // Scheduled auto-restoration
+  if (form.scheduleAutoRestore && form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim()) {
+    payload.scheduledRestoreAt = datetimeLocalToApi(form.scheduledRestoreAt);
+    payload.scheduledRestoreRemark = form.scheduledRestoreRemark && String(form.scheduledRestoreRemark).trim()
+      ? String(form.scheduledRestoreRemark).trim()
+      : null;
+  } else {
+    payload.scheduledRestoreAt = null;
+    payload.scheduledRestoreRemark = null;
+  }
+
   if (!editingId) {
+    payload.publicVisibleAt = publicVisibleAt;
     const { apiStatus } = computeInitialStatusPreview(form.type, form.dateTimeStart);
     payload.status = apiStatus;
     return payload;
   }
 
-  payload.status = form.status;
-
-  const statusIsChanging = baselineStatus != null && form.status !== baselineStatus;
-  const isPendingToOngoing = baselineStatus === 'Pending' && form.status === 'Ongoing';
-  if (statusIsChanging && !isPendingToOngoing && form.statusChangeRemark) {
-    payload.statusChangeRemark = String(form.statusChangeRemark).trim();
-  }
-
-  if (form.status === 'Restored') {
+  // When editing, don't change status — status is managed via UpdateAdvisoryModal
+  // Just pass through dateTimeRestored if it exists on the form (from previous save)
+  if (form.dateTimeRestored && String(form.dateTimeRestored).trim()) {
     payload.dateTimeRestored = datetimeLocalToApi(form.dateTimeRestored);
-  } else {
-    payload.dateTimeRestored = null;
   }
 
   const base = baselineUpdatedAt != null ? String(baselineUpdatedAt).trim() : '';
@@ -163,13 +194,13 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt, b
 /**
  * Validates form before submit. Returns array of error messages.
  * Requires: feeder (always), and either body OR cause.
- * When status changes (except Pending→Ongoing), requires statusChangeRemark.
+ * Status changes are now handled in UpdateAdvisoryModal, not here.
  * @param {InterruptionFormState} form
- * @param {{ baselineStatus?: string }} [opts]
  * @returns {string[]}
  */
-export function validateInterruptionForm(form, { baselineStatus } = {}) {
+export function validateInterruptionForm(form, { editingId = null } = {}) {
   const errors = [];
+  const isNgcpScheduled = form.type === 'NgcScheduled';
   const hasBody = form.body && String(form.body).trim();
   const hasCause = form.cause && String(form.cause).trim();
   const hasFeeder = form.feeder && String(form.feeder).trim();
@@ -180,31 +211,104 @@ export function validateInterruptionForm(form, { baselineStatus } = {}) {
     Number(form.feederId) > 0;
   const hasDateTimeStart = form.dateTimeStart && String(form.dateTimeStart).trim();
 
-  if (!hasFeeder && !hasFeederId) {
+  if (!isNgcpScheduled && !hasFeeder && !hasFeederId) {
     errors.push('Feeder is required.');
   }
   if (!hasBody && !hasCause) {
     errors.push('Provide either a post body (content) or a cause/reason. At least one is required.');
   }
-
-  const statusIsChanging = baselineStatus != null && form.status !== baselineStatus;
-  const isPendingToOngoing = baselineStatus === 'Pending' && form.status === 'Ongoing';
-  if (statusIsChanging && !isPendingToOngoing) {
-    const remark = form.statusChangeRemark && String(form.statusChangeRemark).trim();
-    if (!remark) {
-      errors.push('A remark is required when changing status. Enter the reason in the "Reason for status change" field below the Lifecycle dropdown (not in the advisory body).');
-    }
-  }
   if (!hasDateTimeStart) {
     errors.push('Start date and time is required.');
   }
-  if (form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()) {
+  if (!isNgcpScheduled && isScheduledLikeOutageType(form.type)) {
+    const cn = form.controlNo && String(form.controlNo).trim();
+    if (!cn) {
+      errors.push('Control # is required for scheduled advisories (poster reference).');
+    }
+  }
+  if (!editingId && form.type === 'NgcScheduled') {
+    const hasImage = form.imageUrl && String(form.imageUrl).trim();
+    if (!hasImage) {
+      errors.push('NGCP scheduled advisories require an attached NGCP image before publishing.');
+    }
+  }
+  // Public bulletin timing is create-only; ignore on edit to avoid stale/locked schedule blocking updates.
+  if (!editingId && form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()) {
     const p = datetimeLocalStringToDate(form.publicVisibleAt);
     if (p && p.getTime() <= Date.now()) {
       errors.push('Goes live at must be a future date and time.');
     }
   }
+  if (form.scheduleAutoRestore) {
+    const start = datetimeLocalStringToDate(form.dateTimeStart);
+    const ertS = form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim();
+    if (!isNgcpScheduled) {
+      if (!ertS) {
+        errors.push('Estimated restoration (ERT) is required when scheduling automatic restoration.');
+      } else {
+        const ert = datetimeLocalStringToDate(form.dateTimeEndEstimated);
+        if (!ert) {
+          errors.push('Estimated restoration (ERT) must be a valid date and time.');
+        }
+      }
+    }
+    const hasScheduledRestoreAt = form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim();
+    if (!isNgcpScheduled && !hasScheduledRestoreAt) {
+      errors.push('Scheduled auto-restoration requires a date and time.');
+    } else if (hasScheduledRestoreAt) {
+      const r = datetimeLocalStringToDate(form.scheduledRestoreAt);
+      if (r && r.getTime() <= Date.now()) {
+        errors.push('Scheduled restoration time must be in the future.');
+      }
+      if (r && isNgcpScheduled && start && r.getTime() <= start.getTime()) {
+        errors.push('Auto-restore must be after Start for NGCP advisories.');
+      }
+      if (r && !isNgcpScheduled && ertS) {
+        const ert = datetimeLocalStringToDate(form.dateTimeEndEstimated);
+        if (ert && r.getTime() <= ert.getTime()) {
+          errors.push(
+            'Auto-restore must be after ERT (e.g. if ERT is 5:00 PM, choose 5:01 PM or later).',
+          );
+        }
+      }
+    }
+    if (
+      (!isNgcpScheduled || (form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim())) &&
+      (!form.scheduledRestoreRemark || !String(form.scheduledRestoreRemark).trim())
+    ) {
+      errors.push('A remark is required for scheduled auto-restoration (it will be logged when auto-restored).');
+    }
+  }
   return errors;
+}
+
+/**
+ * Map edit form state → DTO-shaped object for poster preview helpers (datetime as API wall-clock strings).
+ * @param {InterruptionFormState} form
+ * @returns {object}
+ */
+export function formStateToPosterPreviewDto(form) {
+  const affectedAreas = String(form.affectedAreasText || '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const toApi = (local) => (local && String(local).trim() ? datetimeLocalToApi(local) : null);
+  const toIso = (local) => wallClockApiToPosterIso(toApi(local));
+  return {
+    type: form.type,
+    status: form.status,
+    controlNo: form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
+    cause: form.cause && String(form.cause).trim() ? String(form.cause).trim() : null,
+    body: form.body && String(form.body).trim() ? String(form.body).trim() : null,
+    causeCategory: form.causeCategory && String(form.causeCategory).trim() ? String(form.causeCategory).trim() : null,
+    feeder: form.feeder || '',
+    dateTimeStart: toIso(form.dateTimeStart),
+    dateTimeEndEstimated: toIso(form.dateTimeEndEstimated),
+    dateTimeRestored: toIso(form.dateTimeRestored),
+    affectedAreas,
+    affectedAreasGrouped: Array.isArray(form.affectedAreasGrouped) ? form.affectedAreasGrouped : [],
+    posterImageUrl: form.posterImageUrl && String(form.posterImageUrl).trim() ? String(form.posterImageUrl).trim() : null,
+  };
 }
 
 /** @param {object} row - interruption DTO from API */
@@ -215,6 +319,7 @@ export function rowToFormState(row) {
     status: row.status,
     statusChangeRemark: '',
     affectedAreasText: (row.affectedAreas || []).join(', '),
+    affectedAreasGrouped: Array.isArray(row.affectedAreasGrouped) ? row.affectedAreasGrouped : [],
     feeder: row.feeder || '',
     feederId: row.feederId != null ? Number(row.feederId) : null,
     cause: row.cause || '',
@@ -227,5 +332,9 @@ export function rowToFormState(row) {
     body: row.body ? String(row.body) : '',
     controlNo: row.controlNo ? String(row.controlNo) : '',
     imageUrl: row.imageUrl ? String(row.imageUrl) : '',
+    posterImageUrl: row.posterImageUrl ? String(row.posterImageUrl) : '',
+    scheduleAutoRestore: Boolean(row.scheduledRestoreAt && String(row.scheduledRestoreAt).trim()),
+    scheduledRestoreAt: displayToDatetimeLocal(row.scheduledRestoreAt),
+    scheduledRestoreRemark: row.scheduledRestoreRemark ? String(row.scheduledRestoreRemark) : '',
   };
 }

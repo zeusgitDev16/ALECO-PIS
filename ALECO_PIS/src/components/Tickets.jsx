@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
+import { authFetch } from '../utils/authFetch';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketsPage.css';
@@ -117,7 +118,7 @@ const AdminTickets = () => {
                 });
                 params.set('includeChildren', 'true');
 
-                const res = await fetch(apiUrl(`/api/filtered-tickets?${params.toString()}`), { signal: ctrl.signal });
+                const res = await authFetch(apiUrl(`/api/filtered-tickets?${params.toString()}`), { signal: ctrl.signal });
                 const data = await res.json();
                 if (!res.ok || !data?.success) {
                     setMapTickets([]);
@@ -143,7 +144,7 @@ const AdminTickets = () => {
     useEffect(() => {
         const fetchCrews = async () => {
             try {
-                const response = await fetch(apiUrl('/api/crews/list'));
+                const response = await authFetch(apiUrl('/api/crews/list'));
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     setAvailableCrews(data);
@@ -178,7 +179,7 @@ const AdminTickets = () => {
     const handleDispatchGroup = async (mainTicketId, dispatchData) => {
         try {
             const body = { ...dispatchData, ...getActor() };
-            const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/dispatch`), {
+            const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/dispatch`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -203,7 +204,7 @@ const AdminTickets = () => {
 
     const executeUngroup = async (mainTicketId) => {
         try {
-            const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/ungroup`), {
+            const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/ungroup`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -228,7 +229,7 @@ const AdminTickets = () => {
 
     const handleDeleteTicket = async (ticketId) => {
         try {
-            const response = await fetch(apiUrl(`/api/tickets/${ticketId}`), {
+            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}`), {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(getActor())
@@ -238,39 +239,21 @@ const AdminTickets = () => {
                 toast.success(`Ticket ${ticketId} deleted.`);
                 setSelectedTicket(null);
                 refetch();
+                // Trigger refresh of service memo list
+                window.dispatchEvent(new CustomEvent('service-memo-deleted'));
             } else {
-                toast.error(data.message || 'Failed to delete ticket.');
+                toast.error('Delete failed: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
-            console.error('Delete ticket error:', error);
+            console.error('Delete error:', error);
             toast.error('Failed to delete ticket. Please try again.');
-        }
-    };
-
-    const handleResumeFromHold = async (ticketId) => {
-        try {
-            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(getActor())
-            });
-            const data = await response.json();
-            if (response.ok && data.success) {
-                toast.success(`ALECO System: ${data.message || `Ticket ${ticketId} resumed.`}`);
-                refetch();
-            } else {
-                toast.error(data.message || 'Could not resume ticket.');
-            }
-        } catch (error) {
-            console.error('Resume from hold error:', error);
-            toast.error('Failed to resume ticket. Please try again.');
         }
     };
 
     const handlePutHold = async (ticketId, holdData) => {
         try {
             const body = { ...holdData, ...getActor() };
-            const response = await fetch(apiUrl(`/api/tickets/${ticketId}/hold`), {
+            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/hold`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -293,11 +276,31 @@ const AdminTickets = () => {
         }
     };
 
+    const handleResumeFromHold = async (ticketId) => {
+        try {
+            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getActor())
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                toast.success(`ALECO System: ${data.message || `Ticket ${ticketId} resumed.`}`);
+                refetch();
+            } else {
+                toast.error(data.message || 'Could not resume ticket.');
+            }
+        } catch (error) {
+            console.error('Resume from hold error:', error);
+            toast.error('Failed to resume ticket. Please try again.');
+        }
+    };
+
     const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         try {
             if (newStatus === 'Ongoing' && dispatchData) {
                 const body = { ...dispatchData, ...getActor() };
-                const response = await fetch(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
+                const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -337,6 +340,7 @@ const AdminTickets = () => {
                         : `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} marked as ${newStatus}.`;
                     toast.success(msg);
                     refetch();
+                    return data; // Return full response including service_memo_warning
                 } else {
                     toast.error("Status update failed: " + data.message);
                 }
@@ -369,7 +373,7 @@ const AdminTickets = () => {
             const regularTickets = selectedIds.filter(id => !id?.startsWith('GROUP-'));
 
             for (const mainTicketId of groupMasters) {
-                const response = await fetch(apiUrl(`/api/tickets/group/${mainTicketId}/status`), {
+                const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/status`), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'Restored', ...getActor() })
@@ -382,7 +386,7 @@ const AdminTickets = () => {
             }
 
             if (regularTickets.length > 0) {
-                const response = await fetch(apiUrl('/api/tickets/bulk/restore'), {
+                const response = await authFetch(apiUrl('/api/tickets/bulk/restore'), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ticketIds: regularTickets, ...getActor() })
@@ -678,7 +682,7 @@ const AdminTickets = () => {
                 selectedTickets={tickets.filter(t => selectedIds.includes(t.ticket_id) && !t.ticket_id?.startsWith('GROUP-'))}
                 onSubmit={async (groupData) => {
                     try {
-                        const response = await fetch(apiUrl('/api/tickets/group/create'), {
+                        const response = await authFetch(apiUrl('/api/tickets/group/create'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(groupData)

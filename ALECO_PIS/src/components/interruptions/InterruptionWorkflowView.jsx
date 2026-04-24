@@ -2,7 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useNow } from '../../hooks/useNow';
 import { groupInterruptionsByStatus, getInterruptionColumnConfig } from '../../utils/interruptionWorkflowHelpers';
 import { formatToPhilippineTime, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand } from './AdvisoryActionIcons';
+import { getTypeDisplayLabel } from '../../utils/interruptionLabels';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
 import InterruptionAdvisoryDetailModal from './InterruptionAdvisoryDetailModal';
 import InterruptionCardActionModal from './InterruptionCardActionModal';
 import '../../CSS/InterruptionWorkflowView.css';
@@ -27,7 +28,7 @@ function truncate(s, max) {
 }
 
 /**
- * InterruptionWorkflowView - Workflow columns by status (Upcoming, Ongoing, Resolved)
+ * InterruptionWorkflowView - Workflow columns by status (Scheduled, Ongoing, Energized)
  * View-only (no drag) - Edit via button
  * @param {object} props
  * @param {boolean} props.loading
@@ -40,6 +41,8 @@ function truncate(s, max) {
  * @param {(id: number) => void} [props.onPushToFeed]
  * @param {(id: number) => void} [props.onOpenAdvisory] - Called when opening detail modal (for recent-opened tracking)
  * @param {'active'|'all'|'archived'} [props.listArchiveFilter]
+ * @param {(row: object) => void} [props.onUpdate] - Open Update Advisory modal
+ * @param {(id: number) => Promise<boolean>} [props.onRestoreAdvisory]
  * @param {boolean} props.saving
  */
 export default function InterruptionWorkflowView({
@@ -47,12 +50,14 @@ export default function InterruptionWorkflowView({
   items,
   totalCount = 0,
   onEdit,
+  onUpdate,
   onDelete,
   onPermanentDelete,
   onPullFromFeed,
   onPushToFeed,
   onOpenAdvisory,
   listArchiveFilter = 'active',
+  onRestoreAdvisory,
   saving,
 }) {
   const grouped = useMemo(() => groupInterruptionsByStatus(items), [items]);
@@ -106,7 +111,7 @@ export default function InterruptionWorkflowView({
     );
   }
 
-  const columns = ['Pending', 'Ongoing', 'Restored'];
+  const columns = ['Pending', 'Ongoing', 'Energized'];
 
   return (
     <div className="interruption-workflow-wrapper">
@@ -164,7 +169,7 @@ export default function InterruptionWorkflowView({
                         <div className="interruption-workflow-card-feeder">
                           {String(item.feeder || '').trim() || '—'}
                         </div>
-                        <div className="interruption-workflow-card-type">{item.type}</div>
+                        <div className="interruption-workflow-card-type">{getTypeDisplayLabel(item.type)}</div>
                         <div className="interruption-workflow-card-body" title={bodyOrCause}>
                           {bodyShort}
                         </div>
@@ -223,11 +228,26 @@ export default function InterruptionWorkflowView({
                               onEdit(item);
                             }}
                             disabled={saving}
-                            title={archived ? 'View' : 'Edit'}
-                            aria-label={archived ? 'View' : 'Edit'}
+                            title={archived ? 'View' : 'Edit content'}
+                            aria-label={archived ? 'View' : 'Edit content'}
                           >
                             <IconPencil />
                           </button>
+                          {!archived && onUpdate && (
+                            <button
+                              type="button"
+                              className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--update"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdate(item);
+                              }}
+                              disabled={saving}
+                              title="Update status & remarks"
+                              aria-label="Update status & remarks"
+                            >
+                              <IconRefreshCw />
+                            </button>
+                          )}
                           {archived && onPermanentDelete && (
                             <button
                               type="button"
@@ -277,8 +297,21 @@ export default function InterruptionWorkflowView({
             setDetailItem(null);
             onEdit(it);
           }}
+          onUpdate={onUpdate ? (it) => {
+            setDetailItem(null);
+            onUpdate(it);
+          } : undefined}
           onPullFromFeed={onPullFromFeed}
           onPushToFeed={onPushToFeed}
+          onRestore={
+            onRestoreAdvisory
+              ? async (id) => {
+                  const ok = await onRestoreAdvisory(id);
+                  if (ok) setDetailItem(null);
+                }
+              : undefined
+          }
+          listArchiveFilter={listArchiveFilter}
           saving={saving}
         />
       )}
@@ -296,6 +329,10 @@ export default function InterruptionWorkflowView({
             setActionModalItem(null);
             onEdit(it);
           }}
+          onUpdate={onUpdate ? (it) => {
+            setActionModalItem(null);
+            onUpdate(it);
+          } : undefined}
           onArchive={(id) => {
             setActionModalItem(null);
             onDelete(id);

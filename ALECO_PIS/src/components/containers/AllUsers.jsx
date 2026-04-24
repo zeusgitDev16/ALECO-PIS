@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
+import { authFetch } from '../../utils/authFetch';
 import { USER_ROLES } from '../../constants/userRoles';
 import UserAvatar from './UserAvatar';
 import UserAccountActionModal from '../users/UserAccountActionModal';
@@ -17,8 +18,8 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
   const fetchData = async () => {
     try {
       const [usersRes, invitesRes] = await Promise.all([
-        fetch(apiUrl('/api/users')),
-        fetch(apiUrl('/api/invites/pending'))
+        authFetch(apiUrl('/api/users')),
+        authFetch(apiUrl('/api/invites/pending'))
       ]);
       const [usersData, invitesData] = await Promise.all([
         usersRes.json(),
@@ -59,7 +60,7 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
 
   const executeToggleStatus = async (user) => {
     const currentAdminEmail = localStorage.getItem('userEmail');
-    const response = await fetch(apiUrl('/api/users/toggle-status'), {
+    const response = await authFetch(apiUrl('/api/users/toggle-status'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

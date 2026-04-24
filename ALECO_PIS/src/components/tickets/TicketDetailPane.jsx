@@ -10,6 +10,7 @@ import HoldTicketModal from './HoldTicketModal';
 import EditTicketModal from './EditTicketModal';
 import ConfirmModal from './ConfirmModal';
 import TicketHistoryLogs from './TicketHistoryLogs';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
@@ -33,6 +34,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
 
     const isGroupMaster = ticket?.ticket_id?.startsWith('GROUP-');
     const isGroupChild = !!ticket?.parent_ticket_id;
+    const safeEvidenceImageUrl = ticket?.image_url ? getSafeResourceUrl(ticket.image_url) : null;
     const mainTicketId = isGroupMaster ? ticket.ticket_id : ticket?.parent_ticket_id;
     const children = groupData?.children || [];
 
@@ -242,6 +244,13 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         </div>
                     </div>
 
+                    <div className="detail-group">
+                        <label>Action Desired</label>
+                        <div className="concern-box">
+                            {ticket.action_desired || '—'}
+                        </div>
+                    </div>
+
                     {isGroupMaster && children.length > 0 && (
                         <div className="detail-group full-width group-children-section">
                             <label>Child Tickets ({children.length})</label>
@@ -272,15 +281,15 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         </div>
                     )}
 
-                    {ticket.image_url && (
+                    {safeEvidenceImageUrl && (
                         <div className="detail-group evidence-section">
                             <label>Attached Evidence</label>
                             <div className="image-wrapper">
                                 <img 
-                                    src={ticket.image_url} 
+                                    src={safeEvidenceImageUrl} 
                                     alt="Technical Evidence" 
                                     className="evidence-img" 
-                                    onClick={() => window.open(ticket.image_url, '_blank')}
+                                    onClick={() => window.open(safeEvidenceImageUrl, '_blank', 'noopener,noreferrer')}
                                 />
                                 <span className="image-hint">Click image to expand</span>
                             </div>
@@ -563,8 +572,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isRestoreConfirmOpen}
                 onClose={() => setIsRestoreConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Restored');
+                onConfirm={async () => {
+                    await onUpdateTicket(ticket.ticket_id, 'Restored');
                     setIsRestoreConfirmOpen(false);
                     onClose();
                 }}
@@ -578,8 +587,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isRevertConfirmOpen}
                 onClose={() => setIsRevertConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Pending');
+                onConfirm={async () => {
+                    await onUpdateTicket(ticket.ticket_id, 'Pending');
                     setIsRevertConfirmOpen(false);
                     onClose();
                 }}
@@ -593,8 +602,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isUnresolvedConfirmOpen}
                 onClose={() => setIsUnresolvedConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'Unresolved');
+                onConfirm={async () => {
+                    await onUpdateTicket(ticket.ticket_id, 'Unresolved');
                     setIsUnresolvedConfirmOpen(false);
                     onClose();
                 }}
@@ -608,8 +617,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isNoFaultFoundConfirmOpen}
                 onClose={() => setIsNoFaultFoundConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
+                onConfirm={async () => {
+                    await onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
                     setIsNoFaultFoundConfirmOpen(false);
                     onClose();
                 }}
@@ -623,8 +632,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             <ConfirmModal
                 isOpen={isAccessDeniedConfirmOpen}
                 onClose={() => setIsAccessDeniedConfirmOpen(false)}
-                onConfirm={() => {
-                    onUpdateTicket(ticket.ticket_id, 'AccessDenied');
+                onConfirm={async () => {
+                    await onUpdateTicket(ticket.ticket_id, 'AccessDenied');
                     setIsAccessDeniedConfirmOpen(false);
                     onClose();
                 }}
@@ -651,6 +660,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                     }}
                 />
             )}
+
         </div>
     );
 };

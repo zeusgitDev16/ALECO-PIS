@@ -4,6 +4,7 @@ import AdminLayout from './AdminLayout';
 import { useB2BContacts } from '../hooks/useB2BContacts';
 import { useB2BMessages } from '../hooks/useB2BMessages';
 import { apiUrl } from '../utils/api';
+import { authFetch } from '../utils/authFetch';
 import { FEEDER_AREAS } from '../config/feederConfig';
 import B2BContactList from './b2bmail/B2BContactList';
 import B2BBulkActionBar from './b2bmail/B2BBulkActionBar';
@@ -111,7 +112,7 @@ const B2BMail = () => {
   useEffect(() => {
     const loadFeeders = async () => {
       try {
-        const res = await fetch(apiUrl('/api/feeders'));
+        const res = await authFetch(apiUrl('/api/feeders'));
         const json = await res.json().catch(() => null);
         if (res.ok && json?.success && Array.isArray(json.areas)) {
           const opts = json.areas.flatMap((a) =>
@@ -206,7 +207,7 @@ const B2BMail = () => {
     let success = 0;
     for (const id of selectedIds) {
       try {
-        const res = await fetch(apiUrl(`/api/b2b-mail/contacts/${id}`), {
+        const res = await authFetch(apiUrl(`/api/b2b-mail/contacts/${id}`), {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
         });

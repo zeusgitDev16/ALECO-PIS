@@ -1,0 +1,21 @@
+/* Minimal chrome for /poster/interruption/:id — print and Puppeteer capture */
+.public-poster-page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+  background: var(--bg-main, #f5f7fb);
+}
+
+.public-poster-page--loading,
+.public-poster-page--error {
+  font-family: system-ui, sans-serif;
+  padding: 24px;
+  text-align: center;
+}
+
+@media print {
+  .public-poster-page {
+    padding: 0;
+    background: white;
+  }
+}

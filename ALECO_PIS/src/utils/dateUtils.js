@@ -69,6 +69,20 @@ export const formatPhilippineNow = (opts = {}) => {
 };
 
 /**
+ * Current Philippine calendar date (long form), evaluated at call time.
+ * @returns {string} e.g. "April 22, 2026"
+ */
+export const formatPhilippineTemplateDateNow = () =>
+    dayjs.utc().add(PH_OFFSET_HOURS, 'hour').format('MMMM D, YYYY');
+
+/**
+ * Current Philippine wall-clock time (12h), evaluated at call time.
+ * @returns {string} e.g. "3:45 PM"
+ */
+export const formatPhilippineTemplateTimeNow = () =>
+    dayjs.utc().add(PH_OFFSET_HOURS, 'hour').format('h:mm A');
+
+/**
  * Format API datetime (ISO or "YYYY-MM-DD HH:mm" Philippine) for display.
  * Handles both UTC ISO strings and wall-clock Philippine time from forms.
  * @param {string|null|undefined} apiLike - ISO string or "YYYY-MM-DD HH:mm"
@@ -157,7 +171,7 @@ export function isCurrentlyOnPublicFeed(item, now = Date.now()) {
     if (item.pulledFromFeedAt) return false;
     const pv = item.publicVisibleAt ? dayjs.utc(item.publicVisibleAt).valueOf() : 0;
     if (pv > 0 && pv > now) return false;
-    if (item.status === 'Restored') {
+    if (item.status === 'Restored' || item.status === 'Energized') {
         const restored = item.dateTimeRestored ? dayjs.utc(item.dateTimeRestored).valueOf() : 0;
         if (!restored) return false;
         if (now >= restored + RESOLVED_DISPLAY_MS) return false;
@@ -200,6 +214,28 @@ export const formatToPhilippineTimeRangeShort = (startApi, endApi) => {
     const end = toPhilippineDayjs(endApi);
     if (!end || !end.isValid()) return startStr;
     return `${startStr} - ${end.format('h:mm A')}`;
+};
+
+/** Month name only for poster date card, e.g. "APRIL". */
+export const formatToPhilippineMonthOnly = (startApi) => {
+    const start = toPhilippineDayjs(startApi);
+    if (!start) return '';
+    return start.format('MMMM').toUpperCase();
+};
+
+/** Day number(s) only for poster date card, e.g. "23" or "23-25". */
+export const formatToPhilippineDayNumberRange = (startApi, endApi) => {
+    const start = toPhilippineDayjs(startApi);
+    if (!start) return '';
+    const dayStart = start.date();
+    if (endApi) {
+        const end = toPhilippineDayjs(endApi);
+        if (end && end.isValid() && end.month() === start.month() && end.year() === start.year()) {
+            const dayEnd = end.date();
+            if (dayEnd !== dayStart) return `${dayStart}-${dayEnd}`;
+        }
+    }
+    return String(dayStart);
 };
 
 /** Day-of-week short, e.g. "MON-WED". */

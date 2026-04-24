@@ -5,13 +5,18 @@ import alecoLogo from '../assets/Aleco-logo-modified.png';
 import CreatePost from './buttons/CreatePost';
 
 // Accept isOpen and toggleSidebar from AdminLayout
-const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
+const AdminSidebar = ({ activePage, isOpen, toggleSidebar, onOpenServiceMemos }) => {
   
   // Safely close the sidebar only if it's currently open (Mobile behavior)
   const handleLinkClick = () => {
     if (isOpen) {
       toggleSidebar();
     }
+  };
+
+  const handleServiceMemosClick = () => {
+    onOpenServiceMemos?.();
+    handleLinkClick();
   };
 
   return (
@@ -115,7 +120,7 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar }) => {
           </nav>
 
           <footer className="sidebar-footer">
-            <CreatePost />
+            <CreatePost onOpen={handleServiceMemosClick} />
           </footer>
         </div>
       </aside>

@@ -13,6 +13,7 @@ import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsL
 import TextFieldProblem from './components/textfields/TextFieldProblem';
 import PhoneInputProblem from './components/textfields/PhoneInputProblem';
 import ExplainTheProblem from './components/textfields/ExplainTheProblem';
+import ActionDesired from './components/textfields/ActionDesired';
 import UploadTheProblem from './components/buckets/UploadTheProblem';
 /* Portals (TicketPopUp, ConfirmModal) render under document.body — not inside #report; they do not inherit --report-scale unless styled separately */
 import TicketPopUp from './components/containers/TicketPopUp'; 
@@ -93,6 +94,7 @@ const ReportaProblem = () => {
         address: '',
         category: '',
         concern: '',
+        actionDesired: '',
         district: '',
         municipality: ''
     });
@@ -165,12 +167,12 @@ const ReportaProblem = () => {
 
     const canProceed = useCallback((step) => {
         switch (step) {
-            case 1: return !!formData.category;
-            case 2: return !!formData.concern?.trim();
+            case 1: return !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim();
+            case 2: return !!formData.concern?.trim() && !!formData.actionDesired?.trim();
             case 3: return true;
-            case 4: return !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim();
+            case 4: return !!formData.category;
             case 5: return !!formData.address?.trim() && !!formData.municipality;
-            case 6: return !!formData.category && !!formData.concern?.trim() && !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim() && !!formData.address?.trim() && !!formData.municipality;
+            case 6: return !!formData.category && !!formData.concern?.trim() && !!formData.actionDesired?.trim() && !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim() && !!formData.address?.trim() && !!formData.municipality;
             default: return false;
         }
     }, [formData]);
@@ -430,6 +432,7 @@ const ReportaProblem = () => {
 
         submissionData.append('category', formData.category);
         submissionData.append('concern', formData.concern);
+        submissionData.append('action_desired', formData.actionDesired);
 
         if (selectedFile) {
             submissionData.append('image', selectedFile);
@@ -453,7 +456,7 @@ const ReportaProblem = () => {
                 setFormData({
                     accountNumber: '', firstName: '', middleName: '',
                     lastName: '', phoneNumber: '', address: '',
-                    category: '', concern: '', district: '',
+                    category: '', concern: '', actionDesired: '', district: '',
                     municipality: ''
                 });
                 setSelectedFile(null);
@@ -484,7 +487,8 @@ const ReportaProblem = () => {
             { key: 'district', label: 'District' },
             { key: 'municipality', label: 'Municipality/City' },
             { key: 'category', label: 'Issue Category' },
-            { key: 'concern', label: 'Issue Details' }
+            { key: 'concern', label: 'Issue Details' },
+            { key: 'actionDesired', label: 'Action Desired' }
         ];
 
         for (const field of mandatoryFields) {
@@ -601,10 +605,10 @@ const ReportaProblem = () => {
                         {/* Dispatch-style Stepper */}
                         <div className="report-wizard-stepper">
                             {[
-                                { num: 1, label: 'Category' },
+                                { num: 1, label: 'Contact' },
                                 { num: 2, label: 'Explain' },
                                 { num: 3, label: 'Upload' },
-                                { num: 4, label: 'Contact' },
+                                { num: 4, label: 'Category' },
                                 { num: 5, label: 'Location' },
                                 { num: 6, label: 'Submit' }
                             ].map((s, i) => (
@@ -634,8 +638,13 @@ const ReportaProblem = () => {
                         <div className="wizard-step-content" ref={stepContentRef}>
                             {currentStep === 1 && (
                                 <div className="wizard-step-block">
-                                    <h3 className="column-section-title">Issue Category</h3>
-                                    <IssueCategoryDropdown value={formData.category} onChange={handleFieldChange('category')} />
+                                    <h3 className="column-section-title">Contact Information</h3>
+                                    <HotlinesDisplay />
+                                    <TextFieldProblem id="acc_num" label="Account Number (Optional)" value={formData.accountNumber} onChange={handleFieldChange('accountNumber')} filterType="numeric" maxLength={15} />
+                                    <TextFieldProblem id="fname" label="First Name *" value={formData.firstName} onChange={handleFieldChange('firstName')} filterType="name" />
+                                    <TextFieldProblem id="mname" label="Middle Name" value={formData.middleName} onChange={handleFieldChange('middleName')} filterType="name" />
+                                    <TextFieldProblem id="lname" label="Last Name *" value={formData.lastName} onChange={handleFieldChange('lastName')} filterType="name" />
+                                    <PhoneInputProblem id="phone" label="Phone Number *" value={formData.phoneNumber} onChange={handleFieldChange('phoneNumber')} />
                                 </div>
                             )}
 
@@ -643,6 +652,7 @@ const ReportaProblem = () => {
                                 <div className="wizard-step-block">
                                     <h3 className="column-section-title">Explain the Problem</h3>
                                     <ExplainTheProblem value={formData.concern} onChange={handleFieldChange('concern')} />
+                                    <ActionDesired value={formData.actionDesired} onChange={handleFieldChange('actionDesired')} />
                                 </div>
                             )}
 
@@ -657,13 +667,8 @@ const ReportaProblem = () => {
 
                             {currentStep === 4 && (
                                 <div className="wizard-step-block">
-                                    <h3 className="column-section-title">Contact Information</h3>
-                                    <HotlinesDisplay />
-                                    <TextFieldProblem id="acc_num" label="Account Number (Optional)" value={formData.accountNumber} onChange={handleFieldChange('accountNumber')} filterType="numeric" maxLength={15} />
-                                    <TextFieldProblem id="fname" label="First Name *" value={formData.firstName} onChange={handleFieldChange('firstName')} filterType="name" />
-                                    <TextFieldProblem id="mname" label="Middle Name" value={formData.middleName} onChange={handleFieldChange('middleName')} filterType="name" />
-                                    <TextFieldProblem id="lname" label="Last Name *" value={formData.lastName} onChange={handleFieldChange('lastName')} filterType="name" />
-                                    <PhoneInputProblem id="phone" label="Phone Number *" value={formData.phoneNumber} onChange={handleFieldChange('phoneNumber')} />
+                                    <h3 className="column-section-title">Issue Category</h3>
+                                    <IssueCategoryDropdown value={formData.category} onChange={handleFieldChange('category')} />
                                 </div>
                             )}
 

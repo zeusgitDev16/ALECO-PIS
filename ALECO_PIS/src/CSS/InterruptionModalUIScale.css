@@ -170,6 +170,13 @@
   min-height: calc(48px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
+/* Poster sections — bullets list (several lines; slightly taller than generic memo fields) */
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-grouped-bullets-textarea {
+  min-height: max(72px, calc(96px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  line-height: 1.45;
+  resize: vertical;
+}
+
 .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-textarea {
   box-sizing: border-box;
   font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
@@ -212,6 +219,303 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
   padding: 0 calc(5px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+/* Update advisory modal — control / fieldset / label parity with edit (.modal-form).
+   Same calc(... * var(--im-field-scale)) ladder as §8 MODULAR_SCALE_AND_DESIGN_PATTERNS.md.
+   Omit bare `select` here so .interruptions-admin-lifecycle-dropdown keeps winning cascade. */
+.interruptions-page-container .interruptions-admin-modal--update label:not(.interruptions-admin-radio-line) {
+  gap: 6px;
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+}
+
+.interruptions-page-container .interruptions-admin-modal--update input[type='text'],
+.interruptions-page-container .interruptions-admin-modal--update input[type='number'],
+.interruptions-page-container .interruptions-admin-modal--update input[type='email'],
+.interruptions-page-container .interruptions-admin-modal--update input[type='tel'],
+.interruptions-page-container .interruptions-admin-modal--update input[type='search'],
+.interruptions-page-container .interruptions-admin-modal--update textarea:not(.interruptions-admin-body-textarea),
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-status-remark-input {
+  box-sizing: border-box;
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  min-height: max(2em, calc(28px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update textarea:not(.interruptions-admin-body-textarea) {
+  min-height: calc(48px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-fieldset--compact {
+  margin: 0 0 calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-fieldset--compact legend {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0 calc(5px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-form {
+  margin-top: calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update input[type='text'],
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update input[type='number'],
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update input[type='email'],
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update input[type='tel'],
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update input[type='search'],
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update textarea:not(.interruptions-admin-body-textarea),
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-status-remark-input {
+  background: #374151;
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Update modal — identity (status chip, outage type pill, feeder, control #): label + body tiers */
+.interruptions-page-container .interruptions-admin-modal--update .update-advisory-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-bottom: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  background: var(--bg-muted, rgba(0, 0, 0, 0.03));
+  border-radius: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .update-advisory-identity .interruptions-admin-status-chip {
+  padding: calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .update-advisory-identity .interruptions-admin-type-pill {
+  display: inline-block;
+  padding: calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .update-advisory-feeder {
+  margin: 0;
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .update-advisory-control-no {
+  display: inline-block;
+  padding: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+[data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update .update-advisory-identity .interruptions-admin-type-pill {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Update modal — remarks & activity log (timestamps, Posted/System, body text) */
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-loading {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-item {
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-bottom: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  background: var(--bg-muted, rgba(0, 0, 0, 0.03));
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-item--system {
+  font-size: inherit;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-meta {
+  display: flex;
+  align-items: center;
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-bottom: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-meta time {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-kind {
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent-color, #3b82f6);
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-remark {
+  margin: 0;
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-empty {
+  padding: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  font-style: italic;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-msg {
+  margin-top: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+  line-height: 1.35;
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-msg[data-variant='ok'] {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-msg[data-variant='err'] {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+/* Update modal — lifecycle stepper (scaled steps, dots, connectors) */
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-lifecycle-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-top: 0;
+  margin-bottom: calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  background: var(--bg-muted, rgba(0, 0, 0, 0.02));
+  border-radius: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-stepper-step {
+  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-weight: 600;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-stepper-label {
+  line-height: 1.25;
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-stepper-dot {
+  width: max(5px, calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  height: max(5px, calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-stepper-connector {
+  width: calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  height: max(2px, calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+/* Update modal — “New status” label + lifecycle dropdown spacing and control chrome */
+.interruptions-page-container
+  .interruptions-admin-modal--update
+  .interruptions-admin-form-grid--modal
+  > label.interruptions-admin-span2:first-child {
+  gap: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container
+  .interruptions-admin-modal--update
+  .interruptions-admin-form-grid--modal
+  > label.interruptions-admin-span2:first-child
+  .interruptions-admin-lifecycle-dropdown {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  margin-top: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
+[data-theme='dark']
+  .interruptions-page-container
+  .interruptions-admin-modal--update
+  .interruptions-admin-form-grid--modal
+  > label.interruptions-admin-span2:first-child
+  .interruptions-admin-lifecycle-dropdown {
+  background: #374151;
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme='dark']
+  .interruptions-page-container
+  .interruptions-admin-modal--update
+  .interruptions-admin-form-grid--modal
+  > label.interruptions-admin-span2:first-child
+  .interruptions-admin-lifecycle-dropdown
+  option {
+  background: #1f2937;
+  color: #f9fafb;
 }
 
 .interruptions-page-container .interruptions-admin-datetime-wrap {
@@ -392,8 +696,29 @@
   min-height: max(28px, calc(30px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
 }
 
+/* Body field + Insert template row — scaled gap; button wins over global .interruptions-admin-btn !important */
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-wrap {
+  gap: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
 .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-actions {
-  gap: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  gap: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin-top: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-actions .interruptions-admin-btn--secondary {
+  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1))) !important;
+  font-weight: 600 !important;
+  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1))) !important;
+  min-height: max(34px, calc(40px * var(--im-field-scale, var(--interruption-ui-scale, 1)))) !important;
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1))) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* View-only advisory: dl + prose — value size aligned with Schedule row values (full-card detail modal). */

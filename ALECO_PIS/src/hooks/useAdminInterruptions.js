@@ -104,7 +104,12 @@ export function useAdminInterruptions() {
     setMemoSaving(true);
     setMemoMessage(null);
     try {
-      const r = await addInterruptionUpdate(id, { remark });
+      const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
+      const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
+      const body = { remark };
+      if (userEmail) body.actorEmail = userEmail;
+      if (userName) body.actorName = userName;
+      const r = await addInterruptionUpdate(id, body);
       if (r.success && r.data?.updates) {
         setEditDetail((prev) => (prev && prev.id === id ? { ...prev, updates: r.data.updates } : prev));
         setMemoMessage({ type: 'ok', text: 'Remark added.' });
@@ -198,7 +203,7 @@ export function useAdminInterruptions() {
           setMessage({ type: 'err', text: r.message || 'Restore failed.' });
           return false;
         }
-        setMessage({ type: 'ok', text: 'Restored.' });
+        setMessage({ type: 'ok', text: 'Advisory unarchived.' });
         await fetchList();
         return true;
       } catch {

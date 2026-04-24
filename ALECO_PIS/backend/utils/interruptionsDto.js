@@ -2,6 +2,8 @@
  * Shared mapping for aleco_interruptions + aleco_interruption_updates rows.
  */
 
+import { INTERRUPTION_SCHEDULED_LIKE_TYPES } from '../constants/interruptionFieldEnums.js';
+
 /** Parse DB text: JSON array or comma-separated */
 export function parseAffectedAreas(text) {
   if (text == null || text === '') return [];
@@ -34,6 +36,66 @@ export function serializeAffectedAreas(areas) {
     return serializeAffectedAreas(parseAffectedAreas(areas));
   }
   return JSON.stringify([]);
+}
+
+/**
+ * Normalize client/API grouped areas → `{ heading, items[] }[]`.
+ * @param {unknown} input
+ * @returns {{ heading: string, items: string[] }[]}
+ */
+export function normalizeAffectedAreasGroupedInput(input) {
+  if (input == null) return [];
+  if (!Array.isArray(input)) return [];
+  const blocks = [];
+  for (const b of input) {
+    const heading = b?.heading != null ? String(b.heading).trim() : '';
+    const items = Array.isArray(b?.items)
+      ? b.items.map((x) => String(x).trim()).filter(Boolean)
+      : [];
+    if (heading || items.length) {
+      blocks.push({ heading, items });
+    }
+  }
+  return blocks;
+}
+
+/**
+ * Parse DB JSON / string → grouped blocks for DTO (`affectedAreasGrouped`).
+ * @param {unknown} val - MySQL JSON column or string
+ * @returns {{ heading: string, items: string[] }[]}
+ */
+export function parseAffectedAreasGroupedFromDb(val) {
+  if (val == null || val === '') return [];
+  let raw = val;
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(raw)) {
+    raw = raw.toString('utf8');
+  }
+  let arr;
+  if (typeof raw === 'string') {
+    const t = raw.trim();
+    if (!t) return [];
+    try {
+      arr = JSON.parse(t);
+    } catch {
+      return [];
+    }
+  } else if (Array.isArray(raw)) {
+    arr = raw;
+  } else {
+    return [];
+  }
+  return normalizeAffectedAreasGroupedInput(arr);
+}
+
+/**
+ * Store grouped areas: `NULL` when empty (backward compatible with flat `affected_areas`).
+ * @param {unknown} input
+ * @returns {string|null} JSON string or null
+ */
+export function serializeAffectedAreasGroupedForDb(input) {
+  const blocks = normalizeAffectedAreasGroupedInput(input);
+  if (!blocks.length) return null;
+  return JSON.stringify(blocks);
 }
 
 /** Format JS Date using local civil time (Asia/Manila when process.env.TZ is set). Never use toISOString() for advisory wall times. */
@@ -119,9 +181,10 @@ export function mapRowToDto(row) {
   try {
     return {
       id: row.id,
-      type: row.type,
-      status: row.status,
+      type: row.type === 'Unscheduled' ? 'Emergency' : row.type,
+      status: row.status === 'Restored' ? 'Energized' : row.status,
       affectedAreas: parseAffectedAreas(row.affected_areas),
+      affectedAreasGrouped: parseAffectedAreasGroupedFromDb(row.affected_areas_grouped),
       feederId: row.feeder_id != null ? Number(row.feeder_id) : null,
       feeder: row.feeder ?? '',
       cause: row.cause ?? null,
@@ -129,10 +192,16 @@ export function mapRowToDto(row) {
       body: row.body != null ? String(row.body) : null,
       controlNo: row.control_no != null ? String(row.control_no) : null,
       imageUrl: row.image_url != null ? String(row.image_url) : null,
+      posterImageUrl:
+        row.poster_image_url != null && String(row.poster_image_url).trim() !== ''
+          ? String(row.poster_image_url).trim()
+          : null,
       dateTimeStart: toIsoForClient(row.date_time_start),
       dateTimeEndEstimated: row.date_time_end_estimated ? toIsoForClient(row.date_time_end_estimated) : null,
       dateTimeRestored: row.date_time_restored ? toIsoForClient(row.date_time_restored) : null,
       publicVisibleAt: row.public_visible_at ? toIsoForClient(row.public_visible_at) : null,
+      scheduledRestoreAt: row.scheduled_restore_at ? toIsoForClient(row.scheduled_restore_at) : null,
+      scheduledRestoreRemark: row.scheduled_restore_remark != null ? String(row.scheduled_restore_remark) : null,
       pulledFromFeedAt: row.pulled_from_feed_at != null ? toIsoForClient(row.pulled_from_feed_at) : null,
       createdAt: toIsoForClient(row.created_at),
       updatedAt: toIsoForClient(row.updated_at),
@@ -158,8 +227,8 @@ export function mapUpdateRowToDto(row) {
 }
 
 /**
- * Initial status for new advisories: Scheduled + future start → Pending; else Ongoing.
- * @param {string} type - Scheduled | Unscheduled
+ * Initial status for new advisories: scheduled-like type + future start → Pending; else Ongoing.
+ * @param {string} type - Scheduled | Emergency | NgcScheduled
  * @param {string|null} startMysql - YYYY-MM-DD HH:mm:ss
  */
 export function computeInitialStatus(type, startMysql) {
@@ -176,6 +245,6 @@ export function computeInitialStatus(type, startMysql) {
     0
   ).getTime();
   if (Number.isNaN(startMs)) return 'Ongoing';
-  if (type === 'Scheduled' && startMs > Date.now()) return 'Pending';
+  if (INTERRUPTION_SCHEDULED_LIKE_TYPES.has(type) && startMs > Date.now()) return 'Pending';
   return 'Ongoing';
 }

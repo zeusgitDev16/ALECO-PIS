@@ -1,7 +1,7 @@
 import React from 'react';
-import { getStatusDisplayLabel } from '../../utils/interruptionLabels';
+import { getStatusDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand } from './AdvisoryActionIcons';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
 
 const CARD_PREVIEW_LEN = 80;
 
@@ -26,12 +26,13 @@ function truncate(s, max) {
  * @param {'on-feed'|'not-on-feed'|'archived'} [props.feedIndicator] - Green=on feed, purple=not on feed, red=archived
  * @param {(id: number) => void} [props.onPullFromFeed]
  * @param {(id: number) => void} [props.onPushToFeed]
+ * @param {() => void} [props.onUpdate] - Open Update Advisory modal (lifecycle + remarks)
  * @param {boolean} props.saving
  */
-export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onPermanentDelete, onExpand, onCardClick, feedIndicator, onPullFromFeed, onPushToFeed, saving }) {
+export default function InterruptionAdvisoryCard({ item, onEdit, onUpdate, onDelete, onPermanentDelete, onExpand, onCardClick, feedIndicator, onPullFromFeed, onPushToFeed, saving }) {
   const archived = Boolean(item.deletedAt);
   const statusLabel = getStatusDisplayLabel(item.status);
-  const statusClass = String(item.status || '').toLowerCase();
+  const statusClass = interruptionStatusForCssClass(item.status);
   const feederDisplay = String(item.feeder || '').trim() || '—';
   const areasFull = (item.affectedAreas || []).join(', ') || '—';
   const areasShort = truncate(areasFull, 50);
@@ -145,9 +146,21 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onDelete, onPer
                 <IconArrowUp />
               </button>
             )}
-            <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={onEdit} disabled={saving} title="Edit" aria-label="Edit">
+            <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={onEdit} disabled={saving} title="Edit content" aria-label="Edit content">
               <IconPencil />
             </button>
+            {onUpdate && (
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--update"
+                onClick={onUpdate}
+                disabled={saving}
+                title="Update status & remarks"
+                aria-label="Update status & remarks"
+              >
+                <IconRefreshCw />
+              </button>
+            )}
             <button
               type="button"
               className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--archive"

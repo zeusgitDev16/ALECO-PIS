@@ -3,9 +3,13 @@ import { apiUrl } from '../utils/api';
 function adminHeaders(extra = {}) {
     const h = { ...extra };
     if (typeof localStorage !== 'undefined') {
+        const token = localStorage.getItem('accessToken');
         const e = localStorage.getItem('userEmail');
         const n = localStorage.getItem('userName');
+        const tv = localStorage.getItem('tokenVersion');
+        if (token) h.Authorization = `Bearer ${token}`;
         if (e) h['X-User-Email'] = e;
+        if (tv !== null && tv !== undefined) h['X-Token-Version'] = String(tv);
         if (n) h['X-User-Name'] = n;
     }
     return h;
@@ -26,6 +30,7 @@ async function jsonFetch(path, options = {}) {
         success: res.ok && json?.success === true,
         data: json?.data ?? null,
         message: typeof json?.message === 'string' ? json.message : null,
+        totalInbound: json?.totalInbound ?? null,
     };
 }
 
@@ -121,7 +126,7 @@ export const listB2BInbound = ({ messageId = '' } = {}) =>
 
 export const refreshB2BInbound = ({ messageId = '' } = {}) => {
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 30000);
+    const tid = setTimeout(() => controller.abort(), 60000);
     return jsonFetch(`/api/b2b-mail/inbound/refresh?messageId=${encodeURIComponent(messageId)}`, {
         method: 'POST',
         headers: adminHeaders({ 'Content-Type': 'application/json' }),

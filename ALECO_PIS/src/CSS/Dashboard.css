@@ -47,7 +47,6 @@
 html.admin-app-scroll-lock {
   height: 100%;
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 body.admin-app-scroll-lock {
@@ -55,7 +54,6 @@ body.admin-app-scroll-lock {
   max-height: 100%;
   min-height: 0;
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 /* Fills viewport under scroll lock; Albay strip + dual pane share this height */
@@ -81,78 +79,644 @@ body.admin-app-scroll-lock {
 
 .admin-dashboard-container {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 1 0; /* Strictly locks height to viewport to prevent content bleed */
   flex-direction: row;
   width: 100%;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .admin-main-wrapper {
-  flex: 1 1 auto;
+  flex: 1 1 0; /* Strictly locks height to viewport */
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
 .admin-content {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 0;
+  display: block;
+  min-height: 0; /* Critical flexbox constraint to enable internal scrolling */
+  height: 100%; /* Anchor height for calculating the full scroll range */
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scroll-padding-top: 150px; /* Global landing buffer to keep the dashboard header visible after navigation */
 }
 
 /* Custom Scrollbar for Admin Content */
 .admin-content::-webkit-scrollbar {
-  width: 8px;
+  width: 12px; /* Balanced width for easier grabbing and visibility */
 }
 
 .admin-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.admin-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.02); /* Subtle track to help orient the user */
   border-radius: 10px;
 }
 
+.admin-content::-webkit-scrollbar-thumb {
+  /* High-contrast gray handle that works in all themes */
+  background: rgba(128, 128, 128, 0.6); 
+  border-radius: 20px;
+  min-height: 200px; /* Substantially long handle for maximum reach control across the dashboard */
+  border: 3px solid transparent; /* Creates a visual gutter for a modern 'floating' handle look */
+  background-clip: padding-box;
+}
+
 .admin-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(128, 128, 128, 0.6);
 }
 
 /* --- HEADER SECTION --- */
 .dashboard-header {
-    margin-bottom: 30px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    padding-top: 2px;
 }
 
 .header-title {
     margin: 0;
     font-size: var(--fs-xl);
+    font-weight: 800;
+    color: var(--text-header);
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    text-transform: capitalize; /* Ensures the greeting and name are properly capitalized */
 }
 
 .header-subtitle {
-    color: var(--text-secondary);
-    margin-top: 10px;
+    color: var(--text-secondary) !important;
+    margin-top: 2px;
     font-size: var(--fs-sm);
+    font-weight: 700;
+    opacity: 0.75;
+}
+
+/* --- QUICK NAVIGATION BUTTONS --- */
+.dashboard-nav-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.dash-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dash-nav-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: translateY(-2px);
 }
 
 /* --- WIDGETS / CONTENT --- */
-.dashboard-widget {
-    margin-top: 20px;
-    padding: 50px;
-    border: 2px dashed var(--text-secondary);
-    border-radius: 12px;
-    background-color: rgba(128, 128, 128, 0.05);
+
+/* Scrolling Fix: Ensure the dashboard page has enough bottom clearance 
+   to fully reveal the last features when scrolling. */
+.dashboard-page-container {
+    padding-bottom: 120vh !important; /* MASSIVE RUNWAY: Forces the scroll area to extend more than a full screen height past the content */
+}
+
+/* Remove nested scrollbar conflict: Allow the incident tracking card 
+   to expand naturally within the main dashboard scroll area. */
+.dashboard-page-container .main-content-card {
+    max-height: none !important;
+    overflow: visible !important;
+    margin-bottom: 20px;
+}
+
+.analytics-container {
+    margin-bottom: 40px; /* Balanced bottom margin for the unified features group */
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Tightened gap for a more unified dashboard appearance */
+}
+
+/* Invisible parent container for Power Advisories, Ticket Features, and B2B Mail 
+   to ensure consistent flow and prevent the sections from squashing each other. */
+.dashboard-features-invisible-parent {
+    display: flex;
+    flex-direction: column;
+    gap: 120px; /* Massive gap creates "neutral zones" between sections to easily access main page scroll */
+    width: 100%;
+    background: transparent;
+    padding: 0;
+    overflow: visible;
+    margin-bottom: 100px; /* Adds a physical gap before the empty padding starts to ensure the last widget isn't "stuck" */
+}
+
+/* Internal container to wrap all elements inside the scrollable feature boxes.
+   The bottom padding ensures that content isn't cut off by the container's 70vh limit. */
+.feature-content-scroll-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 60px; /* Generous buffer for reachability */
+}
+
+/* Refine labels inside the Power Advisories container */
+.dashboard-power-advisories-wrapper .section-label-group {
+    margin-bottom: 6px;
+}
+
+.dashboard-power-advisories-wrapper .column-section-title {
+    margin: 0 !important;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    color: var(--text-header);
+}
+
+.dashboard-power-advisories-wrapper .widget-text {
+    margin: 0 !important;
+    font-size: 0.85rem;
+}
+
+/* Unified parent containers for Dashboard Features (Power Advisories and Tickets) */
+.dashboard-power-advisories-wrapper,
+.dashboard-ticket-features-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Further reduced gap to bring charts higher into view */
+    width: 100%;
+    padding: 20px 20px 32px; /* Adjusted bottom padding for cleaner framing of internal charts */
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+    margin-bottom: 0; /* Erased redundant margin to tighten center spacing between features */
+    max-height: 70vh; /* Restored height limit to enable internal scrolling */
+    overflow-y: auto; /* Re-enabled internal vertical scrolling */
+    overflow-x: hidden;
+    scrollbar-gutter: stable; /* Prevents layout shifts when scrollbars appear */
+    scroll-margin-top: 180px; /* Significant margin ensures the target box lands lower, leaving an "escape route" to scroll up */
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Custom Scrollbar for the Features Wrappers - Restored high-visibility handles */
+.dashboard-power-advisories-wrapper::-webkit-scrollbar,
+.dashboard-ticket-features-wrapper::-webkit-scrollbar {
+    width: 12px;
+    display: block;
+}
+
+.dashboard-power-advisories-wrapper::-webkit-scrollbar-track,
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 12px 0;
+}
+
+.dashboard-power-advisories-wrapper::-webkit-scrollbar-thumb,
+.dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.6);
+    border-radius: 10px;
+    min-height: 120px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+/* Ensure the last content piece has breathing room so it is fully reachable via scroll */
+.dashboard-power-advisories-wrapper > *:last-child,
+.dashboard-ticket-features-wrapper > *:last-child,
+.dashboard-b2b-mail-wrapper > *:last-child {
+    margin-bottom: 8px !important; /* Minimal margin to eliminate trailing empty space */
+}
+
+.placeholder-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* Refine internal "bricks" when nested inside the visible parent box */
+.dashboard-power-advisories-wrapper .stat-card,
+.dashboard-power-advisories-wrapper .chart-card,
+.dashboard-ticket-features-wrapper .stat-card,
+.dashboard-ticket-features-wrapper .chart-card,
+.dashboard-b2b-mail-wrapper .stat-card,
+.dashboard-b2b-mail-wrapper .chart-card {
+    background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
+    box-shadow: none; /* Flattens internal cards to emphasize the parent section */
+    border: 1px solid var(--border-color); 
+}
+
+/* --- POWER GRID STATUS ENHANCEMENTS --- */
+@keyframes active-outage-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.dashboard-power-advisories-wrapper .stat-card {
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Active Outages - Dangerous/Alert state */
+.dashboard-power-advisories-wrapper .stat-card.urgent { 
+    border-bottom-color: #ef4444; 
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%);
+    animation: active-outage-pulse 2s infinite;
+}
+
+/* Upcoming - Warning/Scheduled state */
+.dashboard-power-advisories-wrapper .stat-card.pending { 
+    border-bottom-color: #f59e0b;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(245, 158, 11, 0.05) 100%);
+}
+
+/* Restored - Success/Healthy state */
+.dashboard-power-advisories-wrapper .stat-card.resolved { 
+    border-bottom-color: #22c55e;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.05) 100%);
+}
+
+/* Total Recorded - Informational state */
+.dashboard-power-advisories-wrapper .stat-card.total { 
+    border-bottom-color: #2563eb;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(37, 99, 235, 0.05) 100%);
+}
+
+/* Tighten spacing for labels inside the features box */
+.dashboard-power-advisories-wrapper .section-label-group h3,
+.dashboard-ticket-features-wrapper .section-label-group h3,
+.dashboard-b2b-mail-wrapper .section-label-group h3 {
+    margin: 0 !important;
+    font-size: 1.1rem;
+}
+
+.dashboard-power-advisories-wrapper .section-label-group p,
+.dashboard-ticket-features-wrapper .section-label-group p,
+.dashboard-b2b-mail-wrapper .section-label-group p {
+    margin: 0 0 10px 0 !important;
+    font-size: 0.85rem;
+}
+
+/* Loading state for analytics */
+.analytics-loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    gap: 8px;
     text-align: center;
+}
+
+.analytics-pulse {
+    animation: analytics-fade-pulse 2s ease-in-out infinite;
+}
+
+@keyframes analytics-fade-pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* ==========================================================================
+   B2B MAIL OVERVIEW SECTION - Standard Card Style
+   ========================================================================== */
+.dashboard-b2b-mail-wrapper {
+    margin-top: 32px; /* Distinct spacing from the Incident Tracking section above */
+    padding: 20px !important;
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-b2b-mail-wrapper:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Header styling for the B2B Overview section */
+.b2b-overview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.b2b-overview-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-header);
+    margin: 0;
+}
+
+/* Placeholder UI state for the B2B Mail features */
+.b2b-placeholder-container {
+    padding: 60px 20px;
+    text-align: center;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius-md);
+    background-color: rgba(128, 128, 128, 0.02);
+    color: var(--text-secondary);
+}
+
+.b2b-placeholder-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* --- B2B MAIL DASHBOARD FEATURE COMPONENTS --- */
+
+/* Container for internal B2B analytics components */
+.b2b-analytics-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* Specialized row for delivery success/failure trends */
+.b2b-delivery-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    width: 100%;
+}
+
+/* Recent mail activity list with specialized hover states */
+.b2b-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.b2b-activity-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--bg-body, rgba(128, 128, 128, 0.03));
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    transition: all 0.2s ease;
+}
+
+.b2b-activity-item:hover {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateX(4px);
+}
+
+.b2b-activity-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.b2b-activity-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-header);
+}
+
+.b2b-activity-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.b2b-status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.dashboard-b2b-mail-wrapper .stat-card,
+.dashboard-b2b-mail-wrapper .chart-card {
+    background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+    border-bottom: 3px solid #3b82f6;
+}
+
+.dashboard-b2b-mail-wrapper .stat-card {
+    border-bottom: 3px solid #3b82f6; /* Mail-themed status indicator */
+}
+
+/* Dynamic Feeder Status styles */
+.feeder-status-tag {
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+}
+
+.feeder-status-tag.critical {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.feeder-status-tag.scheduled {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+/* Summary Cards Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 4px;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    padding: 5px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover { transform: translateY(-4px); }
+
+.stat-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.total .stat-icon-box { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+.pending .stat-icon-box { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.ongoing .stat-icon-box { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+.resolved .stat-icon-box { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.unresolved .stat-icon-box { background: rgba(225, 29, 72, 0.1); color: #e11d48; }
+.nofault .stat-icon-box { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+.denied .stat-icon-box { background: rgba(249, 115, 22, 0.1); color: #f97316; }
+.urgent .stat-icon-box { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+.stat-content { display: flex; flex-direction: column; min-width: 0; }
+.stat-label { font-size: 0.65rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
+.stat-number { font-size: 1.25rem; font-weight: 900; margin: 1px 0; color: var(--text-header); line-height: 1.1; }
+.stat-trend { font-size: 0.7rem; font-weight: 600; opacity: 0.8; }
+.stat-trend.positive { color: #22c55e; }
+.stat-trend.negative { color: #ef4444; }
+
+/* Charts Layout */
+.charts-grid-main, .charts-grid-secondary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 4px;
+}
+
+@media (max-width: 900px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .charts-grid-main, .charts-grid-secondary { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+    background: var(--bg-card);
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Re-enable internal padding for chart cards to ensure legends and bottom axis labels are fully visible and not "cut" */
+.charts-grid-main .chart-card {
+    padding-bottom: 24px !important; 
+}
+
+/* Force the main charts to a larger height to fill the container boxes perfectly */
+.charts-grid-main .chart-wrapper .recharts-responsive-container {
+    height: 180px !important; /* Reduced further to reclaim bottom space */
+}
+
+/* Target the internal legend wrapper to remove unnecessary spacing from JSX inline styles */
+.charts-grid-main .recharts-legend-wrapper {
+    padding-top: 0 !important;
+    bottom: 8px !important; /* Pulls the legend tighter to the chart */
+}
+
+/* Brute-force remove any margin from the Recharts SVG container */
+.charts-grid-main .recharts-wrapper {
+    margin-bottom: -15px !important; 
+    margin-top: -5px !important;
+}
+
+.chart-header-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px; /* Increased gap so charts aren't too close to the header */
+}
+
+.chart-header-group h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-header);
+}
+
+.chart-icon { color: var(--accent-primary); opacity: 0.8; }
+
+.chart-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* Location Insight Styling */
+.location-insight-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.location-row { display: flex; flex-direction: column; gap: 6px; }
+.loc-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.loc-bar-bg {
+    height: 6px;
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.loc-bar-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 10px;
 }
 
 .widget-text {
     color: var(--text-secondary);
+}
+
+/* Customize Recharts Legend text */
+.recharts-legend-item-text {
+    color: var(--text-secondary) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+/* Dark mode legend adjustment */
+[data-theme="dark"] .recharts-cartesian-grid-horizontal line {
+    stroke: rgba(255, 255, 255, 0.05);
+}
+
+/* Ensure dashboard scroll area respects mobile safe areas and providing breathing room */
+.admin-content:has(.dashboard-page-container) {
+    scroll-padding-bottom: 500px; /* Increased buffer to allow bottom content to be scrolled much higher up the screen */
 }
 
 /* Data Management: last workflow step (import) stays reachable when scrolling */

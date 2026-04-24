@@ -1,0 +1,299 @@
+/**
+ * Admin Service Memos page — modular UI scale (mirrors TicketUIScale.css / BodyLandPage.css tiers).
+ * Set on .service-memos-page-container; descendants inherit --service-memo-ui-scale for calc(... * var(--service-memo-ui-scale, 1)).
+ */
+
+.service-memos-page-container {
+  --service-memo-ui-scale: 1;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .service-memos-page-container {
+    --service-memo-ui-scale: 0.88;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+  .service-memos-page-container {
+    --service-memo-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+  .service-memos-page-container {
+    --service-memo-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+  .service-memos-page-container {
+    --service-memo-ui-scale: 0.72;
+  }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+  .service-memos-page-container {
+    --service-memo-ui-scale: 0.68;
+  }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+  .service-memos-page-container {
+    --service-memo-ui-scale: 0.65;
+  }
+}
+
+@media (max-width: 320px) {
+  .service-memos-page-container {
+    --service-memo-ui-scale: 0.55;
+  }
+}
+
+@media (min-width: 1024px) {
+  .service-memos-page-container {
+    --service-memo-ui-scale: 1;
+  }
+}
+
+/* Scoped scale overrides for service memo form (same pattern as TicketModalUIScale.css) */
+
+.service-memos-page-container .service-memo-form-root {
+  padding: 0 0 calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='create'] {
+  padding-bottom: calc(24px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-toolbar {
+  gap: calc(6px * var(--service-memo-ui-scale, 1));
+  margin-bottom: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-btn {
+  padding: calc(6px * var(--service-memo-ui-scale, 1)) calc(14px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+  font-size: max(11px, calc(11px * var(--service-memo-ui-scale, 1)));
+  min-height: calc(32px * var(--service-memo-ui-scale, 1));
+}
+
+/* Reference header */
+.service-memos-page-container .service-memo-reference-header {
+  margin-bottom: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-reference-title-row {
+  gap: calc(10px * var(--service-memo-ui-scale, 1));
+  margin-bottom: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-reference-badge {
+  width: calc(5px * var(--service-memo-ui-scale, 1));
+  height: calc(20px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(3px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-reference-title {
+  font-size: calc(15px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-reference-photo {
+  min-width: calc(88px * var(--service-memo-ui-scale, 1));
+  min-height: calc(88px * var(--service-memo-ui-scale, 1));
+  max-width: calc(120px * var(--service-memo-ui-scale, 1));
+  max-height: calc(120px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-reference-photo-label,
+.service-memos-page-container .service-memo-reference-photo-btn {
+  font-size: max(9px, calc(9px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-reference-photo-preview {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+/* Top strip */
+.service-memos-page-container .service-memo-form-top-strip {
+  gap: calc(8px * var(--service-memo-ui-scale, 1));
+  padding: calc(10px * var(--service-memo-ui-scale, 1));
+  margin-bottom: calc(12px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-row-two {
+  gap: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-row-ticket {
+  gap: calc(4px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-strip-field label {
+  font-size: max(9px, calc(9px * var(--service-memo-ui-scale, 1)));
+  margin-bottom: calc(3px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-strip-field input {
+  padding: calc(6px * var(--service-memo-ui-scale, 1)) calc(8px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(5px * var(--service-memo-ui-scale, 1));
+  font-size: max(12px, calc(12px * var(--service-memo-ui-scale, 1)));
+  min-height: calc(32px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-search-wrap {
+  gap: calc(4px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-icon-btn {
+  width: calc(32px * var(--service-memo-ui-scale, 1));
+  min-height: calc(32px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(5px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-display {
+  padding: calc(6px * var(--service-memo-ui-scale, 1)) calc(8px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(5px * var(--service-memo-ui-scale, 1));
+  font-size: max(12px, calc(12px * var(--service-memo-ui-scale, 1)));
+  min-height: calc(32px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-input-with-action {
+  gap: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-inline-err {
+  font-size: max(10px, calc(10px * var(--service-memo-ui-scale, 1)));
+  margin-top: calc(4px * var(--service-memo-ui-scale, 1));
+}
+
+/* Form sections */
+.service-memos-page-container .service-memo-form-grid {
+  gap: calc(14px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-section {
+  padding: calc(12px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-band-heading {
+  margin: calc(-12px * var(--service-memo-ui-scale, 1)) calc(-12px * var(--service-memo-ui-scale, 1)) calc(10px * var(--service-memo-ui-scale, 1)) calc(-12px * var(--service-memo-ui-scale, 1));
+  padding: calc(7px * var(--service-memo-ui-scale, 1)) calc(10px * var(--service-memo-ui-scale, 1));
+  font-size: max(9px, calc(9px * var(--service-memo-ui-scale, 1)));
+  border-radius: calc(7px * var(--service-memo-ui-scale, 1)) calc(7px * var(--service-memo-ui-scale, 1)) 0 0;
+}
+
+.service-memos-page-container .service-memo-form-row {
+  margin-bottom: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-row label {
+  font-size: max(9px, calc(9px * var(--service-memo-ui-scale, 1)));
+  margin-bottom: calc(3px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-row input,
+.service-memos-page-container .service-memo-form-row textarea {
+  padding: calc(7px * var(--service-memo-ui-scale, 1)) calc(9px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(5px * var(--service-memo-ui-scale, 1));
+  font-size: max(12px, calc(12px * var(--service-memo-ui-scale, 1)));
+  min-height: calc(32px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-row.two-col {
+  gap: calc(10px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-meta-line {
+  font-size: max(9px, calc(9px * var(--service-memo-ui-scale, 1)));
+  margin-top: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+/* Modal: extra bottom inset on the page shell so scrolled content clears the modal edge */
+.service-memo-modal-content .service-memos-page-container {
+  padding-bottom: calc(56px * var(--service-memo-ui-scale, 1));
+}
+
+/* Coarse pointer (iOS zoom prevention) */
+@media (pointer: coarse) and (max-width: 899px) {
+  .service-memos-page-container .service-memo-form-strip-field input,
+  .service-memos-page-container .service-memo-form-row input,
+  .service-memos-page-container .service-memo-form-row textarea {
+    font-size: max(16px, calc(12px * var(--service-memo-ui-scale, 1)));
+  }
+}
+
+/* Create pool: keep compact rows + request section padding (wins over generic scaled rules above) */
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-top-strip {
+  gap: calc(7px * var(--service-memo-ui-scale, 1));
+  padding: calc(9px * var(--service-memo-ui-scale, 1));
+  margin-bottom: calc(10px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-strip-field input {
+  min-height: calc(30px * var(--service-memo-ui-scale, 1));
+  padding: calc(5px * var(--service-memo-ui-scale, 1)) calc(7px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-grid {
+  gap: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+/* Create sections: uniform padding on all bands (same as Intake / Referral / …) */
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-section {
+  padding-top: calc(10px * var(--service-memo-ui-scale, 1));
+  padding-left: calc(12px * var(--service-memo-ui-scale, 1));
+  padding-right: calc(12px * var(--service-memo-ui-scale, 1));
+  padding-bottom: calc(10px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-band-heading {
+  margin: calc(-10px * var(--service-memo-ui-scale, 1)) calc(-12px * var(--service-memo-ui-scale, 1)) calc(10px * var(--service-memo-ui-scale, 1)) calc(-12px * var(--service-memo-ui-scale, 1));
+  padding: calc(6px * var(--service-memo-ui-scale, 1)) calc(10px * var(--service-memo-ui-scale, 1));
+  font-size: max(9px, calc(10px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-row {
+  margin-bottom: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-row label {
+  margin-bottom: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-row input,
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-row textarea {
+  min-height: calc(30px * var(--service-memo-ui-scale, 1));
+  padding: calc(6px * var(--service-memo-ui-scale, 1)) calc(8px * var(--service-memo-ui-scale, 1));
+  font-size: max(12px, calc(13px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='create'] .service-memo-form-row textarea {
+  min-height: calc(48px * var(--service-memo-ui-scale, 1));
+}
+
+/* Browse list table — match compact ticket density */
+.service-memos-page-container .service-memo-table {
+  font-size: max(10px, calc(11px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-table-head th {
+  font-size: max(8px, calc(9px * var(--service-memo-ui-scale, 1)));
+  padding: calc(7px * var(--service-memo-ui-scale, 1)) calc(9px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-list-col {
+  padding: calc(7px * var(--service-memo-ui-scale, 1)) calc(9px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-list-primary {
+  font-size: max(10px, calc(11px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-list-sub {
+  font-size: max(9px, calc(10px * var(--service-memo-ui-scale, 1)));
+}

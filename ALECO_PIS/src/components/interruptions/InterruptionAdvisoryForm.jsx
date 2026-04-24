@@ -1,19 +1,26 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import InterruptionPosterAlignmentPreview from './InterruptionPosterAlignmentPreview';
 import {
-  STATUS_FORM_OPTIONS,
   TYPE_FORM_OPTIONS,
   CAUSE_CATEGORY_FORM_OPTIONS,
-  getStatusDisplayLabel,
+  isEmergencyOutageType,
 } from '../../utils/interruptionLabels';
 import {
   datetimeLocalToApi,
-  computeInitialStatusPreview,
   datetimeLocalStringToDate,
+  formStateToPosterPreviewDto,
 } from '../../utils/interruptionFormUtils';
-import { formatPhilippineWallClock } from '../../utils/dateUtils';
+import {
+  formatPhilippineWallClock,
+  formatPhilippineTemplateDateNow,
+  formatPhilippineTemplateTimeNow,
+} from '../../utils/dateUtils';
 import FeederCascadeSelect from './FeederCascadeSelect';
 import InModalDateTimePicker from './InModalDateTimePicker';
 import { uploadInterruptionImage } from '../../api/interruptionsApi';
+import { apiUrl } from '../../utils/api';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
+import { useNow } from '../../hooks/useNow';
 
 const BODY_PLACEHOLDER =
   'Type your advisory like a Facebook post. Include date, time, affected areas, and reason. You can use line breaks and structure.';
@@ -83,32 +90,24 @@ export default function InterruptionAdvisoryForm({
   onSubmit,
   onCancel,
   editingId,
-  baselineStatus,
   detailLoading = false,
   saving,
-  memoSlot = null,
   saveConflict = false,
   onReloadAdvisory,
   advisoryArchived = false,
   validationErrors = [],
+  onUpdatePoster,
+  posterUpdateRequired = false,
+  posterAssetBusy = false,
 }) {
-  const initialLifecyclePreview = useMemo(
-    () => computeInitialStatusPreview(form.type, form.dateTimeStart),
-    [form.type, form.dateTimeStart]
-  );
-
+  const now = useNow([]);
+  const isNgcpScheduled = form.type === 'NgcScheduled';
+  const lockTypeForNgcpEdit = Boolean(editingId && isNgcpScheduled);
   const unscheduledFutureStart = useMemo(() => {
-    if (form.type !== 'Unscheduled') return false;
+    if (!isEmergencyOutageType(form.type)) return false;
     const d = datetimeLocalStringToDate(form.dateTimeStart);
-    return Boolean(d && d.getTime() > Date.now());
-  }, [form.type, form.dateTimeStart]);
-
-  const lifecycleSteps = useMemo(() => {
-    if (form.type === 'Unscheduled') return ['Ongoing', 'Restored'];
-    return ['Pending', 'Ongoing', 'Restored'];
-  }, [form.type]);
-
-  const currentLifecycleStep = editingId ? form.status : initialLifecyclePreview.apiStatus;
+    return Boolean(d && d.getTime() > now);
+  }, [form.type, form.dateTimeStart, now]);
 
   const [quickFieldsOpen, setQuickFieldsOpen] = useState(true);
   const [legacyFieldsOpen, setLegacyFieldsOpen] = useState(true);
@@ -123,9 +122,16 @@ export default function InterruptionAdvisoryForm({
   const hasBody = form.body && String(form.body).trim();
   const showLegacyFields = !hasBody;
 
+  const safeImagePreviewUrl = useMemo(
+    () => (form.imageUrl ? getSafeResourceUrl(form.imageUrl) : null),
+    [form.imageUrl]
+  );
+
+  const posterPreviewDto = useMemo(() => formStateToPosterPreviewDto(form), [form]);
+
   const insertTemplate = () => {
-    const apiStart = form.dateTimeStart ? datetimeLocalToApi(form.dateTimeStart) : null;
-    const [datePart = '[Date]', timePart = '[Time]'] = apiStart ? apiStart.split(' ') : [];
+    const datePart = formatPhilippineTemplateDateNow();
+    const timePart = formatPhilippineTemplateTimeNow();
     const template = BODY_TEMPLATE.replace('[Date]', datePart)
       .replace('[Time]', timePart)
       .replace('[Areas]', form.affectedAreasText || '[Areas]')
@@ -149,7 +155,7 @@ export default function InterruptionAdvisoryForm({
     setForm((f) => ({
       ...f,
       type: v,
-      ...(v === 'Unscheduled' ? { schedulePublicLater: false, publicVisibleAt: '' } : {}),
+      ...(isEmergencyOutageType(v) ? { schedulePublicLater: false, publicVisibleAt: '' } : {}),
     }));
   };
 
@@ -247,6 +253,7 @@ export default function InterruptionAdvisoryForm({
               <select
                 value={form.type}
                 onChange={(ev) => handleTypeChange(ev.target.value)}
+                disabled={lockTypeForNgcpEdit}
               >
                 {TYPE_FORM_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -254,25 +261,34 @@ export default function InterruptionAdvisoryForm({
                   </option>
                 ))}
               </select>
+              {lockTypeForNgcpEdit && (
+                <span className="interruptions-admin-field-hint">
+                  Outage type is locked for NGCP scheduled advisories to keep UI and backend rules consistent.
+                </span>
+              )}
             </label>
-            <label>
-              Feeder
-              <FeederCascadeSelect
-                value={form.feeder}
-                onChange={(v) => setForm((f) => ({ ...f, feeder: v }))}
-                onFeederIdChange={(fid) => setForm((f) => ({ ...f, feederId: fid }))}
-                disabled={advisoryArchived}
-              />
-            </label>
-            <label>
-              Control #
-              <input
-                type="text"
-                value={form.controlNo}
-                onChange={(ev) => setForm((f) => ({ ...f, controlNo: ev.target.value }))}
-                placeholder="e.g. SIMAR2026-037"
-              />
-            </label>
+            {!isNgcpScheduled && (
+              <label>
+                Feeder
+                <FeederCascadeSelect
+                  value={form.feeder}
+                  onChange={(v) => setForm((f) => ({ ...f, feeder: v }))}
+                  onFeederIdChange={(fid) => setForm((f) => ({ ...f, feederId: fid }))}
+                  disabled={advisoryArchived}
+                />
+              </label>
+            )}
+            {!isNgcpScheduled && (
+              <label>
+                Control #
+                <input
+                  type="text"
+                  value={form.controlNo}
+                  onChange={(ev) => setForm((f) => ({ ...f, controlNo: ev.target.value }))}
+                  placeholder="e.g. SIMAR2026-037"
+                />
+              </label>
+            )}
             <label className="interruptions-admin-datetime-field">
               Start
               <div className="interruptions-admin-datetime-wrap">
@@ -285,33 +301,45 @@ export default function InterruptionAdvisoryForm({
               </div>
               <DatetimePreview value={form.dateTimeStart} />
             </label>
-            <label className="interruptions-admin-datetime-field">
-              Estimated restoration (ERT)
-              <div className="interruptions-admin-datetime-wrap">
-                <InModalDateTimePicker
-                  value={form.dateTimeEndEstimated}
-                  onChange={(v) => setForm((f) => ({ ...f, dateTimeEndEstimated: v }))}
-                  placeholder="Select ERT date and time"
-                  futureOnly
-                />
-              </div>
-              <DatetimePreview value={form.dateTimeEndEstimated} />
-            </label>
-            <label className="interruptions-admin-span2">
-              Cause category (optional)
-              <select
-                value={form.causeCategory || ''}
-                onChange={(ev) => setForm((f) => ({ ...f, causeCategory: ev.target.value }))}
-              >
-                {CAUSE_CATEGORY_FORM_OPTIONS.map((o) => (
-                  <option key={o.value || 'none'} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="interruptions-admin-span2 interruptions-admin-image-upload">
-              <label>Advisory image (optional)</label>
+            {!isNgcpScheduled && (
+              <label className="interruptions-admin-datetime-field">
+                Estimated restoration (ERT)
+                <div className="interruptions-admin-datetime-wrap">
+                  <InModalDateTimePicker
+                    value={form.dateTimeEndEstimated}
+                    onChange={(v) => setForm((f) => ({ ...f, dateTimeEndEstimated: v }))}
+                    placeholder="Select ERT date and time"
+                    futureOnly
+                  />
+                </div>
+                <DatetimePreview value={form.dateTimeEndEstimated} />
+              </label>
+            )}
+            {!isNgcpScheduled && (
+              <label className="interruptions-admin-span2">
+                Cause category (optional)
+                <select
+                  value={form.causeCategory || ''}
+                  onChange={(ev) => setForm((f) => ({ ...f, causeCategory: ev.target.value }))}
+                >
+                  {CAUSE_CATEGORY_FORM_OPTIONS.map((o) => (
+                    <option key={o.value || 'none'} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <div
+              className={`interruptions-admin-span2 interruptions-admin-image-upload${isNgcpScheduled ? ' interruptions-admin-image-upload--ngcp' : ''}`}
+            >
+              <label>{isNgcpScheduled ? 'Official NGCP notice image (required)' : 'Advisory image (optional)'}</label>
+              {isNgcpScheduled && (
+                <p className="interruptions-admin-field-hint interruptions-admin-image-upload-note--ngcp">
+                  Attach the official NGCP poster/notice image. This is required and will be embedded at the center
+                  of the ALECO NGCP poster template.
+                </p>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -321,9 +349,9 @@ export default function InterruptionAdvisoryForm({
                 style={{ display: 'none' }}
               />
               <div className="interruptions-admin-image-row">
-                {form.imageUrl && (
+                {form.imageUrl && safeImagePreviewUrl && (
                   <div className="interruptions-admin-image-preview">
-                    <img src={form.imageUrl} alt="Advisory" />
+                    <img src={safeImagePreviewUrl} alt="Advisory" />
                     <button
                       type="button"
                       className="interruptions-admin-btn interruptions-admin-btn--small"
@@ -335,7 +363,7 @@ export default function InterruptionAdvisoryForm({
                 )}
                 <button
                   type="button"
-                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  className={`interruptions-admin-btn interruptions-admin-btn--secondary${isNgcpScheduled ? ' interruptions-admin-btn--ngcp-image' : ''}`}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={imageUploading}
                 >
@@ -343,104 +371,20 @@ export default function InterruptionAdvisoryForm({
                 </button>
               </div>
             </div>
-            {editingId ? (
-              <div className="interruptions-admin-span2">
-                <div className="interruptions-admin-lifecycle-preview-title">Lifecycle</div>
-                <div className="interruptions-admin-lifecycle-stepper" role="status">
-                  {lifecycleSteps.map((step, i) => (
-                    <React.Fragment key={step}>
-                      <div
-                        className={`interruptions-admin-stepper-step${form.status === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
-                      >
-                        <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
-                        <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
-                      </div>
-                      {i < lifecycleSteps.length - 1 && (
-                        <span className="interruptions-admin-stepper-connector" aria-hidden="true" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-                <label className={`interruptions-admin-stepper-select-wrap interruptions-admin-lifecycle-select interruptions-admin-lifecycle-select--${(form.status || '').toLowerCase()}`}>
-                  Lifecycle
-                <select
-                  value={form.status}
-                  className="interruptions-admin-lifecycle-dropdown"
-                  onChange={(ev) => {
-                    const v = ev.target.value;
-                    setForm((f) => {
-                      const next = { ...f, status: v, statusChangeRemark: f.statusChangeRemark || '' };
-                      if (v === 'Restored') {
-                        next.dateTimeRestored = f.dateTimeRestored && String(f.dateTimeRestored).trim()
-                          ? f.dateTimeRestored
-                          : toDatetimeLocalFromDate(new Date());
-                      } else {
-                        next.dateTimeRestored = '';
-                      }
-                      return next;
-                    });
-                  }}
-                >
-                  {STATUS_FORM_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                </label>
-              </div>
-            ) : (
-              <div className="interruptions-admin-span2">
-                <div className="interruptions-admin-lifecycle-preview-title">Lifecycle</div>
-                <div className="interruptions-admin-lifecycle-stepper" role="status" aria-live="polite">
-                  {lifecycleSteps.map((step, i) => (
-                    <React.Fragment key={step}>
-                      <div
-                        className={`interruptions-admin-stepper-step${currentLifecycleStep === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
-                      >
-                        <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
-                        <span className="interruptions-admin-stepper-label">{getStatusDisplayLabel(step)}</span>
-                      </div>
-                      {i < lifecycleSteps.length - 1 && (
-                        <span className="interruptions-admin-stepper-connector" aria-hidden="true" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
             {unscheduledFutureStart && (
               <div
                 className="interruptions-admin-callout interruptions-admin-callout--warn"
                 role="note"
               >
-                Unscheduled with a future start is unusual—confirm type or start time.
+                Emergency outages with a future start are unusual—confirm type or start time.
               </div>
             )}
           </>
           )}
-          {editingId && baselineStatus != null && (
-            <label className={`interruptions-admin-status-remark-wrap${form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') ? ' interruptions-admin-status-remark-wrap--required' : ''}`}>
-              <span className="interruptions-admin-status-remark-label">
-                Reason for status change
-                {form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing') && (
-                  <span className="interruptions-admin-status-remark-required"> (required)</span>
-                )}
-              </span>
-              <input
-                type="text"
-                value={form.statusChangeRemark || ''}
-                onChange={(ev) => setForm((f) => ({ ...f, statusChangeRemark: ev.target.value }))}
-                placeholder="e.g. Rescheduled to next week, Misinformation corrected, Feeder faulty again"
-                className="interruptions-admin-status-remark-input"
-                aria-required={form.status !== baselineStatus && !(baselineStatus === 'Pending' && form.status === 'Ongoing')}
-              />
-            </label>
-          )}
         </fieldset>
 
-        {(showLegacyFields || hasBody) && (
+        {!isNgcpScheduled && (showLegacyFields || hasBody) && (
         <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--legacy">
           <legend>
             {hasBody ? (
@@ -467,6 +411,72 @@ export default function InterruptionAdvisoryForm({
                 placeholder="Legazpi City, Daraga"
               />
             </label>
+            <div className="interruptions-admin-span2 interruptions-admin-grouped-areas">
+              <span className="interruptions-admin-grouped-areas-label">Poster sections (optional)</span>
+              <p className="interruptions-admin-field-hint">
+                Section heading plus one bullet per line. If empty, the comma-separated list above is used on the poster.
+              </p>
+              {(form.affectedAreasGrouped || []).map((block, bi) => (
+                <div key={bi} className="interruptions-admin-grouped-block">
+                  <label>
+                    Section heading
+                    <input
+                      type="text"
+                      value={block.heading || ''}
+                      onChange={(ev) =>
+                        setForm((f) => {
+                          const g = [...(f.affectedAreasGrouped || [])];
+                          g[bi] = { ...g[bi], heading: ev.target.value };
+                          return { ...f, affectedAreasGrouped: g };
+                        })
+                      }
+                      placeholder="e.g. PORTION OF LEGAZPI CITY"
+                    />
+                  </label>
+                  <label>
+                    Bullets (one per line)
+                    <textarea
+                      className="interruptions-admin-grouped-bullets-textarea"
+                      rows={4}
+                      value={(block.items || []).join('\n')}
+                      onChange={(ev) => {
+                        const lines = ev.target.value.split('\n').map((x) => x.trim()).filter(Boolean);
+                        setForm((f) => {
+                          const g = [...(f.affectedAreasGrouped || [])];
+                          g[bi] = { ...g[bi], items: lines.length ? lines : [] };
+                          return { ...f, affectedAreasGrouped: g };
+                        });
+                      }}
+                      placeholder={'Barangay A\nBarangay B'}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="interruptions-admin-btn interruptions-admin-btn--small interruptions-admin-btn--secondary"
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        affectedAreasGrouped: (f.affectedAreasGrouped || []).filter((_, i) => i !== bi),
+                      }))
+                    }
+                  >
+                    Remove section
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                onClick={() =>
+                  setForm((f) => ({
+                    ...f,
+                    affectedAreasGrouped: [...(f.affectedAreasGrouped || []), { heading: '', items: [] }],
+                  }))
+                }
+              >
+                Add section
+              </button>
+            </div>
             <label className="interruptions-admin-span2">
               Cause / reason
               <input
@@ -475,6 +485,9 @@ export default function InterruptionAdvisoryForm({
                 onChange={(ev) => setForm((f) => ({ ...f, cause: ev.target.value }))}
                 placeholder="Maintenance, fault, weather…"
               />
+              <span className="interruptions-admin-field-hint">
+                Shown on the poster as REASON when filled; otherwise the advisory body is used.
+              </span>
             </label>
           </div>
           )}
@@ -485,80 +498,243 @@ export default function InterruptionAdvisoryForm({
           className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--bull"
         >
           <legend>Public bulletin</legend>
-          {form.type === 'Unscheduled' ? (
-            <p className="interruptions-admin-bull-unscheduled-note">
-              Shown immediately. Unscheduled outages are always published right away.
-            </p>
-          ) : (
+          {!editingId ? (
             <>
-              <div className="interruptions-admin-visibility-toggle" role="radiogroup" aria-label="Public visibility">
-                <label className="interruptions-admin-radio-line">
-                  <input
-                    type="radio"
-                    name="pubvis"
-                    checked={!form.schedulePublicLater}
-                    onChange={() =>
-                      setForm((f) => ({
-                        ...f,
-                        schedulePublicLater: false,
-                        publicVisibleAt: '',
-                      }))
-                    }
-                  />
-                  <span>Show immediately</span>
-                </label>
-                <label className="interruptions-admin-radio-line">
-                  <input
-                    type="radio"
-                    name="pubvis"
-                    checked={form.schedulePublicLater}
-                    onChange={() =>
-                      setForm((f) => ({
-                        ...f,
-                        schedulePublicLater: true,
-                        publicVisibleAt: f.publicVisibleAt || addMs(60 * 60 * 1000),
-                      }))
-                    }
-                  />
-                  <span>Schedule first public appearance</span>
-                </label>
-              </div>
+              <p className="interruptions-admin-field-hint">
+                <strong>Finalize this now:</strong> once published, public bulletin timing cannot be edited.
+                Double-check this setting, especially for scheduled advisories.
+              </p>
+              {isEmergencyOutageType(form.type) ? (
+                <p className="interruptions-admin-bull-unscheduled-note">
+                  Shown immediately. Emergency outages are always published right away.
+                </p>
+              ) : (
+                <>
+                  <div className="interruptions-admin-visibility-toggle" role="radiogroup" aria-label="Public visibility">
+                    <label className="interruptions-admin-radio-line">
+                      <input
+                        type="radio"
+                        name="pubvis"
+                        checked={!form.schedulePublicLater}
+                        onChange={() =>
+                          setForm((f) => ({
+                            ...f,
+                            schedulePublicLater: false,
+                            publicVisibleAt: '',
+                          }))
+                        }
+                      />
+                      <span>Show immediately</span>
+                    </label>
+                    <label className="interruptions-admin-radio-line">
+                      <input
+                        type="radio"
+                        name="pubvis"
+                        checked={form.schedulePublicLater}
+                        onChange={() =>
+                          setForm((f) => ({
+                            ...f,
+                            schedulePublicLater: true,
+                            publicVisibleAt: f.publicVisibleAt || addMs(60 * 60 * 1000),
+                          }))
+                        }
+                      />
+                      <span>Schedule first public appearance</span>
+                    </label>
+                  </div>
 
-              {form.schedulePublicLater && (
-            <div className="interruptions-admin-bull-schedule">
-              <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
-                Goes live at
-                <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
-                  <InModalDateTimePicker
-                    value={form.publicVisibleAt}
-                    onChange={(v) => setForm((f) => ({ ...f, publicVisibleAt: v }))}
-                    required={form.schedulePublicLater}
-                    placeholder="Select goes live date and time"
-                    futureOnly
-                  />
+                  {form.schedulePublicLater && (
+                <div className="interruptions-admin-bull-schedule">
+                  <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
+                    Goes live at
+                    <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
+                      <InModalDateTimePicker
+                        value={form.publicVisibleAt}
+                        onChange={(v) => setForm((f) => ({ ...f, publicVisibleAt: v }))}
+                        required={form.schedulePublicLater}
+                        placeholder="Select goes live date and time"
+                        futureOnly
+                      />
+                    </div>
+                    <DatetimePreview value={form.publicVisibleAt} />
+                    <GoesLiveCountdown value={form.publicVisibleAt} />
+                  </label>
+                  <div className="interruptions-admin-preset-row" role="group" aria-label="Quick schedule presets">
+                    {PRESETS.map((p) => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        className="interruptions-admin-preset-chip"
+                        onClick={() => setPreset(p.ms)}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <DatetimePreview value={form.publicVisibleAt} />
-                <GoesLiveCountdown value={form.publicVisibleAt} />
-              </label>
-              <div className="interruptions-admin-preset-row" role="group" aria-label="Quick schedule presets">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.key}
-                    type="button"
-                    className="interruptions-admin-preset-chip"
-                    onClick={() => setPreset(p.ms)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                  )}
+                </>
               )}
             </>
+          ) : (
+            <p className="interruptions-admin-field-hint">
+              Public bulletin timing is locked after publish and cannot be edited here.
+            </p>
           )}
         </fieldset>
 
-        {memoSlot}
+        <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--auto-restore">
+          <legend>Scheduled auto-restoration</legend>
+          <div className="interruptions-admin-visibility-toggle" role="radiogroup" aria-label="Auto-restoration schedule">
+            <label className="interruptions-admin-radio-line">
+              <input
+                type="radio"
+                name="autoRestore"
+                checked={!form.scheduleAutoRestore}
+                onChange={() =>
+                  setForm((f) => ({
+                    ...f,
+                    scheduleAutoRestore: false,
+                    scheduledRestoreAt: '',
+                    scheduledRestoreRemark: '',
+                  }))
+                }
+              />
+              <span>Manual restoration only</span>
+            </label>
+            <label className="interruptions-admin-radio-line">
+              <input
+                type="radio"
+                name="autoRestore"
+                checked={form.scheduleAutoRestore}
+                onChange={() =>
+                  setForm((f) => ({
+                    ...f,
+                    scheduleAutoRestore: true,
+                    scheduledRestoreAt: f.scheduledRestoreAt || '',
+                    scheduledRestoreRemark: f.scheduledRestoreRemark || '',
+                  }))
+                }
+              />
+              <span>Schedule automatic restoration</span>
+            </label>
+          </div>
+
+          {form.scheduleAutoRestore && (
+            <div className="interruptions-admin-bull-schedule">
+              <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
+                Auto-restore at
+                <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
+                  <InModalDateTimePicker
+                    value={form.scheduledRestoreAt}
+                    onChange={(v) => setForm((f) => ({ ...f, scheduledRestoreAt: v }))}
+                    required={!isNgcpScheduled}
+                    placeholder="Select auto-restoration date and time"
+                    futureOnly
+                    strictlyAfter={datetimeLocalStringToDate(
+                      isNgcpScheduled ? form.dateTimeStart : form.dateTimeEndEstimated
+                    )}
+                  />
+                </div>
+                <DatetimePreview value={form.scheduledRestoreAt} />
+                {isNgcpScheduled ? (
+                  <p className="interruptions-admin-field-hint">
+                    Optional for NGCP: leave this blank to keep the advisory in pending/manual restoration mode.
+                    Set a date later when ready to arm auto-restoration.
+                  </p>
+                ) : form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim() && (
+                  <p className="interruptions-admin-field-hint">
+                    Auto-restore must be <strong>after</strong> ERT (
+                    {formatPhilippineWallClock(datetimeLocalToApi(form.dateTimeEndEstimated))}
+                    ). Same-day example: if ERT is 5:00 PM, use 5:01 PM or later.
+                  </p>
+                )}
+              </label>
+              <label className="interruptions-admin-span2 interruptions-admin-label-tight">
+                <span>
+                  Remark for auto-restoration <strong className="interruptions-admin-status-remark-required">(required)</strong>
+                </span>
+                <textarea
+                  className="interruptions-admin-memo-textarea"
+                  value={form.scheduledRestoreRemark}
+                  onChange={(ev) => setForm((f) => ({ ...f, scheduledRestoreRemark: ev.target.value }))}
+                  rows={2}
+                  placeholder="e.g. Maintenance window complete, power restored per schedule"
+                />
+              </label>
+              <p className="interruptions-admin-field-hint">
+                When the scheduled time arrives, the system will automatically mark this advisory as <strong>Energized</strong> and log the remark above.
+              </p>
+            </div>
+          )}
+        </fieldset>
+
+        <details className="interruptions-admin-fieldset interruptions-admin-poster-preview-details">
+          <summary className="interruptions-admin-poster-preview-summary">Poster fields preview</summary>
+          <InterruptionPosterAlignmentPreview dto={posterPreviewDto} />
+        </details>
+
+        {editingId && typeof onUpdatePoster === 'function' && (
+          <div className="interruptions-admin-poster-stub-panel">
+            <p className="interruptions-admin-field-hint">
+              Keep the public poster synchronized with advisory edits.
+            </p>
+            {posterUpdateRequired && (
+              <p className="interruptions-admin-callout interruptions-admin-callout--warn" role="status">
+                Update poster is required before closing this advisory.
+              </p>
+            )}
+            <div className="interruptions-admin-poster-stub-actions">
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--submit"
+                onClick={() => onUpdatePoster()}
+                disabled={posterAssetBusy || saving || detailLoading}
+              >
+                {posterAssetBusy ? 'Working…' : 'Update poster'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {editingId && (
+          <div className="interruptions-admin-poster-stub-panel interruptions-admin-poster-share-panel">
+            <p className="interruptions-admin-field-hint">
+              <strong>Share for Facebook:</strong> use the <strong>share page</strong> URL so the crawler reads{' '}
+              <code>og:image</code> (your Cloudinary poster). You can also copy the direct image URL.
+            </p>
+            <p className="interruptions-admin-share-line">
+              <span className="interruptions-admin-share-label">Share (HTML / OG)</span>
+              <code className="interruptions-admin-share-url">{apiUrl(`/api/share/interruption/${editingId}`)}</code>
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                onClick={() => {
+                  const u = apiUrl(`/api/share/interruption/${editingId}`);
+                  navigator.clipboard?.writeText(u).catch(() => {});
+                }}
+              >
+                Copy
+              </button>
+            </p>
+            {form.posterImageUrl && String(form.posterImageUrl).trim().startsWith('http') ? (
+              <p className="interruptions-admin-share-line">
+                <span className="interruptions-admin-share-label">Direct image</span>
+                <code className="interruptions-admin-share-url">{String(form.posterImageUrl).trim()}</code>
+                <button
+                  type="button"
+                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  onClick={() => {
+                    const u = String(form.posterImageUrl).trim();
+                    navigator.clipboard?.writeText(u).catch(() => {});
+                  }}
+                >
+                  Copy
+                </button>
+              </p>
+            ) : null}
+          </div>
+        )}
 
         {advisoryArchived && (
           <div className="interruptions-admin-callout interruptions-admin-callout--warn" role="status">
@@ -566,27 +742,6 @@ export default function InterruptionAdvisoryForm({
           </div>
         )}
 
-        {editingId && (
-          <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--resolve">
-            <legend>Resolve</legend>
-            {form.status === 'Restored' ? (
-              <label className="interruptions-admin-span2 interruptions-admin-datetime-field">
-                Actual restoration date and time
-                <div className="interruptions-admin-datetime-wrap">
-                  <InModalDateTimePicker
-                    value={form.dateTimeRestored}
-                    onChange={(v) => setForm((f) => ({ ...f, dateTimeRestored: v }))}
-                    required
-                    placeholder="Select restoration date and time"
-                  />
-                </div>
-                <DatetimePreview value={form.dateTimeRestored} />
-              </label>
-            ) : (
-              <p className="interruptions-admin-resolve-placeholder">Set lifecycle to Resolved to enter restoration time.</p>
-            )}
-          </fieldset>
-        )}
         </>
         )}
         </div>

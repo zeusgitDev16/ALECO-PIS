@@ -2,11 +2,13 @@ import express from 'express';
 import pool from '../config/db.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { sendAppMail } from '../utils/appMail.js';
+import { recordUserNotification, USER_EVENT } from '../utils/adminNotifications.js';
+import { requireAdmin, requireSelfOrAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
 // 4. The Mailbox (The API Route)
-router.post('/invite', async (req, res) => {
+router.post('/invite', requireAdmin, async (req, res) => {
   const { email, role, code } = req.body;
   if (!email || !role || !code) return res.status(400).json({ error: "Missing info." });
 
@@ -41,7 +43,14 @@ router.post('/invite', async (req, res) => {
         WHERE email = ?
       `;
       await pool.execute(updateQuery, [code, role, phNow, cleanEmail]);
-      
+
+      await recordUserNotification(pool, {
+        eventType: USER_EVENT.INVITED,
+        subjectEmail: cleanEmail,
+        detail: `Role: ${role}`,
+        actorEmail: req.authUser?.email || null,
+      });
+
       return res.status(200).json({ message: "Invitation code re-generated!", action: "code_regenerated" });
     } 
 
@@ -61,7 +70,14 @@ router.post('/invite', async (req, res) => {
         code,        // 3rd placeholder
         phNow   // 4th placeholder (status is hardcoded as 'pending')
     ]);
-    
+
+    await recordUserNotification(pool, {
+      eventType: USER_EVENT.INVITED,
+      subjectEmail: cleanEmail,
+      detail: `Role: ${role}`,
+      actorEmail: req.authUser?.email || null,
+    });
+
     return res.status(200).json({ message: "New invitation saved!", action: "code_generated" });
 
   } catch (error) {
@@ -70,7 +86,7 @@ router.post('/invite', async (req, res) => {
   } 
 });
 
-router.post('/send-email', async (req, res) => {
+router.post('/send-email', requireAdmin, async (req, res) => {
   const { email, code } = req.body;
 
   if (!email || !code) {
@@ -149,7 +165,7 @@ router.post('/check-email', async (req, res) => {
   }
 });
 // Fetch all registered users
-router.get('/users', async (req, res) => {
+router.get('/users', requireAdmin, async (req, res) => {
   try {
     // Matches schema columns: id, name, email, role, status
     const [rows] = await pool.execute(
@@ -176,7 +192,7 @@ router.get('/invites/pending', async (req, res) => {
 });
 
 // Fetch profile data for the logged-in user
-router.get('/users/profile', async (req, res) => {
+router.get('/users/profile', requireSelfOrAdmin('email', 'query'), async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: 'Missing email.' });
   const cleanEmail = email.trim().toLowerCase();
@@ -194,7 +210,7 @@ router.get('/users/profile', async (req, res) => {
 });
 
 // Update profile — persists all editable fields to the DB
-router.put('/users/profile', async (req, res) => {
+router.put('/users/profile', requireSelfOrAdmin('email', 'body'), async (req, res) => {
   const { email, name, bio, phone, address, social_url } = req.body;
   if (!email || !name || !name.trim()) return res.status(400).json({ error: 'Missing email or name.' });
 
@@ -219,7 +235,7 @@ router.put('/users/profile', async (req, res) => {
 });
 
 // Fetch recent activity logs — separate queries per source to avoid cross-table collation issues
-router.get('/users/activity', async (req, res) => {
+router.get('/users/activity', requireSelfOrAdmin('email', 'query'), async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: 'Missing email.' });
   const cleanEmail = email.trim().toLowerCase();
@@ -274,14 +290,29 @@ router.get('/users/activity', async (req, res) => {
 });
 
 // Toggle Status (Matches Schema Casing)
-router.post('/users/toggle-status', async (req, res) => {
+router.post('/users/toggle-status', requireAdmin, async (req, res) => {
   const { id, currentStatus } = req.body;
   
   // Ensure we use 'Active' and 'Disabled' to match the Enum definition
   const newStatus = currentStatus === 'Active' ? 'Disabled' : 'Active';
 
   try {
+    const [targetRows] = await pool.execute('SELECT email, name FROM users WHERE id = ?', [id]);
+    if (targetRows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
     await pool.execute('UPDATE users SET status = ? WHERE id = ?', [newStatus, id]);
+
+    if (newStatus === 'Disabled') {
+      await recordUserNotification(pool, {
+        eventType: USER_EVENT.DISABLED,
+        subjectEmail: targetRows[0].email,
+        subjectName: targetRows[0].name,
+        actorEmail: req.authUser?.email || null,
+      });
+    }
+
     res.status(200).json({ message: `User status updated to ${newStatus}`, newStatus });
   } catch (error) {
     console.error("Toggle Error:", error.message);

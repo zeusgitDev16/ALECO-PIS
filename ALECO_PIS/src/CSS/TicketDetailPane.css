@@ -19,7 +19,7 @@
     justify-content: center;
     align-items: center;
     z-index: 100000;
-    padding: calc(20px * var(--ticket-ui-scale, 1));
+    padding: calc(10px * var(--ticket-ui-scale, 1));
     animation: fadeIn 0.2s ease-out;
 }
 
@@ -171,51 +171,96 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 1.5px rgba(255,255,255,0.18);
     width: fit-content;
 }
 
-.status-tag.pending {
-    background: rgba(255, 193, 7, 0.95);
-    color: #000000;
-    border: 1.5px solid rgba(255, 193, 7, 1);
+/* Light mode: white pill with colored text — stands out on any gradient */
+html:not([data-theme="dark"]) .status-tag.pending {
+    background: #fff8e1;
+    color: #b45309;
+    border: 1.5px solid #fbbf24;
 }
 
-.status-tag.ongoing {
-    background: rgba(33, 150, 243, 0.95);
-    color: #ffffff;
-    border: 1.5px solid rgba(33, 150, 243, 1);
+html:not([data-theme="dark"]) .status-tag.ongoing {
+    background: #ffffff;
+    color: #1565c0;
+    border: 1.5px solid #90caf9;
 }
 
-.status-tag.onhold {
-    background: rgba(100, 116, 139, 0.95);
-    color: #ffffff;
-    border: 1.5px solid rgba(100, 116, 139, 1);
+html:not([data-theme="dark"]) .status-tag.onhold {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1.5px solid #94a3b8;
 }
 
-.status-tag.resolved,
-.status-tag.restored {
-    background: rgba(76, 175, 80, 0.95);
-    color: #ffffff;
-    border: 1.5px solid rgba(76, 175, 80, 1);
+html:not([data-theme="dark"]) .status-tag.resolved,
+html:not([data-theme="dark"]) .status-tag.restored {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1.5px solid #4ade80;
 }
 
-.status-tag.unresolved {
-    background: rgba(239, 68, 68, 0.95);
-    color: #ffffff;
-    border: 1.5px solid rgba(239, 68, 68, 1);
+html:not([data-theme="dark"]) .status-tag.unresolved {
+    background: #fff1f2;
+    color: #b91c1c;
+    border: 1.5px solid #fca5a5;
 }
 
-.status-tag.nofaultfound {
-    background: rgba(139, 92, 246, 0.95);
-    color: #ffffff;
-    border: 1.5px solid rgba(139, 92, 246, 1);
+html:not([data-theme="dark"]) .status-tag.nofaultfound {
+    background: #faf5ff;
+    color: #6d28d9;
+    border: 1.5px solid #c4b5fd;
 }
 
-.status-tag.accessdenied {
-    background: rgba(249, 115, 22, 0.95);
-    color: #ffffff;
-    border: 1.5px solid rgba(249, 115, 22, 1);
+html:not([data-theme="dark"]) .status-tag.accessdenied {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1.5px solid #fb923c;
+}
+
+/* Dark mode: dark opaque pill with vivid colored text — stands out on dark blue/purple gradient */
+[data-theme="dark"] .status-tag.pending {
+    background: rgba(17, 24, 39, 0.95);
+    color: #fcd34d;
+    border: 1.5px solid #f59e0b;
+}
+
+[data-theme="dark"] .status-tag.ongoing {
+    background: rgba(17, 24, 39, 0.95);
+    color: #93c5fd;
+    border: 1.5px solid #60a5fa;
+}
+
+[data-theme="dark"] .status-tag.onhold {
+    background: rgba(17, 24, 39, 0.95);
+    color: #cbd5e1;
+    border: 1.5px solid #64748b;
+}
+
+[data-theme="dark"] .status-tag.resolved,
+[data-theme="dark"] .status-tag.restored {
+    background: rgba(17, 24, 39, 0.95);
+    color: #4ade80;
+    border: 1.5px solid #22c55e;
+}
+
+[data-theme="dark"] .status-tag.unresolved {
+    background: rgba(17, 24, 39, 0.95);
+    color: #fca5a5;
+    border: 1.5px solid #ef4444;
+}
+
+[data-theme="dark"] .status-tag.nofaultfound {
+    background: rgba(17, 24, 39, 0.95);
+    color: #e9d5ff;
+    border: 1.5px solid #a78bfa;
+}
+
+[data-theme="dark"] .status-tag.accessdenied {
+    background: rgba(17, 24, 39, 0.95);
+    color: #fed7aa;
+    border: 1.5px solid #fb923c;
 }
 
 .header-right {
@@ -783,12 +828,12 @@
     }
 
     .ticket-modal-overlay {
-        padding: 16px;
+        padding: 10px;
     }
 
     .ticket-detail-flip-container {
-        padding: 16px;
-        padding-top: 40px;
+        padding: 0;
+        padding-top: 38px;
     }
 
     .detail-header {
@@ -918,8 +963,8 @@
     }
 
     .ticket-detail-flip-container {
-        padding: 12px;
-        padding-top: 40px;
+        padding: 0;
+        padding-top: 36px;
     }
 
     .detail-header {
@@ -1056,8 +1101,8 @@
     }
 
     .ticket-detail-flip-container {
-        padding: 10px;
-        padding-top: 38px;
+        padding: 0;
+        padding-top: 34px;
     }
 
     .detail-header {
@@ -1221,8 +1266,8 @@
     }
 
     .ticket-detail-flip-container {
-        padding: 8px;
-        padding-top: 36px;
+        padding: 0;
+        padding-top: 32px;
     }
 
     /* Column ticket id + status, column reported on + date, both stacked and centered */
@@ -1400,8 +1445,8 @@
     }
 
     .ticket-detail-flip-container {
-        padding: 4px;
-        padding-top: 32px;
+        padding: 0;
+        padding-top: 28px;
     }
 
     .detail-header {
@@ -1766,8 +1811,8 @@ body.modal-open .kanban-column-header {
 
 .ticket-detail-flip-container {
     perspective: 1000px;
-    padding: calc(20px * var(--ticket-ui-scale, 1));
-    padding-top: calc(44px * var(--ticket-ui-scale, 1));
+    padding: 0;
+    padding-top: calc(40px * var(--ticket-ui-scale, 1));
     flex: 1 1 auto;
     min-height: 0;
     display: flex;

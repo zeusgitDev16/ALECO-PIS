@@ -37,6 +37,8 @@ const RecentOpenedAdvisories = ({
   timeRange,
   onTimeRangeChange,
   onSelectAdvisory,
+  listArchiveFilter = 'active',
+  onRestoreAdvisory,
   onPullFromFeed,
   onPushToFeed,
   onDelete,
@@ -177,6 +179,15 @@ const RecentOpenedAdvisories = ({
           }}
           onPullFromFeed={onPullFromFeed}
           onPushToFeed={onPushToFeed}
+          onRestore={
+            onRestoreAdvisory
+              ? async (id) => {
+                  const ok = await onRestoreAdvisory(id);
+                  if (ok) setDetailItem(null);
+                }
+              : undefined
+          }
+          listArchiveFilter={listArchiveFilter}
           saving={saving}
         />
       )}

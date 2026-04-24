@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { generateInterruptionPosterStub, captureInterruptionPoster } from '../api/interruptionsApi';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/Buttons.css';
 import '../CSS/InterruptionsAdmin.css';
 import '../CSS/InterruptionUIScale.css';
-import { FILTER_CHIPS } from '../utils/interruptionLabels';
+import { FILTER_CHIPS, isInterruptionEnergizedStatus } from '../utils/interruptionLabels';
 import { emptyForm, buildInterruptionPayload, rowToFormState, validateInterruptionForm } from '../utils/interruptionFormUtils';
 import { useAdminInterruptions } from '../hooks/useAdminInterruptions';
 import InterruptionAdvisoryFilters from './interruptions/InterruptionAdvisoryFilters';
@@ -14,7 +15,7 @@ import InterruptionAdvisoryBoard from './interruptions/InterruptionAdvisoryBoard
 import InterruptionCompactView from './interruptions/InterruptionCompactView';
 import InterruptionWorkflowView from './interruptions/InterruptionWorkflowView';
 import InterruptionLayoutPicker from './interruptions/InterruptionLayoutPicker';
-import InterruptionAdvisoryUpdates from './interruptions/InterruptionAdvisoryUpdates';
+import UpdateAdvisoryModal from './interruptions/UpdateAdvisoryModal';
 import InterruptionFilterDrawer from './interruptions/InterruptionFilterDrawer';
 import { useRecentOpenedAdvisories } from '../utils/useRecentOpenedAdvisories';
 import RecentOpenedAdvisories from './containers/RecentOpenedAdvisories';
@@ -24,6 +25,20 @@ import '../CSS/InterruptionFilterDrawer.css';
 import '../CSS/InterruptionModalUIScale.css';
 
 const AdminInterruptions = () => {
+  const posterRelevantFormDigest = (f) =>
+    JSON.stringify({
+      type: f?.type ?? '',
+      affectedAreasText: f?.affectedAreasText ?? '',
+      affectedAreasGrouped: Array.isArray(f?.affectedAreasGrouped) ? f.affectedAreasGrouped : [],
+      feeder: f?.feeder ?? '',
+      feederId: f?.feederId ?? null,
+      cause: f?.cause ?? '',
+      causeCategory: f?.causeCategory ?? '',
+      controlNo: f?.controlNo ?? '',
+      dateTimeStart: f?.dateTimeStart ?? '',
+      dateTimeEndEstimated: f?.dateTimeEndEstimated ?? '',
+      dateTimeRestored: f?.dateTimeRestored ?? '',
+    });
   const {
     interruptions,
     loading,
@@ -36,6 +51,7 @@ const AdminInterruptions = () => {
     setListArchiveFilter,
     saveAdvisory,
     removeAdvisory,
+    restoreAdvisory,
     permanentDeleteAdvisory,
     pullFromFeedAdvisory,
     pushToFeedAdvisory,
@@ -61,8 +77,70 @@ const AdminInterruptions = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [validationErrors, setValidationErrors] = useState([]);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('interruptionViewMode') || 'card');
+  const [updateModalId, setUpdateModalId] = useState(null);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [posterAssetBusy, setPosterAssetBusy] = useState(false);
+  const [posterUpdateRequired, setPosterUpdateRequired] = useState(false);
   const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedAdvisories();
+
+  const handleRestoreFromDetailModal = useCallback(
+    async (id) => {
+      const ok = await restoreAdvisory(id);
+      return ok;
+    },
+    [restoreAdvisory]
+  );
+
+  const applyPosterUrlFromResponse = useCallback(
+    async (r, fallbackErr) => {
+      if (r.success && r.data) {
+        const url = r.data.posterImageUrl ? String(r.data.posterImageUrl) : '';
+        setForm((f) => ({ ...f, posterImageUrl: url }));
+        setBaselineForm((b) => (b ? { ...b, posterImageUrl: url } : b));
+        setMessage({ type: 'ok', text: r.message || 'Poster URL updated.' });
+        setPosterUpdateRequired(false);
+        await loadEditDetail(editingId);
+        return true;
+      } else if (r.success) {
+        setMessage({ type: 'ok', text: r.message || 'Poster URL updated.' });
+        setPosterUpdateRequired(false);
+        await loadEditDetail(editingId);
+        return true;
+      } else {
+        setMessage({ type: 'err', text: r.message || fallbackErr });
+        return false;
+      }
+    },
+    [editingId, loadEditDetail]
+  );
+
+  const handlePosterStub = useCallback(async () => {
+    if (!editingId) return;
+    setPosterAssetBusy(true);
+    setMessage(null);
+    try {
+      const r = await generateInterruptionPosterStub(editingId);
+      await applyPosterUrlFromResponse(r, 'Could not set poster stub.');
+    } catch {
+      setMessage({ type: 'err', text: 'Network error.' });
+    } finally {
+      setPosterAssetBusy(false);
+    }
+  }, [editingId, applyPosterUrlFromResponse]);
+
+  const handlePosterCapture = useCallback(async () => {
+    if (!editingId) return;
+    setPosterAssetBusy(true);
+    setMessage(null);
+    try {
+      const r = await captureInterruptionPoster(editingId);
+      await applyPosterUrlFromResponse(r, 'Poster capture failed.');
+    } catch {
+      setMessage({ type: 'err', text: 'Network error.' });
+    } finally {
+      setPosterAssetBusy(false);
+    }
+  }, [editingId, applyPosterUrlFromResponse]);
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
@@ -70,13 +148,15 @@ const AdminInterruptions = () => {
     }
   }, [viewMode]);
 
+  // Load detail for the Edit modal only. Do not clear editDetail while the Update-advisory modal is open
+  // (update flow also uses editDetail + loadEditDetail); clearing here used to race and wipe data mid-load.
   useEffect(() => {
     if (modalOpen && editingId) {
       loadEditDetail(editingId);
-    } else {
+    } else if (!updateModalId) {
       clearEditDetail();
     }
-  }, [modalOpen, editingId, loadEditDetail, clearEditDetail]);
+  }, [modalOpen, editingId, updateModalId, loadEditDetail, clearEditDetail]);
 
   useEffect(() => {
     if (!modalOpen || !editingId) {
@@ -110,20 +190,23 @@ const AdminInterruptions = () => {
     setBaselineForm(null);
     setMessage(null);
     setValidationErrors([]);
-    setResolveConfirmOpen(false);
-    setPendingSubmit(null);
     setDiscardConfirmOpen(false);
+    setPosterUpdateRequired(false);
     formLoadedForIdRef.current = null;
   }, []);
 
   const requestCloseModal = useCallback(() => {
     if (saving) return;
+    if (posterUpdateRequired) {
+      setMessage({ type: 'err', text: 'Update poster is required before closing this advisory.' });
+      return;
+    }
     if (isDirty) {
       setDiscardConfirmOpen(true);
       return;
     }
     doCloseModal();
-  }, [saving, isDirty, doCloseModal]);
+  }, [saving, isDirty, doCloseModal, posterUpdateRequired, setMessage]);
 
   const getActiveFiltersCount = useCallback(() => {
     let count = 0;
@@ -136,7 +219,11 @@ const AdminInterruptions = () => {
     let list = interruptions;
     const chip = FILTER_CHIPS.find((c) => c.key === activeChipKey);
     if (chip?.apiStatus) {
-      list = list.filter((i) => i.status === chip.apiStatus);
+      if (chip.apiStatus === 'Energized') {
+        list = list.filter((i) => isInterruptionEnergizedStatus(i.status));
+      } else {
+        list = list.filter((i) => i.status === chip.apiStatus);
+      }
     }
     const q = searchQuery.trim().toLowerCase();
     if (q) {
@@ -154,6 +241,7 @@ const AdminInterruptions = () => {
     setForm(emptyForm);
     setBaselineForm({ ...emptyForm });
     setMessage(null);
+    setPosterUpdateRequired(false);
     setModalOpen(true);
   };
 
@@ -164,11 +252,34 @@ const AdminInterruptions = () => {
     setBaselineForm(null);
     setMessage(null);
     setValidationErrors([]);
+    setPosterUpdateRequired(false);
     setModalOpen(true);
   };
 
-  const [resolveConfirmOpen, setResolveConfirmOpen] = useState(false);
-  const [pendingSubmit, setPendingSubmit] = useState(null);
+  const openUpdate = (row) => {
+    if (row?.id != null) addOpened(row.id);
+    setMessage(null);
+    setUpdateModalId(row.id);
+    loadEditDetail(row.id);
+  };
+
+  const closeUpdateModal = () => {
+    setUpdateModalId(null);
+    clearEditDetail();
+  };
+
+  const handleSaveStatus = useCallback(
+    async (payload) => {
+      if (!updateModalId) return { saved: false };
+      const result = await saveAdvisory({ editingId: updateModalId, payload });
+      if (result.saved) {
+        await loadEditDetail(updateModalId);
+      }
+      return result;
+    },
+    [updateModalId, saveAdvisory, loadEditDetail]
+  );
+
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -183,8 +294,7 @@ const AdminInterruptions = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const baselineStatus = baselineForm?.status ?? editDetail?.status;
-    const errors = validateInterruptionForm(form, { baselineStatus });
+    const errors = validateInterruptionForm(form, { editingId });
     if (errors.length > 0) {
       setValidationErrors(errors);
       setMessage({ type: 'err', text: errors.join(' ') });
@@ -194,39 +304,24 @@ const AdminInterruptions = () => {
     const payload = buildInterruptionPayload(form, {
       editingId,
       baselineUpdatedAt: editingId ? editDetail?.updatedAt : null,
-      baselineStatus,
     });
-    if (payload.status === 'Restored') {
-      if (!payload.dateTimeRestored || !String(payload.dateTimeRestored).trim()) {
-        setValidationErrors(['Enter the actual restoration date and time before marking as Resolved.']);
-        setMessage({ type: 'err', text: 'Enter the actual restoration date and time before marking as Resolved.' });
-        return;
+    const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
+    const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
+    if (userEmail) payload.actorEmail = userEmail;
+    if (userName) payload.actorName = userName;
+    const r = await saveAdvisory({ editingId, payload });
+    if (r.saved) {
+      if (editingId) {
+        const changed = posterRelevantFormDigest(form) !== posterRelevantFormDigest(baselineForm);
+        if (changed) {
+          setBaselineForm(form);
+          setPosterUpdateRequired(true);
+          setMessage({ type: 'ok', text: 'Changes saved. Please click Update poster before closing.' });
+          return;
+        }
       }
-      if (baselineStatus !== 'Restored' && !resolveConfirmOpen) {
-        setPendingSubmit({ payload, baselineStatus });
-        setResolveConfirmOpen(true);
-        return;
-      }
+      doCloseModal();
     }
-    const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
-    const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
-    if (userEmail) payload.actorEmail = userEmail;
-    if (userName) payload.actorName = userName;
-    const r = await saveAdvisory({ editingId, payload });
-    if (r.saved) doCloseModal();
-  };
-
-  const confirmResolveAndSave = async () => {
-    if (!pendingSubmit) return;
-    const { payload } = pendingSubmit;
-    const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
-    const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
-    if (userEmail) payload.actorEmail = userEmail;
-    if (userName) payload.actorName = userName;
-    setResolveConfirmOpen(false);
-    const r = await saveAdvisory({ editingId, payload });
-    setPendingSubmit(null);
-    if (r.saved) doCloseModal();
   };
 
   const confirmDiscardAndClose = useCallback(() => {
@@ -369,6 +464,8 @@ const AdminInterruptions = () => {
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
           onSelectAdvisory={openEdit}
+          listArchiveFilter={listArchiveFilter}
+          onRestoreAdvisory={handleRestoreFromDetailModal}
           onPullFromFeed={pullFromFeedAdvisory}
           onPushToFeed={pushToFeedAdvisory}
           onDelete={handleArchiveRequest}
@@ -389,7 +486,9 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
+            onRestoreAdvisory={handleRestoreFromDetailModal}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -407,7 +506,9 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
+            onRestoreAdvisory={handleRestoreFromDetailModal}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -425,7 +526,9 @@ const AdminInterruptions = () => {
             totalCount={interruptions.length}
             listArchiveFilter={listArchiveFilter}
             onEdit={openEdit}
+            onUpdate={openUpdate}
             onOpenAdvisory={addOpened}
+            onRestoreAdvisory={handleRestoreFromDetailModal}
             onDelete={handleArchiveRequest}
             onPermanentDelete={(id) => {
               const row = interruptions.find((i) => i.id === id);
@@ -475,6 +578,9 @@ const AdminInterruptions = () => {
                   detail={editDetail}
                   loading={detailLoading}
                   onClose={requestCloseModal}
+                  onGeneratePosterStub={handlePosterStub}
+                  onCapturePoster={handlePosterCapture}
+                  posterAssetBusy={posterAssetBusy}
                 />
               ) : (
               <InterruptionAdvisoryForm
@@ -484,26 +590,14 @@ const AdminInterruptions = () => {
                 validationErrors={validationErrors}
                 onCancel={requestCloseModal}
                 editingId={editingId}
-                baselineStatus={baselineForm?.status ?? editDetail?.status}
                 detailLoading={detailLoading}
                 saving={saving}
                 saveConflict={message?.type === 'conflict'}
                 onReloadAdvisory={handleReloadAdvisory}
                 advisoryArchived={advisoryArchived}
-                memoSlot={
-                  editingId && form.status === 'Restored' ? (
-                    <InterruptionAdvisoryUpdates
-                      interruptionId={editingId}
-                      updates={editDetail?.updates ?? []}
-                      createdAt={editDetail?.createdAt}
-                      detailLoading={detailLoading}
-                      memoSaving={memoSaving}
-                      memoMessage={memoMessage}
-                      onAddMemo={addMemo}
-                      archivedReadOnly={advisoryArchived}
-                    />
-                  ) : null
-                }
+                onUpdatePoster={editingId ? handlePosterCapture : undefined}
+                posterUpdateRequired={posterUpdateRequired}
+                posterAssetBusy={posterAssetBusy}
               />
               )}
             </div>
@@ -546,55 +640,6 @@ const AdminInterruptions = () => {
                   disabled={saving}
                 >
                   Discard
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {resolveConfirmOpen && pendingSubmit && (
-          <div
-            className="interruptions-admin-modal-backdrop interruptions-admin-modal-backdrop--confirm"
-            role="presentation"
-            onClick={(ev) => {
-              if (ev.target === ev.currentTarget && !saving) {
-                setResolveConfirmOpen(false);
-                setPendingSubmit(null);
-              }
-            }}
-          >
-            <div
-              className="interruptions-admin-modal interruptions-admin-confirm-dialog"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="resolve-confirm-title"
-            >
-              <h3 id="resolve-confirm-title" className="header-title interruptions-admin-confirm-title">
-                Mark as Resolved?
-              </h3>
-              <p className="widget-text interruptions-admin-confirm-lead">
-                This advisory will display on the public bulletin for 1 day 12 hours, then automatically move to Archive.
-              </p>
-              <p className="widget-text">Confirm that power has been restored and you want to mark this advisory as Resolved.</p>
-              <div className="interruptions-admin-confirm-actions">
-                <button
-                  type="button"
-                  className="interruptions-admin-btn"
-                  onClick={() => {
-                    setResolveConfirmOpen(false);
-                    setPendingSubmit(null);
-                  }}
-                  disabled={saving}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="interruptions-admin-btn interruptions-admin-btn--submit"
-                  onClick={confirmResolveAndSave}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving…' : 'Yes, mark as Resolved'}
                 </button>
               </div>
             </div>
@@ -732,6 +777,22 @@ const AdminInterruptions = () => {
             </div>
           </div>
         </InterruptionFilterDrawer>
+
+        {updateModalId && (
+          <UpdateAdvisoryModal
+            item={editDetail || interruptions.find((i) => i.id === updateModalId)}
+            updates={editDetail?.updates ?? []}
+            detailLoading={detailLoading}
+            saving={saving}
+            memoSaving={memoSaving}
+            memoMessage={memoMessage}
+            saveMessage={message}
+            onClearSaveMessage={() => setMessage(null)}
+            onAddMemo={addMemo}
+            onSaveStatus={handleSaveStatus}
+            onClose={closeUpdateModal}
+          />
+        )}
 
         {permanentDeleteConfirm && (
           <div

@@ -112,7 +112,7 @@ body.admin-app-scroll-lock {
 
 /* Custom Scrollbar for Admin Content */
 .admin-content::-webkit-scrollbar {
-  width: 12px; /* Balanced width for easier grabbing and visibility */
+  width: 8px; /* Slimmer profile for a cleaner, modern look */
 }
 
 .admin-content::-webkit-scrollbar-track {
@@ -124,8 +124,8 @@ body.admin-app-scroll-lock {
   /* High-contrast gray handle that works in all themes */
   background: rgba(128, 128, 128, 0.6); 
   border-radius: 20px;
-  min-height: 200px; /* Substantially long handle for maximum reach control across the dashboard */
-  border: 3px solid transparent; /* Creates a visual gutter for a modern 'floating' handle look */
+  min-height: 120px; /* Adjusted handle for better scroll feedback */
+  border: 2px solid transparent; /* Adjusted border for the slimmer scrollbar */
   background-clip: padding-box;
 }
 
@@ -216,10 +216,10 @@ body.admin-app-scroll-lock {
 
 /* Invisible parent container for Power Advisories, Ticket Features, and B2B Mail 
    to ensure consistent flow and prevent the sections from squashing each other. */
-.dashboard-features-invisible-parent {
+.dashboard-features-grid {
     display: flex;
     flex-direction: column;
-    gap: 120px; /* Massive gap creates "neutral zones" between sections to easily access main page scroll */
+    gap: 80px; /* Added significant space between feature sections for better visual separation */
     width: 100%;
     background: transparent;
     padding: 0;
@@ -256,13 +256,15 @@ body.admin-app-scroll-lock {
 /* Unified parent containers for Dashboard Features (Power Advisories and Tickets) */
 .dashboard-power-advisories-wrapper,
 .dashboard-ticket-features-wrapper,
-.dashboard-b2b-mail-wrapper {
+.dashboard-b2b-mail-wrapper,
+.dashboard-personnel-wrapper {
     display: flex;
     flex-direction: column;
     gap: 8px; /* Further reduced gap to bring charts higher into view */
     width: 100%;
     padding: 20px 20px 32px; /* Adjusted bottom padding for cleaner framing of internal charts */
-    background-color: var(--bg-card);
+    background-color: var(--bg-glass, var(--bg-card)); /* Glass effect to "see through" the card */
+    backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
     border-radius: 24px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
@@ -276,36 +278,40 @@ body.admin-app-scroll-lock {
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Custom Scrollbar for the Features Wrappers - Restored high-visibility handles */
+/* Custom Scrollbar for the Features Wrappers - Matched slimmer system profile */
 .dashboard-power-advisories-wrapper::-webkit-scrollbar,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar,
-.dashboard-b2b-mail-wrapper::-webkit-scrollbar {
-    width: 12px;
+.dashboard-b2b-mail-wrapper::-webkit-scrollbar,
+.dashboard-personnel-wrapper::-webkit-scrollbar {
+    width: 8px;
     display: block;
 }
 
 .dashboard-power-advisories-wrapper::-webkit-scrollbar-track,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar-track,
-.dashboard-b2b-mail-wrapper::-webkit-scrollbar-track {
+.dashboard-b2b-mail-wrapper::-webkit-scrollbar-track,
+.dashboard-personnel-wrapper::-webkit-scrollbar-track {
     background: transparent;
     margin: 12px 0;
 }
 
 .dashboard-power-advisories-wrapper::-webkit-scrollbar-thumb,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb,
-.dashboard-b2b-mail-wrapper::-webkit-scrollbar-thumb {
+.dashboard-b2b-mail-wrapper::-webkit-scrollbar-thumb,
+.dashboard-personnel-wrapper::-webkit-scrollbar-thumb {
     background: rgba(128, 128, 128, 0.6);
     border-radius: 10px;
     min-height: 120px;
-    border: 3px solid transparent;
+    border: 2px solid transparent;
     background-clip: padding-box;
 }
 
 /* Ensure the last content piece has breathing room so it is fully reachable via scroll */
 .dashboard-power-advisories-wrapper > *:last-child,
 .dashboard-ticket-features-wrapper > *:last-child,
-.dashboard-b2b-mail-wrapper > *:last-child {
-    margin-bottom: 8px !important; /* Minimal margin to eliminate trailing empty space */
+.dashboard-b2b-mail-wrapper > *:last-child,
+.dashboard-personnel-wrapper > *:last-child {
+    margin-bottom: 20px !important; /* Increased margin for the last internal item */
 }
 
 .placeholder-desc {
@@ -404,24 +410,8 @@ body.admin-app-scroll-lock {
 /* ==========================================================================
    B2B MAIL OVERVIEW SECTION - Standard Card Style
    ========================================================================== */
-.dashboard-b2b-mail-wrapper {
-    margin-top: 0; /* Spacing is managed by the .dashboard-features-invisible-parent gap */
-    padding: 20px 20px 32px !important; /* Harmonized with Feature Wrapper padding */
-    background: var(--bg-card);
-    border-radius: var(--border-radius-lg);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    width: 100%;
-    flex: 0 0 auto;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    scroll-margin-top: 180px; /* Buffer for sticky headers during quick-nav scrolling */
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.dashboard-b2b-mail-wrapper:hover {
+.dashboard-b2b-mail-wrapper:hover,
+.dashboard-personnel-wrapper:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
 }
@@ -461,12 +451,14 @@ body.admin-app-scroll-lock {
 /* --- B2B MAIL DASHBOARD FEATURE COMPONENTS --- */
 
 /* Container for internal B2B analytics components */
-.b2b-analytics-layout {
+.b2b-analytics-layout,
+.personnel-analytics-layout {
     display: flex;
     flex-direction: column;
     gap: 20px;
     width: 100%;
     margin-top: 10px;
+    flex-grow: 1; /* Allow the layout to grow and potentially overflow its parent */
 }
 
 /* Specialized row for delivery success/failure trends */
@@ -529,15 +521,20 @@ body.admin-app-scroll-lock {
 }
 
 .dashboard-b2b-mail-wrapper .stat-card,
-.dashboard-b2b-mail-wrapper .chart-card {
+.dashboard-b2b-mail-wrapper .chart-card,
+.dashboard-personnel-wrapper .stat-card,
+.dashboard-personnel-wrapper .chart-card {
     background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
     border: 1px solid var(--border-color);
     box-shadow: none;
-    border-bottom: 3px solid #3b82f6;
 }
 
 .dashboard-b2b-mail-wrapper .stat-card {
     border-bottom: 3px solid #3b82f6; /* Mail-themed status indicator */
+}
+
+.dashboard-personnel-wrapper .stat-card {
+    border-bottom: 3px solid var(--accent-primary);
 }
 
 /* Dynamic Feeder Status styles */

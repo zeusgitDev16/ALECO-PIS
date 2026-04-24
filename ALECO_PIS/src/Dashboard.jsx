@@ -7,7 +7,7 @@ import {
 import { 
     FaTicketAlt, FaClock, FaCheckCircle, FaExclamationTriangle, 
     FaMapMarkerAlt, FaChartPie, FaChartLine, FaListUl,
-    FaTools, FaExclamationCircle, FaSearch, FaLock, FaBolt, FaCalendarAlt
+    FaTools, FaExclamationCircle, FaSearch, FaLock, FaBolt, FaCalendarAlt, FaUsers
 } from 'react-icons/fa';
 import axios from 'axios';
 import { apiUrl } from './utils/api';
@@ -296,6 +296,30 @@ const AdminDashboard = () => {
         return { totalSent, delivered, failed, pending, deliveryData, recentActivity, dailyTrendData, verificationData };
     }, []);
 
+    // Dynamic calculations for Personnel Overview
+    const personnelStats = useMemo(() => {
+        // Mock data for Personnel Overview
+        const totalLinemen = 45;
+        const availableCrews = 8;
+        const activeDeployments = 12;
+        const onLeave = 3;
+
+        const crewStatusData = [
+            { name: 'Available', value: availableCrews, fill: 'var(--accent-success)' },
+            { name: 'On-Task', value: activeDeployments, fill: 'var(--accent-primary)' },
+            { name: 'Offline', value: 2, fill: 'var(--text-secondary)' },
+        ];
+
+        const recentDeployments = [
+            { id: 1, crew: 'Crew Alpha', location: 'Brgy. Rawis', task: 'Line Maintenance', status: 'Deployed', time: 'Started: 08:30 AM' },
+            { id: 2, crew: 'Crew Bravo', location: 'Legazpi Port', task: 'Fault Clearing', status: 'Standby', time: 'Awaiting dispatch' },
+            { id: 3, crew: 'Crew Charlie', location: 'Daraga Proper', task: 'Transformer Check', status: 'Deployed', time: 'Started: 09:15 AM' },
+            { id: 4, crew: 'Crew Delta', location: 'Brgy. Bitano', task: 'Service Connection', status: 'Deployed', time: 'Started: 10:00 AM' },
+        ];
+
+        return { totalLinemen, availableCrews, activeDeployments, onLeave, crewStatusData, recentDeployments };
+    }, []);
+
 
     return (
         <AdminLayout activePage="home">
@@ -324,6 +348,12 @@ const AdminDashboard = () => {
                             onClick={() => document.getElementById('b2b-mail-section')?.scrollIntoView({ behavior: 'smooth' })}
                         >
                             <FaListUl /> B2B Mail
+                        </button>
+                        <button 
+                            className="dash-nav-btn"
+                            onClick={() => document.getElementById('personnel-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            <FaUsers /> Personnel
                         </button>
                     </div>
                 </div>
@@ -733,6 +763,90 @@ const AdminDashboard = () => {
                                         </div>
                                         <span className={`feeder-status-tag ${activity.status.toLowerCase()}`}>
                                             {activity.status}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 4. Personnel Section Container */}
+                    <div id="personnel-section" className="dashboard-personnel-wrapper">
+                        <div className="section-label-group">
+                            <h3 className="column-section-title">Personnel & Crew Status</h3>
+                            <p className="widget-text">Monitoring of field crews, linemen availability, and active deployments.</p>
+                        </div>
+                        
+                        <div className="personnel-analytics-layout">
+                            {/* Personnel Summary Stats */}
+                            <div className="stats-grid">
+                                <div className="stat-card total">
+                                    <div className="stat-icon-box"><FaUsers /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Total Linemen</span>
+                                        <h3 className="stat-number">{personnelStats.totalLinemen}</h3>
+                                        <span className="stat-trend">Personnel Pool</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card resolved">
+                                    <div className="stat-icon-box"><FaCheckCircle /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Available Crews</span>
+                                        <h3 className="stat-number">{personnelStats.availableCrews}</h3>
+                                        <span className="stat-trend positive">Ready for dispatch</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card ongoing">
+                                    <div className="stat-icon-box"><FaTools /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Active Tasks</span>
+                                        <h3 className="stat-number">{personnelStats.activeDeployments}</h3>
+                                        <span className="stat-trend">Crews deployed</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card pending">
+                                    <div className="stat-icon-box"><FaClock /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">On Leave</span>
+                                        <h3 className="stat-number">{personnelStats.onLeave}</h3>
+                                        <span className="stat-trend">Away from duty</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Charts Row - Crew Status Distribution */}
+                            <div className="charts-grid-main">
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaChartPie className="chart-icon" />
+                                        <h4>Crew Status Distribution</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        <ResponsiveContainer width="100%" height={180}>
+                                            <PieChart>
+                                                <Pie data={personnelStats.crewStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                    {personnelStats.crewStatusData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Recent Personnel/Crew Activity List */}
+                            <div className="personnel-activity-list">
+                                {personnelStats.recentDeployments.map(deployment => (
+                                    <div key={deployment.id} className="personnel-activity-item">
+                                        <div className="personnel-activity-content">
+                                            <span className="personnel-activity-label">{deployment.crew} - {deployment.task}</span>
+                                            <span className="personnel-activity-time">{deployment.location} • {deployment.time}</span>
+                                        </div>
+                                        <span className={`feeder-status-tag ${deployment.status === 'Deployed' ? 'critical' : 'scheduled'}`}>
+                                            {deployment.status}
                                         </span>
                                     </div>
                                 ))}

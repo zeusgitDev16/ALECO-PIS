@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getPublicInterruptionSnapshot } from '../../api/interruptionsApi';
 import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
+import InterruptionNgcpPrintPoster from './InterruptionNgcpPrintPoster';
 import '../../CSS/InterruptionPrintPoster.css';
 
 /**
@@ -58,7 +59,11 @@ export default function PrintInterruptionPosterPage() {
 
   return (
     <div className="print-poster-page">
-      <InterruptionAlecoPrintPoster item={item} />
+      {item.type === 'NgcScheduled' ? (
+        <InterruptionNgcpPrintPoster item={item} />
+      ) : (
+        <InterruptionAlecoPrintPoster item={item} />
+      )}
     </div>
   );
 }

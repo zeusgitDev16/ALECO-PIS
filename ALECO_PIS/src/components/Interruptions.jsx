@@ -25,6 +25,20 @@ import '../CSS/InterruptionFilterDrawer.css';
 import '../CSS/InterruptionModalUIScale.css';
 
 const AdminInterruptions = () => {
+  const posterRelevantFormDigest = (f) =>
+    JSON.stringify({
+      type: f?.type ?? '',
+      affectedAreasText: f?.affectedAreasText ?? '',
+      affectedAreasGrouped: Array.isArray(f?.affectedAreasGrouped) ? f.affectedAreasGrouped : [],
+      feeder: f?.feeder ?? '',
+      feederId: f?.feederId ?? null,
+      cause: f?.cause ?? '',
+      causeCategory: f?.causeCategory ?? '',
+      controlNo: f?.controlNo ?? '',
+      dateTimeStart: f?.dateTimeStart ?? '',
+      dateTimeEndEstimated: f?.dateTimeEndEstimated ?? '',
+      dateTimeRestored: f?.dateTimeRestored ?? '',
+    });
   const {
     interruptions,
     loading,
@@ -66,6 +80,7 @@ const AdminInterruptions = () => {
   const [updateModalId, setUpdateModalId] = useState(null);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [posterAssetBusy, setPosterAssetBusy] = useState(false);
+  const [posterUpdateRequired, setPosterUpdateRequired] = useState(false);
   const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedAdvisories();
 
   const handleRestoreFromDetailModal = useCallback(
@@ -83,12 +98,17 @@ const AdminInterruptions = () => {
         setForm((f) => ({ ...f, posterImageUrl: url }));
         setBaselineForm((b) => (b ? { ...b, posterImageUrl: url } : b));
         setMessage({ type: 'ok', text: r.message || 'Poster URL updated.' });
+        setPosterUpdateRequired(false);
         await loadEditDetail(editingId);
+        return true;
       } else if (r.success) {
         setMessage({ type: 'ok', text: r.message || 'Poster URL updated.' });
+        setPosterUpdateRequired(false);
         await loadEditDetail(editingId);
+        return true;
       } else {
         setMessage({ type: 'err', text: r.message || fallbackErr });
+        return false;
       }
     },
     [editingId, loadEditDetail]
@@ -171,17 +191,22 @@ const AdminInterruptions = () => {
     setMessage(null);
     setValidationErrors([]);
     setDiscardConfirmOpen(false);
+    setPosterUpdateRequired(false);
     formLoadedForIdRef.current = null;
   }, []);
 
   const requestCloseModal = useCallback(() => {
     if (saving) return;
+    if (posterUpdateRequired) {
+      setMessage({ type: 'err', text: 'Update poster is required before closing this advisory.' });
+      return;
+    }
     if (isDirty) {
       setDiscardConfirmOpen(true);
       return;
     }
     doCloseModal();
-  }, [saving, isDirty, doCloseModal]);
+  }, [saving, isDirty, doCloseModal, posterUpdateRequired, setMessage]);
 
   const getActiveFiltersCount = useCallback(() => {
     let count = 0;
@@ -216,6 +241,7 @@ const AdminInterruptions = () => {
     setForm(emptyForm);
     setBaselineForm({ ...emptyForm });
     setMessage(null);
+    setPosterUpdateRequired(false);
     setModalOpen(true);
   };
 
@@ -226,6 +252,7 @@ const AdminInterruptions = () => {
     setBaselineForm(null);
     setMessage(null);
     setValidationErrors([]);
+    setPosterUpdateRequired(false);
     setModalOpen(true);
   };
 
@@ -267,7 +294,7 @@ const AdminInterruptions = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errors = validateInterruptionForm(form);
+    const errors = validateInterruptionForm(form, { editingId });
     if (errors.length > 0) {
       setValidationErrors(errors);
       setMessage({ type: 'err', text: errors.join(' ') });
@@ -283,7 +310,18 @@ const AdminInterruptions = () => {
     if (userEmail) payload.actorEmail = userEmail;
     if (userName) payload.actorName = userName;
     const r = await saveAdvisory({ editingId, payload });
-    if (r.saved) doCloseModal();
+    if (r.saved) {
+      if (editingId) {
+        const changed = posterRelevantFormDigest(form) !== posterRelevantFormDigest(baselineForm);
+        if (changed) {
+          setBaselineForm(form);
+          setPosterUpdateRequired(true);
+          setMessage({ type: 'ok', text: 'Changes saved. Please click Update poster before closing.' });
+          return;
+        }
+      }
+      doCloseModal();
+    }
   };
 
   const confirmDiscardAndClose = useCallback(() => {
@@ -557,8 +595,8 @@ const AdminInterruptions = () => {
                 saveConflict={message?.type === 'conflict'}
                 onReloadAdvisory={handleReloadAdvisory}
                 advisoryArchived={advisoryArchived}
-                onGeneratePosterStub={editingId ? handlePosterStub : undefined}
-                onCapturePoster={editingId ? handlePosterCapture : undefined}
+                onUpdatePoster={editingId ? handlePosterCapture : undefined}
+                posterUpdateRequired={posterUpdateRequired}
                 posterAssetBusy={posterAssetBusy}
               />
               )}

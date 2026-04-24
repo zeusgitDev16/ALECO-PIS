@@ -5,7 +5,7 @@
   gap: 32px; /* Increased gap for better card separation */
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 8px 2px 18px 2px;
+  padding: 44px 2px 18px 2px; /* top room for the floating status banner */
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
   align-items: flex-start;
@@ -96,18 +96,36 @@
 
 /* --- Feed Post Card --- */
 .interruption-feed-post {
+  /* Feed card system — one contract: poster surface + status banner read the same tokens (first for reliable var() resolution) */
+  --feed-poster-surface-r: 16px;
+  /* Floating status banner (scoped to the card; inherited by banner + hang-tabs) */
+  --feed-banner-inset-r: 12px;
+  --feed-banner-pull: -44%;
+  --feed-hang-y: -2px;
+  --feed-hang-w: 7px;
+  --feed-hang-h: 4px;
+  --feed-hang-left: 10px;
+  --feed-hang-right: 10px;
+  --feed-banner-min-w: clamp(80px, calc(100px * var(--public-section-scale, 1)), 108px);
+  --feed-banner-chip-h: clamp(16px, calc(20px * var(--public-section-scale, 1)), 22px);
+  --feed-banner-chip-fs: clamp(0.48rem, calc(0.6rem * var(--public-section-scale, 1)), 0.64rem);
+  --feed-banner-chip-px: clamp(6px, calc(9px * var(--public-section-scale, 1)), 10px);
+  --feed-banner-chip-ls: 0.045em;
+  --feed-banner-chip-r: 4px;
+
   background: var(--bg-card);
-  border-radius: 16px; /* Slightly larger radius for a softer, modern look */
+  border-radius: var(--feed-poster-surface-r, 16px); /* Shared with poster frame — one surface */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
   border: 1px solid var(--border-color);
   scroll-snap-align: start;
   flex-shrink: 0;
-  width: min(380px, 94vw); /* Capped at 380px for desktop, scales fluidly for mobile/tablet */
-  height: 400px; /* Fixed height for desktop/laptop view */
+  width: fit-content; /* Adapts to each poster's natural width at the fixed height */
+  min-width: min(280px, 92vw);
+  max-width: min(720px, 92vw);
+  height: calc(380px * var(--public-section-scale, 1)); /* Fixed equal height — top/bottom never change */
   box-sizing: border-box;
-  padding: 0; /* Padding moved to internal elements to prevent content leaking on scroll */
-  overflow-y: auto;
-  overflow-x: hidden; /* Prevent horizontal jitter */
+  padding: 0;
+  overflow: visible; /* Allow floating status banner to extend above the top border */
   display: flex;
   flex-direction: column;
   gap: 0; 
@@ -167,42 +185,6 @@
 .interruption-feed-post:hover {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
   border-color: var(--accent-primary);
-}
-
-/* --- Expand Button (Anchored to Sticky Header) --- */
-.feed-post-expand-btn {
-  position: sticky;
-  top: 12px !important;
-  margin-left: auto; /* Aligns the button to the right side of the flex container */
-  margin-right: 28px !important; /* Maintains the 12px gap from the vertical scrollbar */
-  margin-bottom: -32px; /* Offsets height so content slides underneath, staying "pinnable" */
-  z-index: 100 !important; /* Maximum priority to stay above headers and content */
-  width: 32px !important;
-  height: 32px !important;
-  aspect-ratio: 1 / 1;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--bg-card) !important;
-  border: 1px solid var(--border-color);
-  color: var(--text-header) !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 1.1rem; 
-  line-height: 1; 
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  padding: 0;
-  pointer-events: auto;
-  visibility: visible !important;
-}
-
-.feed-post-expand-btn:hover {
-  transform: scale(1.1) translateY(-2px);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary) !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* --- Feed Post Header --- */
@@ -553,6 +535,15 @@
   color: var(--text-header);
 }
 
+.feed-infographic-pill--details {
+  width: 100%;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-card) 88%, var(--accent-primary, #2563eb) 12%);
+  color: var(--text-main);
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
 .feed-infographic-schedule {
   padding: 4px 10px;
   background: var(--bg-body);
@@ -738,7 +729,7 @@
   flex: 1;
   min-width: 0;
   /* Removed max-width to allow flexible growth */
-  height: 6px; /* Increased height for better visibility of the yellow indicator */
+  height: 6px; /* Track height — fill uses --accent-primary (light: blue, dark: yellow) */
   background-color: var(--bg-card);
   border-radius: 10px; /* Pill-shaped track to match the modern "round box" style */
   overflow: hidden;
@@ -747,13 +738,10 @@
 
 .feed-progress-indicator {
   height: 100%;
-  background-color: #8b1a1a;
+  background-color: var(--accent-primary, #2563eb);
   border-radius: 10px;
   transition: width 0.25s ease-out;
-}
-
-[data-theme='dark'] .feed-progress-indicator {
-  background-color: #e05252;
+  box-shadow: 0 0 8px var(--accent-primary-glow, rgba(37, 99, 235, 0.35));
 }
 
 .feed-date-tracker {
@@ -807,16 +795,16 @@
   height: calc(36px * var(--public-section-scale, 1));
   min-width: calc(36px * var(--public-section-scale, 1));
   border-radius: 50%;
-  background: var(--text-header);
+  background: var(--accent-primary, #2563eb);
   border: none;
-  color: var(--bg-body);
+  color: var(--accent-primary-contrast, #ffffff);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   transition: opacity 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 2px 8px var(--accent-primary-glow, rgba(37, 99, 235, 0.3));
   padding: 0;
 }
 
@@ -839,38 +827,203 @@
 }
 
 /* ============================================================
+   FLOATING STATUS BANNER  (anchored to .interruption-feed-post tokens)
+   ============================================================ */
+.interruption-feed-post .feed-post-status-banner {
+  position: absolute;
+  top: 0;
+  right: var(--feed-banner-inset-r, 12px);
+  left: auto;
+  transform: translateY(var(--feed-banner-pull, -44%));
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip {
+  --banner-bg: #15803d;
+  --banner-fg: #ecfdf5;
+  --banner-hang: rgba(15, 23, 42, 0.62);
+  --banner-hang-ring: rgba(248, 250, 252, 0.2);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--feed-banner-min-w);
+  height: var(--feed-banner-chip-h);
+  font-size: var(--feed-banner-chip-fs);
+  font-weight: 800;
+  padding: 0 var(--feed-banner-chip-px);
+  border-radius: var(--feed-banner-chip-r);
+  background: var(--banner-bg);
+  color: var(--banner-fg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
+  letter-spacing: var(--feed-banner-chip-ls);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip::before,
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip::after {
+  content: '';
+  position: absolute;
+  top: var(--feed-hang-y, -2px);
+  width: var(--feed-hang-w, 7px);
+  height: var(--feed-hang-h, 4px);
+  border-radius: 2px 2px 0 0;
+  background: var(--banner-hang);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px var(--banner-hang-ring);
+}
+
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip::before {
+  left: var(--feed-hang-left, 10px);
+}
+
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip::after {
+  right: var(--feed-hang-right, 10px);
+}
+
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--pending {
+  --banner-bg: #d97706;
+  --banner-fg: #fff7ed;
+}
+
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--ongoing {
+  --banner-bg: #b91c1c;
+  --banner-fg: #fef2f2;
+}
+
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--restored,
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--energized {
+  --banner-bg: #15803d;
+  --banner-fg: #ecfdf5;
+}
+
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--pending {
+  --banner-bg: #f59e0b;
+  --banner-fg: #431407;
+}
+
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--ongoing {
+  --banner-bg: #ef4444;
+  --banner-fg: #fff1f2;
+}
+
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--restored,
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--energized {
+  --banner-bg: #22c55e;
+  --banner-fg: #052e16;
+}
+
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip {
+  --banner-hang: rgba(241, 245, 249, 0.78);
+  --banner-hang-ring: rgba(2, 6, 23, 0.35);
+}
+
+/* Responsive overrides live on the card — banner + clip geometry stay in lockstep */
+@media (max-width: 600px) {
+  .interruption-feed-post {
+    --feed-banner-inset-r: 10px;
+    --feed-banner-pull: -112%;
+    --feed-hang-y: -3px;
+    --feed-hang-w: 6px;
+    --feed-hang-h: 3px;
+    --feed-hang-left: 8px;
+    --feed-hang-right: 8px;
+    --feed-banner-min-w: 66px;
+    --feed-banner-chip-h: 14px;
+    --feed-banner-chip-fs: 0.42rem;
+    --feed-banner-chip-px: 6px;
+    --feed-banner-chip-ls: 0.035em;
+    --feed-banner-chip-r: 3px;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 600px) {
+  .interruption-feed-post {
+    --feed-banner-pull: -56%;
+    --feed-hang-y: -1px;
+  }
+}
+
+@media (max-width: 374px) {
+  .interruption-feed-post {
+    --feed-banner-pull: -44%;
+    --feed-hang-y: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .interruption-feed-post {
+    --feed-banner-inset-r: 8px;
+    --feed-banner-pull: -36%;
+    --feed-banner-min-w: 58px;
+    --feed-banner-chip-h: 12px;
+    --feed-banner-chip-fs: 0.37rem;
+    --feed-banner-chip-px: 5px;
+    --feed-banner-chip-ls: 0.03em;
+  }
+}
+
+/* Non-poster cards: push content below the floating banner */
+.feed-post-no-image-body {
+  padding-top: 42px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ============================================================
    POSTER-FORWARD CARD MODIFIER
    ============================================================ */
 .interruption-feed-post--poster {
-  height: auto;
-  overflow-y: visible;
-  overflow-x: hidden;
+  height: calc(380px * var(--public-section-scale, 1));
+  width: max-content; /* Card follows poster's natural width at the fixed height */
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
 }
 
 .interruption-feed-post--poster .feed-post-poster-display {
-  margin: 0;
-  border-radius: 0 0 15px 15px;
+  width: max-content;
+  height: 100%; /* fill the fixed card height exactly */
+  flex: none;
   overflow: hidden;
+  border-radius: var(--feed-poster-surface-r, 16px);
+  background: var(--bg-card);
+  margin: 0;
   border: none;
   box-shadow: none;
 }
 
 .interruption-feed-post--poster .feed-post-poster-img {
-  border-radius: 0 0 15px 15px;
   display: block;
-  width: 100%;
-  height: auto;
+  height: 100%; /* scale to card height */
+  width: auto;  /* natural proportional width — no cropping */
+  border-radius: var(--feed-poster-surface-r, 16px);
 }
 
 /* ============================================================
-   CARD — top accent border matching poster color palette
+   CARD — top accent border by advisory type
    ============================================================ */
 .interruption-feed-post {
   border-top: 3px solid #8b1a1a;
 }
-
 [data-theme='dark'] .interruption-feed-post {
   border-top-color: #ef4444;
+}
+
+.interruption-feed-post--type-scheduled,
+.interruption-feed-post--type-ngcscheduled {
+  border-top-color: #1d4ed8;
+}
+[data-theme='dark'] .interruption-feed-post--type-scheduled,
+[data-theme='dark'] .interruption-feed-post--type-ngcscheduled {
+  border-top-color: #3b82f6;
 }
 
 /* Feed controls row keeps the three items evenly spaced */
@@ -980,6 +1133,12 @@
 .feed-expanded-poster-wrap {
   background: #d4a84b;
   padding: calc(10px * var(--public-section-scale, 1));
+  display: flex;
+  justify-content: center;
+}
+
+.feed-expanded-poster-wrap .aleco-print-poster {
+  width: 100%;
 }
 
 .feed-expanded-poster-img {
@@ -990,9 +1149,13 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-.feed-expanded-infographic-wrap {
-  padding: 0;
-  overflow: hidden;
+.feed-expanded-poster-img--clickable {
+  cursor: zoom-in;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.feed-expanded-poster-img--clickable:hover {
+  filter: brightness(1.03);
 }
 
 .feed-expanded-details {
@@ -1101,6 +1264,22 @@
   line-height: 1.65;
   margin: 0;
   white-space: pre-wrap;
+}
+
+.feed-expanded-attached-image-wrap {
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: calc(10px * var(--public-section-scale, 1));
+  padding: calc(8px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-attached-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(60vh, 520px);
+  object-fit: contain;
+  border-radius: calc(8px * var(--public-section-scale, 1));
 }
 
 .feed-expanded-section--meta {
@@ -1232,13 +1411,19 @@
 /* --- Mobile --- */
 @media (max-width: 600px) {
   .interruption-feed {
-    padding: 12px 8px;
+    padding: 44px 8px 18px 8px;
   }
 
   .interruption-feed-post {
-    width: min(360px, 92vw); /* Adaptive sizing for 425px devices */
-    height: auto;
-    min-height: 380px;
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(300px * var(--public-section-scale, 1));
+    gap: 0;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(300px * var(--public-section-scale, 1));
   }
 
   .feed-infographic-header-bar {
@@ -1256,17 +1441,6 @@
     padding: 0;
   }
 
-  /* Expand button for mobile */
-  .feed-post-expand-btn {
-    top: 10px !important;
-    margin-left: auto;
-    margin-right: 10px !important;
-    margin-bottom: -28px;
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 0.9rem;
-  }
-
   .interruption-card--feed .status-header {
     padding: 12px;
     border-radius: 12px 12px 0 0;
@@ -1276,17 +1450,22 @@
 /* --- 320px and below: ultra-compact --- */
 @media (max-width: 320px) {
   .interruption-feed {
-    padding: 8px 6px;
+    padding: 44px 6px 18px 6px;
     gap: 16px;
   }
 
   .interruption-feed-post {
-    width: min(300px, 85vw);
-    /* Fluid width for ultra-compact devices */
-    height: 340px; /* Fixed height for ultra-compact */
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(230px * var(--public-section-scale, 1));
     padding: 0;
-    gap: 8px;
-    scroll-snap-align: center;
+    gap: 0;
+    scroll-snap-align: start;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(230px * var(--public-section-scale, 1));
   }
 
   .feed-post-header {
@@ -1318,9 +1497,6 @@
     gap: 4px;
   }
 
-  .feed-post-body {
-    /* margin-bottom is removed to rely on the parent's 'gap' property */
-  }
 
   .feed-post-headline {
     font-size: 0.8rem;
@@ -1418,29 +1594,25 @@
     font-size: 0.75rem;
   }
 
-  /* Expand button for ultra-compact mobile */
-  .feed-post-expand-btn {
-    top: 8px !important;
-    margin-left: auto;
-    margin-right: 8px !important;
-    margin-bottom: -24px;
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 0.8rem;
-  }
 }
 
 /* --- 321px - 359px: small mobile --- */
 @media (min-width: 321px) and (max-width: 359px) {
   .interruption-feed {
-    padding: 10px 12px;
+    padding: 44px 12px 18px 12px;
     gap: 14px;
   }
 
   .interruption-feed-post {
-    width: 280px; /* Fixed width for small mobile */
-    height: 340px;
-    gap: 10px;
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(245px * var(--public-section-scale, 1));
+    gap: 0;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(245px * var(--public-section-scale, 1));
   }
 
   .feed-post-header {
@@ -1533,37 +1705,29 @@
     padding: 0 8px;
   }
 
-  .feed-progress-track {
-    /* Removed max-width to allow flexible growth */
-  }
-
   .feed-date-tracker {
     font-size: 0.8rem;
   }
 
-  /* Expand button for small mobile */
-  .feed-post-expand-btn {
-    top: 10px !important;
-    margin-left: auto;
-    margin-right: 10px !important;
-    margin-bottom: -26px;
-    width: 26px !important;
-    height: 26px !important;
-    font-size: 0.85rem;
-  }
 }
 
 /* --- 360px - 479px: mid-mobile --- */
 @media (min-width: 360px) and (max-width: 479px) {
   .interruption-feed {
-    padding: 12px 8px;
+    padding: 44px 8px 18px 8px;
     gap: 16px;
   }
 
   .interruption-feed-post {
-    width: 330px; /* Fixed width for mid-mobile */
-    height: 380px;
-    border-radius: 14px; /* Synchronized with header radius */
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(270px * var(--public-section-scale, 1));
+    border-radius: 16px;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(270px * var(--public-section-scale, 1));
   }
 
   .feed-post-header {
@@ -1653,28 +1817,47 @@
     font-size: 0.85rem;
   }
 
-  /* Expand button for mid-mobile */
-  .feed-post-expand-btn {
-    top: 12px !important;
-    margin-left: auto;
-    margin-right: 12px !important;
-    margin-bottom: -30px;
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 1rem;
+}
+
+/* --- <= 375px: freeze poster/card size (do not shrink further) --- */
+@media (max-width: 375px) {
+  .interruption-feed {
+    padding: 44px 8px 18px 8px;
+    gap: 16px;
+  }
+
+  .interruption-feed-post {
+    width: fit-content;
+    min-width: 280px;
+    max-width: 345px; /* 92vw of 375px; keep this as the smallest locked card width profile */
+    height: calc(270px * var(--public-section-scale, 1)); /* freeze at 375-profile height */
+    padding: 0;
+    gap: 0;
+    scroll-snap-align: start;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(270px * var(--public-section-scale, 1)); /* freeze at 375-profile height */
+  }
+
+  .interruption-card.interruption-card--feed {
+    width: 345px;
+    padding: 0;
   }
 }
 
 /* --- 480px - 599px: large mobile --- */
 @media (min-width: 480px) and (max-width: 599px) {
   .interruption-feed {
-    padding: 14px 10px;
+    padding: 44px 10px 18px 10px;
     gap: 18px;
   }
 
-  .interruption-feed-post {
-    /* Base width min(380px, 94vw) is already good for this range */
+  .interruption-feed-post,
+  .interruption-feed-post--poster {
+    height: calc(300px * var(--public-section-scale, 1));
   }
+
 
   .interruption-card.interruption-card--feed {
     width: min(380px, 94vw); /* Match new card width */
@@ -1730,52 +1913,35 @@
     max-height: 100px;
   }
 
-  .feed-progress-track {
-    /* Removed max-width to allow flexible growth */
-  }
-
   .feed-date-tracker {
     font-size: 0.88rem;
   }
 
-  /* Expand button for large mobile */
-  .feed-post-expand-btn {
-    top: 12px !important;
-    margin-right: 28px !important;
-    margin-bottom: -26px;
-    width: 26px;
-    height: 26px;
-    font-size: 0.9rem;
-  }
 }
 
 /* --- 768px - 1023px: tablet landscape --- */
 @media (min-width: 768px) and (max-width: 1023px) {
   .interruption-feed {
-    padding: 18px 12px;
+    padding: 44px 12px 18px 12px;
     gap: 22px;
   }
 
   .interruption-feed-post {
-    width: 380px;
-    height: 400px;
+    width: fit-content;
+    min-width: min(280px, 92vw);
+    max-width: min(720px, 92vw);
+    height: calc(340px * var(--public-section-scale, 1));
     padding: 0;
+  }
+
+  .interruption-feed-post--poster {
+    height: calc(340px * var(--public-section-scale, 1));
   }
 
   .interruption-card.interruption-card--feed {
     width: 380px;
     height: 400px;
     padding: 0;
-  }
-
-  /* Expand button for tablet landscape */
-  .feed-post-expand-btn {
-    top: 14px !important;
-    margin-right: 28px !important;
-    margin-bottom: -30px;
-    width: 30px;
-    height: 30px;
-    font-size: 1.05rem;
   }
 
   .interruption-card--feed .status-header {
@@ -1895,11 +2061,6 @@
     align-self: start;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Subtle lift for the technical column */
   }
-}
-
-/* Hide the expand button when the card is already in the modal view */
-.interruption-modal-container .feed-post-expand-btn {
-  display: none !important;
 }
 
 /* --- Modal Navigation "Scroll" Buttons (Gallery Browsing) --- */

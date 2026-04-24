@@ -1,32 +1,49 @@
 import React from 'react';
-import InterruptionFeedPostHeader from './InterruptionFeedPostHeader';
 import InterruptionFeedPostBody from './InterruptionFeedPostBody';
 import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
+import {
+  isEmergencyOutageType,
+  getStatusDisplayLabel,
+  interruptionStatusForCssClass,
+} from '../../utils/interruptionLabels';
 
 /**
- * Facebook-style feed post card: header + body + infographic.
- * @param {{ item: object, now: number, onExpand?: function, isExpandedView?: boolean }} props - API DTO; `now` from useNow for countdown
+ * Poster-only feed card — no header/logo. Clicking the card opens the full-details modal.
+ * A floating status banner hangs at the top of the poster.
+ * @param {{ item: object, now: number, onExpand?: function, isExpandedView?: boolean }} props
  */
 export default function InterruptionFeedPost({ item, now, onExpand, isExpandedView = false }) {
   const isBlankStub = typeof item.posterImageUrl === 'string' && item.posterImageUrl.includes('_stub');
   const safePosterUrl = (!isBlankStub && item.posterImageUrl) ? getSafeResourceUrl(item.posterImageUrl) : null;
+  const typeModifier = isEmergencyOutageType(item.type) ? 'emergency'
+    : item.type === 'NgcScheduled' ? 'ngcscheduled'
+    : 'scheduled';
+  const startMs = item.dateTimeStart ? Date.parse(String(item.dateTimeStart)) : Number.NaN;
+  const effectiveStatus =
+    item.status === 'Ongoing' && Number.isFinite(startMs) && startMs > now
+      ? 'Pending'
+      : item.status;
+  const statusClass = interruptionStatusForCssClass(effectiveStatus);
+  const statusLabel = getStatusDisplayLabel(effectiveStatus);
+  const clickable = !isExpandedView && Boolean(onExpand);
+
   return (
-    <article className={`interruption-feed-post${safePosterUrl ? ' interruption-feed-post--poster' : ''}`}>
-      {!isExpandedView && onExpand && (
-        <button
-          type="button"
-          className="feed-post-expand-btn"
-          title="View full details"
-          aria-label="Expand Advisory"
-          onClick={onExpand}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
-            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-          </svg>
-        </button>
-      )}
-      <InterruptionFeedPostHeader item={item} />
+    <article
+      className={`interruption-feed-post interruption-feed-post--type-${typeModifier}${safePosterUrl ? ' interruption-feed-post--poster' : ''}`}
+      onClick={clickable ? onExpand : undefined}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onExpand(); } : undefined}
+      aria-label={clickable ? 'View advisory details' : undefined}
+      style={clickable ? { cursor: 'pointer' } : undefined}
+    >
+      <div className="feed-post-status-banner">
+        <span className={`feed-post-status-chip feed-post-status-chip--${statusClass}`}>
+          {statusLabel}
+        </span>
+      </div>
+
       {safePosterUrl ? (
         <div className="feed-post-poster-display">
           <img
@@ -37,10 +54,10 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
           />
         </div>
       ) : (
-        <>
+        <div className="feed-post-no-image-body">
           <InterruptionFeedPostBody item={item} />
           <InterruptionAdvisoryInfographic item={item} now={now} />
-        </>
+        </div>
       )}
     </article>
   );

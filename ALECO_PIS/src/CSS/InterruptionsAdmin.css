@@ -2480,6 +2480,126 @@
   max-width: none;
 }
 
+.interruption-detail-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruption-detail-dashboard-head {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruption-detail-dashboard-head-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruption-detail-dashboard-ref {
+  display: inline-block;
+  padding: calc(2px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border-radius: 999px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  font-size: max(0.62rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.interruption-detail-dashboard-feeder {
+  margin: 0;
+  font-size: max(0.85rem, calc(1.05rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  color: var(--text-header);
+}
+
+.interruption-detail-dashboard-poster {
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  overflow: hidden;
+}
+
+.interruption-detail-dashboard-poster-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruption-detail-dashboard-poster-img--clickable {
+  cursor: zoom-in;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.interruption-detail-dashboard-poster-img--clickable:hover {
+  filter: brightness(1.03);
+}
+
+.interruption-detail-dashboard-poster-fallback .aleco-print-poster {
+  width: 100%;
+  max-width: calc(900px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(18px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  margin: 0 auto;
+}
+
+.interruption-detail-dashboard-sections {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruption-detail-dashboard-section {
+  padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)))
+    calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  border: 1px solid var(--border-color);
+  border-radius: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  background: var(--bg-body);
+}
+
+.interruption-detail-dashboard-inline-note {
+  margin: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0 0;
+  font-size: max(0.72rem, calc(0.82rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  color: var(--text-main);
+}
+
+.interruption-detail-dashboard-grouped-areas {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruption-detail-dashboard-group-heading {
+  margin: 0 0 6px;
+  font-size: max(0.65rem, calc(0.75rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.interruption-detail-dashboard-area-list {
+  margin: 0;
+  padding-left: calc(18px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruption-detail-dashboard-area-list li {
+  margin: calc(3px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 0;
+  color: var(--text-main);
+  line-height: 1.35;
+  font-size: max(0.72rem, calc(0.84rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+}
+
+.interruption-detail-dashboard-actions {
+  border-top: 1px solid var(--border-color);
+  padding-top: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
 .interruptions-admin-card-body-text--full {
   white-space: pre-wrap;
   word-break: break-word;
@@ -2617,6 +2737,30 @@
   align-items: flex-start;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.interruptions-admin-image-upload--ngcp {
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(219, 234, 254, 0.38);
+}
+
+.interruptions-admin-image-upload-note--ngcp {
+  margin: 0 0 8px;
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+.interruptions-admin-btn--ngcp-image {
+  border-color: #1d4ed8;
+  background: #dbeafe;
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+.interruptions-admin-btn--ngcp-image:hover:not(:disabled) {
+  background: #bfdbfe;
 }
 
 .interruptions-admin-image-preview {

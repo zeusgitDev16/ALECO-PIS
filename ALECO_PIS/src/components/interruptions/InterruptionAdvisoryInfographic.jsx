@@ -33,6 +33,7 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
   const [showFullImage, setShowFullImage] = useState(false);
   const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
   const refLine = getPosterReferenceDisplay(item.controlNo);
+  const additionalDetails = item.body && String(item.body).trim() ? String(item.body).trim() : '';
 
   return (
     <div className="feed-advisory-infographic">
@@ -66,6 +67,11 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
         <span className="feed-infographic-pill feed-infographic-pill--feeder">
           SUBSTATION/FEEDER: {feederText.toUpperCase()}
         </span>
+        {additionalDetails && (
+          <div className="feed-infographic-pill feed-infographic-pill--details">
+            <strong>ADDITIONAL DETAILS:</strong> {additionalDetails}
+          </div>
+        )}
       </div>
       {(item.dateTimeStart || item.dateTimeEndEstimated || item.dateTimeRestored) && (
         <div className="feed-infographic-schedule">

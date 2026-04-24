@@ -147,6 +147,7 @@ function parseCauseCategoryInput(raw) {
 function validatePayload(body, { partial = false } = {}) {
   const errors = [];
   const type = body.type;
+  const isNgcpScheduled = type === 'NgcScheduled';
   const status = body.status;
   const feeder = body.feeder;
   const feederIdRaw = body.feederId;
@@ -162,7 +163,7 @@ function validatePayload(body, { partial = false } = {}) {
   if (!partial || status !== undefined) {
     if (!status || !STATUSES.has(status)) errors.push('status must be Pending, Ongoing, or Energized');
   }
-  if (!partial || feeder !== undefined || feederIdRaw !== undefined) {
+  if (!isNgcpScheduled && (!partial || feeder !== undefined || feederIdRaw !== undefined)) {
     const hasFeederText = feeder != null && String(feeder).trim() !== '';
     const hasFeederId =
       feederIdRaw !== undefined &&
@@ -179,6 +180,12 @@ function validatePayload(body, { partial = false } = {}) {
   if (!partial) {
     if (!hasBody && !hasLegacy) {
       errors.push('Provide either body (free-form post) or cause (legacy). At least one is required.');
+    }
+    if (type === 'NgcScheduled') {
+      const img = body.imageUrl;
+      if (img == null || String(img).trim() === '') {
+        errors.push('imageUrl is required for NgcScheduled advisories.');
+      }
     }
   }
   if (!partial || dateTimeStart !== undefined) {
@@ -207,7 +214,60 @@ function validatePayload(body, { partial = false } = {}) {
     }
   }
 
+  if (!partial) {
+    const sra = body.scheduledRestoreAt;
+    if (sra != null && String(sra).trim() !== '') {
+      const baseline = isNgcpScheduled ? body.dateTimeStart : body.dateTimeEndEstimated;
+      const baselineLabel = isNgcpScheduled ? 'dateTimeStart' : 'dateTimeEndEstimated (ERT)';
+      if (baseline == null || String(baseline).trim() === '') {
+        errors.push(`${baselineLabel} is required when scheduledRestoreAt is set.`);
+      } else {
+        const tS = toMysqlDateTime(sra);
+        const tB = toMysqlDateTime(baseline);
+        if (tS && tB && tS <= tB) {
+          errors.push(
+            isNgcpScheduled
+              ? 'scheduledRestoreAt must be after dateTimeStart.'
+              : 'scheduledRestoreAt must be after dateTimeEndEstimated (ERT).'
+          );
+        }
+      }
+    }
+  }
+
   return errors;
+}
+
+/**
+ * When setting a non-empty scheduled restore, ensure it is strictly after ERT (use row ERT if body omits it).
+ * @param {string|null|undefined} scheduledRaw
+ * @param {string|null|undefined} ertFromBody
+ * @param {unknown} ertFromRow - existing DB value
+ * @returns {string|null} error message or null
+ */
+function assertScheduledRestoreAfterBaseline(
+  scheduledRaw,
+  baselineFromBody,
+  baselineFromRow,
+  { baselineLabel = 'dateTimeEndEstimated (ERT)' } = {}
+) {
+  if (scheduledRaw === undefined) return null;
+  if (scheduledRaw === null || String(scheduledRaw).trim() === '') return null;
+  const tS = toMysqlDateTime(scheduledRaw);
+  if (!tS) return 'scheduledRestoreAt must be a valid date/time.';
+  const baseline =
+    baselineFromBody != null && String(baselineFromBody).trim() !== '' ? baselineFromBody : baselineFromRow;
+  if (baseline == null || String(baseline).trim() === '') {
+    return `${baselineLabel} is required when scheduling automatic restoration.`;
+  }
+  const tB = toMysqlDateTime(baseline) || toMysqlDateTimeFromRow(baseline);
+  if (!tB) return `${baselineLabel} is invalid.`;
+  if (tS <= tB) {
+    return baselineLabel === 'dateTimeStart'
+      ? 'Auto-restore time must be after Start time.'
+      : 'Auto-restore time must be after ERT (estimated restoration).';
+  }
+  return null;
 }
 
 async function resolveFeederById(feederId) {
@@ -292,6 +352,8 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
   try {
     const limit = clampSqlInt(req.query.limit, 1, 200, 100);
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     // Resolve 'Energized' vs 'Restored' depending on what the DB ENUM actually contains
     const statusDbEnum = await getAlecoInterruptionsStatusDbEnum(pool);
     const energizedDbLiteral = apiInterruptionStatusToDbLiteral('Energized', statusDbEnum).status ?? 'Energized';
@@ -300,10 +362,45 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
       ? "status = 'Pending' AND deleted_at IS NULL AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))"
       : "status = 'Pending' AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))";
     const phNow = nowPhilippineForMysql();
+
+    // If a scheduled advisory goes live now and still has no poster URL, queue poster generation.
+    // This fills the same gap as "display immediately" advisories that generate poster on create.
+    let goLivePosterCandidates = [];
+    if (hasPoster) {
+      const goLivePosterWhere = `${upgradeWhere} AND (poster_image_url IS NULL OR TRIM(poster_image_url) = '')`;
+      const [candRows] = await pool.query(
+        `SELECT ${listInterruptionCols(hasDel, hasPulled, hasPoster)}
+         FROM aleco_interruptions
+         WHERE ${goLivePosterWhere}
+         LIMIT 80`
+      );
+      goLivePosterCandidates = Array.isArray(candRows) ? candRows : [];
+    }
+
     await pool.query(
       `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = ? WHERE ${upgradeWhere}`,
       [phNow]
     );
+    if (goLivePosterCandidates.length > 0) {
+      setImmediate(async () => {
+        try {
+          const cols = listInterruptionCols(hasDel, hasPulled, hasPoster);
+          for (const prevRaw of goLivePosterCandidates) {
+            const id = Number(prevRaw?.id);
+            if (!Number.isFinite(id) || id <= 0) continue;
+            const [latestRows] = await pool.query(
+              `SELECT ${cols} FROM aleco_interruptions WHERE id = ? LIMIT 1`,
+              [id]
+            );
+            const nextRaw = Array.isArray(latestRows) ? latestRows[0] : null;
+            if (!nextRaw) continue;
+            await maybeRegeneratePosterAfterMutation(pool, id, prevRaw, nextRaw);
+          }
+        } catch (e) {
+          console.warn('[poster] go-live auto regen:', e?.message || e);
+        }
+      });
+    }
     // Auto-restore: mark as Energized when scheduled_restore_at has passed
     {
       const autoRestoreWhere = hasDel
@@ -336,8 +433,6 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
         [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
       );
     }
-    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
-    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     const visibilityWhere = buildInterruptionsListWhere(req, hasDel, hasPulled);
     const listCols = listInterruptionCols(hasDel, hasPulled, hasPoster);
     // Use a literal LIMIT: some MySQL/MariaDB builds reject `LIMIT ?` in prepared statements (ER_WRONG_ARGUMENTS).
@@ -573,6 +668,10 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
       feederIdVal = Number(found.id);
       feederLabelVal = String(found.feeder_label || '').trim();
     }
+    if (type === 'NgcScheduled' && !feederLabelVal) {
+      feederLabelVal = 'NGCP NOTICE';
+      feederIdVal = null;
+    }
     if (!feederLabelVal) {
       return res.status(400).json({ success: false, message: 'feeder is required' });
     }
@@ -740,6 +839,20 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
         success: false,
         message: 'This advisory is archived. Restore it before editing.',
       });
+    }
+
+    if (req.body.scheduledRestoreAt !== undefined) {
+      const effectiveType = type !== undefined ? type : String(ex.type || '').trim();
+      const isNgcpScheduled = effectiveType === 'NgcScheduled';
+      const ertCheck = assertScheduledRestoreAfterBaseline(
+        req.body.scheduledRestoreAt,
+        isNgcpScheduled ? dateTimeStart : dateTimeEndEstimated,
+        isNgcpScheduled ? ex.date_time_start : ex.date_time_end_estimated,
+        { baselineLabel: isNgcpScheduled ? 'dateTimeStart' : 'dateTimeEndEstimated (ERT)' }
+      );
+      if (ertCheck) {
+        return res.status(400).json({ success: false, message: ertCheck });
+      }
     }
 
     const expectedUpdatedAt = req.body?.expectedUpdatedAt;

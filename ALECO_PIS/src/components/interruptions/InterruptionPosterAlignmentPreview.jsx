@@ -16,6 +16,7 @@ import { formatToPhilippineTime } from '../../utils/dateUtils';
  */
 export default function InterruptionPosterAlignmentPreview({ dto }) {
   if (!dto) return null;
+  const isNgcpScheduled = dto.type === 'NgcScheduled';
 
   const refLine = getPosterReferenceDisplay(dto.controlNo);
   const reason = getPosterReasonText(dto);
@@ -23,7 +24,7 @@ export default function InterruptionPosterAlignmentPreview({ dto }) {
   const flat = getPosterAffectedAreasFlat(dto);
   const grouped = getPosterAffectedAreasGrouped(dto);
   const statusLabel = dto.status ? getStatusDisplayLabel(dto.status) : '—';
-  const missingControl = !dto.controlNo || !String(dto.controlNo).trim();
+  const missingControl = !isNgcpScheduled && (!dto.controlNo || !String(dto.controlNo).trim());
 
   return (
     <div className="interruptions-poster-alignment-preview" role="region" aria-label="Poster fields preview">
@@ -34,10 +35,8 @@ export default function InterruptionPosterAlignmentPreview({ dto }) {
       )}
       {dto.type === 'NgcScheduled' && (
         <p className="interruptions-poster-alignment-preview-note" role="note">
-          <strong>NGCP layout:</strong> Use the advisory <strong>body</strong> for letter-style text, tables, and extra
-          detail. Quick fields drive the banner; rich NGCP content stays in the post body (strategy 4A — see{' '}
-          <span className="interruptions-poster-alignment-preview-docref">docs/ADMIN_INTERRUPTIONS_POSTER_FIELD_GAP.md</span>
-          ).
+          <strong>NGCP layout:</strong> Attach the official NGCP notice image in Quick fields. ALECO renders this
+          official image inside the center frame of the NGCP poster template.
         </p>
       )}
       <dl className="interruptions-poster-alignment-preview-dl">
@@ -45,18 +44,22 @@ export default function InterruptionPosterAlignmentPreview({ dto }) {
           <dt>Headline</dt>
           <dd>{getPosterHeadlineText(dto)}</dd>
         </div>
-        <div>
-          <dt>Reference</dt>
-          <dd>{refLine || '—'}</dd>
-        </div>
+        {!isNgcpScheduled && (
+          <div>
+            <dt>Reference</dt>
+            <dd>{refLine || '—'}</dd>
+          </div>
+        )}
         <div>
           <dt>Status</dt>
           <dd>{statusLabel}</dd>
         </div>
-        <div>
-          <dt>Feeder</dt>
-          <dd>{dto.feeder && String(dto.feeder).trim() ? String(dto.feeder).trim() : '—'}</dd>
-        </div>
+        {!isNgcpScheduled && (
+          <div>
+            <dt>Feeder</dt>
+            <dd>{dto.feeder && String(dto.feeder).trim() ? String(dto.feeder).trim() : '—'}</dd>
+          </div>
+        )}
         <div>
           <dt>Time range (poster)</dt>
           <dd>{timeRange || '—'}</dd>
@@ -65,14 +68,18 @@ export default function InterruptionPosterAlignmentPreview({ dto }) {
           <dt>Start (full)</dt>
           <dd>{dto.dateTimeStart ? formatToPhilippineTime(dto.dateTimeStart) : '—'}</dd>
         </div>
-        <div>
-          <dt>ERT (full)</dt>
-          <dd>{dto.dateTimeEndEstimated ? formatToPhilippineTime(dto.dateTimeEndEstimated) : '—'}</dd>
-        </div>
-        <div>
-          <dt>REASON (poster)</dt>
-          <dd>{reason || '—'}</dd>
-        </div>
+        {!isNgcpScheduled && (
+          <div>
+            <dt>ERT (full)</dt>
+            <dd>{dto.dateTimeEndEstimated ? formatToPhilippineTime(dto.dateTimeEndEstimated) : '—'}</dd>
+          </div>
+        )}
+        {!isNgcpScheduled && (
+          <div>
+            <dt>REASON (poster)</dt>
+            <dd>{reason || '—'}</dd>
+          </div>
+        )}
       </dl>
       <div className="interruptions-poster-alignment-preview-areas">
         <h5 className="interruptions-poster-alignment-preview-subtitle">Affected areas (poster)</h5>

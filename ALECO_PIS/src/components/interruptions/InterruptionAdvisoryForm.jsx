@@ -101,6 +101,8 @@ export default function InterruptionAdvisoryForm({
   posterAssetBusy = false,
 }) {
   const now = useNow([]);
+  const isNgcpScheduled = form.type === 'NgcScheduled';
+  const lockTypeForNgcpEdit = Boolean(editingId && isNgcpScheduled);
   const unscheduledFutureStart = useMemo(() => {
     if (!isEmergencyOutageType(form.type)) return false;
     const d = datetimeLocalStringToDate(form.dateTimeStart);
@@ -251,6 +253,7 @@ export default function InterruptionAdvisoryForm({
               <select
                 value={form.type}
                 onChange={(ev) => handleTypeChange(ev.target.value)}
+                disabled={lockTypeForNgcpEdit}
               >
                 {TYPE_FORM_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -258,25 +261,34 @@ export default function InterruptionAdvisoryForm({
                   </option>
                 ))}
               </select>
+              {lockTypeForNgcpEdit && (
+                <span className="interruptions-admin-field-hint">
+                  Outage type is locked for NGCP scheduled advisories to keep UI and backend rules consistent.
+                </span>
+              )}
             </label>
-            <label>
-              Feeder
-              <FeederCascadeSelect
-                value={form.feeder}
-                onChange={(v) => setForm((f) => ({ ...f, feeder: v }))}
-                onFeederIdChange={(fid) => setForm((f) => ({ ...f, feederId: fid }))}
-                disabled={advisoryArchived}
-              />
-            </label>
-            <label>
-              Control #
-              <input
-                type="text"
-                value={form.controlNo}
-                onChange={(ev) => setForm((f) => ({ ...f, controlNo: ev.target.value }))}
-                placeholder="e.g. SIMAR2026-037"
-              />
-            </label>
+            {!isNgcpScheduled && (
+              <label>
+                Feeder
+                <FeederCascadeSelect
+                  value={form.feeder}
+                  onChange={(v) => setForm((f) => ({ ...f, feeder: v }))}
+                  onFeederIdChange={(fid) => setForm((f) => ({ ...f, feederId: fid }))}
+                  disabled={advisoryArchived}
+                />
+              </label>
+            )}
+            {!isNgcpScheduled && (
+              <label>
+                Control #
+                <input
+                  type="text"
+                  value={form.controlNo}
+                  onChange={(ev) => setForm((f) => ({ ...f, controlNo: ev.target.value }))}
+                  placeholder="e.g. SIMAR2026-037"
+                />
+              </label>
+            )}
             <label className="interruptions-admin-datetime-field">
               Start
               <div className="interruptions-admin-datetime-wrap">
@@ -289,33 +301,45 @@ export default function InterruptionAdvisoryForm({
               </div>
               <DatetimePreview value={form.dateTimeStart} />
             </label>
-            <label className="interruptions-admin-datetime-field">
-              Estimated restoration (ERT)
-              <div className="interruptions-admin-datetime-wrap">
-                <InModalDateTimePicker
-                  value={form.dateTimeEndEstimated}
-                  onChange={(v) => setForm((f) => ({ ...f, dateTimeEndEstimated: v }))}
-                  placeholder="Select ERT date and time"
-                  futureOnly
-                />
-              </div>
-              <DatetimePreview value={form.dateTimeEndEstimated} />
-            </label>
-            <label className="interruptions-admin-span2">
-              Cause category (optional)
-              <select
-                value={form.causeCategory || ''}
-                onChange={(ev) => setForm((f) => ({ ...f, causeCategory: ev.target.value }))}
-              >
-                {CAUSE_CATEGORY_FORM_OPTIONS.map((o) => (
-                  <option key={o.value || 'none'} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="interruptions-admin-span2 interruptions-admin-image-upload">
-              <label>Advisory image (optional)</label>
+            {!isNgcpScheduled && (
+              <label className="interruptions-admin-datetime-field">
+                Estimated restoration (ERT)
+                <div className="interruptions-admin-datetime-wrap">
+                  <InModalDateTimePicker
+                    value={form.dateTimeEndEstimated}
+                    onChange={(v) => setForm((f) => ({ ...f, dateTimeEndEstimated: v }))}
+                    placeholder="Select ERT date and time"
+                    futureOnly
+                  />
+                </div>
+                <DatetimePreview value={form.dateTimeEndEstimated} />
+              </label>
+            )}
+            {!isNgcpScheduled && (
+              <label className="interruptions-admin-span2">
+                Cause category (optional)
+                <select
+                  value={form.causeCategory || ''}
+                  onChange={(ev) => setForm((f) => ({ ...f, causeCategory: ev.target.value }))}
+                >
+                  {CAUSE_CATEGORY_FORM_OPTIONS.map((o) => (
+                    <option key={o.value || 'none'} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <div
+              className={`interruptions-admin-span2 interruptions-admin-image-upload${isNgcpScheduled ? ' interruptions-admin-image-upload--ngcp' : ''}`}
+            >
+              <label>{isNgcpScheduled ? 'Official NGCP notice image (required)' : 'Advisory image (optional)'}</label>
+              {isNgcpScheduled && (
+                <p className="interruptions-admin-field-hint interruptions-admin-image-upload-note--ngcp">
+                  Attach the official NGCP poster/notice image. This is required and will be embedded at the center
+                  of the ALECO NGCP poster template.
+                </p>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -339,7 +363,7 @@ export default function InterruptionAdvisoryForm({
                 )}
                 <button
                   type="button"
-                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
+                  className={`interruptions-admin-btn interruptions-admin-btn--secondary${isNgcpScheduled ? ' interruptions-admin-btn--ngcp-image' : ''}`}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={imageUploading}
                 >
@@ -360,7 +384,7 @@ export default function InterruptionAdvisoryForm({
           )}
         </fieldset>
 
-        {(showLegacyFields || hasBody) && (
+        {!isNgcpScheduled && (showLegacyFields || hasBody) && (
         <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--legacy">
           <legend>
             {hasBody ? (
@@ -604,14 +628,21 @@ export default function InterruptionAdvisoryForm({
                   <InModalDateTimePicker
                     value={form.scheduledRestoreAt}
                     onChange={(v) => setForm((f) => ({ ...f, scheduledRestoreAt: v }))}
-                    required
+                    required={!isNgcpScheduled}
                     placeholder="Select auto-restoration date and time"
                     futureOnly
-                    strictlyAfter={datetimeLocalStringToDate(form.dateTimeEndEstimated)}
+                    strictlyAfter={datetimeLocalStringToDate(
+                      isNgcpScheduled ? form.dateTimeStart : form.dateTimeEndEstimated
+                    )}
                   />
                 </div>
                 <DatetimePreview value={form.scheduledRestoreAt} />
-                {form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim() && (
+                {isNgcpScheduled ? (
+                  <p className="interruptions-admin-field-hint">
+                    Optional for NGCP: leave this blank to keep the advisory in pending/manual restoration mode.
+                    Set a date later when ready to arm auto-restoration.
+                  </p>
+                ) : form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim() && (
                   <p className="interruptions-admin-field-hint">
                     Auto-restore must be <strong>after</strong> ERT (
                     {formatPhilippineWallClock(datetimeLocalToApi(form.dateTimeEndEstimated))}

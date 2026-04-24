@@ -5,6 +5,7 @@ import { formatToPhilippineTime, isPublicVisibilityPending, isCurrentlyOnPublicF
 import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconRefreshCw } from './AdvisoryActionIcons';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
 import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
+import InterruptionNgcpPrintPoster from './InterruptionNgcpPrintPoster';
 
 /**
  * InterruptionAdvisoryDetailModal - Full advisory view in a modal (read-only).
@@ -100,7 +101,11 @@ export default function InterruptionAdvisoryDetailModal({
                 />
               ) : (
                 <div className="interruption-detail-dashboard-poster-fallback">
-                  <InterruptionAlecoPrintPoster item={item} />
+                  {item.type === 'NgcScheduled' ? (
+                    <InterruptionNgcpPrintPoster item={item} />
+                  ) : (
+                    <InterruptionAlecoPrintPoster item={item} />
+                  )}
                 </div>
               )}
             </div>

@@ -122,6 +122,7 @@ export function computeInitialStatusPreview(type, dateTimeStartLocal) {
  * @returns {object} POST/PUT body for /api/interruptions
  */
 export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } = {}) {
+  const isNgcpScheduled = form.type === 'NgcScheduled';
   const affectedAreas = form.affectedAreasText
     .split(',')
     .map((x) => x.trim())
@@ -141,14 +142,18 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
   const payload = {
     type: form.type,
     affectedAreas,
-    feeder: form.feeder,
-    feederId: form.feederId != null && String(form.feederId).trim() !== '' ? Number(form.feederId) : null,
-    cause: form.cause,
+    feeder: isNgcpScheduled ? null : form.feeder,
+    feederId: isNgcpScheduled
+      ? null
+      : form.feederId != null && String(form.feederId).trim() !== '' ? Number(form.feederId) : null,
+    cause: isNgcpScheduled ? null : form.cause,
     dateTimeStart: datetimeLocalToApi(form.dateTimeStart),
-    dateTimeEndEstimated: datetimeLocalToApi(form.dateTimeEndEstimated),
-    causeCategory,
+    dateTimeEndEstimated: isNgcpScheduled ? null : datetimeLocalToApi(form.dateTimeEndEstimated),
+    causeCategory: isNgcpScheduled ? null : causeCategory,
     body: form.body && String(form.body).trim() ? String(form.body).trim() : null,
-    controlNo: form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
+    controlNo: isNgcpScheduled
+      ? null
+      : form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
     imageUrl: form.imageUrl && String(form.imageUrl).trim() ? String(form.imageUrl).trim() : null,
     affectedAreasGrouped: Array.isArray(form.affectedAreasGrouped) ? form.affectedAreasGrouped : [],
   };
@@ -195,6 +200,7 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
  */
 export function validateInterruptionForm(form, { editingId = null } = {}) {
   const errors = [];
+  const isNgcpScheduled = form.type === 'NgcScheduled';
   const hasBody = form.body && String(form.body).trim();
   const hasCause = form.cause && String(form.cause).trim();
   const hasFeeder = form.feeder && String(form.feeder).trim();
@@ -205,7 +211,7 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
     Number(form.feederId) > 0;
   const hasDateTimeStart = form.dateTimeStart && String(form.dateTimeStart).trim();
 
-  if (!hasFeeder && !hasFeederId) {
+  if (!isNgcpScheduled && !hasFeeder && !hasFeederId) {
     errors.push('Feeder is required.');
   }
   if (!hasBody && !hasCause) {
@@ -214,10 +220,16 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
   if (!hasDateTimeStart) {
     errors.push('Start date and time is required.');
   }
-  if (isScheduledLikeOutageType(form.type)) {
+  if (!isNgcpScheduled && isScheduledLikeOutageType(form.type)) {
     const cn = form.controlNo && String(form.controlNo).trim();
     if (!cn) {
       errors.push('Control # is required for scheduled advisories (poster reference).');
+    }
+  }
+  if (!editingId && form.type === 'NgcScheduled') {
+    const hasImage = form.imageUrl && String(form.imageUrl).trim();
+    if (!hasImage) {
+      errors.push('NGCP scheduled advisories require an attached NGCP image before publishing.');
     }
   }
   // Public bulletin timing is create-only; ignore on edit to avoid stale/locked schedule blocking updates.
@@ -228,23 +240,30 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
     }
   }
   if (form.scheduleAutoRestore) {
+    const start = datetimeLocalStringToDate(form.dateTimeStart);
     const ertS = form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim();
-    if (!ertS) {
-      errors.push('Estimated restoration (ERT) is required when scheduling automatic restoration.');
-    } else {
-      const ert = datetimeLocalStringToDate(form.dateTimeEndEstimated);
-      if (!ert) {
-        errors.push('Estimated restoration (ERT) must be a valid date and time.');
+    if (!isNgcpScheduled) {
+      if (!ertS) {
+        errors.push('Estimated restoration (ERT) is required when scheduling automatic restoration.');
+      } else {
+        const ert = datetimeLocalStringToDate(form.dateTimeEndEstimated);
+        if (!ert) {
+          errors.push('Estimated restoration (ERT) must be a valid date and time.');
+        }
       }
     }
-    if (!form.scheduledRestoreAt || !String(form.scheduledRestoreAt).trim()) {
+    const hasScheduledRestoreAt = form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim();
+    if (!isNgcpScheduled && !hasScheduledRestoreAt) {
       errors.push('Scheduled auto-restoration requires a date and time.');
-    } else {
+    } else if (hasScheduledRestoreAt) {
       const r = datetimeLocalStringToDate(form.scheduledRestoreAt);
       if (r && r.getTime() <= Date.now()) {
         errors.push('Scheduled restoration time must be in the future.');
       }
-      if (r && ertS) {
+      if (r && isNgcpScheduled && start && r.getTime() <= start.getTime()) {
+        errors.push('Auto-restore must be after Start for NGCP advisories.');
+      }
+      if (r && !isNgcpScheduled && ertS) {
         const ert = datetimeLocalStringToDate(form.dateTimeEndEstimated);
         if (ert && r.getTime() <= ert.getTime()) {
           errors.push(
@@ -253,7 +272,10 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
         }
       }
     }
-    if (!form.scheduledRestoreRemark || !String(form.scheduledRestoreRemark).trim()) {
+    if (
+      (!isNgcpScheduled || (form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim())) &&
+      (!form.scheduledRestoreRemark || !String(form.scheduledRestoreRemark).trim())
+    ) {
       errors.push('A remark is required for scheduled auto-restoration (it will be logged when auto-restored).');
     }
   }

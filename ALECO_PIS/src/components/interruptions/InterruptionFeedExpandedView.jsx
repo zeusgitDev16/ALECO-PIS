@@ -8,6 +8,7 @@ import {
   getCauseCategoryLabel,
 } from '../../utils/interruptionLabels';
 import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
+import InterruptionNgcpPrintPoster from './InterruptionNgcpPrintPoster';
 import '../../CSS/InterruptionPrintPoster.css';
 
 /**
@@ -92,7 +93,11 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
           </div>
         ) : (
           <div className="feed-expanded-poster-wrap">
-            <InterruptionAlecoPrintPoster item={item} />
+            {item.type === 'NgcScheduled' ? (
+              <InterruptionNgcpPrintPoster item={item} />
+            ) : (
+              <InterruptionAlecoPrintPoster item={item} />
+            )}
           </div>
         )}
 

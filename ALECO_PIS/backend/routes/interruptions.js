@@ -147,6 +147,7 @@ function parseCauseCategoryInput(raw) {
 function validatePayload(body, { partial = false } = {}) {
   const errors = [];
   const type = body.type;
+  const isNgcpScheduled = type === 'NgcScheduled';
   const status = body.status;
   const feeder = body.feeder;
   const feederIdRaw = body.feederId;
@@ -162,7 +163,7 @@ function validatePayload(body, { partial = false } = {}) {
   if (!partial || status !== undefined) {
     if (!status || !STATUSES.has(status)) errors.push('status must be Pending, Ongoing, or Energized');
   }
-  if (!partial || feeder !== undefined || feederIdRaw !== undefined) {
+  if (!isNgcpScheduled && (!partial || feeder !== undefined || feederIdRaw !== undefined)) {
     const hasFeederText = feeder != null && String(feeder).trim() !== '';
     const hasFeederId =
       feederIdRaw !== undefined &&
@@ -179,6 +180,12 @@ function validatePayload(body, { partial = false } = {}) {
   if (!partial) {
     if (!hasBody && !hasLegacy) {
       errors.push('Provide either body (free-form post) or cause (legacy). At least one is required.');
+    }
+    if (type === 'NgcScheduled') {
+      const img = body.imageUrl;
+      if (img == null || String(img).trim() === '') {
+        errors.push('imageUrl is required for NgcScheduled advisories.');
+      }
     }
   }
   if (!partial || dateTimeStart !== undefined) {
@@ -210,14 +217,19 @@ function validatePayload(body, { partial = false } = {}) {
   if (!partial) {
     const sra = body.scheduledRestoreAt;
     if (sra != null && String(sra).trim() !== '') {
-      const ert = body.dateTimeEndEstimated;
-      if (ert == null || String(ert).trim() === '') {
-        errors.push('dateTimeEndEstimated (ERT) is required when scheduledRestoreAt is set.');
+      const baseline = isNgcpScheduled ? body.dateTimeStart : body.dateTimeEndEstimated;
+      const baselineLabel = isNgcpScheduled ? 'dateTimeStart' : 'dateTimeEndEstimated (ERT)';
+      if (baseline == null || String(baseline).trim() === '') {
+        errors.push(`${baselineLabel} is required when scheduledRestoreAt is set.`);
       } else {
         const tS = toMysqlDateTime(sra);
-        const tE = toMysqlDateTime(ert);
-        if (tS && tE && tS <= tE) {
-          errors.push('scheduledRestoreAt must be after dateTimeEndEstimated (ERT).');
+        const tB = toMysqlDateTime(baseline);
+        if (tS && tB && tS <= tB) {
+          errors.push(
+            isNgcpScheduled
+              ? 'scheduledRestoreAt must be after dateTimeStart.'
+              : 'scheduledRestoreAt must be after dateTimeEndEstimated (ERT).'
+          );
         }
       }
     }
@@ -233,19 +245,27 @@ function validatePayload(body, { partial = false } = {}) {
  * @param {unknown} ertFromRow - existing DB value
  * @returns {string|null} error message or null
  */
-function assertScheduledRestoreAfterErt(scheduledRaw, ertFromBody, ertFromRow) {
+function assertScheduledRestoreAfterBaseline(
+  scheduledRaw,
+  baselineFromBody,
+  baselineFromRow,
+  { baselineLabel = 'dateTimeEndEstimated (ERT)' } = {}
+) {
   if (scheduledRaw === undefined) return null;
   if (scheduledRaw === null || String(scheduledRaw).trim() === '') return null;
   const tS = toMysqlDateTime(scheduledRaw);
   if (!tS) return 'scheduledRestoreAt must be a valid date/time.';
-  const ert = ertFromBody != null && String(ertFromBody).trim() !== '' ? ertFromBody : ertFromRow;
-  if (ert == null || String(ert).trim() === '') {
-    return 'dateTimeEndEstimated (ERT) is required when scheduling automatic restoration.';
+  const baseline =
+    baselineFromBody != null && String(baselineFromBody).trim() !== '' ? baselineFromBody : baselineFromRow;
+  if (baseline == null || String(baseline).trim() === '') {
+    return `${baselineLabel} is required when scheduling automatic restoration.`;
   }
-  const tE = toMysqlDateTime(ert) || toMysqlDateTimeFromRow(ert);
-  if (!tE) return 'dateTimeEndEstimated (ERT) is invalid.';
-  if (tS <= tE) {
-    return 'Auto-restore time must be after ERT (estimated restoration).';
+  const tB = toMysqlDateTime(baseline) || toMysqlDateTimeFromRow(baseline);
+  if (!tB) return `${baselineLabel} is invalid.`;
+  if (tS <= tB) {
+    return baselineLabel === 'dateTimeStart'
+      ? 'Auto-restore time must be after Start time.'
+      : 'Auto-restore time must be after ERT (estimated restoration).';
   }
   return null;
 }
@@ -648,6 +668,10 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
       feederIdVal = Number(found.id);
       feederLabelVal = String(found.feeder_label || '').trim();
     }
+    if (type === 'NgcScheduled' && !feederLabelVal) {
+      feederLabelVal = 'NGCP NOTICE';
+      feederIdVal = null;
+    }
     if (!feederLabelVal) {
       return res.status(400).json({ success: false, message: 'feeder is required' });
     }
@@ -818,10 +842,13 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     }
 
     if (req.body.scheduledRestoreAt !== undefined) {
-      const ertCheck = assertScheduledRestoreAfterErt(
+      const effectiveType = type !== undefined ? type : String(ex.type || '').trim();
+      const isNgcpScheduled = effectiveType === 'NgcScheduled';
+      const ertCheck = assertScheduledRestoreAfterBaseline(
         req.body.scheduledRestoreAt,
-        dateTimeEndEstimated,
-        ex.date_time_end_estimated
+        isNgcpScheduled ? dateTimeStart : dateTimeEndEstimated,
+        isNgcpScheduled ? ex.date_time_start : ex.date_time_end_estimated,
+        { baselineLabel: isNgcpScheduled ? 'dateTimeStart' : 'dateTimeEndEstimated (ERT)' }
       );
       if (ertCheck) {
         return res.status(400).json({ success: false, message: ertCheck });

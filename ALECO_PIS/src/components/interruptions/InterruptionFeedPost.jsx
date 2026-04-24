@@ -19,8 +19,13 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
   const typeModifier = isEmergencyOutageType(item.type) ? 'emergency'
     : item.type === 'NgcScheduled' ? 'ngcscheduled'
     : 'scheduled';
-  const statusClass = interruptionStatusForCssClass(item.status);
-  const statusLabel = getStatusDisplayLabel(item.status);
+  const startMs = item.dateTimeStart ? Date.parse(String(item.dateTimeStart)) : Number.NaN;
+  const effectiveStatus =
+    item.status === 'Ongoing' && Number.isFinite(startMs) && startMs > now
+      ? 'Pending'
+      : item.status;
+  const statusClass = interruptionStatusForCssClass(effectiveStatus);
+  const statusLabel = getStatusDisplayLabel(effectiveStatus);
   const clickable = !isExpandedView && Boolean(onExpand);
 
   return (

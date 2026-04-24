@@ -207,7 +207,47 @@ function validatePayload(body, { partial = false } = {}) {
     }
   }
 
+  if (!partial) {
+    const sra = body.scheduledRestoreAt;
+    if (sra != null && String(sra).trim() !== '') {
+      const ert = body.dateTimeEndEstimated;
+      if (ert == null || String(ert).trim() === '') {
+        errors.push('dateTimeEndEstimated (ERT) is required when scheduledRestoreAt is set.');
+      } else {
+        const tS = toMysqlDateTime(sra);
+        const tE = toMysqlDateTime(ert);
+        if (tS && tE && tS <= tE) {
+          errors.push('scheduledRestoreAt must be after dateTimeEndEstimated (ERT).');
+        }
+      }
+    }
+  }
+
   return errors;
+}
+
+/**
+ * When setting a non-empty scheduled restore, ensure it is strictly after ERT (use row ERT if body omits it).
+ * @param {string|null|undefined} scheduledRaw
+ * @param {string|null|undefined} ertFromBody
+ * @param {unknown} ertFromRow - existing DB value
+ * @returns {string|null} error message or null
+ */
+function assertScheduledRestoreAfterErt(scheduledRaw, ertFromBody, ertFromRow) {
+  if (scheduledRaw === undefined) return null;
+  if (scheduledRaw === null || String(scheduledRaw).trim() === '') return null;
+  const tS = toMysqlDateTime(scheduledRaw);
+  if (!tS) return 'scheduledRestoreAt must be a valid date/time.';
+  const ert = ertFromBody != null && String(ertFromBody).trim() !== '' ? ertFromBody : ertFromRow;
+  if (ert == null || String(ert).trim() === '') {
+    return 'dateTimeEndEstimated (ERT) is required when scheduling automatic restoration.';
+  }
+  const tE = toMysqlDateTime(ert) || toMysqlDateTimeFromRow(ert);
+  if (!tE) return 'dateTimeEndEstimated (ERT) is invalid.';
+  if (tS <= tE) {
+    return 'Auto-restore time must be after ERT (estimated restoration).';
+  }
+  return null;
 }
 
 async function resolveFeederById(feederId) {
@@ -292,6 +332,8 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
   try {
     const limit = clampSqlInt(req.query.limit, 1, 200, 100);
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     // Resolve 'Energized' vs 'Restored' depending on what the DB ENUM actually contains
     const statusDbEnum = await getAlecoInterruptionsStatusDbEnum(pool);
     const energizedDbLiteral = apiInterruptionStatusToDbLiteral('Energized', statusDbEnum).status ?? 'Energized';
@@ -300,10 +342,45 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
       ? "status = 'Pending' AND deleted_at IS NULL AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))"
       : "status = 'Pending' AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))";
     const phNow = nowPhilippineForMysql();
+
+    // If a scheduled advisory goes live now and still has no poster URL, queue poster generation.
+    // This fills the same gap as "display immediately" advisories that generate poster on create.
+    let goLivePosterCandidates = [];
+    if (hasPoster) {
+      const goLivePosterWhere = `${upgradeWhere} AND (poster_image_url IS NULL OR TRIM(poster_image_url) = '')`;
+      const [candRows] = await pool.query(
+        `SELECT ${listInterruptionCols(hasDel, hasPulled, hasPoster)}
+         FROM aleco_interruptions
+         WHERE ${goLivePosterWhere}
+         LIMIT 80`
+      );
+      goLivePosterCandidates = Array.isArray(candRows) ? candRows : [];
+    }
+
     await pool.query(
       `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = ? WHERE ${upgradeWhere}`,
       [phNow]
     );
+    if (goLivePosterCandidates.length > 0) {
+      setImmediate(async () => {
+        try {
+          const cols = listInterruptionCols(hasDel, hasPulled, hasPoster);
+          for (const prevRaw of goLivePosterCandidates) {
+            const id = Number(prevRaw?.id);
+            if (!Number.isFinite(id) || id <= 0) continue;
+            const [latestRows] = await pool.query(
+              `SELECT ${cols} FROM aleco_interruptions WHERE id = ? LIMIT 1`,
+              [id]
+            );
+            const nextRaw = Array.isArray(latestRows) ? latestRows[0] : null;
+            if (!nextRaw) continue;
+            await maybeRegeneratePosterAfterMutation(pool, id, prevRaw, nextRaw);
+          }
+        } catch (e) {
+          console.warn('[poster] go-live auto regen:', e?.message || e);
+        }
+      });
+    }
     // Auto-restore: mark as Energized when scheduled_restore_at has passed
     {
       const autoRestoreWhere = hasDel
@@ -336,8 +413,6 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
         [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
       );
     }
-    const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
-    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     const visibilityWhere = buildInterruptionsListWhere(req, hasDel, hasPulled);
     const listCols = listInterruptionCols(hasDel, hasPulled, hasPoster);
     // Use a literal LIMIT: some MySQL/MariaDB builds reject `LIMIT ?` in prepared statements (ER_WRONG_ARGUMENTS).
@@ -740,6 +815,17 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
         success: false,
         message: 'This advisory is archived. Restore it before editing.',
       });
+    }
+
+    if (req.body.scheduledRestoreAt !== undefined) {
+      const ertCheck = assertScheduledRestoreAfterErt(
+        req.body.scheduledRestoreAt,
+        dateTimeEndEstimated,
+        ex.date_time_end_estimated
+      );
+      if (ertCheck) {
+        return res.status(400).json({ success: false, message: ertCheck });
+      }
     }
 
     const expectedUpdatedAt = req.body?.expectedUpdatedAt;

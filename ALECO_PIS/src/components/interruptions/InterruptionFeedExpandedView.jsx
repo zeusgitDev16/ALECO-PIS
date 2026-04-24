@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import {
@@ -20,6 +21,8 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
     !isBlankStub && item.posterImageUrl
       ? getSafeResourceUrl(item.posterImageUrl)
       : null;
+  const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
+  const [showPosterFullImage, setShowPosterFullImage] = useState(false);
 
   const statusClass = interruptionStatusForCssClass(item.status);
   const statusLabel = getStatusDisplayLabel(item.status);
@@ -79,8 +82,12 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
             <img
               src={safePosterUrl}
               alt="Advisory poster"
-              className="feed-expanded-poster-img"
+              className="feed-expanded-poster-img feed-expanded-poster-img--clickable"
               loading="lazy"
+              onClick={() => setShowPosterFullImage(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowPosterFullImage(true)}
             />
           </div>
         ) : (
@@ -109,20 +116,6 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
                   : '—'}
               </span>
             </div>
-            {item.scheduledRestoreAt && (
-              <div className="feed-expanded-row">
-                <span className="feed-expanded-label">Sched. Restore</span>
-                <span className="feed-expanded-value">
-                  {formatToPhilippineTime(item.scheduledRestoreAt)}
-                </span>
-              </div>
-            )}
-            {item.scheduledRestoreRemark && (
-              <div className="feed-expanded-row">
-                <span className="feed-expanded-label">Remark</span>
-                <span className="feed-expanded-value">{item.scheduledRestoreRemark}</span>
-              </div>
-            )}
             {item.dateTimeRestored && (
               <div className="feed-expanded-row">
                 <span className="feed-expanded-label">Power Restored</span>
@@ -187,6 +180,21 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
             </div>
           )}
 
+          {/* Uploaded advisory image (separate from poster image) */}
+          {safeAdvisoryImageUrl && (
+            <div className="feed-expanded-section">
+              <h3 className="feed-expanded-section-title">Attached Image</h3>
+              <div className="feed-expanded-attached-image-wrap">
+                <img
+                  src={safeAdvisoryImageUrl}
+                  alt="Attached advisory"
+                  className="feed-expanded-attached-image"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Meta timestamps */}
           <div className="feed-expanded-section feed-expanded-section--meta">
             {item.createdAt && (
@@ -204,6 +212,15 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
 
         </div>
       </div>
+      {safePosterUrl && showPosterFullImage && createPortal(
+        <div
+          className="full-screen-image-overlay"
+          onClick={() => setShowPosterFullImage(false)}
+        >
+          <img src={safePosterUrl} alt="Poster full view" />
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

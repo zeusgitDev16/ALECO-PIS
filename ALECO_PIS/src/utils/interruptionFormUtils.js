@@ -146,7 +146,6 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
     cause: form.cause,
     dateTimeStart: datetimeLocalToApi(form.dateTimeStart),
     dateTimeEndEstimated: datetimeLocalToApi(form.dateTimeEndEstimated),
-    publicVisibleAt,
     causeCategory,
     body: form.body && String(form.body).trim() ? String(form.body).trim() : null,
     controlNo: form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
@@ -166,6 +165,7 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
   }
 
   if (!editingId) {
+    payload.publicVisibleAt = publicVisibleAt;
     const { apiStatus } = computeInitialStatusPreview(form.type, form.dateTimeStart);
     payload.status = apiStatus;
     return payload;
@@ -193,7 +193,7 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
  * @param {InterruptionFormState} form
  * @returns {string[]}
  */
-export function validateInterruptionForm(form) {
+export function validateInterruptionForm(form, { editingId = null } = {}) {
   const errors = [];
   const hasBody = form.body && String(form.body).trim();
   const hasCause = form.cause && String(form.cause).trim();
@@ -220,19 +220,37 @@ export function validateInterruptionForm(form) {
       errors.push('Control # is required for scheduled advisories (poster reference).');
     }
   }
-  if (form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()) {
+  // Public bulletin timing is create-only; ignore on edit to avoid stale/locked schedule blocking updates.
+  if (!editingId && form.schedulePublicLater && form.publicVisibleAt && String(form.publicVisibleAt).trim()) {
     const p = datetimeLocalStringToDate(form.publicVisibleAt);
     if (p && p.getTime() <= Date.now()) {
       errors.push('Goes live at must be a future date and time.');
     }
   }
   if (form.scheduleAutoRestore) {
+    const ertS = form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim();
+    if (!ertS) {
+      errors.push('Estimated restoration (ERT) is required when scheduling automatic restoration.');
+    } else {
+      const ert = datetimeLocalStringToDate(form.dateTimeEndEstimated);
+      if (!ert) {
+        errors.push('Estimated restoration (ERT) must be a valid date and time.');
+      }
+    }
     if (!form.scheduledRestoreAt || !String(form.scheduledRestoreAt).trim()) {
       errors.push('Scheduled auto-restoration requires a date and time.');
     } else {
       const r = datetimeLocalStringToDate(form.scheduledRestoreAt);
       if (r && r.getTime() <= Date.now()) {
         errors.push('Scheduled restoration time must be in the future.');
+      }
+      if (r && ertS) {
+        const ert = datetimeLocalStringToDate(form.dateTimeEndEstimated);
+        if (ert && r.getTime() <= ert.getTime()) {
+          errors.push(
+            'Auto-restore must be after ERT (e.g. if ERT is 5:00 PM, choose 5:01 PM or later).',
+          );
+        }
       }
     }
     if (!form.scheduledRestoreRemark || !String(form.scheduledRestoreRemark).trim()) {

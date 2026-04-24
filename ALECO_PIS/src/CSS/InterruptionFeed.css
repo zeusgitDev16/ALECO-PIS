@@ -96,8 +96,25 @@
 
 /* --- Feed Post Card --- */
 .interruption-feed-post {
+  /* Feed card system — one contract: poster surface + status banner read the same tokens (first for reliable var() resolution) */
+  --feed-poster-surface-r: 16px;
+  /* Floating status banner (scoped to the card; inherited by banner + hang-tabs) */
+  --feed-banner-inset-r: 12px;
+  --feed-banner-pull: -44%;
+  --feed-hang-y: -2px;
+  --feed-hang-w: 7px;
+  --feed-hang-h: 4px;
+  --feed-hang-left: 10px;
+  --feed-hang-right: 10px;
+  --feed-banner-min-w: clamp(80px, calc(100px * var(--public-section-scale, 1)), 108px);
+  --feed-banner-chip-h: clamp(16px, calc(20px * var(--public-section-scale, 1)), 22px);
+  --feed-banner-chip-fs: clamp(0.48rem, calc(0.6rem * var(--public-section-scale, 1)), 0.64rem);
+  --feed-banner-chip-px: clamp(6px, calc(9px * var(--public-section-scale, 1)), 10px);
+  --feed-banner-chip-ls: 0.045em;
+  --feed-banner-chip-r: 4px;
+
   background: var(--bg-card);
-  border-radius: 16px; /* Slightly larger radius for a softer, modern look */
+  border-radius: var(--feed-poster-surface-r, 16px); /* Shared with poster frame — one surface */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
   border: 1px solid var(--border-color);
   scroll-snap-align: start;
@@ -518,6 +535,15 @@
   color: var(--text-header);
 }
 
+.feed-infographic-pill--details {
+  width: 100%;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-card) 88%, var(--accent-primary, #2563eb) 12%);
+  color: var(--text-main);
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
 .feed-infographic-schedule {
   padding: 4px 10px;
   background: var(--bg-body);
@@ -703,7 +729,7 @@
   flex: 1;
   min-width: 0;
   /* Removed max-width to allow flexible growth */
-  height: 6px; /* Increased height for better visibility of the yellow indicator */
+  height: 6px; /* Track height — fill uses --accent-primary (light: blue, dark: yellow) */
   background-color: var(--bg-card);
   border-radius: 10px; /* Pill-shaped track to match the modern "round box" style */
   overflow: hidden;
@@ -712,13 +738,10 @@
 
 .feed-progress-indicator {
   height: 100%;
-  background-color: #8b1a1a;
+  background-color: var(--accent-primary, #2563eb);
   border-radius: 10px;
   transition: width 0.25s ease-out;
-}
-
-[data-theme='dark'] .feed-progress-indicator {
-  background-color: #e05252;
+  box-shadow: 0 0 8px var(--accent-primary-glow, rgba(37, 99, 235, 0.35));
 }
 
 .feed-date-tracker {
@@ -772,16 +795,16 @@
   height: calc(36px * var(--public-section-scale, 1));
   min-width: calc(36px * var(--public-section-scale, 1));
   border-radius: 50%;
-  background: var(--text-header);
+  background: var(--accent-primary, #2563eb);
   border: none;
-  color: var(--bg-body);
+  color: var(--accent-primary-contrast, #ffffff);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   transition: opacity 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 2px 8px var(--accent-primary-glow, rgba(37, 99, 235, 0.3));
   padding: 0;
 }
 
@@ -804,20 +827,20 @@
 }
 
 /* ============================================================
-   FLOATING STATUS BANNER  (compact top-right ribbon)
+   FLOATING STATUS BANNER  (anchored to .interruption-feed-post tokens)
    ============================================================ */
-.feed-post-status-banner {
+.interruption-feed-post .feed-post-status-banner {
   position: absolute;
   top: 0;
-  right: 12px;
+  right: var(--feed-banner-inset-r, 12px);
   left: auto;
-  transform: translateY(-44%);
+  transform: translateY(var(--feed-banner-pull, -44%));
   z-index: 10;
   pointer-events: none;
   white-space: nowrap;
 }
 
-.feed-post-status-banner .feed-post-status-chip {
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip {
   --banner-bg: #15803d;
   --banner-fg: #ecfdf5;
   --banner-hang: rgba(15, 23, 42, 0.62);
@@ -826,27 +849,27 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: clamp(80px, calc(100px * var(--public-section-scale, 1)), 108px);
-  height: clamp(16px, calc(20px * var(--public-section-scale, 1)), 22px);
-  font-size: clamp(0.48rem, calc(0.6rem * var(--public-section-scale, 1)), 0.64rem);
+  min-width: var(--feed-banner-min-w);
+  height: var(--feed-banner-chip-h);
+  font-size: var(--feed-banner-chip-fs);
   font-weight: 800;
-  padding: 0 clamp(6px, calc(9px * var(--public-section-scale, 1)), 10px);
-  border-radius: 4px;
+  padding: 0 var(--feed-banner-chip-px);
+  border-radius: var(--feed-banner-chip-r);
   background: var(--banner-bg);
   color: var(--banner-fg);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
-  letter-spacing: 0.045em;
+  letter-spacing: var(--feed-banner-chip-ls);
   line-height: 1;
   text-transform: uppercase;
 }
 
-.feed-post-status-banner .feed-post-status-chip::before,
-.feed-post-status-banner .feed-post-status-chip::after {
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip::before,
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip::after {
   content: '';
   position: absolute;
-  top: -2px;
-  width: 7px;
-  height: 4px;
+  top: var(--feed-hang-y, -2px);
+  width: var(--feed-hang-w, 7px);
+  height: var(--feed-hang-h, 4px);
   border-radius: 2px 2px 0 0;
   background: var(--banner-hang);
   box-shadow:
@@ -854,116 +877,93 @@
     0 0 0 1px var(--banner-hang-ring);
 }
 
-.feed-post-status-banner .feed-post-status-chip::before {
-  left: 10px;
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip::before {
+  left: var(--feed-hang-left, 10px);
 }
 
-.feed-post-status-banner .feed-post-status-chip::after {
-  right: 10px;
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip::after {
+  right: var(--feed-hang-right, 10px);
 }
 
-.feed-post-status-banner .feed-post-status-chip--pending {
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--pending {
   --banner-bg: #d97706;
   --banner-fg: #fff7ed;
 }
 
-.feed-post-status-banner .feed-post-status-chip--ongoing {
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--ongoing {
   --banner-bg: #b91c1c;
   --banner-fg: #fef2f2;
 }
 
-.feed-post-status-banner .feed-post-status-chip--restored,
-.feed-post-status-banner .feed-post-status-chip--energized {
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--restored,
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--energized {
   --banner-bg: #15803d;
   --banner-fg: #ecfdf5;
 }
 
-[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip--pending {
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--pending {
   --banner-bg: #f59e0b;
   --banner-fg: #431407;
 }
 
-[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip--ongoing {
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--ongoing {
   --banner-bg: #ef4444;
   --banner-fg: #fff1f2;
 }
 
-[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip--restored,
-[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip--energized {
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--restored,
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--energized {
   --banner-bg: #22c55e;
   --banner-fg: #052e16;
 }
 
-[data-theme='dark'] .feed-post-status-banner .feed-post-status-chip {
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip {
   --banner-hang: rgba(241, 245, 249, 0.78);
   --banner-hang-ring: rgba(2, 6, 23, 0.35);
 }
 
+/* Responsive overrides live on the card — banner + clip geometry stay in lockstep */
 @media (max-width: 600px) {
-  .feed-post-status-banner {
-    right: 10px;
-    transform: translateY(-112%);
-  }
-
-  .feed-post-status-banner .feed-post-status-chip {
-    min-width: 66px;
-    height: 14px;
-    font-size: 0.42rem;
-    padding: 0 6px;
-    letter-spacing: 0.035em;
-    border-radius: 3px;
-  }
-
-  .feed-post-status-banner .feed-post-status-chip::before,
-  .feed-post-status-banner .feed-post-status-chip::after {
-    top: -3px;
-    width: 6px;
-    height: 3px;
-  }
-
-  .feed-post-status-banner .feed-post-status-chip::before {
-    left: 8px;
-  }
-
-  .feed-post-status-banner .feed-post-status-chip::after {
-    right: 8px;
+  .interruption-feed-post {
+    --feed-banner-inset-r: 10px;
+    --feed-banner-pull: -112%;
+    --feed-hang-y: -3px;
+    --feed-hang-w: 6px;
+    --feed-hang-h: 3px;
+    --feed-hang-left: 8px;
+    --feed-hang-right: 8px;
+    --feed-banner-min-w: 66px;
+    --feed-banner-chip-h: 14px;
+    --feed-banner-chip-fs: 0.42rem;
+    --feed-banner-chip-px: 6px;
+    --feed-banner-chip-ls: 0.035em;
+    --feed-banner-chip-r: 3px;
   }
 }
 
 @media (min-width: 375px) and (max-width: 600px) {
-  .feed-post-status-banner {
-    transform: translateY(-56%);
-  }
-
-  .feed-post-status-banner .feed-post-status-chip::before,
-  .feed-post-status-banner .feed-post-status-chip::after {
-    top: -1px;
+  .interruption-feed-post {
+    --feed-banner-pull: -56%;
+    --feed-hang-y: -1px;
   }
 }
 
 @media (max-width: 374px) {
-  .feed-post-status-banner {
-    transform: translateY(-44%);
-  }
-
-  .feed-post-status-banner .feed-post-status-chip::before,
-  .feed-post-status-banner .feed-post-status-chip::after {
-    top: 0;
+  .interruption-feed-post {
+    --feed-banner-pull: -44%;
+    --feed-hang-y: 0;
   }
 }
 
 @media (max-width: 360px) {
-  .feed-post-status-banner {
-    right: 8px;
-    transform: translateY(-36%);
-  }
-
-  .feed-post-status-banner .feed-post-status-chip {
-    min-width: 58px;
-    height: 12px;
-    font-size: 0.37rem;
-    padding: 0 5px;
-    letter-spacing: 0.03em;
+  .interruption-feed-post {
+    --feed-banner-inset-r: 8px;
+    --feed-banner-pull: -36%;
+    --feed-banner-min-w: 58px;
+    --feed-banner-chip-h: 12px;
+    --feed-banner-chip-fs: 0.37rem;
+    --feed-banner-chip-px: 5px;
+    --feed-banner-chip-ls: 0.03em;
   }
 }
 
@@ -993,7 +993,7 @@
   height: 100%; /* fill the fixed card height exactly */
   flex: none;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--feed-poster-surface-r, 16px);
   background: var(--bg-card);
   margin: 0;
   border: none;
@@ -1004,7 +1004,7 @@
   display: block;
   height: 100%; /* scale to card height */
   width: auto;  /* natural proportional width — no cropping */
-  border-radius: 16px;
+  border-radius: var(--feed-poster-surface-r, 16px);
 }
 
 /* ============================================================
@@ -1149,6 +1149,15 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
+.feed-expanded-poster-img--clickable {
+  cursor: zoom-in;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.feed-expanded-poster-img--clickable:hover {
+  filter: brightness(1.03);
+}
+
 .feed-expanded-details {
   display: flex;
   flex-direction: column;
@@ -1255,6 +1264,22 @@
   line-height: 1.65;
   margin: 0;
   white-space: pre-wrap;
+}
+
+.feed-expanded-attached-image-wrap {
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: calc(10px * var(--public-section-scale, 1));
+  padding: calc(8px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-attached-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(60vh, 520px);
+  object-fit: contain;
+  border-radius: calc(8px * var(--public-section-scale, 1));
 }
 
 .feed-expanded-section--meta {

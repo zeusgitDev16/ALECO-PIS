@@ -96,8 +96,8 @@ export default function InterruptionAdvisoryForm({
   onReloadAdvisory,
   advisoryArchived = false,
   validationErrors = [],
-  onGeneratePosterStub,
-  onCapturePoster,
+  onUpdatePoster,
+  posterUpdateRequired = false,
   posterAssetBusy = false,
 }) {
   const now = useNow([]);
@@ -474,76 +474,88 @@ export default function InterruptionAdvisoryForm({
           className="interruptions-admin-fieldset interruptions-admin-fieldset--compact interruptions-admin-fieldset--bull"
         >
           <legend>Public bulletin</legend>
-          {isEmergencyOutageType(form.type) ? (
-            <p className="interruptions-admin-bull-unscheduled-note">
-              Shown immediately. Emergency outages are always published right away.
-            </p>
-          ) : (
+          {!editingId ? (
             <>
-              <div className="interruptions-admin-visibility-toggle" role="radiogroup" aria-label="Public visibility">
-                <label className="interruptions-admin-radio-line">
-                  <input
-                    type="radio"
-                    name="pubvis"
-                    checked={!form.schedulePublicLater}
-                    onChange={() =>
-                      setForm((f) => ({
-                        ...f,
-                        schedulePublicLater: false,
-                        publicVisibleAt: '',
-                      }))
-                    }
-                  />
-                  <span>Show immediately</span>
-                </label>
-                <label className="interruptions-admin-radio-line">
-                  <input
-                    type="radio"
-                    name="pubvis"
-                    checked={form.schedulePublicLater}
-                    onChange={() =>
-                      setForm((f) => ({
-                        ...f,
-                        schedulePublicLater: true,
-                        publicVisibleAt: f.publicVisibleAt || addMs(60 * 60 * 1000),
-                      }))
-                    }
-                  />
-                  <span>Schedule first public appearance</span>
-                </label>
-              </div>
+              <p className="interruptions-admin-field-hint">
+                <strong>Finalize this now:</strong> once published, public bulletin timing cannot be edited.
+                Double-check this setting, especially for scheduled advisories.
+              </p>
+              {isEmergencyOutageType(form.type) ? (
+                <p className="interruptions-admin-bull-unscheduled-note">
+                  Shown immediately. Emergency outages are always published right away.
+                </p>
+              ) : (
+                <>
+                  <div className="interruptions-admin-visibility-toggle" role="radiogroup" aria-label="Public visibility">
+                    <label className="interruptions-admin-radio-line">
+                      <input
+                        type="radio"
+                        name="pubvis"
+                        checked={!form.schedulePublicLater}
+                        onChange={() =>
+                          setForm((f) => ({
+                            ...f,
+                            schedulePublicLater: false,
+                            publicVisibleAt: '',
+                          }))
+                        }
+                      />
+                      <span>Show immediately</span>
+                    </label>
+                    <label className="interruptions-admin-radio-line">
+                      <input
+                        type="radio"
+                        name="pubvis"
+                        checked={form.schedulePublicLater}
+                        onChange={() =>
+                          setForm((f) => ({
+                            ...f,
+                            schedulePublicLater: true,
+                            publicVisibleAt: f.publicVisibleAt || addMs(60 * 60 * 1000),
+                          }))
+                        }
+                      />
+                      <span>Schedule first public appearance</span>
+                    </label>
+                  </div>
 
-              {form.schedulePublicLater && (
-            <div className="interruptions-admin-bull-schedule">
-              <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
-                Goes live at
-                <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
-                  <InModalDateTimePicker
-                    value={form.publicVisibleAt}
-                    onChange={(v) => setForm((f) => ({ ...f, publicVisibleAt: v }))}
-                    required={form.schedulePublicLater}
-                    placeholder="Select goes live date and time"
-                    futureOnly
-                  />
+                  {form.schedulePublicLater && (
+                <div className="interruptions-admin-bull-schedule">
+                  <label className="interruptions-admin-span2 interruptions-admin-label-tight interruptions-admin-datetime-field">
+                    Goes live at
+                    <div className="interruptions-admin-datetime-wrap interruptions-admin-datetime-wrap--bull">
+                      <InModalDateTimePicker
+                        value={form.publicVisibleAt}
+                        onChange={(v) => setForm((f) => ({ ...f, publicVisibleAt: v }))}
+                        required={form.schedulePublicLater}
+                        placeholder="Select goes live date and time"
+                        futureOnly
+                      />
+                    </div>
+                    <DatetimePreview value={form.publicVisibleAt} />
+                    <GoesLiveCountdown value={form.publicVisibleAt} />
+                  </label>
+                  <div className="interruptions-admin-preset-row" role="group" aria-label="Quick schedule presets">
+                    {PRESETS.map((p) => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        className="interruptions-admin-preset-chip"
+                        onClick={() => setPreset(p.ms)}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <DatetimePreview value={form.publicVisibleAt} />
-                <GoesLiveCountdown value={form.publicVisibleAt} />
-              </label>
-              <div className="interruptions-admin-preset-row" role="group" aria-label="Quick schedule presets">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.key}
-                    type="button"
-                    className="interruptions-admin-preset-chip"
-                    onClick={() => setPreset(p.ms)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                  )}
+                </>
               )}
             </>
+          ) : (
+            <p className="interruptions-admin-field-hint">
+              Public bulletin timing is locked after publish and cannot be edited here.
+            </p>
           )}
         </fieldset>
 
@@ -595,9 +607,17 @@ export default function InterruptionAdvisoryForm({
                     required
                     placeholder="Select auto-restoration date and time"
                     futureOnly
+                    strictlyAfter={datetimeLocalStringToDate(form.dateTimeEndEstimated)}
                   />
                 </div>
                 <DatetimePreview value={form.scheduledRestoreAt} />
+                {form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim() && (
+                  <p className="interruptions-admin-field-hint">
+                    Auto-restore must be <strong>after</strong> ERT (
+                    {formatPhilippineWallClock(datetimeLocalToApi(form.dateTimeEndEstimated))}
+                    ). Same-day example: if ERT is 5:00 PM, use 5:01 PM or later.
+                  </p>
+                )}
               </label>
               <label className="interruptions-admin-span2 interruptions-admin-label-tight">
                 <span>
@@ -623,42 +643,25 @@ export default function InterruptionAdvisoryForm({
           <InterruptionPosterAlignmentPreview dto={posterPreviewDto} />
         </details>
 
-        {editingId && (typeof onGeneratePosterStub === 'function' || typeof onCapturePoster === 'function') && (
+        {editingId && typeof onUpdatePoster === 'function' && (
           <div className="interruptions-admin-poster-stub-panel">
             <p className="interruptions-admin-field-hint">
-              Poster image URL (read-only in form). <strong>Capture poster</strong> screenshots the{' '}
-              <code>/print-interruption/</code> page on the deployed SPA (set <code>PUBLIC_APP_URL</code> or{' '}
-              <code>FRONTEND_ORIGIN</code> on the API) and uploads to Cloudinary. Use <strong>stub</strong> for a quick
-              placeholder without Puppeteer.
+              Keep the public poster synchronized with advisory edits.
             </p>
-            {form.posterImageUrl ? (
-              <p className="interruptions-admin-poster-stub-current">
-                <strong>Current:</strong> <code>{form.posterImageUrl}</code>
+            {posterUpdateRequired && (
+              <p className="interruptions-admin-callout interruptions-admin-callout--warn" role="status">
+                Update poster is required before closing this advisory.
               </p>
-            ) : (
-              <p className="interruptions-admin-poster-stub-current">No poster URL stored yet.</p>
             )}
             <div className="interruptions-admin-poster-stub-actions">
-              {typeof onCapturePoster === 'function' && (
-                <button
-                  type="button"
-                  className="interruptions-admin-btn interruptions-admin-btn--submit"
-                  onClick={() => onCapturePoster()}
-                  disabled={posterAssetBusy || saving || detailLoading}
-                >
-                  {posterAssetBusy ? 'Working…' : 'Capture poster (screenshot)'}
-                </button>
-              )}
-              {typeof onGeneratePosterStub === 'function' && (
-                <button
-                  type="button"
-                  className="interruptions-admin-btn interruptions-admin-btn--secondary"
-                  onClick={() => onGeneratePosterStub()}
-                  disabled={posterAssetBusy || saving || detailLoading}
-                >
-                  {posterAssetBusy ? 'Working…' : 'Generate poster stub'}
-                </button>
-              )}
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--submit"
+                onClick={() => onUpdatePoster()}
+                disabled={posterAssetBusy || saving || detailLoading}
+              >
+                {posterAssetBusy ? 'Working…' : 'Update poster'}
+              </button>
             </div>
           </div>
         )}

@@ -290,11 +290,15 @@ export async function getInterruption(id) {
 /**
  * Upload image for advisory. Returns imageUrl for form.
  * @param {File} file - Image file (field name: image)
+ * @param {{ contextType?: string|null }} [opts]
  * @returns {Promise<{ ok: boolean, imageUrl: string|null, message: string|null }>}
  */
-export async function uploadInterruptionImage(file) {
+export async function uploadInterruptionImage(file, { contextType = null } = {}) {
   const formData = new FormData();
   formData.append('image', file);
+  if (contextType && String(contextType).trim()) {
+    formData.append('contextType', String(contextType).trim());
+  }
   let res;
   try {
     res = await authFetch(apiUrl('/api/interruptions/upload-image'), {

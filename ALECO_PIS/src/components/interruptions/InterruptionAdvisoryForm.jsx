@@ -112,6 +112,7 @@ export default function InterruptionAdvisoryForm({
   const [quickFieldsOpen, setQuickFieldsOpen] = useState(true);
   const [legacyFieldsOpen, setLegacyFieldsOpen] = useState(true);
   const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadHint, setImageUploadHint] = useState('');
 
   useEffect(() => {
     if (validationErrors.some((e) => e.toLowerCase().includes('remark'))) {
@@ -142,11 +143,48 @@ export default function InterruptionAdvisoryForm({
   const handleImageSelect = async (ev) => {
     const file = ev.target.files?.[0];
     if (!file) return;
+    setImageUploadHint('');
+    if (isNgcpScheduled) {
+      try {
+        const dim = await new Promise((resolve, reject) => {
+          const blobUrl = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            const out = { width: img.naturalWidth || 0, height: img.naturalHeight || 0 };
+            URL.revokeObjectURL(blobUrl);
+            resolve(out);
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(blobUrl);
+            reject(new Error('Could not read image dimensions.'));
+          };
+          img.src = blobUrl;
+        });
+        const minW = 1200;
+        const minH = 700;
+        const recW = 1800;
+        const recH = 1100;
+        if (dim.width < minW || dim.height < minH) {
+          setImageUploadHint(
+            `Image is ${dim.width}x${dim.height}. Upload will continue, but poster text may look soft. Recommended minimum is ${minW}x${minH}.`
+          );
+        }
+        if (dim.width < recW || dim.height < recH) {
+          setImageUploadHint(
+            `Image accepted (${dim.width}x${dim.height}), but ${recW}x${recH} or higher is recommended for sharper text.`
+          );
+        }
+      } catch {
+        setImageUploadHint('Could not inspect image quality. Upload will continue as-is.');
+      }
+    }
     setImageUploading(true);
-    const result = await uploadInterruptionImage(file);
+    const result = await uploadInterruptionImage(file, { contextType: form.type });
     setImageUploading(false);
     if (result.ok && result.imageUrl) {
       setForm((f) => ({ ...f, imageUrl: result.imageUrl }));
+    } else if (result.message) {
+      setImageUploadHint(result.message);
     }
     ev.target.value = '';
   };
@@ -337,7 +375,12 @@ export default function InterruptionAdvisoryForm({
               {isNgcpScheduled && (
                 <p className="interruptions-admin-field-hint interruptions-admin-image-upload-note--ngcp">
                   Attach the official NGCP poster/notice image. This is required and will be embedded at the center
-                  of the ALECO NGCP poster template.
+                  of the ALECO NGCP poster template. Use high-resolution source files (recommended 1800x1100+).
+                </p>
+              )}
+              {imageUploadHint && (
+                <p className="interruptions-admin-field-hint interruptions-admin-image-upload-note--quality">
+                  {imageUploadHint}
                 </p>
               )}
               <input

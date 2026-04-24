@@ -38,12 +38,6 @@ export function apiInterruptionTypeToDbLiteral(apiType, dbEnum) {
     return { type: 'Unscheduled' };
   }
   if (apiType === 'NgcScheduled' && !dbEnum.has('NgcScheduled')) {
-    if (dbEnum.has('Scheduled')) {
-      console.warn(
-        '[interruptions] DB type ENUM lacks NgcScheduled; storing as Scheduled. Run backend/migrations/alter_interruption_outage_type_and_energized_status.sql for full support.'
-      );
-      return { type: 'Scheduled' };
-    }
     return {
       error:
         'This database cannot store NGCP scheduled advisories until the type column is migrated. Run: node backend/run-migration.js backend/migrations/alter_interruption_outage_type_and_energized_status.sql',

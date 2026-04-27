@@ -2,10 +2,10 @@
 .interruption-feed {
   display: flex;
   flex-direction: row;
-  gap: 32px; /* Increased gap for better card separation */
+  gap: calc(40px * var(--public-section-scale, 1)); /* scales with breakpoint */
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 44px 2px 18px 2px; /* top room for the floating status banner */
+  padding: calc(44px * var(--public-section-scale, 1)) calc(16px * var(--public-section-scale, 1)) calc(18px * var(--public-section-scale, 1)) calc(16px * var(--public-section-scale, 1)); /* top room for the floating status banner */
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
   align-items: flex-start;
@@ -982,10 +982,10 @@
    ============================================================ */
 .interruption-feed-post--poster {
   height: calc(380px * var(--public-section-scale, 1));
-  width: max-content; /* Card follows poster's natural width at the fixed height */
+  width: max-content; /* JS overrides with computed size on img load (see InterruptionFeedPost.jsx) */
   min-width: 0;
   max-width: none;
-  overflow: visible;
+  overflow: visible; /* keep floating status banner above card */
 }
 
 .interruption-feed-post--poster .feed-post-poster-display {
@@ -1423,6 +1423,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(300px * var(--public-section-scale, 1));
   }
 
@@ -1465,6 +1468,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(230px * var(--public-section-scale, 1));
   }
 
@@ -1612,6 +1618,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(245px * var(--public-section-scale, 1));
   }
 
@@ -1727,6 +1736,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(270px * var(--public-section-scale, 1));
   }
 
@@ -1837,6 +1849,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(270px * var(--public-section-scale, 1)); /* freeze at 375-profile height */
   }
 
@@ -1922,8 +1937,8 @@
 /* --- 768px - 1023px: tablet landscape --- */
 @media (min-width: 768px) and (max-width: 1023px) {
   .interruption-feed {
-    padding: 44px 12px 18px 12px;
-    gap: 22px;
+    padding: calc(44px * var(--public-section-scale, 1)) calc(14px * var(--public-section-scale, 1)) calc(18px * var(--public-section-scale, 1)) calc(14px * var(--public-section-scale, 1));
+    gap: calc(28px * var(--public-section-scale, 1));
   }
 
   .interruption-feed-post {
@@ -1935,6 +1950,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(340px * var(--public-section-scale, 1));
   }
 
@@ -1955,6 +1973,9 @@
   .interruption-feed {
     max-width: 100%;
     margin: 0 auto;
+    gap: calc(48px * var(--public-section-scale, 1));
+    padding-left: calc(20px * var(--public-section-scale, 1));
+    padding-right: calc(20px * var(--public-section-scale, 1));
   }
 }
 

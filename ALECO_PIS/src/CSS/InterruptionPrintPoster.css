@@ -434,7 +434,7 @@ body.poster-capture-mode {
 .ngcp-print-poster {
   width: 100%;
   max-width: 900px;
-  padding: 8px;
+  padding: 18px;
   box-sizing: border-box;
   font-family: 'Mulish', 'Arial Black', 'Arial', system-ui, sans-serif;
 }
@@ -443,7 +443,7 @@ body.poster-capture-mode {
   border: 3px solid #111827;
   border-radius: 16px;
   overflow: hidden;
-  background: #0d1f6b;
+  background: #d4a84b;
   box-shadow: 0 8px 34px rgba(10, 20, 80, 0.28);
 }
 
@@ -508,16 +508,15 @@ body.poster-capture-mode {
 .ngcp-print-poster-date-card {
   width: 206px;
   flex-shrink: 0;
-  background: linear-gradient(160deg, #f2de9b 0%, #f5e5b0 45%, #8eb2e1 100%);
-  border-radius: 0 0 0 18px;
+  background: linear-gradient(135deg, #e8eef8 0%, #d8e6f7 100%);
+  border-radius: 12px;
   padding: 10px 10px 12px;
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  box-shadow: inset 2px 0 0 rgba(13, 31, 107, 0.18),
-              0 4px 12px rgba(10, 20, 80, 0.18);
+  box-shadow: 0 3px 12px rgba(10, 20, 80, 0.22);
   align-self: stretch;
   margin-bottom: -10px;
   z-index: 3;
@@ -564,56 +563,45 @@ body.poster-capture-mode {
   font-weight: 700;
 }
 
-/* ── Body: centered, dominant document panel with blue surround ──
-   Zero horizontal padding so the blue doc-frame reaches the card edges
-   (no side gutter can show through). Vertical padding is kept small so
-   the date-card overlap (margin-bottom: -10px + z-index:3) doesn't clip. */
+/* ── Body: document panel on sandy background (matching reference design) ── */
 .ngcp-print-poster-body {
-  padding: 8px 0 8px;
-  background: #0d1f6b;
+  padding: 8px 18px 12px;
+  background: transparent;
   display: flex;
   justify-content: center;
 }
 
-/* Compact BLUE SURROUND framing the NGCP letter image. Reduced min-height
-   and padding vs the previous expanded version — matches the old compact
-   visual footprint while still reading clearly as a framed document. */
+/* ── White document card — sits directly on sandy background (matches reference) ── */
 .ngcp-print-poster-doc-frame {
   width: 100%;
-  background: linear-gradient(180deg, #0d2d73 0%, #1e40af 60%, #1d4ed8 100%);
-  border-radius: 14px;
-  border: 3px solid #082057;
-  min-height: 340px;
-  padding: 12px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: none;
+  min-height: 300px;
+  padding: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22),
-              0 6px 18px rgba(10, 20, 80, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
 }
 
-/* White "document plate" sitting inside the blue surround. Padding creates
-   the visible white margin around the letter image. */
+/* ── NGCP letter image inside the white card — no extra padding/shadow (card provides it) ── */
 .ngcp-print-poster-doc-image {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 360px;
+  max-height: 380px;
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  border-radius: 6px;
-  background: #ffffff;
-  padding: 8px;
-  box-sizing: border-box;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  border-radius: 4px;
 }
 
 .ngcp-print-poster-doc-empty {
   width: 100%;
   max-width: 620px;
   text-align: center;
-  border: 2px dashed rgba(255, 255, 255, 0.6);
+  border: 2px dashed rgba(13, 31, 107, 0.35);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.96);
   padding: 26px 22px;

@@ -199,14 +199,27 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
       )
     );
     await new Promise((resolve) => setTimeout(resolve, 300));
-    const posterBottom = await page.evaluate((sel) => {
+    const posterBounds = await page.evaluate((sel) => {
       const el = document.querySelector(sel);
-      if (!el) return 0;
-      return Math.ceil(el.getBoundingClientRect().bottom);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.floor(r.left)),
+        width: Math.ceil(r.width),
+        height: Math.ceil(r.bottom),
+      };
     }, readySelector);
     const screenshotOpts =
-      posterBottom > 50
-        ? { type: 'png', clip: { x: 0, y: 0, width: vw, height: posterBottom } }
+      posterBounds && posterBounds.height > 50
+        ? {
+            type: 'png',
+            clip: {
+              x: posterBounds.x,
+              y: 0,
+              width: Math.min(posterBounds.width, vw - posterBounds.x),
+              height: posterBounds.height,
+            },
+          }
         : { type: 'png', fullPage: true };
     const buf = await page.screenshot(screenshotOpts);
     const b64 = Buffer.from(buf).toString('base64');

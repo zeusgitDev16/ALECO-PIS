@@ -107,7 +107,7 @@ body.admin-app-scroll-lock {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
-  scroll-padding-top: 150px; /* Global landing buffer to keep the dashboard header visible after navigation */
+  scroll-padding-top: 180px; /* Global landing buffer to keep the dashboard header visible after navigation */
 }
 
 /* Custom Scrollbar for Admin Content */
@@ -196,35 +196,53 @@ body.admin-app-scroll-lock {
 /* Scrolling Fix: Ensure the dashboard page has enough bottom clearance 
    to fully reveal the last features when scrolling. */
 .dashboard-page-container {
-    padding-bottom: 120vh !important; /* MASSIVE RUNWAY: Forces the scroll area to extend more than a full screen height past the content */
-}
-
-/* Remove nested scrollbar conflict: Allow the incident tracking card 
-   to expand naturally within the main dashboard scroll area. */
-.dashboard-page-container .main-content-card {
-    max-height: none !important;
-    overflow: visible !important;
-    margin-bottom: 20px;
+    padding-bottom: 150vh !important; /* INCREASED RUNWAY: Ensures the very last sections can be lifted high into the viewport */
 }
 
 .analytics-container {
     margin-bottom: 40px; /* Balanced bottom margin for the unified features group */
     display: flex;
     flex-direction: column;
-    gap: 16px; /* Tightened gap for a more unified dashboard appearance */
+    gap: 120px; /* Separation between primary operational metrics and auxiliary support tools */
+    overflow: visible; /* Prevents clipping of component shadows */
+    min-height: 0;
 }
 
-/* Invisible parent container for Power Advisories, Ticket Features, and B2B Mail 
+/* Invisible parent container for Power Advisories and Ticket Features 
    to ensure consistent flow and prevent the sections from squashing each other. */
 .dashboard-features-grid {
     display: flex;
     flex-direction: column;
-    gap: 80px; /* Added significant space between feature sections for better visual separation */
+    gap: 120px; /* Matched gap for consistent dashboard rhythm */
     width: 100%;
     background: transparent;
     padding: 0;
     overflow: visible;
-    margin-bottom: 100px; /* Adds a physical gap before the empty padding starts to ensure the last widget isn't "stuck" */
+    margin-bottom: 0; /* Spacing handled by analytics-container gap */
+}
+
+/* Dedicated parent container for B2B and Personnel modules to ensure clean separation */
+.dashboard-auxiliary-container {
+    display: flex;
+    flex-direction: column;
+    gap: 120px; /* Unified cluster spacing */
+    width: 100%;
+    background: transparent;
+    margin-bottom: 0;
+    overflow: visible;
+    min-height: 0;
+}
+
+@media (max-width: 1366px) {
+    .dashboard-features-grid, .dashboard-auxiliary-container {
+        gap: 50px; /* Tightens the layout for standard laptop screens */
+    }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-features-grid, .dashboard-auxiliary-container {
+        gap: 32px; /* Balanced spacing for tablet viewports */
+    }
 }
 
 /* Internal container to wrap all elements inside the scrollable feature boxes.
@@ -253,28 +271,32 @@ body.admin-app-scroll-lock {
     font-size: 0.85rem;
 }
 
-/* Unified parent containers for Dashboard Features (Power Advisories and Tickets) */
+/* Unified parent containers for all Dashboard Features (Power Advisories, Tickets, B2B, Personnel)
+   Applies a consistent "Scroll Feature" across all modules. This locks each widget to 85% of the 
+   viewport height, allowing long lists of deployments or mail logs to be scrolled internally 
+   while keeping the dashboard layout stable and reachable. */
 .dashboard-power-advisories-wrapper,
 .dashboard-ticket-features-wrapper,
 .dashboard-b2b-mail-wrapper,
 .dashboard-personnel-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Further reduced gap to bring charts higher into view */
+    gap: 8px;
     width: 100%;
-    padding: 20px 20px 32px; /* Adjusted bottom padding for cleaner framing of internal charts */
-    background-color: var(--bg-glass, var(--bg-card)); /* Glass effect to "see through" the card */
+    padding: 20px 20px 32px;
+    background-color: var(--bg-glass, var(--bg-card));
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
     border-radius: 24px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
     box-sizing: border-box;
-    margin-bottom: 0; /* Erased redundant margin to tighten center spacing between features */
-    max-height: 70vh; /* Restored height limit to enable internal scrolling */
-    overflow-y: auto; /* Re-enabled internal vertical scrolling */
+    margin-bottom: 0;
+    max-height: 85vh;
+    overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-gutter: stable; /* Prevents layout shifts when scrollbars appear */
-    scroll-margin-top: 180px; /* Significant margin ensures the target box lands lower, leaving an "escape route" to scroll up */
+    scrollbar-gutter: stable; /* Prevents layout jumping when lists get long */
+    flex-shrink: 0; /* Prevents widget compression in the main flex container */
+    scroll-margin-top: 180px;
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -311,7 +333,7 @@ body.admin-app-scroll-lock {
 .dashboard-ticket-features-wrapper > *:last-child,
 .dashboard-b2b-mail-wrapper > *:last-child,
 .dashboard-personnel-wrapper > *:last-child {
-    margin-bottom: 20px !important; /* Increased margin for the last internal item */
+    margin-bottom: 80px !important; /* SIGNIFICANT buffer ensuring the last content piece is never stuck at the bottom edge */
 }
 
 .placeholder-desc {
@@ -327,7 +349,9 @@ body.admin-app-scroll-lock {
 .dashboard-ticket-features-wrapper .stat-card,
 .dashboard-ticket-features-wrapper .chart-card,
 .dashboard-b2b-mail-wrapper .stat-card,
-.dashboard-b2b-mail-wrapper .chart-card {
+.dashboard-b2b-mail-wrapper .chart-card,
+.dashboard-personnel-wrapper .stat-card,
+.dashboard-personnel-wrapper .chart-card {
     background-color: var(--bg-body, rgba(128, 128, 128, 0.04));
     box-shadow: none; /* Flattens internal cards to emphasize the parent section */
     border: 1px solid var(--border-color); 
@@ -373,14 +397,16 @@ body.admin-app-scroll-lock {
 /* Tighten spacing for labels inside the features box */
 .dashboard-power-advisories-wrapper .section-label-group h3,
 .dashboard-ticket-features-wrapper .section-label-group h3,
-.dashboard-b2b-mail-wrapper .section-label-group h3 {
+.dashboard-b2b-mail-wrapper .section-label-group h3,
+.dashboard-personnel-wrapper .section-label-group h3 {
     margin: 0 !important;
     font-size: 1.1rem;
 }
 
 .dashboard-power-advisories-wrapper .section-label-group p,
 .dashboard-ticket-features-wrapper .section-label-group p,
-.dashboard-b2b-mail-wrapper .section-label-group p {
+.dashboard-b2b-mail-wrapper .section-label-group p,
+.dashboard-personnel-wrapper .section-label-group p {
     margin: 0 0 10px 0 !important;
     font-size: 0.85rem;
 }
@@ -458,6 +484,7 @@ body.admin-app-scroll-lock {
     gap: 20px;
     width: 100%;
     margin-top: 10px;
+    padding-bottom: 60px; /* Added internal runway to prevent items from being cut off by the wrapper boundary */
     flex-grow: 1; /* Allow the layout to grow and potentially overflow its parent */
 }
 
@@ -518,6 +545,37 @@ body.admin-app-scroll-lock {
     border-radius: 50%;
     background: #3b82f6;
     box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+/* --- PERSONNEL ACTIVITY LIST ENHANCEMENTS --- */
+.personnel-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.personnel-activity-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--bg-body, rgba(128, 128, 128, 0.03));
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    transition: all 0.2s ease;
+}
+
+.personnel-activity-item:hover {
+    background: color-mix(in srgb, var(--accent-primary) 5%, var(--bg-body));
+    border-color: color-mix(in srgb, var(--accent-primary) 30%, var(--border-color));
+    transform: translateX(4px);
+}
+
+.personnel-activity-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-header);
 }
 
 .dashboard-b2b-mail-wrapper .stat-card,
@@ -740,7 +798,7 @@ body.admin-app-scroll-lock {
 
 /* Ensure dashboard scroll area respects mobile safe areas and providing breathing room */
 .admin-content:has(.dashboard-page-container) {
-    scroll-padding-bottom: 500px; /* Increased buffer to allow bottom content to be scrolled much higher up the screen */
+    scroll-padding-bottom: 800px; /* SIGNIFICANTLY increased buffer to allow the last Personnel items to be scrolled to the center */
 }
 
 /* Data Management: last workflow step (import) stays reachable when scrolling */

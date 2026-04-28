@@ -666,9 +666,11 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                     </div>
-                    </div>
+                    </div> {/* End of Ticket Overview & Analytics Wrapper */}
 
-                    {/* 3. B2B Mail Overview Container */}
+                    {/* Dedicated parent container for B2B and Personnel modules */}
+                    <div className="dashboard-auxiliary-container">
+                        {/* 3. B2B Mail Overview Container */}
                     <div id="b2b-mail-section" className="dashboard-b2b-mail-wrapper">
                         <div className="section-label-group">
                             <h3 className="column-section-title">B2B Mail Overview</h3>
@@ -853,7 +855,8 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                     </div>
-                    </div>
+                    </div> {/* End of Auxiliary Container (B2B & Personnel) */}
+                    </div> {/* End of Analytics Container */}
                 </div>
                 {/* Existing Incident Tracking Feed below */}
                 <div className="main-content-card">

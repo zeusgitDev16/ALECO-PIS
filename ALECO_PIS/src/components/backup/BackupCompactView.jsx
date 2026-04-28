@@ -3,9 +3,10 @@ import BackupFileInput from './BackupFileInput';
 
 const BackupCompactView = ({
     entity = 'tickets',
+    canDeleteTickets = false,
     format, onFormatChange,
     exporting, onExport, previewLoading, onViewInBrowser,
-    archiving, onArchiveClick,
+    archiving, onArchiveClick, onArchivePreview,
     importFile, onImportFileChange, importing, previewing, onPreview, onImport, previewResult
 }) => {
     const [activeTab, setActiveTab] = useState('export');
@@ -29,15 +30,17 @@ const BackupCompactView = ({
                 </button>
                 {ticketsOnly && (
                     <>
-                        <button
-                            type="button"
-                            role="tab"
-                            className={`backup-compact-tab ${activeTab === 'archive' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('archive')}
-                            aria-selected={activeTab === 'archive'}
-                        >
-                            Archive
-                        </button>
+                        {canDeleteTickets && (
+                            <button
+                                type="button"
+                                role="tab"
+                                className={`backup-compact-tab ${activeTab === 'archive' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('archive')}
+                                aria-selected={activeTab === 'archive'}
+                            >
+                                Delete
+                            </button>
+                        )}
                         <button
                             type="button"
                             role="tab"
@@ -68,12 +71,17 @@ const BackupCompactView = ({
                         </div>
                     </>
                 )}
-                {ticketsOnly && activeTab === 'archive' && (
+                {ticketsOnly && canDeleteTickets && activeTab === 'archive' && (
                     <>
-                        <p className="backup-compact-desc">Soft-delete tickets in the selected date range. Cannot be undone.</p>
-                        <button className="btn-action btn-delete" onClick={onArchiveClick} disabled={archiving}>
-                            {archiving ? 'Archiving...' : 'Archive exported tickets'}
-                        </button>
+                        <p className="backup-compact-desc">Permanently delete ungrouped tickets in the selected date range. Grouped tickets must be ungrouped first. Cannot be undone.</p>
+                        <div className="backup-compact-actions">
+                            <button className="btn-action btn-ongoing" onClick={onArchivePreview} disabled={previewLoading}>
+                                {previewLoading ? 'Loading...' : 'Preview delete'}
+                            </button>
+                            <button className="btn-action btn-delete" onClick={onArchiveClick} disabled={archiving}>
+                                {archiving ? 'Deleting...' : 'Delete selected tickets'}
+                            </button>
+                        </div>
                     </>
                 )}
                 {ticketsOnly && activeTab === 'import' && (

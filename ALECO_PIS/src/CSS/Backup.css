@@ -1332,3 +1332,44 @@
     display: flex;
     justify-content: flex-end;
 }
+
+.backup-delete-verify-modal {
+    max-width: 560px;
+}
+
+.backup-export-confirm-modal {
+    max-width: 520px;
+}
+
+.backup-delete-verify-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.backup-delete-verify-label {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #25303b;
+}
+
+.backup-delete-verify-input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #c8d3dd;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    background: #fff;
+}
+
+.backup-delete-verify-input:focus {
+    outline: none;
+    border-color: #7d2ee6;
+    box-shadow: 0 0 0 2px rgba(125, 46, 230, 0.12);
+}
+
+.backup-delete-verify-send-btn {
+    width: 100%;
+    min-height: 38px;
+}

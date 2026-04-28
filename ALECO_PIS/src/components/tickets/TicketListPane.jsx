@@ -3,7 +3,7 @@ import '../../CSS/TicketDashboard.css';
 import TicketGridCard from './TicketGridCard';
 import TicketGridVirtualized, { VIRTUALIZATION_THRESHOLD } from './TicketGridVirtualized';
 
-const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, selectedIds, onToggleSelect }) => {
+const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, selectedIds, onToggleSelect, includeUrgent = false }) => {
     if (isLoading) {
         return (
             <div className="ticket-list-pane-wrapper">
@@ -24,7 +24,9 @@ const TicketListPane = ({ tickets, isLoading, selectedTicket, onSelectTicket, se
         );
     }
 
-    const normalTickets = tickets.filter(ticket => ticket.is_urgent !== 1 && ticket.is_urgent !== true);
+    const normalTickets = includeUrgent
+        ? tickets
+        : tickets.filter(ticket => ticket.is_urgent !== 1 && ticket.is_urgent !== true);
 
     if (normalTickets.length === 0) {
         return (

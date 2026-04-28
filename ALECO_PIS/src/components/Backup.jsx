@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
 import AdminLayout from './AdminLayout';
-import ConfirmModal from './tickets/ConfirmModal';
 import ExportPreviewModal from './backup/ExportPreviewModal';
 import BackupLayoutPicker from './backup/BackupLayoutPicker';
 import BackupDateBar from './backup/BackupDateBar';
@@ -17,6 +16,7 @@ import BackupInterruptionFiltersForm, { getActiveInterruptionFiltersCount } from
 import EntityPicker from './backup/EntityPicker';
 import ComingSoonPlaceholder from './backup/ComingSoonPlaceholder';
 import TicketFilterDrawer from './tickets/TicketFilterDrawer';
+import { USER_ROLES } from '../constants/userRoles';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/BackupUIScale.css';
 import '../CSS/Buttons.css';
@@ -32,13 +32,22 @@ const AdminBackup = () => {
     const [endDate, setEndDate] = useState('');
     const [format, setFormat] = useState('excel');
     const [exporting, setExporting] = useState(false);
+    const [exportConfirmOpen, setExportConfirmOpen] = useState(false);
+    const [exportFileName, setExportFileName] = useState('');
     const [archiving, setArchiving] = useState(false);
-    const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+    const [archiveVerifyOpen, setArchiveVerifyOpen] = useState(false);
+    const [deleteEmail, setDeleteEmail] = useState(() => localStorage.getItem('userEmail') || '');
+    const [deleteCode, setDeleteCode] = useState('');
+    const [requestingDeleteCode, setRequestingDeleteCode] = useState(false);
+    const [verifyingDeleteCode, setVerifyingDeleteCode] = useState(false);
+    const [deleteAuthToken, setDeleteAuthToken] = useState('');
+    const [deleteCooldownSeconds, setDeleteCooldownSeconds] = useState(0);
     const [importFile, setImportFile] = useState(null);
     const [importing, setImporting] = useState(false);
     const [previewing, setPreviewing] = useState(false);
     const [previewResult, setPreviewResult] = useState(null);
     const [previewData, setPreviewData] = useState(null);
+    const [previewTitle, setPreviewTitle] = useState('Export Preview');
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
@@ -49,7 +58,8 @@ const AdminBackup = () => {
         status: '',
         groupFilter: 'all',
         isNew: false,
-        isUrgent: false
+        isUrgent: false,
+        hasMemo: false
     });
     const [interruptionFilters, setInterruptionFilters] = useState({
         type: '',
@@ -67,6 +77,8 @@ const AdminBackup = () => {
     const isInterruptionsEntity = entity === 'interruptions';
     const isUsersEntity = entity === 'users';
     const isPersonnelEntity = entity === 'personnel';
+    const currentRole = String(localStorage.getItem('userRole') || USER_ROLES.EMPLOYEE).toLowerCase();
+    const canDeleteTickets = currentRole === USER_ROLES.ADMIN;
     const hasDataFilters =
         isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity;
     const showFilterButton = isTicketsEntity || isInterruptionsEntity;
@@ -114,6 +126,7 @@ const AdminBackup = () => {
         if (filters.groupFilter && filters.groupFilter !== 'all') base.groupFilter = filters.groupFilter;
         if (filters.isNew) base.isNew = 'true';
         if (filters.isUrgent) base.isUrgent = 'true';
+        if (filters.hasMemo) base.hasMemo = 'true';
         return base;
     };
 
@@ -128,6 +141,7 @@ const AdminBackup = () => {
         if (filters.groupFilter && filters.groupFilter !== 'all') base.groupFilter = filters.groupFilter;
         if (filters.isNew) base.isNew = 'true';
         if (filters.isUrgent) base.isUrgent = 'true';
+        if (filters.hasMemo) base.hasMemo = 'true';
         return base;
     };
 
@@ -179,6 +193,71 @@ const AdminBackup = () => {
         }
     };
 
+    const openExportConfirm = () => {
+        const suggestedBase = isInterruptionsEntity
+            ? 'aleco_interruptions_export'
+            : isUsersEntity
+                ? 'aleco_users_export'
+                : isPersonnelEntity
+                    ? 'aleco_personnel_export'
+                    : 'aleco_tickets_export';
+        setExportFileName(suggestedBase);
+        setExportConfirmOpen(true);
+    };
+
+    const handleExportConfirm = async () => {
+        const baseName = String(exportFileName || '').trim();
+        if (!baseName) {
+            toast.error('Please provide a file name.');
+            return;
+        }
+        setExportConfirmOpen(false);
+        await handleExportWithCustomName(baseName);
+    };
+
+    const handleExportWithCustomName = async (baseName) => {
+        if (useCustom && (!startDate || !endDate)) {
+            toast.error('Please select start and end dates for custom range.');
+            return;
+        }
+        if (!useCustom && !preset) {
+            toast.error('Please select a date preset.');
+            return;
+        }
+        setExporting(true);
+        try {
+            const params = getExportParams();
+            const qs = new URLSearchParams(params).toString();
+            const basePath = getExportBasePath();
+            const url = apiUrl(`${basePath}?${qs}`);
+            const userEmail = localStorage.getItem('userEmail');
+            const userName = localStorage.getItem('userName');
+            const headers = {};
+            if (userEmail) headers['X-User-Email'] = userEmail;
+            if (userName) headers['X-User-Name'] = userName;
+
+            const res = await fetch(url, { headers });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.message || 'Export failed');
+            }
+            const blob = await res.blob();
+            const ext = format === 'excel' ? 'xlsx' : 'csv';
+            const normalized = baseName.endsWith(`.${ext}`) ? baseName : `${baseName}.${ext}`;
+
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = normalized;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            toast.success('Export downloaded successfully.');
+        } catch (err) {
+            toast.error(err.message || 'Export failed.');
+        } finally {
+            setExporting(false);
+        }
+    };
+
     const handleViewInBrowser = async () => {
         if (useCustom && (!startDate || !endDate)) {
             toast.error('Please select start and end dates for custom range.');
@@ -191,6 +270,7 @@ const AdminBackup = () => {
         setPreviewLoading(true);
         setPreviewModalOpen(false);
         setPreviewData(null);
+        setPreviewTitle('Export Preview');
         try {
             const params = getExportParams();
             const qs = new URLSearchParams(params).toString();
@@ -207,7 +287,46 @@ const AdminBackup = () => {
         }
     };
 
+    const handleDeletePreview = async () => {
+        if (useCustom && (!startDate || !endDate)) {
+            toast.error('Please select start and end dates.');
+            return;
+        }
+        if (!useCustom && !preset) {
+            toast.error('Please select a date preset.');
+            return;
+        }
+        setPreviewLoading(true);
+        setPreviewModalOpen(false);
+        setPreviewData(null);
+        setPreviewTitle('Delete Preview');
+        try {
+            const body = getArchiveBody();
+            const res = await authFetch(apiUrl('/api/tickets/archive/preview'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Delete preview failed');
+            setPreviewData(data);
+            setPreviewModalOpen(true);
+        } catch (err) {
+            toast.error(err.message || 'Delete preview failed.');
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
+
     const handleArchiveConfirm = async () => {
+        if (!canDeleteTickets) {
+            toast.error('Only admins can bulk delete tickets.');
+            return;
+        }
+        if (!deleteAuthToken) {
+            toast.error('Delete verification required.');
+            return;
+        }
         if (useCustom && (!startDate || !endDate)) {
             toast.error('Please select start and end dates.');
             return;
@@ -217,9 +336,8 @@ const AdminBackup = () => {
             return;
         }
         setArchiving(true);
-        setArchiveConfirmOpen(false);
         try {
-            const body = getArchiveBody();
+            const body = { ...getArchiveBody(), deleteAuthToken };
             const res = await authFetch(apiUrl('/api/tickets/archive'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -227,11 +345,100 @@ const AdminBackup = () => {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Archive failed');
-            toast.success(`${data.archivedCount} ticket(s) archived.`);
+            const deletedCount = Number(data.deletedCount || 0);
+            const blockedCount = Number(data.blockedGroupedCount || 0);
+            if (blockedCount > 0) {
+                toast.warn(
+                    `Permanently deleted ${deletedCount} ticket(s). ${blockedCount} grouped ticket(s) were blocked. Ungroup first.`
+                );
+            } else {
+                toast.success(`Permanently deleted ${deletedCount} ticket(s).`);
+            }
+            setArchiveVerifyOpen(false);
+            setDeleteCode('');
+            setDeleteAuthToken('');
         } catch (err) {
             toast.error(err.message || 'Archive failed.');
         } finally {
             setArchiving(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!archiveVerifyOpen || deleteCooldownSeconds <= 0) return undefined;
+        const timer = window.setInterval(() => {
+            setDeleteCooldownSeconds((prev) => (prev <= 1 ? 0 : prev - 1));
+        }, 1000);
+        return () => window.clearInterval(timer);
+    }, [archiveVerifyOpen, deleteCooldownSeconds]);
+
+    const openDeleteVerification = () => {
+        if (!canDeleteTickets) return;
+        setArchiveVerifyOpen(true);
+        setDeleteEmail(localStorage.getItem('userEmail') || '');
+        setDeleteCode('');
+        setDeleteAuthToken('');
+    };
+
+    const closeDeleteVerification = () => {
+        setArchiveVerifyOpen(false);
+        setDeleteCode('');
+        setDeleteAuthToken('');
+        setRequestingDeleteCode(false);
+        setVerifyingDeleteCode(false);
+    };
+
+    const handleRequestDeleteCode = async () => {
+        const loggedInEmail = String(localStorage.getItem('userEmail') || '').trim().toLowerCase();
+        const entered = String(deleteEmail || '').trim().toLowerCase();
+        if (!entered) {
+            toast.error('Enter your admin email first.');
+            return;
+        }
+        if (entered !== loggedInEmail) {
+            toast.error('Email must match your logged-in admin account.');
+            return;
+        }
+        setRequestingDeleteCode(true);
+        try {
+            const res = await authFetch(apiUrl('/api/tickets/archive/request-delete-code'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: entered }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to send code.');
+            setDeleteCooldownSeconds(Number(data.cooldownSeconds || 60));
+            toast.success('Verification code sent to your email.');
+        } catch (err) {
+            toast.error(err.message || 'Failed to send code.');
+        } finally {
+            setRequestingDeleteCode(false);
+        }
+    };
+
+    const handleVerifyDeleteCode = async () => {
+        const entered = String(deleteEmail || '').trim().toLowerCase();
+        const code = String(deleteCode || '').trim();
+        if (!entered || !code) {
+            toast.error('Email and code are required.');
+            return;
+        }
+        setVerifyingDeleteCode(true);
+        try {
+            const res = await authFetch(apiUrl('/api/tickets/archive/verify-delete-code'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: entered, code }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to verify code.');
+            setDeleteAuthToken(data.deleteAuthToken || '');
+            toast.success('Delete verification confirmed. You can now delete.');
+        } catch (err) {
+            toast.error(err.message || 'Failed to verify code.');
+        } finally {
+            setVerifyingDeleteCode(false);
         }
     };
 
@@ -290,11 +497,13 @@ const AdminBackup = () => {
         format,
         onFormatChange: setFormat,
         exporting,
-        onExport: handleExport,
+        onExport: openExportConfirm,
         previewLoading,
         onViewInBrowser: handleViewInBrowser,
         archiving,
-        onArchiveClick: () => setArchiveConfirmOpen(true),
+        canDeleteTickets,
+        onArchiveClick: openDeleteVerification,
+        onArchivePreview: handleDeletePreview,
         importFile,
         onImportFileChange: setImportFile,
         importing,
@@ -398,22 +607,124 @@ const AdminBackup = () => {
                 )}
             </div>
 
-            <ConfirmModal
-                isOpen={archiveConfirmOpen}
-                onClose={() => setArchiveConfirmOpen(false)}
-                onConfirm={handleArchiveConfirm}
-                title="Archive Tickets"
-                message="This will soft-delete all tickets in the selected date range and remove their logs. This cannot be undone. Continue?"
-                confirmLabel="Archive"
-                variant="danger"
-            />
+            {archiveVerifyOpen && (
+                <div className="dispatch-modal-overlay confirm-modal-overlay" onClick={closeDeleteVerification}>
+                    <div className="dispatch-modal-content confirm-modal-content backup-delete-verify-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="dispatch-modal-close-btn" onClick={closeDeleteVerification} aria-label="Close">&times;</button>
+
+                        <div className="dispatch-modal-header-container">
+                            <h2 className="dispatch-modal-header">Admin Delete Verification</h2>
+                            <p className="dispatch-modal-subtitle">
+                                Enter your logged-in admin email, request the code, verify it, then confirm permanent deletion.
+                            </p>
+                        </div>
+
+                        <div className="backup-delete-verify-fields">
+                            <label className="backup-delete-verify-label" htmlFor="delete-verify-email">Admin Email</label>
+                            <input
+                                id="delete-verify-email"
+                                type="email"
+                                className="backup-delete-verify-input"
+                                value={deleteEmail}
+                                onChange={(e) => setDeleteEmail(e.target.value)}
+                                placeholder="name@gmail.com"
+                                autoComplete="email"
+                            />
+
+                            <label className="backup-delete-verify-label" htmlFor="delete-verify-code">Delete Code</label>
+                            <input
+                                id="delete-verify-code"
+                                type="text"
+                                className="backup-delete-verify-input"
+                                value={deleteCode}
+                                onChange={(e) => setDeleteCode(e.target.value)}
+                                placeholder="6-digit code"
+                                inputMode="numeric"
+                                maxLength={6}
+                            />
+                            <button
+                                type="button"
+                                className="btn-action btn-ongoing backup-delete-verify-send-btn"
+                                onClick={handleRequestDeleteCode}
+                                disabled={requestingDeleteCode || deleteCooldownSeconds > 0}
+                            >
+                                {requestingDeleteCode
+                                    ? 'Sending...'
+                                    : deleteCooldownSeconds > 0
+                                        ? `Resend in ${deleteCooldownSeconds}s`
+                                        : 'Send Code'}
+                            </button>
+                        </div>
+
+                        <div className="dispatch-modal-actions">
+                            <button type="button" className="btn-action btn-cancel" onClick={closeDeleteVerification}>
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-action btn-ongoing"
+                                onClick={handleVerifyDeleteCode}
+                                disabled={verifyingDeleteCode || !deleteEmail || !deleteCode}
+                            >
+                                {verifyingDeleteCode ? 'Verifying...' : 'Verify Code'}
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-action btn-delete"
+                                onClick={handleArchiveConfirm}
+                                disabled={archiving || !deleteAuthToken}
+                            >
+                                {archiving ? 'Deleting...' : 'Delete Permanently'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <ExportPreviewModal
                 isOpen={previewModalOpen}
                 onClose={() => setPreviewModalOpen(false)}
                 data={previewData}
                 entity={entity}
+                title={previewTitle}
             />
+
+            {exportConfirmOpen && (
+                <div className="dispatch-modal-overlay confirm-modal-overlay" onClick={() => setExportConfirmOpen(false)}>
+                    <div className="dispatch-modal-content confirm-modal-content backup-export-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="dispatch-modal-close-btn" onClick={() => setExportConfirmOpen(false)} aria-label="Close">&times;</button>
+
+                        <div className="dispatch-modal-header-container">
+                            <h2 className="dispatch-modal-header">Confirm Export Download</h2>
+                            <p className="dispatch-modal-subtitle">
+                                Enter your preferred file name before downloading.
+                            </p>
+                        </div>
+
+                        <div className="backup-delete-verify-fields">
+                            <label className="backup-delete-verify-label" htmlFor="export-file-name">File Name</label>
+                            <input
+                                id="export-file-name"
+                                type="text"
+                                className="backup-delete-verify-input"
+                                value={exportFileName}
+                                onChange={(e) => setExportFileName(e.target.value)}
+                                placeholder="e.g. tickets_apr_2026"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="dispatch-modal-actions">
+                            <button type="button" className="btn-action btn-cancel" onClick={() => setExportConfirmOpen(false)}>
+                                Cancel
+                            </button>
+                            <button type="button" className="btn-add-purple" onClick={handleExportConfirm} disabled={exporting}>
+                                {exporting ? 'Downloading...' : 'Download'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 };

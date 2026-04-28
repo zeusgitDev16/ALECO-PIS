@@ -11,6 +11,7 @@ const RecentKanbanCard = ({ ticket, onClick, isSelected, isChecked, onToggleSele
     const fullName = `${ticket.first_name || ''} ${ticket.last_name || ''}`.trim();
     const location = ticket.municipality ? `${ticket.municipality}, ${ticket.district || 'Albay'}` : ticket.address || 'N/A';
     const isGroupMaster = ticket.ticket_id?.startsWith('GROUP-');
+    const hasMemoLinked = Number(ticket?.service_memo_id || 0) > 0 || Number(ticket?.has_service_memo || 0) === 1;
     const concernShort = (isGroupMaster ? ticket.address : ticket.concern) && (isGroupMaster ? ticket.address : ticket.concern).length > 50
         ? `${(isGroupMaster ? ticket.address : ticket.concern).substring(0, 50)}...` : (isGroupMaster ? ticket.address : ticket.concern) || 'No description';
     const createdDate = new Date(ticket.created_at);
@@ -21,7 +22,7 @@ const RecentKanbanCard = ({ ticket, onClick, isSelected, isChecked, onToggleSele
 
     return (
         <div
-            className={`kanban-ticket-card ${isGroupMaster ? 'kanban-card-group' : ''} ${isSelected ? 'selected' : ''} recent-opened-kanban-card`}
+            className={`kanban-ticket-card ${isGroupMaster ? 'kanban-card-group' : ''} ${hasMemoLinked ? 'kanban-card-has-memo' : ''} ${isSelected ? 'selected' : ''} recent-opened-kanban-card`}
             onClick={() => onClick && onClick(ticket)}
         >
             <div className="kanban-card-header">
@@ -85,10 +86,11 @@ const RecentOpenedTickets = ({
         <div className="ticket-grid-wrapper recent-opened-grid">
             {recentTickets.map(ticket => {
                 const isGroupMaster = ticket.ticket_id?.startsWith('GROUP-');
+                const hasMemoLinked = Number(ticket?.service_memo_id || 0) > 0 || Number(ticket?.has_service_memo || 0) === 1;
                 return (
                     <div
                         key={ticket.ticket_id}
-                        className={`ticket-card-container ${isGroupMaster ? 'ticket-card-group' : ''} ${selectedTicket?.ticket_id === ticket.ticket_id ? 'selected' : ''} recent-opened-card`}
+                        className={`ticket-card-container ${isGroupMaster ? 'ticket-card-group' : ''} ${hasMemoLinked ? 'ticket-has-memo' : ''} ${selectedTicket?.ticket_id === ticket.ticket_id ? 'selected' : ''} recent-opened-card`}
                         onClick={() => onSelectTicket(ticket)}
                     >
                         <div className="ticket-category-banner">
@@ -153,6 +155,7 @@ const RecentOpenedTickets = ({
                 <tbody>
                     {recentTickets.map(ticket => {
                         const isGroupMaster = ticket.ticket_id?.startsWith('GROUP-');
+                        const hasMemoLinked = Number(ticket?.service_memo_id || 0) > 0 || Number(ticket?.has_service_memo || 0) === 1;
                         const fullName = isGroupMaster ? 'Group' : `${ticket.first_name || ''} ${ticket.last_name || ''}`.trim();
                         const location = ticket.municipality ? `${ticket.municipality}, ${ticket.district || 'Albay'}` : ticket.address || 'N/A';
                         const concern = (isGroupMaster ? ticket.address : ticket.concern) || 'N/A';
@@ -160,7 +163,7 @@ const RecentOpenedTickets = ({
                         return (
                             <tr
                                 key={ticket.ticket_id}
-                                className={`ticket-table-row ${selectedTicket?.ticket_id === ticket.ticket_id ? 'selected' : ''} ${isGroupMaster ? 'ticket-row-group' : ''}`}
+                                className={`ticket-table-row ${selectedTicket?.ticket_id === ticket.ticket_id ? 'selected' : ''} ${isGroupMaster ? 'ticket-row-group' : ''} ${hasMemoLinked ? 'ticket-row-has-memo' : ''}`}
                                 onClick={() => onSelectTicket(ticket)}
                             >
                                 <td className="col-checkbox" onClick={e => e.stopPropagation()}>

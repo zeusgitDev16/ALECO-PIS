@@ -53,7 +53,7 @@ const AdminTickets = () => {
     const [ticketScope, setTicketScope] = useState(() => {
         try {
             const saved = localStorage.getItem('ticketScope');
-            if (saved && ['urgent', 'regular'].includes(saved)) return saved;
+            if (saved && ['urgent', 'regular', 'memo'].includes(saved)) return saved;
         } catch {}
         return 'regular';
     });
@@ -67,6 +67,10 @@ const AdminTickets = () => {
         (tickets || []).filter(t => t.is_urgent !== 1 && t.is_urgent !== true),
         [tickets]
     );
+    const memoLinkedTickets = useMemo(() =>
+        (tickets || []).filter((t) => Number(t?.service_memo_id || 0) > 0 || Number(t?.has_service_memo || 0) === 1),
+        [tickets]
+    );
     const recentTickets = useMemo(() => {
         if (!recentIds?.length || !tickets?.length) return [];
         return recentIds.map(id => tickets.find(t => t.ticket_id === id)).filter(Boolean);
@@ -74,8 +78,9 @@ const AdminTickets = () => {
 
     const scopeTickets = useMemo(() => {
         if (ticketScope === 'urgent') return urgentTickets;
+        if (ticketScope === 'memo') return memoLinkedTickets;
         return regularTickets;
-    }, [ticketScope, urgentTickets, regularTickets]);
+    }, [ticketScope, urgentTickets, regularTickets, memoLinkedTickets]);
 
     useEffect(() => {
         try {
@@ -84,7 +89,7 @@ const AdminTickets = () => {
     }, [ticketScope]);
 
     const handleScopeChange = (newScope) => {
-        if ((newScope === 'urgent' || newScope === 'regular') && newScope !== ticketScope) {
+        if ((newScope === 'urgent' || newScope === 'regular' || newScope === 'memo') && newScope !== ticketScope) {
             setTicketScope(newScope);
             /* Selection persists across scope switch - selected IDs stay when switching Urgent ↔ Regular */
         }
@@ -129,7 +134,9 @@ const AdminTickets = () => {
                 const withoutGroupMasters = rows.filter((t) => !String(t?.ticket_id || '').startsWith('GROUP-'));
                 const scoped = ticketScope === 'urgent'
                     ? withoutGroupMasters.filter(t => t.is_urgent === 1 || t.is_urgent === true)
-                    : withoutGroupMasters.filter(t => t.is_urgent !== 1 && t.is_urgent !== true);
+                    : ticketScope === 'memo'
+                        ? withoutGroupMasters.filter((t) => Number(t?.service_memo_id || 0) > 0 || Number(t?.has_service_memo || 0) === 1)
+                        : withoutGroupMasters.filter(t => t.is_urgent !== 1 && t.is_urgent !== true);
                 setMapTickets(scoped);
             } catch (e) {
                 if (e?.name === 'AbortError') return;
@@ -477,6 +484,7 @@ const AdminTickets = () => {
                             onScopeChange={handleScopeChange}
                             urgentCount={urgentTickets.length}
                             regularCount={regularTickets.length}
+                            memoLinkedCount={memoLinkedTickets.length}
                         />
                     }
                     selectAllBar={
@@ -575,6 +583,39 @@ const AdminTickets = () => {
                     {ticketScope === 'regular' && viewMode === 'workflow' && (
                         <TicketKanbanView
                             tickets={regularTickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            onUpdateTicket={handleUpdateTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    </div>
+
+                    <div className="dashboard-widget main-content-card" id="ticket-panel-memo" role="tabpanel" aria-labelledby="ticket-tab-memo" hidden={ticketScope !== 'memo'}>
+                    {ticketScope === 'memo' && viewMode === 'card' && (
+                        <TicketListPane
+                            tickets={memoLinkedTickets}
+                            isLoading={isLoading}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                            includeUrgent={true}
+                        />
+                    )}
+                    {ticketScope === 'memo' && viewMode === 'compact' && (
+                        <TicketTableView
+                            tickets={memoLinkedTickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    {ticketScope === 'memo' && viewMode === 'workflow' && (
+                        <TicketKanbanView
+                            tickets={memoLinkedTickets}
                             selectedTicket={selectedTicket}
                             onSelectTicket={handleSelectTicket}
                             onUpdateTicket={handleUpdateTicket}

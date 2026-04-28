@@ -1,14 +1,74 @@
 import express from 'express';
 import multer from 'multer';
+import crypto from 'crypto';
 import pool from '../config/db.js';
 import ExcelJS from 'exceljs';
 import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';
 import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
-import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { requireAdmin } from '../middleware/requireRole.js';
+import { deleteTicketWithCascade } from '../utils/ticketDeleteHelper.js';
+import { sendAppMail } from '../utils/appMail.js';
+import { signArchiveDeleteToken, verifyArchiveDeleteToken } from '../utils/sessionJwt.js';
 
 const router = express.Router();
+const DELETE_CODE_EXPIRY_MINUTES = 10;
+const DELETE_CODE_ATTEMPT_LIMIT = 5;
+const DELETE_CODE_COOLDOWN_SECONDS = 60;
+let deleteVerificationTableReady = false;
+
+function normalizeEmail(email) {
+    return String(email || '').trim().toLowerCase();
+}
+
+function generateSixDigitCode() {
+    return String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+}
+
+function hashCode(code) {
+    return crypto.createHash('sha256').update(String(code)).digest('hex');
+}
+
+function addMinutes(date, minutes) {
+    return new Date(date.getTime() + minutes * 60 * 1000);
+}
+
+async function sendArchiveDeleteCodeEmail(adminEmail, code) {
+    await sendAppMail({
+        to: adminEmail,
+        subject: 'ALECO Data Management Delete Verification Code',
+        text: `Your ALECO bulk delete verification code is ${code}. This code expires in ${DELETE_CODE_EXPIRY_MINUTES} minutes.`,
+        html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+                <h2 style="margin-bottom: 8px;">Delete Verification Required</h2>
+                <p>Your verification code is:</p>
+                <p style="font-size: 22px; font-weight: bold; letter-spacing: 4px;">${code}</p>
+                <p>This code expires in ${DELETE_CODE_EXPIRY_MINUTES} minutes.</p>
+                <p>If you did not request this, please ignore this message.</p>
+            </div>
+        `,
+    });
+}
+
+async function ensureDeleteVerificationTable() {
+    if (deleteVerificationTableReady) return;
+    await pool.execute(
+        `CREATE TABLE IF NOT EXISTS aleco_ticket_archive_delete_verifications (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            admin_email VARCHAR(255) NOT NULL,
+            code_hash CHAR(64) NOT NULL,
+            status ENUM('pending', 'verified', 'expired', 'revoked') NOT NULL DEFAULT 'pending',
+            attempt_count INT NOT NULL DEFAULT 0,
+            expires_at DATETIME NOT NULL,
+            verified_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_ticket_archive_delete_verifications_code_hash (code_hash),
+            KEY idx_ticket_archive_delete_verifications_admin_status (admin_email, status),
+            KEY idx_ticket_archive_delete_verifications_expires (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    );
+    deleteVerificationTableReady = true;
+}
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -111,6 +171,9 @@ function buildTicketQuery(ds, de, filters = {}) {
     if (filters.isUrgent === 'true' || filters.isUrgent === true) {
         query += ` AND is_urgent = 1`;
     }
+    if (filters.hasMemo === 'true' || filters.hasMemo === true) {
+        query += ` AND service_memo_id IS NOT NULL`;
+    }
 
     query += ` ORDER BY created_at ASC`;
     return { query, params };
@@ -200,17 +263,174 @@ async function fetchPersonnelExportData(ds, de) {
     return { crews: crewRows, crewMembers: crewMemberRows, linemen: linemenRows };
 }
 
+router.post('/tickets/archive/request-delete-code', requireAdmin, async (req, res) => {
+    try {
+        await ensureDeleteVerificationTable();
+        const email = normalizeEmail(req.body?.email);
+        const sessionEmail = normalizeEmail(req.authUser?.email);
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required.' });
+        }
+        if (!sessionEmail || email !== sessionEmail) {
+            return res.status(403).json({ success: false, message: 'Email must match your logged-in admin account.' });
+        }
+
+        await pool.execute(
+            `UPDATE aleco_ticket_archive_delete_verifications
+             SET status = 'expired'
+             WHERE status = 'pending' AND expires_at <= NOW()`
+        );
+
+        const [pendingRows] = await pool.execute(
+            `SELECT id, created_at
+             FROM aleco_ticket_archive_delete_verifications
+             WHERE admin_email = ? AND status = 'pending'
+             ORDER BY id DESC
+             LIMIT 1`,
+            [email]
+        );
+        if (pendingRows.length > 0) {
+            const createdAt = new Date(pendingRows[0].created_at);
+            const remainingMs = createdAt.getTime() + DELETE_CODE_COOLDOWN_SECONDS * 1000 - Date.now();
+            if (remainingMs > 0) {
+                return res.status(429).json({
+                    success: false,
+                    message: `Please wait ${Math.ceil(remainingMs / 1000)}s before requesting a new code.`,
+                });
+            }
+        }
+
+        await pool.execute(
+            `UPDATE aleco_ticket_archive_delete_verifications
+             SET status = 'revoked'
+             WHERE admin_email = ? AND status = 'pending'`,
+            [email]
+        );
+
+        const code = generateSixDigitCode();
+        const codeHash = hashCode(code);
+        const expiresAt = addMinutes(new Date(), DELETE_CODE_EXPIRY_MINUTES);
+        await pool.execute(
+            `INSERT INTO aleco_ticket_archive_delete_verifications
+             (admin_email, code_hash, status, attempt_count, expires_at)
+             VALUES (?, ?, 'pending', 0, ?)`,
+            [email, codeHash, expiresAt]
+        );
+
+        await sendArchiveDeleteCodeEmail(email, code);
+        return res.json({
+            success: true,
+            message: 'Verification code sent to your registered admin email.',
+            cooldownSeconds: DELETE_CODE_COOLDOWN_SECONDS,
+        });
+    } catch (error) {
+        console.error('❌ Request delete code error:', error);
+        const message =
+            error?.code === 'EAUTH'
+                ? 'Email service authentication failed. Check EMAIL_USER/EMAIL_PASS.'
+                : error?.code === 'ECONNECTION'
+                    ? 'Email service connection failed. Please try again.'
+                    : (error?.message || 'Failed to send verification code.');
+        return res.status(500).json({ success: false, message });
+    }
+});
+
+router.post('/tickets/archive/verify-delete-code', requireAdmin, async (req, res) => {
+    try {
+        await ensureDeleteVerificationTable();
+        const email = normalizeEmail(req.body?.email);
+        const code = String(req.body?.code || '').trim();
+        const sessionEmail = normalizeEmail(req.authUser?.email);
+        if (!email || !code) {
+            return res.status(400).json({ success: false, message: 'Email and code are required.' });
+        }
+        if (!sessionEmail || email !== sessionEmail) {
+            return res.status(403).json({ success: false, message: 'Email must match your logged-in admin account.' });
+        }
+
+        await pool.execute(
+            `UPDATE aleco_ticket_archive_delete_verifications
+             SET status = 'expired'
+             WHERE status = 'pending' AND expires_at <= NOW()`
+        );
+
+        const [rows] = await pool.execute(
+            `SELECT id, code_hash, attempt_count, expires_at
+             FROM aleco_ticket_archive_delete_verifications
+             WHERE admin_email = ? AND status = 'pending'
+             ORDER BY id DESC
+             LIMIT 1`,
+            [email]
+        );
+        if (rows.length === 0) {
+            return res.status(400).json({ success: false, message: 'No active verification code. Request a new code.' });
+        }
+        const verification = rows[0];
+        if (new Date(verification.expires_at).getTime() <= Date.now()) {
+            await pool.execute(
+                `UPDATE aleco_ticket_archive_delete_verifications SET status = 'expired' WHERE id = ?`,
+                [verification.id]
+            );
+            return res.status(400).json({ success: false, message: 'Verification code expired. Request a new one.' });
+        }
+
+        const currentAttempts = Number(verification.attempt_count || 0);
+        if (currentAttempts >= DELETE_CODE_ATTEMPT_LIMIT) {
+            await pool.execute(
+                `UPDATE aleco_ticket_archive_delete_verifications SET status = 'expired' WHERE id = ?`,
+                [verification.id]
+            );
+            return res.status(400).json({ success: false, message: 'Verification code is locked. Request a new one.' });
+        }
+
+        const codeHash = hashCode(code);
+        if (codeHash !== verification.code_hash) {
+            const nextAttempts = currentAttempts + 1;
+            const nextStatus = nextAttempts >= DELETE_CODE_ATTEMPT_LIMIT ? 'expired' : 'pending';
+            await pool.execute(
+                `UPDATE aleco_ticket_archive_delete_verifications
+                 SET attempt_count = ?, status = ?
+                 WHERE id = ?`,
+                [nextAttempts, nextStatus, verification.id]
+            );
+            return res.status(400).json({
+                success: false,
+                message: nextStatus === 'expired'
+                    ? 'Verification code is locked. Request a new one.'
+                    : `Invalid verification code. ${DELETE_CODE_ATTEMPT_LIMIT - nextAttempts} attempt(s) remaining.`,
+            });
+        }
+
+        await pool.execute(
+            `UPDATE aleco_ticket_archive_delete_verifications
+             SET status = 'verified', verified_at = NOW()
+             WHERE id = ?`,
+            [verification.id]
+        );
+        const deleteAuthToken = signArchiveDeleteToken(email);
+        return res.json({
+            success: true,
+            message: 'Verification successful.',
+            deleteAuthToken,
+            expiresInMinutes: DELETE_CODE_EXPIRY_MINUTES,
+        });
+    } catch (error) {
+        console.error('❌ Verify delete code error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to verify code.' });
+    }
+});
+
 // --- EXPORT PREVIEW (JSON for View in browser) - must be before /tickets/export ---
 router.get('/tickets/export/preview', requireAdmin, async (req, res) => {
     try {
-        const { preset, startDate, endDate, category, district, municipality, status, groupFilter, isNew, isUrgent } = req.query;
+        const { preset, startDate, endDate, category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo } = req.query;
         const dateFilter = buildDateFilter(preset, startDate, endDate);
         if (!dateFilter) {
             return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
         }
 
         const { startDate: ds, endDate: de } = dateFilter;
-        const filters = { category, district, municipality, status, groupFilter, isNew, isUrgent };
+        const filters = { category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo };
         const { query, params } = buildTicketQuery(ds, de, filters);
 
         const [ticketRows] = await pool.execute(query, params);
@@ -237,7 +457,7 @@ router.get('/tickets/export/preview', requireAdmin, async (req, res) => {
 // --- EXPORT ROUTE (must be before /tickets/:ticketId to avoid conflict) ---
 router.get('/tickets/export', requireAdmin, async (req, res) => {
     try {
-        const { preset, startDate, endDate, format, category, district, municipality, status, groupFilter, isNew, isUrgent } = req.query;
+        const { preset, startDate, endDate, format, category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo } = req.query;
         const fmt = (format || 'excel').toLowerCase();
         if (fmt !== 'excel' && fmt !== 'csv') {
             return res.status(400).json({ success: false, message: 'Format must be excel or csv' });
@@ -249,7 +469,7 @@ router.get('/tickets/export', requireAdmin, async (req, res) => {
         }
 
         const { startDate: ds, endDate: de } = dateFilter;
-        const filters = { category, district, municipality, status, groupFilter, isNew, isUrgent };
+        const filters = { category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo };
         const { query, params } = buildTicketQuery(ds, de, filters);
 
         const [ticketRows] = await pool.execute(query, params);
@@ -295,7 +515,8 @@ router.get('/tickets/export', requireAdmin, async (req, res) => {
 
             const ticketSheet = workbook.addWorksheet('Tickets', { properties: { tabColor: { argb: 'FF70AD47' } } });
             const ticketCols = ticketRows.length > 0 ? Object.keys(ticketRows[0]) : [];
-            ticketSheet.addRow(ticketCols);
+            const ticketHeaderRow = ticketSheet.addRow(ticketCols);
+            ticketHeaderRow.font = { bold: true };
             ticketRows.forEach(row => {
                 ticketSheet.addRow(ticketCols.map(c => {
                     const v = row[c];
@@ -307,7 +528,8 @@ router.get('/tickets/export', requireAdmin, async (req, res) => {
 
             const logSheet = workbook.addWorksheet('TicketLogs', { properties: { tabColor: { argb: 'FFFFC000' } } });
             const logCols = logRows.length > 0 ? Object.keys(logRows[0]) : [];
-            logSheet.addRow(logCols);
+            const logHeaderRow = logSheet.addRow(logCols);
+            logHeaderRow.font = { bold: true };
             logRows.forEach(row => {
                 logSheet.addRow(logCols.map(c => {
                     const v = row[c];
@@ -435,7 +657,8 @@ router.get('/interruptions/export', requireAdmin, async (req, res) => {
 
             const intCols = interruptionRows.length > 0 ? Object.keys(interruptionRows[0]) : [];
             const intSheet = workbook.addWorksheet('Interruptions', { properties: { tabColor: { argb: 'FF70AD47' } } });
-            intSheet.addRow(intCols);
+            const intHeaderRow = intSheet.addRow(intCols);
+            intHeaderRow.font = { bold: true };
             interruptionRows.forEach((row) => {
                 intSheet.addRow(
                     intCols.map((c) => {
@@ -453,7 +676,8 @@ router.get('/interruptions/export', requireAdmin, async (req, res) => {
             const updSheet = workbook.addWorksheet('InterruptionUpdates', {
                 properties: { tabColor: { argb: 'FFFFC000' } },
             });
-            updSheet.addRow(updCols);
+            const updHeaderRow = updSheet.addRow(updCols);
+            updHeaderRow.font = { bold: true };
             updateRows.forEach((row) => {
                 updSheet.addRow(
                     updCols.map((c) => {
@@ -557,7 +781,8 @@ router.get('/users/export', requireAdmin, async (req, res) => {
 
             const userCols = userRows.length > 0 ? Object.keys(userRows[0]) : [];
             const userSheet = workbook.addWorksheet('Users', { properties: { tabColor: { argb: 'FF70AD47' } } });
-            userSheet.addRow(userCols);
+            const userHeaderRow = userSheet.addRow(userCols);
+            userHeaderRow.font = { bold: true };
             userRows.forEach((row) => {
                 userSheet.addRow(
                     userCols.map((c) => {
@@ -664,7 +889,8 @@ router.get('/personnel/export', requireAdmin, async (req, res) => {
 
             const crewCols = crews.length > 0 ? Object.keys(crews[0]) : [];
             const crewSheet = workbook.addWorksheet('Crews', { properties: { tabColor: { argb: 'FF70AD47' } } });
-            crewSheet.addRow(crewCols);
+            const crewHeaderRow = crewSheet.addRow(crewCols);
+            crewHeaderRow.font = { bold: true };
             crews.forEach((row) => {
                 crewSheet.addRow(
                     crewCols.map((c) => {
@@ -678,7 +904,8 @@ router.get('/personnel/export', requireAdmin, async (req, res) => {
 
             const cmCols = crewMembers.length > 0 ? Object.keys(crewMembers[0]) : ['crew_id', 'lineman_id'];
             const cmSheet = workbook.addWorksheet('CrewMembers', { properties: { tabColor: { argb: 'FFFFC000' } } });
-            cmSheet.addRow(cmCols);
+            const cmHeaderRow = cmSheet.addRow(cmCols);
+            cmHeaderRow.font = { bold: true };
             crewMembers.forEach((row) => {
                 cmSheet.addRow(
                     cmCols.map((c) => {
@@ -692,7 +919,8 @@ router.get('/personnel/export', requireAdmin, async (req, res) => {
 
             const lmCols = linemen.length > 0 ? Object.keys(linemen[0]) : [];
             const lmSheet = workbook.addWorksheet('Linemen', { properties: { tabColor: { argb: 'FF9BC2E6' } } });
-            lmSheet.addRow(lmCols);
+            const lmHeaderRow = lmSheet.addRow(lmCols);
+            lmHeaderRow.font = { bold: true };
             linemen.forEach((row) => {
                 lmSheet.addRow(
                     lmCols.map((c) => {
@@ -730,10 +958,77 @@ router.get('/personnel/export', requireAdmin, async (req, res) => {
     }
 });
 
+router.post('/tickets/archive/preview', requireAdmin, async (req, res) => {
+    try {
+        const { startDate, endDate, preset, category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo } = req.body;
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+
+        const { startDate: ds, endDate: de } = dateFilter;
+        const filters = { category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo };
+        const { query, params } = buildTicketQuery(ds, de, filters);
+        const [ticketRows] = await pool.execute(query, params);
+        const candidateIds = ticketRows.map((r) => r.ticket_id);
+        if (candidateIds.length === 0) {
+            return res.json({
+                success: true,
+                metadata: { dateStart: ds, dateEnd: de, ticketCount: 0, logCount: 0, blockedGroupedCount: 0, eligibleDeleteCount: 0 },
+                tickets: [],
+                logs: [],
+            });
+        }
+
+        const placeholders = candidateIds.map(() => '?').join(', ');
+        const [childrenRows] = await pool.execute(
+            `SELECT DISTINCT parent_ticket_id FROM aleco_tickets
+             WHERE parent_ticket_id IN (${placeholders}) AND deleted_at IS NULL`,
+            candidateIds
+        );
+        const parentIdsWithChildren = new Set(childrenRows.map((r) => r.parent_ticket_id));
+
+        const eligibleTickets = ticketRows.filter((row) =>
+            !String(row.ticket_id || '').startsWith('GROUP-') &&
+            !row.parent_ticket_id &&
+            !parentIdsWithChildren.has(row.ticket_id)
+        );
+
+        const metadata = {
+            dateStart: ds,
+            dateEnd: de,
+            ticketCount: eligibleTickets.length,
+            logCount: 0,
+            blockedGroupedCount: ticketRows.length - eligibleTickets.length,
+            eligibleDeleteCount: eligibleTickets.length,
+        };
+        return res.json({ success: true, metadata, tickets: eligibleTickets, logs: [] });
+    } catch (error) {
+        console.error('❌ Archive preview error:', error);
+        return res.status(500).json({ success: false, message: error.message || 'Archive preview failed' });
+    }
+});
+
 // --- ARCHIVE ROUTE ---
 router.post('/tickets/archive', requireAdmin, async (req, res) => {
     try {
-        const { startDate, endDate, preset, category, district, municipality, status, groupFilter, isNew, isUrgent } = req.body;
+        const token = String(req.body?.deleteAuthToken || req.headers['x-delete-auth-token'] || '').trim();
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Delete verification required.' });
+        }
+        let verifiedEmail = '';
+        try {
+            const payload = verifyArchiveDeleteToken(token);
+            verifiedEmail = normalizeEmail(payload.email);
+        } catch (verifyErr) {
+            return res.status(401).json({ success: false, message: 'Delete verification expired or invalid.' });
+        }
+        const sessionEmail = normalizeEmail(req.authUser?.email);
+        if (!sessionEmail || verifiedEmail !== sessionEmail) {
+            return res.status(403).json({ success: false, message: 'Delete verification does not match your active session.' });
+        }
+
+        const { startDate, endDate, preset, category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo } = req.body;
 
         const dateFilter = buildDateFilter(preset, startDate, endDate);
         if (!dateFilter) {
@@ -741,34 +1036,69 @@ router.post('/tickets/archive', requireAdmin, async (req, res) => {
         }
 
         const { startDate: ds, endDate: de } = dateFilter;
-        const filters = { category, district, municipality, status, groupFilter, isNew, isUrgent };
+        const filters = { category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo };
         const { query, params } = buildTicketQuery(ds, de, filters);
 
-        const countQuery = query.replace('SELECT *', 'SELECT ticket_id');
-        const [ticketRows] = await pool.execute(countQuery, params);
-
-        const ticketIds = ticketRows.map(r => r.ticket_id);
-        let archivedCount = 0;
-
-        if (ticketIds.length > 0) {
-            const placeholders = ticketIds.map(() => '?').join(', ');
-            await pool.execute(
-                `DELETE FROM aleco_ticket_logs WHERE ticket_id IN (${placeholders})`,
-                ticketIds
-            );
-            const phNow = nowPhilippineForMysql();
-            const { query: selQuery, params: selParams } = buildTicketQuery(ds, de, filters);
-            const updateQuery = selQuery
-                .replace('SELECT * FROM aleco_tickets WHERE', 'UPDATE aleco_tickets SET deleted_at = ? WHERE')
-                .replace(' ORDER BY created_at ASC', '');
-            const [updateResult] = await pool.execute(updateQuery, [phNow, ...selParams]);
-            archivedCount = updateResult.affectedRows ?? ticketIds.length;
+        const selectQuery = query.replace('SELECT *', 'SELECT ticket_id, parent_ticket_id');
+        const [ticketRows] = await pool.execute(selectQuery, params);
+        const candidateIds = ticketRows.map((r) => r.ticket_id);
+        if (candidateIds.length === 0) {
+            return res.json({ success: true, deletedCount: 0, blockedGroupedCount: 0, blockedSampleIds: [] });
         }
 
-        res.json({ success: true, archivedCount });
+        const placeholders = candidateIds.map(() => '?').join(', ');
+        const [childrenRows] = await pool.execute(
+            `SELECT DISTINCT parent_ticket_id FROM aleco_tickets
+             WHERE parent_ticket_id IN (${placeholders}) AND deleted_at IS NULL`,
+            candidateIds
+        );
+        const parentIdsWithChildren = new Set(childrenRows.map((r) => r.parent_ticket_id));
+
+        const blockedRows = ticketRows.filter((row) =>
+            String(row.ticket_id || '').startsWith('GROUP-') ||
+            Boolean(row.parent_ticket_id) ||
+            parentIdsWithChildren.has(row.ticket_id)
+        );
+        const blockedIds = blockedRows.map((r) => r.ticket_id);
+        const blockedSet = new Set(blockedIds);
+        const eligibleRows = ticketRows.filter((row) => !blockedSet.has(row.ticket_id));
+
+        let deletedCount = 0;
+        if (eligibleRows.length > 0) {
+            const connection = await pool.getConnection();
+            try {
+                await connection.beginTransaction();
+                const actorEmail = req.authUser?.email || req.headers['x-user-email'] || null;
+                for (const row of eligibleRows) {
+                    const del = await deleteTicketWithCascade({
+                        db: connection,
+                        ticketId: row.ticket_id,
+                        actorEmail,
+                        allowGrouped: false,
+                    });
+                    if (del.success) deletedCount += 1;
+                }
+                await connection.commit();
+            } catch (txErr) {
+                await connection.rollback();
+                throw txErr;
+            } finally {
+                connection.release();
+            }
+        }
+
+        res.json({
+            success: true,
+            deletedCount,
+            blockedGroupedCount: blockedIds.length,
+            blockedSampleIds: blockedIds.slice(0, 15),
+            message: blockedIds.length > 0
+                ? 'Some tickets were not deleted because they are grouped. Ungroup first.'
+                : 'Tickets permanently deleted.',
+        });
     } catch (error) {
         console.error('❌ Archive error:', error);
-        res.status(500).json({ success: false, message: error.message || 'Archive failed' });
+        res.status(500).json({ success: false, message: error.message || 'Delete failed' });
     }
 });
 

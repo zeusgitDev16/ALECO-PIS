@@ -117,14 +117,14 @@ body.admin-app-scroll-lock {
 
 .admin-content::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.02); /* Subtle track to help orient the user */
-  border-radius: 10px;
+  border-radius: 20px;
 }
 
 .admin-content::-webkit-scrollbar-thumb {
   /* High-contrast gray handle that works in all themes */
   background: rgba(128, 128, 128, 0.6); 
   border-radius: 20px;
-  min-height: 120px; /* Adjusted handle for better scroll feedback */
+  min-height: 200px; /* Adjusted handle for better scroll feedback */
   border: 2px solid transparent; /* Adjusted border for the slimmer scrollbar */
   background-clip: padding-box;
 }
@@ -805,6 +805,7 @@ body.admin-app-scroll-lock {
 
 /* Ensure dashboard scroll area respects mobile safe areas and providing breathing room */
 .admin-content:has(.dashboard-page-container) {
+    scroll-padding-top: 180px; /* Global landing buffer to keep the dashboard header visible after navigation */
     scroll-padding-bottom: 800px; /* SIGNIFICANTLY increased buffer to allow the last Personnel items to be scrolled to the center */
 }
 

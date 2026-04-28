@@ -297,3 +297,279 @@
 .service-memos-page-container .service-memo-list-sub {
   font-size: max(9px, calc(10px * var(--service-memo-ui-scale, 1)));
 }
+
+/* ================================================================
+   Propagate scale to the modal container shell so the fixed
+   top-header and footer (which are siblings of .service-memos-page-container)
+   can reference --service-memo-ui-scale via inheritance.
+   ================================================================ */
+
+.service-memo-modal-container {
+  --service-memo-ui-scale: 1;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .service-memo-modal-container { --service-memo-ui-scale: 0.88; }
+}
+
+@media (max-width: 767px) and (min-width: 480px) {
+  .service-memo-modal-container { --service-memo-ui-scale: 0.72; }
+}
+
+@media (max-width: 479px) and (min-width: 375px) {
+  .service-memo-modal-container { --service-memo-ui-scale: 0.68; }
+}
+
+@media (max-width: 374px) {
+  .service-memo-modal-container { --service-memo-ui-scale: 0.55; }
+}
+
+/* --- Modal top header --- */
+.service-memo-modal-container .service-memo-modal-top-header {
+  padding: calc(16px * var(--service-memo-ui-scale, 1)) calc(20px * var(--service-memo-ui-scale, 1));
+  gap: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memo-modal-container .service-memo-modal-top-header .header-title {
+  font-size: max(14px, calc(17px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memo-modal-container .service-memo-modal-top-header .header-subtitle {
+  font-size: max(10px, calc(12px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memo-modal-container .service-memo-close-btn {
+  width: calc(32px * var(--service-memo-ui-scale, 1));
+  height: calc(32px * var(--service-memo-ui-scale, 1));
+  font-size: max(14px, calc(20px * var(--service-memo-ui-scale, 1)));
+}
+
+/* --- Modal footer --- */
+.service-memo-modal-container .service-memo-footer {
+  padding: calc(14px * var(--service-memo-ui-scale, 1)) calc(20px * var(--service-memo-ui-scale, 1));
+  gap: calc(10px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memo-modal-container .service-memos-btn {
+  padding: calc(6px * var(--service-memo-ui-scale, 1)) calc(18px * var(--service-memo-ui-scale, 1));
+  font-size: max(10px, calc(12px * var(--service-memo-ui-scale, 1)));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+  min-height: max(28px, calc(34px * var(--service-memo-ui-scale, 1)));
+}
+
+/* --- Modal scrollable content inner padding --- */
+.service-memo-modal-content .service-memos-page-container.admin-page-container {
+  padding: calc(24px * var(--service-memo-ui-scale, 1));
+  padding-bottom: calc(48px * var(--service-memo-ui-scale, 1));
+}
+
+/* ================================================================
+   Page-level container + toolbar
+   ================================================================ */
+
+.service-memos-page-container {
+  gap: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memos-toolbar {
+  gap: calc(8px * var(--service-memo-ui-scale, 1));
+  margin-bottom: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+/* ================================================================
+   Two-pane layout + memo sub-containers
+   ================================================================ */
+
+.service-memos-page-container .memo-two-pane-layout {
+  gap: calc(16px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .memo-header-container {
+  padding: calc(16px * var(--service-memo-ui-scale, 1)) calc(20px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .memo-body-container {
+  padding: calc(16px * var(--service-memo-ui-scale, 1)) calc(20px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+/* ================================================================
+   Navigation tabs (browse: All / Saved / Closed)
+   ================================================================ */
+
+.service-memos-page-container .service-memos-tabs {
+  gap: calc(4px * var(--service-memo-ui-scale, 1));
+  padding: calc(4px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memos-tabs .service-memo-tab {
+  padding: calc(8px * var(--service-memo-ui-scale, 1)) calc(16px * var(--service-memo-ui-scale, 1));
+  font-size: max(10px, calc(13px * var(--service-memo-ui-scale, 1)));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+/* ================================================================
+   Content card (browse shell)
+   ================================================================ */
+
+.service-memos-page-container .service-memos-content-card {
+  border-radius: calc(8px * var(--service-memo-ui-scale, 1));
+  padding: calc(16px * var(--service-memo-ui-scale, 1));
+}
+
+/* ================================================================
+   Message / error bars
+   ================================================================ */
+
+.service-memos-page-container .service-memos-msg {
+  padding: calc(8px * var(--service-memo-ui-scale, 1)) calc(12px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+  margin-bottom: calc(12px * var(--service-memo-ui-scale, 1));
+  font-size: max(11px, calc(13px * var(--service-memo-ui-scale, 1)));
+}
+
+/* ================================================================
+   Status badges (memo status + ticket status)
+   ================================================================ */
+
+.service-memos-page-container .service-memo-status-badge,
+.service-memos-page-container .ticket-status-badge {
+  padding: calc(4px * var(--service-memo-ui-scale, 1)) calc(8px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(12px * var(--service-memo-ui-scale, 1));
+  font-size: max(9px, calc(12px * var(--service-memo-ui-scale, 1)));
+}
+
+/* ================================================================
+   List action buttons (View / Edit / Print / Delete row icons)
+   ================================================================ */
+
+.service-memos-page-container .service-memo-list-action-btn {
+  padding: calc(4px * var(--service-memo-ui-scale, 1)) calc(8px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(4px * var(--service-memo-ui-scale, 1));
+  font-size: max(9px, calc(10px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-list-action-btn--icon {
+  min-width: calc(28px * var(--service-memo-ui-scale, 1));
+  min-height: calc(28px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+/* ================================================================
+   Filter drawer
+   ================================================================ */
+
+.service-memos-page-container .service-memo-filter-drawer-header {
+  padding: calc(16px * var(--service-memo-ui-scale, 1)) calc(20px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-filter-drawer-header h3 {
+  font-size: max(13px, calc(17px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-filter-drawer-body {
+  padding: calc(20px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-filter-drawer-footer {
+  padding: calc(16px * var(--service-memo-ui-scale, 1)) calc(20px * var(--service-memo-ui-scale, 1));
+  gap: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-filter-group {
+  gap: calc(4px * var(--service-memo-ui-scale, 1));
+  margin-bottom: calc(16px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-filter-group label {
+  font-size: max(10px, calc(13px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-filter-group input,
+.service-memos-page-container .service-memo-filter-group select {
+  padding: calc(8px * var(--service-memo-ui-scale, 1)) calc(12px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+  font-size: max(12px, calc(14px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-filter-btn {
+  padding: calc(8px * var(--service-memo-ui-scale, 1)) calc(16px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+  font-size: max(10px, calc(13px * var(--service-memo-ui-scale, 1)));
+}
+
+/* ================================================================
+   Form: band hint, strip helper text, generate/load buttons
+   ================================================================ */
+
+.service-memos-page-container .service-memo-band-hint {
+  font-size: max(10px, calc(11px * var(--service-memo-ui-scale, 1)));
+  margin-bottom: calc(10px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-account-reminder {
+  font-size: max(9px, calc(10px * var(--service-memo-ui-scale, 1)));
+  margin-top: calc(6px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-muni-from-ticket {
+  font-size: max(9px, calc(11px * var(--service-memo-ui-scale, 1)));
+  padding: calc(2px * var(--service-memo-ui-scale, 1)) calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-generate-btn {
+  font-size: max(10px, calc(12px * var(--service-memo-ui-scale, 1)));
+  padding: calc(6px * var(--service-memo-ui-scale, 1)) calc(10px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-strip-memo-preview-hint,
+.service-memos-page-container .service-memo-strip-verify-hint {
+  font-size: max(9px, calc(11px * var(--service-memo-ui-scale, 1)));
+  margin-top: calc(4px * var(--service-memo-ui-scale, 1));
+}
+
+/* ================================================================
+   Empty state placeholder
+   ================================================================ */
+
+.service-memos-page-container .service-memos-placeholder h3 {
+  font-size: max(14px, calc(17px * var(--service-memo-ui-scale, 1)));
+  margin-bottom: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memos-placeholder .widget-text {
+  font-size: max(11px, calc(13px * var(--service-memo-ui-scale, 1)));
+}
+
+/* ================================================================
+   Action tab row (inside form — status action pills)
+   ================================================================ */
+
+.service-memos-page-container .service-memo-tab-row {
+  gap: calc(6px * var(--service-memo-ui-scale, 1));
+  margin-bottom: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memos-page-container .service-memo-tab-row .service-memo-tab {
+  padding: calc(6px * var(--service-memo-ui-scale, 1)) calc(12px * var(--service-memo-ui-scale, 1));
+  border-radius: calc(6px * var(--service-memo-ui-scale, 1));
+  font-size: max(10px, calc(12px * var(--service-memo-ui-scale, 1)));
+}
+
+/* Close-memo finalize row */
+.service-memos-page-container .service-memo-close-row {
+  padding: calc(12px * var(--service-memo-ui-scale, 1)) 0;
+}
+
+/* ================================================================
+   Coarse pointer additions (iOS zoom prevention for new selectors)
+   ================================================================ */
+
+@media (pointer: coarse) and (max-width: 899px) {
+  .service-memos-page-container .service-memo-filter-group input,
+  .service-memos-page-container .service-memo-filter-group select {
+    font-size: max(16px, calc(14px * var(--service-memo-ui-scale, 1)));
+  }
+}

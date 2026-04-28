@@ -20,6 +20,7 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
   const safePosterUrl = (!isBlankStub && item.posterImageUrl) ? getSafeResourceUrl(item.posterImageUrl) : null;
   const typeModifier = isEmergencyOutageType(item.type) ? 'emergency'
     : item.type === 'NgcScheduled' ? 'ngcscheduled'
+    : item.type === 'CustomPoster' ? 'customposter'
     : 'scheduled';
   const startMs = item.dateTimeStart ? Date.parse(String(item.dateTimeStart)) : Number.NaN;
   const effectiveStatus =

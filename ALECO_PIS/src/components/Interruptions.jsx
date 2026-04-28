@@ -25,8 +25,9 @@ import '../CSS/InterruptionFilterDrawer.css';
 import '../CSS/InterruptionModalUIScale.css';
 
 const AdminInterruptions = () => {
-  const posterRelevantFormDigest = (f) =>
-    JSON.stringify({
+  const posterRelevantFormDigest = (f) => {
+    if (f?.type === 'CustomPoster') return 'custom-poster-no-capture';
+    return JSON.stringify({
       type: f?.type ?? '',
       affectedAreasText: f?.affectedAreasText ?? '',
       affectedAreasGrouped: Array.isArray(f?.affectedAreasGrouped) ? f.affectedAreasGrouped : [],
@@ -39,6 +40,7 @@ const AdminInterruptions = () => {
       dateTimeEndEstimated: f?.dateTimeEndEstimated ?? '',
       dateTimeRestored: f?.dateTimeRestored ?? '',
     });
+  };
   const {
     interruptions,
     loading,
@@ -595,7 +597,7 @@ const AdminInterruptions = () => {
                 saveConflict={message?.type === 'conflict'}
                 onReloadAdvisory={handleReloadAdvisory}
                 advisoryArchived={advisoryArchived}
-                onUpdatePoster={editingId ? handlePosterCapture : undefined}
+                onUpdatePoster={editingId && form.type !== 'CustomPoster' ? handlePosterCapture : undefined}
                 posterUpdateRequired={posterUpdateRequired}
                 posterAssetBusy={posterAssetBusy}
               />

@@ -43,8 +43,14 @@ export function apiInterruptionTypeToDbLiteral(apiType, dbEnum) {
         'This database cannot store NGCP scheduled advisories until the type column is migrated. Run: node backend/run-migration.js backend/migrations/alter_interruption_outage_type_and_energized_status.sql',
     };
   }
+  if (apiType === 'CustomPoster' && !dbEnum.has('CustomPoster')) {
+    return {
+      error:
+        'This database cannot store CustomPoster advisories until the type column is migrated. Run: node backend/run-migration.js backend/migrations/add_custom_poster_interruption_type.sql',
+    };
+  }
   return {
-    error: `Database type ENUM does not accept "${apiType}". Apply backend/migrations/alter_interruption_outage_type_and_energized_status.sql (or align ENUM with Scheduled, Emergency, NgcScheduled).`,
+    error: `Database type ENUM does not accept "${apiType}". Apply backend/migrations/add_custom_poster_interruption_type.sql (or align ENUM with Scheduled, Emergency, NgcScheduled, CustomPoster).`,
   };
 }
 

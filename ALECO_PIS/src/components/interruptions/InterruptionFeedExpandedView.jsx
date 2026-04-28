@@ -95,6 +95,8 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
           <div className="feed-expanded-poster-wrap">
             {item.type === 'NgcScheduled' ? (
               <InterruptionNgcpPrintPoster item={item} />
+            ) : item.type === 'CustomPoster' ? (
+              <p className="feed-expanded-poster-custom-placeholder">Custom poster image not yet uploaded.</p>
             ) : (
               <InterruptionAlecoPrintPoster item={item} />
             )}

@@ -1,6 +1,6 @@
 import express from 'express';
 import pool from '../config/db.js';
-import { upload } from '../../cloudinaryConfig.js'; // <-- Adjusted path to go up two folders
+import { upload, deleteCloudinaryAssetByUrl } from '../../cloudinaryConfig.js'; // <-- Adjusted path to go up two folders
 import { sendPhilSMS } from '../utils/sms.js';
 import { normalizePhoneForDB, INVALID_PHONE_MESSAGE } from '../utils/phoneUtils.js';
 import { insertTicketLog } from '../utils/ticketLogHelper.js';
@@ -324,7 +324,7 @@ router.put('/tickets/:ticketId', requireAdmin, async (req, res) => {
     }
 });
 
-// --- 2c. SOFT DELETE TICKET ROUTE ---
+// --- 2c. HARD DELETE TICKET ROUTE ---
 router.delete('/tickets/:ticketId', requireAdmin, async (req, res) => {
     try {
         const { ticketId } = req.params;
@@ -333,17 +333,13 @@ router.delete('/tickets/:ticketId', requireAdmin, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Cannot delete GROUP master. Ungroup first.' });
         }
 
-        const [existing] = await pool.execute('SELECT ticket_id, parent_ticket_id, deleted_at FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
+        const [existing] = await pool.execute('SELECT ticket_id, parent_ticket_id, image_url FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
         if (existing.length === 0) {
             return res.status(404).json({ success: false, message: 'Ticket not found.' });
         }
 
         if (existing[0].parent_ticket_id) {
             return res.status(400).json({ success: false, message: 'Cannot delete a ticket that is part of a group. Ungroup first.' });
-        }
-
-        if (existing[0].deleted_at) {
-            return res.status(400).json({ success: false, message: 'Ticket is already deleted.' });
         }
 
         // Check for service memo and delete it
@@ -376,17 +372,15 @@ router.delete('/tickets/:ticketId', requireAdmin, async (req, res) => {
             }
         }
 
-        await pool.execute('UPDATE aleco_tickets SET deleted_at = ? WHERE ticket_id = ?', [nowPhilippineForMysql(), ticketId]);
-
+        const imageUrl = existing[0].image_url || null;
         const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
         const actorName = req.body?.actor_name || req.headers['x-user-name'];
-        await insertTicketLog(pool, {
-            ticket_id: ticketId,
-            action: 'ticket_deleted',
-            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
-            actor_email: actorEmail || null,
-            actor_name: actorName || 'System',
-            metadata: null
+        await pool.execute('DELETE FROM aleco_ticket_logs WHERE ticket_id = ?', [ticketId]);
+        await pool.execute('DELETE FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
+        setImmediate(() => {
+            deleteCloudinaryAssetByUrl(imageUrl).catch((e) =>
+                console.warn('[cloudinary] ticket delete cleanup:', e?.message || e)
+            );
         });
 
         await recordTicketNotification(pool, {
@@ -396,7 +390,7 @@ router.delete('/tickets/:ticketId', requireAdmin, async (req, res) => {
           actorEmail: (actorEmail && String(actorEmail).trim()) || null,
         });
 
-        console.log(`✅ TICKET SOFT DELETED: ${ticketId}`);
+        console.log(`✅ TICKET HARD DELETED: ${ticketId}`);
         res.json({ success: true, message: `Ticket ${ticketId} deleted.` });
     } catch (error) {
         console.error('❌ TICKET DELETE ERROR:', error);

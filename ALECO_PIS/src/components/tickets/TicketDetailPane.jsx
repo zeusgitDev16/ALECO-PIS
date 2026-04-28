@@ -549,11 +549,12 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 onConfirm={() => {
                     onDeleteTicket?.(ticket.ticket_id);
                 }}
-                title="Delete Ticket"
-                message={`Delete ticket ${ticket.ticket_id}? This cannot be undone.`}
-                confirmLabel="Delete"
+                title="Permanently Delete Ticket"
+                message={`This will permanently delete ticket ${ticket.ticket_id} and remove any uploaded image from storage. This action cannot be undone.`}
+                confirmLabel="Permanently Delete"
                 cancelLabel="Cancel"
                 variant="danger"
+                requireConfirmText={ticket.ticket_id}
             />
 
             <ConfirmModal

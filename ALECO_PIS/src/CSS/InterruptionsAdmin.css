@@ -2752,6 +2752,12 @@
   font-weight: 600;
 }
 
+.interruptions-admin-image-upload-note--quality {
+  margin: 0 0 8px;
+  color: #0f766e;
+  font-weight: 600;
+}
+
 .interruptions-admin-btn--ngcp-image {
   border-color: #1d4ed8;
   background: #dbeafe;

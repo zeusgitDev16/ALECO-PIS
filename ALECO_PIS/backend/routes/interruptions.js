@@ -468,6 +468,20 @@ router.post('/interruptions/upload-image', requireAdmin, upload.single('image'),
     if (!req.file || !req.file.path) {
       return res.status(400).json({ success: false, message: 'No image file uploaded.' });
     }
+    const contextType = req.body?.contextType != null ? String(req.body.contextType).trim() : '';
+    const minNgcpWidth = 1200;
+    const minNgcpHeight = 700;
+    if (contextType === 'NgcScheduled') {
+      const w = Number(req.file.width);
+      const h = Number(req.file.height);
+      if (Number.isFinite(w) && Number.isFinite(h)) {
+        if (w < minNgcpWidth || h < minNgcpHeight) {
+          console.warn(
+            `[interruptions] low-resolution NGCP image accepted: ${w}x${h} (recommended >= ${minNgcpWidth}x${minNgcpHeight})`
+          );
+        }
+      }
+    }
     res.json({ success: true, imageUrl: req.file.path });
   } catch (error) {
     console.error('Interruptions upload image error:', error);

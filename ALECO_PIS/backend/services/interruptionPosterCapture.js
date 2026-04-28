@@ -149,14 +149,18 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
     });
     const page = await browser.newPage();
     const vw = Math.min(
-      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_WIDTH || '900'), 10) || 900, 480),
-      1200
+      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_WIDTH || '1200'), 10) || 1200, 700),
+      1800
     );
     const vh = Math.min(
-      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_HEIGHT || '1400'), 10) || 1400, 600),
-      2400
+      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_HEIGHT || '1700'), 10) || 1700, 900),
+      3200
     );
-    await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 2 });
+    const dsf = Math.min(
+      Math.max(parseInt(String(env.POSTER_CAPTURE_DEVICE_SCALE_FACTOR || '3'), 10) || 3, 2),
+      4
+    );
+    await page.setViewport({ width: vw, height: vh, deviceScaleFactor: dsf });
     await page.goto(posterPageUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
     const readySelector =
       variant === 'infographic' ? '.feed-advisory-infographic' : '.aleco-print-poster';
@@ -195,14 +199,27 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
       )
     );
     await new Promise((resolve) => setTimeout(resolve, 300));
-    const posterBottom = await page.evaluate((sel) => {
+    const posterBounds = await page.evaluate((sel) => {
       const el = document.querySelector(sel);
-      if (!el) return 0;
-      return Math.ceil(el.getBoundingClientRect().bottom);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.floor(r.left)),
+        width: Math.ceil(r.width),
+        height: Math.ceil(r.bottom),
+      };
     }, readySelector);
     const screenshotOpts =
-      posterBottom > 50
-        ? { type: 'png', clip: { x: 0, y: 0, width: vw, height: posterBottom } }
+      posterBounds && posterBounds.height > 50
+        ? {
+            type: 'png',
+            clip: {
+              x: posterBounds.x,
+              y: 0,
+              width: Math.min(posterBounds.width, vw - posterBounds.x),
+              height: posterBounds.height,
+            },
+          }
         : { type: 'png', fullPage: true };
     const buf = await page.screenshot(screenshotOpts);
     const b64 = Buffer.from(buf).toString('base64');
@@ -211,7 +228,9 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
       folder: 'aleco_posters',
       public_id: `interruption_${id}_capture`,
       overwrite: true,
+      invalidate: true,
       resource_type: 'image',
+      format: 'png',
     });
     const posterUrl = up?.secure_url || up?.url || null;
     if (!posterUrl) return { error: 'Cloudinary did not return a URL.' };
@@ -256,6 +275,7 @@ export async function captureFallbackListingToCloudinary(dto, id) {
       folder: 'aleco_posters',
       public_id: `interruption_${id}_fallback`,
       overwrite: true,
+      invalidate: true,
       resource_type: 'image',
     });
     const posterUrl = up?.secure_url || up?.url || null;

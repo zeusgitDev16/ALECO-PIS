@@ -112,7 +112,7 @@ body.admin-app-scroll-lock {
 
 /* Custom Scrollbar for Admin Content */
 .admin-content::-webkit-scrollbar {
-  width: 8px; /* Slimmer profile for a cleaner, modern look */
+  width: 10px; /* Slightly wider for better accessibility and easier grabbing */
 }
 
 .admin-content::-webkit-scrollbar-track {
@@ -219,6 +219,7 @@ body.admin-app-scroll-lock {
     padding: 0;
     overflow: visible;
     margin-bottom: 0; /* Spacing handled by analytics-container gap */
+    min-height: 0; /* Ensures flex children can obey internal scroll constraints */
 }
 
 /* Dedicated parent container for B2B and Personnel modules to ensure clean separation */
@@ -291,9 +292,14 @@ body.admin-app-scroll-lock {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
     box-sizing: border-box;
     margin-bottom: 0;
-    max-height: 85vh;
+    max-height: 75vh; /* Slightly reduced to ensure the widget is manageable and scrollable on laptop screens */
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior: contain; /* Locks the scroll focus to the widget while hovering, ensuring you reach the bottom of the internal list */
+    overflow-anchor: none; /* Prevents scroll-jumping when new activity logs are added to the list */
+    -webkit-overflow-scrolling: touch; /* Smoother scrolling interaction on mobile devices */
+    scrollbar-width: thin; /* Consistent, accessible scrollbar thickness */
+    scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
     scrollbar-gutter: stable; /* Prevents layout jumping when lists get long */
     flex-shrink: 0; /* Prevents widget compression in the main flex container */
     scroll-margin-top: 180px;
@@ -305,7 +311,7 @@ body.admin-app-scroll-lock {
 .dashboard-ticket-features-wrapper::-webkit-scrollbar,
 .dashboard-b2b-mail-wrapper::-webkit-scrollbar,
 .dashboard-personnel-wrapper::-webkit-scrollbar {
-    width: 8px;
+    width: 10px; /* Matched wider profile for easier interaction with long lists */
     display: block;
 }
 
@@ -321,10 +327,10 @@ body.admin-app-scroll-lock {
 .dashboard-ticket-features-wrapper::-webkit-scrollbar-thumb,
 .dashboard-b2b-mail-wrapper::-webkit-scrollbar-thumb,
 .dashboard-personnel-wrapper::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.6);
+    background: rgba(128, 128, 128, 0.85); /* Darker thumb for better visual confirmation of the scroll path */
     border-radius: 10px;
     min-height: 120px;
-    border: 2px solid transparent;
+    border: 2px solid var(--bg-card); /* Higher contrast border to make the handle stand out */
     background-clip: padding-box;
 }
 
@@ -486,6 +492,7 @@ body.admin-app-scroll-lock {
     margin-top: 10px;
     padding-bottom: 60px; /* Added internal runway to prevent items from being cut off by the wrapper boundary */
     flex-grow: 1; /* Allow the layout to grow and potentially overflow its parent */
+    min-height: 0; /* Critical for enabling scrolling within flex-based list containers */
 }
 
 /* Specialized row for delivery success/failure trends */

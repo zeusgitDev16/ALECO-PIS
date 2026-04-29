@@ -12,12 +12,15 @@ import BackupCardsView from './backup/BackupCardsView';
 import BackupWorkflowView from './backup/BackupWorkflowView';
 import BackupFiltersBar from './backup/BackupFiltersBar';
 import BackupInterruptionFiltersBar from './backup/BackupInterruptionFiltersBar';
+import BackupHistoryFiltersBar from './backup/BackupHistoryFiltersBar';
 import BackupTicketFiltersForm, { getActiveTicketFiltersCount } from './backup/BackupTicketFiltersForm';
 import BackupInterruptionFiltersForm, { getActiveInterruptionFiltersCount } from './backup/BackupInterruptionFiltersForm';
+import BackupHistoryFiltersForm, { getActiveHistoryFiltersCount } from './backup/BackupHistoryFiltersForm';
 import EntityPicker from './backup/EntityPicker';
 import ComingSoonPlaceholder from './backup/ComingSoonPlaceholder';
 import TicketFilterDrawer from './tickets/TicketFilterDrawer';
 import { USER_ROLES } from '../constants/userRoles';
+import { DATA_MANAGEMENT_ENTITIES } from '../constants/dataManagementEntities';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/BackupUIScale.css';
 import '../CSS/Buttons.css';
@@ -68,32 +71,57 @@ const AdminBackup = () => {
         status: '',
         includeArchived: false
     });
+    const [historyFilters, setHistoryFilters] = useState({
+        modules: ['tickets', 'interruptions', 'personnel', 'users', 'data_management', 'b2b'],
+        q: '',
+        actor: ''
+    });
 
     const ticketFilterActiveCount = useMemo(() => getActiveTicketFiltersCount(filters), [filters]);
     const interruptionFilterActiveCount = useMemo(
         () => getActiveInterruptionFiltersCount(interruptionFilters),
         [interruptionFilters]
     );
+    const historyFilterActiveCount = useMemo(
+        () => getActiveHistoryFiltersCount(historyFilters),
+        [historyFilters]
+    );
 
     const isTicketsEntity = entity === 'tickets';
     const isInterruptionsEntity = entity === 'interruptions';
     const isUsersEntity = entity === 'users';
+    const isHistoryEntity = entity === 'history';
     const isPersonnelEntity = entity === 'personnel';
     const currentRole = String(localStorage.getItem('userRole') || USER_ROLES.EMPLOYEE).toLowerCase();
     const canDeleteTickets = currentRole === USER_ROLES.ADMIN;
+    const canViewHistory = currentRole === USER_ROLES.ADMIN;
+    const entityOptions = useMemo(
+        () => DATA_MANAGEMENT_ENTITIES.filter((item) => canViewHistory || item.id !== 'history'),
+        [canViewHistory]
+    );
     const hasDataFilters =
-        isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity;
-    const showFilterButton = isTicketsEntity || isInterruptionsEntity;
+        isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity || isHistoryEntity;
+    const showFilterButton = isTicketsEntity || isInterruptionsEntity || isHistoryEntity;
+
+    useEffect(() => {
+        if (!canViewHistory && entity === 'history') {
+            setEntity('tickets');
+            localStorage.setItem('dataManagementEntity', 'tickets');
+        }
+    }, [canViewHistory, entity]);
 
     const filterActiveCount = isTicketsEntity
         ? ticketFilterActiveCount
         : isInterruptionsEntity
             ? interruptionFilterActiveCount
+            : isHistoryEntity
+                ? historyFilterActiveCount
             : 0;
 
     const getExportBasePath = () => {
         if (isInterruptionsEntity) return '/api/interruptions/export';
         if (isUsersEntity) return '/api/users/export';
+        if (isHistoryEntity) return '/api/history/export';
         if (isPersonnelEntity) return '/api/personnel/export';
         return '/api/tickets/export';
     };
@@ -101,6 +129,7 @@ const AdminBackup = () => {
     const getExportPreviewBasePath = () => {
         if (isInterruptionsEntity) return '/api/interruptions/export/preview';
         if (isUsersEntity) return '/api/users/export/preview';
+        if (isHistoryEntity) return '/api/history/export/preview';
         if (isPersonnelEntity) return '/api/personnel/export/preview';
         return '/api/tickets/export/preview';
     };
@@ -118,6 +147,15 @@ const AdminBackup = () => {
         }
 
         if (isUsersEntity || isPersonnelEntity) {
+            return base;
+        }
+
+        if (isHistoryEntity) {
+            if (Array.isArray(historyFilters.modules) && historyFilters.modules.length > 0) {
+                base.modules = historyFilters.modules.join(',');
+            }
+            if (historyFilters.q) base.q = historyFilters.q;
+            if (historyFilters.actor) base.actor = historyFilters.actor;
             return base;
         }
 
@@ -179,6 +217,8 @@ const AdminBackup = () => {
                 ? `aleco_interruptions_export.${format === 'excel' ? 'xlsx' : 'csv'}`
                 : isUsersEntity
                     ? `aleco_users_export.${format === 'excel' ? 'xlsx' : 'csv'}`
+                    : isHistoryEntity
+                        ? `aleco_history_export.${format === 'excel' ? 'xlsx' : 'csv'}`
                     : isPersonnelEntity
                         ? `aleco_personnel_export.${format === 'excel' ? 'xlsx' : 'csv'}`
                         : `aleco_tickets_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
@@ -204,6 +244,8 @@ const AdminBackup = () => {
             ? 'aleco_interruptions_export'
             : isUsersEntity
                 ? 'aleco_users_export'
+                : isHistoryEntity
+                    ? 'aleco_history_export'
                 : isPersonnelEntity
                     ? 'aleco_personnel_export'
                     : 'aleco_tickets_export';
@@ -566,6 +608,9 @@ const AdminBackup = () => {
             {isInterruptionsEntity && (
                 <BackupInterruptionFiltersBar filters={interruptionFilters} setFilters={setInterruptionFilters} />
             )}
+            {isHistoryEntity && (
+                <BackupHistoryFiltersBar filters={historyFilters} setFilters={setHistoryFilters} />
+            )}
 
             <div
                 className={
@@ -590,7 +635,7 @@ const AdminBackup = () => {
                         <p className="header-subtitle">Export, import, and archive data across all features.</p>
                     </div>
                     <div className="backup-header-pickers">
-                        <EntityPicker activeEntity={entity} onEntityChange={setEntity} />
+                        <EntityPicker activeEntity={entity} onEntityChange={setEntity} entities={entityOptions} />
                         <BackupLayoutPicker
                             activeLayout={layoutMode}
                             onLayoutChange={setLayoutMode}
@@ -616,6 +661,14 @@ const AdminBackup = () => {
                                     <BackupInterruptionFiltersForm
                                         filters={interruptionFilters}
                                         setFilters={setInterruptionFilters}
+                                    />
+                                </div>
+                            )}
+                            {isHistoryEntity && (
+                                <div className="backup-filters-content backup-filters-content--drawer">
+                                    <BackupHistoryFiltersForm
+                                        filters={historyFilters}
+                                        setFilters={setHistoryFilters}
                                     />
                                 </div>
                             )}

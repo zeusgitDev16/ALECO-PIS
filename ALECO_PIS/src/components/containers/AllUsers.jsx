@@ -14,8 +14,10 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [accountActionUser, setAccountActionUser] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   const fetchData = async () => {
+    setLoadError('');
     try {
       const [usersRes, invitesRes] = await Promise.all([
         authFetch(apiUrl('/api/users')),
@@ -25,10 +27,19 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
         usersRes.json(),
         invitesRes.json()
       ]);
-      setUsers(usersData);
-      setPendingInvites(invitesData);
+      const nextUsers = Array.isArray(usersData) ? usersData : [];
+      const nextInvites = Array.isArray(invitesData) ? invitesData : [];
+      setUsers(nextUsers);
+      setPendingInvites(nextInvites);
+
+      if (!Array.isArray(usersData) || !Array.isArray(invitesData)) {
+        setLoadError('Some user data is unavailable for this account.');
+      }
     } catch (error) {
       console.error('Error loading user data:', error);
+      setUsers([]);
+      setPendingInvites([]);
+      setLoadError('Unable to load user data right now.');
     } finally {
       setLoading(false);
     }
@@ -38,7 +49,7 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
     fetchData();
   }, [refreshKey]);
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = (Array.isArray(users) ? users : []).filter((user) => {
     const searchTerm = searchQuery.toLowerCase();
     return (
       (user.name && user.name.toLowerCase().includes(searchTerm)) ||
@@ -87,7 +98,7 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
     ? `No users matching "${searchQuery}"`
     : 'No registered users found in the database.';
 
-  const filteredPendingInvites = pendingInvites.filter((invite) => {
+  const filteredPendingInvites = (Array.isArray(pendingInvites) ? pendingInvites : []).filter((invite) => {
     return invite.email && invite.email.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
@@ -304,6 +315,11 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
             />
           </div>
         </div>
+        {loadError && (
+          <p className="users-load-warning" role="status" aria-live="polite">
+            {loadError}
+          </p>
+        )}
 
         <div className="widget-text">
           {layout === 'compact' && renderCompactTable()}

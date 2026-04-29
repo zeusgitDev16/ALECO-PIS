@@ -136,6 +136,105 @@ function buildDateFilter(preset, startDate, endDate) {
     return null;
 }
 
+const ALECO_INTERRUPTION_EXPORT_COLUMNS = [
+    'date',
+    'time started',
+    'time energized',
+    'substation/recloser',
+    'feeder',
+    'caused',
+    'indication & magnitude',
+    'possible fault location',
+    'isolated area',
+    'linemen on duty',
+    'remarks/reasons',
+];
+
+function formatDateForAleco(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(date);
+}
+
+function formatTimeForAleco(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Manila',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+    }).format(date);
+}
+
+function parseJsonArrayMaybe(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw !== 'string') return [];
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function deriveIsolatedArea(row) {
+    const areaParts = [];
+    const affectedAreas = parseJsonArrayMaybe(row?.affected_areas);
+    if (affectedAreas.length > 0) {
+        areaParts.push(...affectedAreas.map((v) => String(v || '').trim()).filter(Boolean));
+    } else if (typeof row?.affected_areas === 'string' && row.affected_areas.trim()) {
+        areaParts.push(row.affected_areas.trim());
+    }
+
+    const grouped = parseJsonArrayMaybe(row?.affected_areas_grouped);
+    grouped.forEach((group) => {
+        if (!group || typeof group !== 'object') return;
+        const municipality = String(group.municipality || '').trim();
+        const barangays = Array.isArray(group.barangays) ? group.barangays : [];
+        if (municipality) areaParts.push(municipality);
+        barangays
+            .map((b) => String(b || '').trim())
+            .filter(Boolean)
+            .forEach((b) => areaParts.push(b));
+    });
+
+    const deduped = [...new Set(areaParts)];
+    return deduped.join(', ');
+}
+
+function mapInterruptionToAlecoRow(row, latestUpdateRemark = '') {
+    const caused = String(row?.cause || row?.cause_category || '').trim();
+    const remarks = String(row?.scheduled_restore_remark || row?.body || latestUpdateRemark || caused || '').trim();
+    const feeder = String(row?.feeder || '').trim();
+    const substationRecloser = String(row?.substation_recloser || '').trim();
+    const indicationMagnitude = String(row?.indication_magnitude || '').trim();
+    const possibleFaultLocation = String(row?.possible_fault_location || '').trim();
+    const linemenOnDuty = String(row?.linemen_on_duty || '').trim();
+
+    return {
+        'date': formatDateForAleco(row?.date_time_start),
+        'time started': formatTimeForAleco(row?.date_time_start),
+        'time energized': formatTimeForAleco(row?.date_time_restored),
+        'substation/recloser': substationRecloser || feeder,
+        'feeder': feeder,
+        'caused': caused,
+        'indication & magnitude': indicationMagnitude,
+        'possible fault location': possibleFaultLocation,
+        'isolated area': deriveIsolatedArea(row),
+        'linemen on duty': linemenOnDuty,
+        'remarks/reasons': remarks,
+    };
+}
+
 /** Build ticket query with optional filters. Backwards compatible: no filters = date-only. */
 function buildTicketQuery(ds, de, filters = {}) {
     let query = `SELECT * FROM aleco_tickets WHERE deleted_at IS NULL AND DATE(created_at) BETWEEN ? AND ?`;
@@ -182,7 +281,7 @@ function buildTicketQuery(ds, de, filters = {}) {
 /** Build interruption query with optional filters. */
 async function buildInterruptionQuery(ds, de, filters = {}) {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
-    const baseCols = `id, type, status, affected_areas, feeder, cause, cause_category, body, control_no, image_url,
+    const baseCols = `id, type, status, affected_areas, affected_areas_grouped, feeder, substation_recloser, cause, indication_magnitude, possible_fault_location, linemen_on_duty, cause_category, body, scheduled_restore_remark, control_no, image_url,
       date_time_start, date_time_end_estimated, date_time_restored,
       public_visible_at, created_at, updated_at`;
     const cols = hasDel ? `${baseCols}, deleted_at` : baseCols;
@@ -587,13 +686,23 @@ router.get('/interruptions/export/preview', requireAdmin, async (req, res) => {
             );
             updateRows = updResult;
         }
+        const latestUpdateByInterruptionId = new Map();
+        updateRows.forEach((u) => {
+            const key = String(u.interruption_id ?? '');
+            if (!key) return;
+            latestUpdateByInterruptionId.set(key, String(u.remark || '').trim());
+        });
+        const alecoInterruptions = interruptionRows.map((row) =>
+            mapInterruptionToAlecoRow(row, latestUpdateByInterruptionId.get(String(row.id)) || '')
+        );
+
         const metadata = {
             dateStart: ds,
             dateEnd: de,
             interruptionCount: interruptionRows.length,
             updateCount: updateRows.length,
         };
-        res.json({ success: true, metadata, interruptions: interruptionRows, updates: updateRows });
+        res.json({ success: true, metadata, interruptions: interruptionRows, alecoInterruptions, updates: updateRows });
     } catch (error) {
         console.error('❌ Interruptions export preview error:', error);
         res.status(500).json({ success: false, message: error.message || 'Preview failed' });
@@ -603,7 +712,7 @@ router.get('/interruptions/export/preview', requireAdmin, async (req, res) => {
 // --- INTERRUPTIONS EXPORT ---
 router.get('/interruptions/export', requireAdmin, async (req, res) => {
     try {
-        const { preset, startDate, endDate, format, type, status, includeArchived } = req.query;
+        const { preset, startDate, endDate, format, type, status, includeArchived, view } = req.query;
         const fmt = (format || 'excel').toLowerCase();
         if (fmt !== 'excel' && fmt !== 'csv') {
             return res.status(400).json({ success: false, message: 'Format must be excel or csv' });
@@ -629,6 +738,15 @@ router.get('/interruptions/export', requireAdmin, async (req, res) => {
             );
             updateRows = updResult;
         }
+        const latestUpdateByInterruptionId = new Map();
+        updateRows.forEach((u) => {
+            const key = String(u.interruption_id ?? '');
+            if (!key) return;
+            latestUpdateByInterruptionId.set(key, String(u.remark || '').trim());
+        });
+        const alecoInterruptions = interruptionRows.map((row) =>
+            mapInterruptionToAlecoRow(row, latestUpdateByInterruptionId.get(String(row.id)) || '')
+        );
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
         const baseFilename = `aleco_interruptions_${ds}_to_${de}_${timestamp}`;
         const ext = fmt === 'excel' ? 'xlsx' : 'csv';
@@ -689,24 +807,41 @@ router.get('/interruptions/export', requireAdmin, async (req, res) => {
                 );
             });
 
+            const alecoSheet = workbook.addWorksheet('ALECO_Interruptions', {
+                properties: { tabColor: { argb: 'FF9BC2E6' } },
+            });
+            const alecoHeaderRow = alecoSheet.addRow(ALECO_INTERRUPTION_EXPORT_COLUMNS);
+            alecoHeaderRow.font = { bold: true };
+            alecoInterruptions.forEach((row) => {
+                alecoSheet.addRow(ALECO_INTERRUPTION_EXPORT_COLUMNS.map((col) => row[col] ?? ''));
+            });
+
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
             await workbook.xlsx.write(res);
         } else {
-            const intCols = interruptionRows.length > 0 ? Object.keys(interruptionRows[0]) : [];
-            const intCsv = stringify(
-                interruptionRows.map((r) =>
-                    intCols.map((c) => {
-                        const v = r[c];
-                        if (v instanceof Date) return v.toISOString();
-                        if (Buffer.isBuffer(v)) return v.toString();
-                        if (c === 'affected_areas' && (typeof v === 'string' || Array.isArray(v)))
-                            return typeof v === 'string' ? v : JSON.stringify(v);
-                        return v ?? '';
-                    })
-                ),
-                { header: true, columns: intCols }
-            );
+            const csvMode = String(view || 'aleco').toLowerCase();
+            const intCsv = csvMode === 'raw'
+                ? (() => {
+                    const intCols = interruptionRows.length > 0 ? Object.keys(interruptionRows[0]) : [];
+                    return stringify(
+                        interruptionRows.map((r) =>
+                            intCols.map((c) => {
+                                const v = r[c];
+                                if (v instanceof Date) return v.toISOString();
+                                if (Buffer.isBuffer(v)) return v.toString();
+                                if (c === 'affected_areas' && (typeof v === 'string' || Array.isArray(v)))
+                                    return typeof v === 'string' ? v : JSON.stringify(v);
+                                return v ?? '';
+                            })
+                        ),
+                        { header: true, columns: intCols }
+                    );
+                })()
+                : stringify(
+                    alecoInterruptions.map((r) => ALECO_INTERRUPTION_EXPORT_COLUMNS.map((col) => r[col] ?? '')),
+                    { header: true, columns: ALECO_INTERRUPTION_EXPORT_COLUMNS }
+                );
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
             res.send(intCsv);
@@ -1311,7 +1446,7 @@ router.post('/tickets/import', requireAdmin, upload.single('file'), async (req, 
             const ticketCols = ['ticket_id', 'parent_ticket_id', 'account_number', 'first_name', 'middle_name', 'last_name',
                 'phone_number', 'address', 'district', 'municipality', 'category', 'concern', 'is_urgent', 'image_url',
                 'status', 'created_at', 'updated_at', 'assigned_crew', 'eta', 'dispatch_notes', 'is_consumer_notified',
-                'lineman_remarks', 'hold_reason', 'hold_since', 'dispatched_at', 'deleted_at', 'reported_lat', 'reported_lng',
+                'concern_resolution_notes', 'lineman_remarks', 'hold_reason', 'hold_since', 'dispatched_at', 'deleted_at', 'reported_lat', 'reported_lng',
                 'location_accuracy', 'location_method', 'location_confidence', 'group_type', 'visit_order', 'remarks'];
 
             for (const t of toImport) {

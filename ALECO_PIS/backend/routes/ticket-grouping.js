@@ -419,7 +419,9 @@ ${mainTicketId}`;
 
             const phNow = nowPhilippineForMysql();
             await pool.execute(
-                `UPDATE aleco_tickets SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, dispatched_at = ? WHERE ticket_id = ?`,
+                `UPDATE aleco_tickets
+                 SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, concern_resolution_notes = NULL, dispatched_at = ?
+                 WHERE ticket_id = ?`,
                 [assigned_crew, eta, is_consumer_notified ? 1 : 0, dispatch_notes || '', phNow, member.ticket_id]
             );
             const actorEmail = req.body.actor_email || req.headers['x-user-email'];

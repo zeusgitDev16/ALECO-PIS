@@ -68,7 +68,19 @@ async function loadPublicVisibleInterruptionRowById(pool, id) {
 function buildInterruptionTableColList({ includeDeletedAt, hasPulledFromFeedAt, hasPosterExtras }) {
   const parts = ['id', 'type', 'status', 'affected_areas'];
   if (hasPosterExtras) parts.push('affected_areas_grouped');
-  parts.push('feeder', 'feeder_id', 'cause', 'cause_category', 'body', 'control_no', 'image_url');
+  parts.push(
+    'feeder',
+    'substation_recloser',
+    'feeder_id',
+    'cause',
+    'indication_magnitude',
+    'possible_fault_location',
+    'linemen_on_duty',
+    'cause_category',
+    'body',
+    'control_no',
+    'image_url'
+  );
   if (hasPosterExtras) parts.push('poster_image_url');
   parts.push(
     'date_time_start',
@@ -88,7 +100,19 @@ function buildInterruptionTableColList({ includeDeletedAt, hasPulledFromFeedAt, 
 function buildInterruptionUpdateLoadCols(includeDeletedAt, hasPosterExtras) {
   const parts = ['id', 'type', 'status', 'affected_areas'];
   if (hasPosterExtras) parts.push('affected_areas_grouped');
-  parts.push('feeder', 'feeder_id', 'cause', 'cause_category', 'body', 'control_no', 'image_url');
+  parts.push(
+    'feeder',
+    'substation_recloser',
+    'feeder_id',
+    'cause',
+    'indication_magnitude',
+    'possible_fault_location',
+    'linemen_on_duty',
+    'cause_category',
+    'body',
+    'control_no',
+    'image_url'
+  );
   if (hasPosterExtras) parts.push('poster_image_url');
   parts.push(
     'date_time_start',
@@ -649,6 +673,10 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
     feederId,
     feeder,
     cause,
+    substationRecloser,
+    indicationMagnitude,
+    possibleFaultLocation,
+    linemenOnDuty,
     causeCategory,
     body: bodyText,
     controlNo,
@@ -672,6 +700,22 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
       : null;
   const bodyVal = bodyText != null && String(bodyText).trim() !== '' ? String(bodyText).trim() : null;
   const causeVal = cause != null && String(cause).trim() !== '' ? String(cause).trim() : null;
+  const substationRecloserVal =
+    substationRecloser != null && String(substationRecloser).trim() !== ''
+      ? String(substationRecloser).trim()
+      : null;
+  const indicationMagnitudeVal =
+    indicationMagnitude != null && String(indicationMagnitude).trim() !== ''
+      ? String(indicationMagnitude).trim()
+      : null;
+  const possibleFaultLocationVal =
+    possibleFaultLocation != null && String(possibleFaultLocation).trim() !== ''
+      ? String(possibleFaultLocation).trim()
+      : null;
+  const linemenOnDutyVal =
+    linemenOnDuty != null && String(linemenOnDuty).trim() !== ''
+      ? String(linemenOnDuty).trim()
+      : null;
   const controlNoVal = controlNo != null && String(controlNo).trim() !== '' ? String(controlNo).trim() : null;
   const imageUrlVal = imageUrl != null && String(imageUrl).trim() !== '' ? String(imageUrl).trim() : null;
 
@@ -714,16 +758,20 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
       const groupedSer = serializeAffectedAreasGroupedForDb(req.body.affectedAreasGrouped ?? []);
       const [h] = await pool.execute(
         `INSERT INTO aleco_interruptions
-         (type, status, affected_areas, affected_areas_grouped, feeder, feeder_id, cause, cause_category, body, control_no, image_url, poster_image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (type, status, affected_areas, affected_areas_grouped, feeder, substation_recloser, feeder_id, cause, indication_magnitude, possible_fault_location, linemen_on_duty, cause_category, body, control_no, image_url, poster_image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           typeForDb,
           initialStatus,
           areasText,
           groupedSer,
           feederLabelVal,
+          substationRecloserVal,
           feederIdVal,
           causeVal,
+          indicationMagnitudeVal,
+          possibleFaultLocationVal,
+          linemenOnDutyVal,
           causeCat,
           bodyVal,
           controlNoVal,
@@ -745,15 +793,19 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
     } else {
       const [h] = await pool.execute(
         `INSERT INTO aleco_interruptions
-         (type, status, affected_areas, feeder, feeder_id, cause, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (type, status, affected_areas, feeder, substation_recloser, feeder_id, cause, indication_magnitude, possible_fault_location, linemen_on_duty, cause_category, body, control_no, image_url, date_time_start, date_time_end_estimated, date_time_restored, public_visible_at, scheduled_restore_at, scheduled_restore_remark, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           typeForDb,
           initialStatus,
           areasText,
           feederLabelVal,
+          substationRecloserVal,
           feederIdVal,
           causeVal,
+          indicationMagnitudeVal,
+          possibleFaultLocationVal,
+          linemenOnDutyVal,
           causeCat,
           bodyVal,
           controlNoVal,
@@ -831,6 +883,10 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     affectedAreas,
     feeder,
     cause,
+    substationRecloser,
+    indicationMagnitude,
+    possibleFaultLocation,
+    linemenOnDuty,
     causeCategory,
     body: bodyText,
     controlNo,
@@ -976,6 +1032,38 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     if (cause !== undefined) {
       fields.push('cause = ?');
       params.push(cause != null && String(cause).trim() !== '' ? String(cause).trim() : null);
+    }
+    if (substationRecloser !== undefined) {
+      fields.push('substation_recloser = ?');
+      params.push(
+        substationRecloser != null && String(substationRecloser).trim() !== ''
+          ? String(substationRecloser).trim()
+          : null
+      );
+    }
+    if (indicationMagnitude !== undefined) {
+      fields.push('indication_magnitude = ?');
+      params.push(
+        indicationMagnitude != null && String(indicationMagnitude).trim() !== ''
+          ? String(indicationMagnitude).trim()
+          : null
+      );
+    }
+    if (possibleFaultLocation !== undefined) {
+      fields.push('possible_fault_location = ?');
+      params.push(
+        possibleFaultLocation != null && String(possibleFaultLocation).trim() !== ''
+          ? String(possibleFaultLocation).trim()
+          : null
+      );
+    }
+    if (linemenOnDuty !== undefined) {
+      fields.push('linemen_on_duty = ?');
+      params.push(
+        linemenOnDuty != null && String(linemenOnDuty).trim() !== ''
+          ? String(linemenOnDuty).trim()
+          : null
+      );
     }
     if (bodyText !== undefined) {
       fields.push('body = ?');

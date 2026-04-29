@@ -19,6 +19,7 @@ import feedersRoutes from './backend/routes/feeders.js';
 import b2bMailRoutes from './backend/routes/b2b-mail.js';
 import serviceMemosRoutes from './backend/routes/service-memos.js';
 import notificationsRoutes from './backend/routes/notifications.js';
+import historyRoutes from './backend/routes/history.js';
 import pool from './backend/config/db.js';
 import {
   transitionScheduledStarts,
@@ -89,6 +90,7 @@ app.use('/api', feedersRoutes);
 app.use('/api', b2bMailRoutes);
 app.use('/api', serviceMemosRoutes);
 app.use('/api', notificationsRoutes);
+app.use('/api', historyRoutes);
 
 app.get('/api/debug/routes', (req, res) => {
     res.json({

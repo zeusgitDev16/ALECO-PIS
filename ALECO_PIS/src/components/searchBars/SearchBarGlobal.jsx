@@ -130,6 +130,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   
   // Secure feature state for global logout
   const [logoutAllDevices, setLogoutAllDevices] = useState(false);
+  const canUseNotifications = role === 'admin' || role === 'employee';
   
   const navigate = useNavigate();
 
@@ -190,17 +191,17 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   }, []);
 
   useEffect(() => {
-    if (role !== 'admin') {
+    if (!canUseNotifications) {
       setNotificationCounts(emptyNotificationCounts());
       return undefined;
     }
     fetchNotificationCounts();
-  }, [role, fetchNotificationCounts]);
+  }, [canUseNotifications, fetchNotificationCounts]);
 
   useEffect(() => {
-    if (!isNotificationsOpen || role !== 'admin') return undefined;
+    if (!isNotificationsOpen || !canUseNotifications) return undefined;
     fetchNotificationCounts();
-  }, [isNotificationsOpen, role, fetchNotificationCounts]);
+  }, [isNotificationsOpen, canUseNotifications, fetchNotificationCounts]);
 
   const notificationTotal = useMemo(
     () => NOTIFICATION_TABS.reduce((sum, t) => sum + (Number(notificationCounts[t.id]) || 0), 0),
@@ -208,7 +209,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   );
 
   const handleMarkAllNotificationsRead = useCallback(async () => {
-    if (role !== 'admin') return;
+    if (!canUseNotifications) return;
     setMarkAllReadLoading(true);
     try {
       const r = await authFetch(apiUrl('/api/notifications/mark-all-read'), { method: 'POST' });
@@ -219,7 +220,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
     } finally {
       setMarkAllReadLoading(false);
     }
-  }, [role, fetchNotificationCounts]);
+  }, [canUseNotifications, fetchNotificationCounts]);
 
   const removeNotificationFromList = useCallback((tabId, notificationId) => {
     const id = Number(notificationId);
@@ -250,10 +251,10 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
 
   const handleNotificationRowActivate = useCallback(
     (n, tabId) => {
-      if (role !== 'admin') return;
+      if (!canUseNotifications) return;
       setNotificationDetail({ n, tabId });
     },
-    [role]
+    [canUseNotifications]
   );
 
   const handleNotificationRowKeyDown = useCallback(
@@ -267,7 +268,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   );
 
   const handleMarkSingleNotificationRead = useCallback(async () => {
-    if (!notificationDetail || role !== 'admin') return;
+    if (!notificationDetail || !canUseNotifications) return;
     const id = notificationDetail.n?.id;
     if (id == null) return;
     setMarkOneReadLoadingId(id);
@@ -281,7 +282,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
     } finally {
       setMarkOneReadLoadingId(null);
     }
-  }, [notificationDetail, role, removeNotificationFromList, fetchNotificationCounts]);
+  }, [notificationDetail, canUseNotifications, removeNotificationFromList, fetchNotificationCounts]);
 
   useEffect(() => {
     if (!notificationDetail) return undefined;
@@ -295,8 +296,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   useEffect(() => {
     if (!isNotificationsOpen) return undefined;
 
-    const admin = (localStorage.getItem('userRole') || '').toLowerCase() === 'admin';
-    if (!admin) {
+    if (!canUseNotifications) {
       setUserNotifications([]);
       setPersonnelNotifications([]);
       setB2bMailNotifications([]);
@@ -358,13 +358,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
-        if (!cancelled && role === 'admin') fetchNotificationCounts();
+        if (!cancelled && canUseNotifications) fetchNotificationCounts();
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isNotificationsOpen, notificationTab, notificationListVersion, role, fetchNotificationCounts]);
+  }, [isNotificationsOpen, notificationTab, notificationListVersion, canUseNotifications, fetchNotificationCounts]);
 
   const displayProfilePic = getSafeResourceUrl(profilePic) || defaultAvatar;
 
@@ -432,14 +432,14 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
         <div className="notification-menu-wrapper" ref={notificationsRef}>
           <button
             type="button"
-            className={`icon-btn${role === 'admin' && notificationTotal > 0 ? ' icon-btn--notification-badge' : ''}`}
+            className={`icon-btn${canUseNotifications && notificationTotal > 0 ? ' icon-btn--notification-badge' : ''}`}
             title={
-              role === 'admin' && notificationTotal > 0
+              canUseNotifications && notificationTotal > 0
                 ? `Notifications (${notificationTotal})`
                 : 'Notifications'
             }
             aria-label={
-              role === 'admin' && notificationTotal > 0
+              canUseNotifications && notificationTotal > 0
                 ? `Notifications, ${notificationTotal} total`
                 : 'Notifications'
             }
@@ -454,7 +454,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
-            {role === 'admin' && notificationTotal > 0 ? (
+            {canUseNotifications && notificationTotal > 0 ? (
               <span className="notification-bell-count" aria-hidden="true">
                 {notificationTotal > 99 ? '99+' : notificationTotal}
               </span>
@@ -470,7 +470,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 {NOTIFICATION_TABS.map((t) => {
                   const tabCount = Number(notificationCounts[t.id]) || 0;
                   const tabAria =
-                    role === 'admin' && tabCount > 0
+                    canUseNotifications && tabCount > 0
                       ? `${t.label}, ${tabCount} notification${tabCount === 1 ? '' : 's'}`
                       : t.label;
                   return (
@@ -484,10 +484,10 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                       className={`notifications-tab ${notificationTab === t.id ? 'is-active' : ''}`}
                       onClick={() => setNotificationTab(t.id)}
                       aria-label={tabAria}
-                      title={role === 'admin' ? `${t.label}${tabCount > 0 ? ` (${tabCount})` : ''}` : undefined}
+                      title={canUseNotifications ? `${t.label}${tabCount > 0 ? ` (${tabCount})` : ''}` : undefined}
                     >
                       <span className="notifications-tab__label">{t.label}</span>
-                      {role === 'admin' && tabCount > 0 ? (
+                      {canUseNotifications && tabCount > 0 ? (
                         <span className="notifications-tab__count" aria-hidden="true">
                           {tabCount > 99 ? '99+' : tabCount}
                         </span>
@@ -505,9 +505,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 >
                 {notificationTab === 'user' && (
                   <div className="notifications-tab-user">
-                    {role !== 'admin' ? (
-                      <p className="notifications-empty">Only administrators see user account alerts.</p>
-                    ) : userNotificationsLoading ? (
+                    {userNotificationsLoading ? (
                       <p className="notifications-muted">Loading…</p>
                     ) : userNotifications.length === 0 ? (
                       <p className="notifications-empty">No user notifications yet.</p>
@@ -523,13 +521,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                           return (
                             <li
                               key={n.id}
-                              role={role === 'admin' ? 'button' : undefined}
-                              tabIndex={role === 'admin' ? 0 : undefined}
+                              role={canUseNotifications ? 'button' : undefined}
+                              tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
-                                role === 'admin' ? ' notifications-user-item--clickable' : ''
+                                canUseNotifications ? ' notifications-user-item--clickable' : ''
                               }`}
-                              onClick={role === 'admin' ? () => handleNotificationRowActivate(n, 'user') : undefined}
-                              onKeyDown={role === 'admin' ? (e) => handleNotificationRowKeyDown(e, n, 'user') : undefined}
+                              onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'user') : undefined}
+                              onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'user') : undefined}
                             >
                               <div className="notifications-user-item__row">
                                 <span className="notifications-user-item__badge">{label}</span>
@@ -550,9 +548,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 )}
                 {notificationTab === 'personnel' && (
                   <div className="notifications-tab-personnel">
-                    {role !== 'admin' ? (
-                      <p className="notifications-empty">Only administrators see personnel alerts.</p>
-                    ) : personnelNotificationsLoading ? (
+                    {personnelNotificationsLoading ? (
                       <p className="notifications-muted">Loading…</p>
                     ) : personnelNotifications.length === 0 ? (
                       <p className="notifications-empty">No personnel notifications yet.</p>
@@ -568,13 +564,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                           return (
                             <li
                               key={n.id}
-                              role={role === 'admin' ? 'button' : undefined}
-                              tabIndex={role === 'admin' ? 0 : undefined}
+                              role={canUseNotifications ? 'button' : undefined}
+                              tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
-                                role === 'admin' ? ' notifications-user-item--clickable' : ''
+                                canUseNotifications ? ' notifications-user-item--clickable' : ''
                               }`}
-                              onClick={role === 'admin' ? () => handleNotificationRowActivate(n, 'personnel') : undefined}
-                              onKeyDown={role === 'admin' ? (e) => handleNotificationRowKeyDown(e, n, 'personnel') : undefined}
+                              onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'personnel') : undefined}
+                              onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'personnel') : undefined}
                             >
                               <div className="notifications-user-item__row">
                                 <span className="notifications-user-item__badge">{label}</span>
@@ -592,9 +588,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 )}
                 {notificationTab === 'b2b-mail' && (
                   <div className="notifications-tab-b2b-mail">
-                    {role !== 'admin' ? (
-                      <p className="notifications-empty">Only administrators see B2B mail alerts.</p>
-                    ) : b2bMailNotificationsLoading ? (
+                    {b2bMailNotificationsLoading ? (
                       <p className="notifications-muted">Loading…</p>
                     ) : b2bMailNotifications.length === 0 ? (
                       <p className="notifications-empty">No B2B mail notifications yet.</p>
@@ -612,13 +606,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                           return (
                             <li
                               key={n.id}
-                              role={role === 'admin' ? 'button' : undefined}
-                              tabIndex={role === 'admin' ? 0 : undefined}
+                              role={canUseNotifications ? 'button' : undefined}
+                              tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
-                                role === 'admin' ? ' notifications-user-item--clickable' : ''
+                                canUseNotifications ? ' notifications-user-item--clickable' : ''
                               }`}
-                              onClick={role === 'admin' ? () => handleNotificationRowActivate(n, 'b2b-mail') : undefined}
-                              onKeyDown={role === 'admin' ? (e) => handleNotificationRowKeyDown(e, n, 'b2b-mail') : undefined}
+                              onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'b2b-mail') : undefined}
+                              onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'b2b-mail') : undefined}
                             >
                               <div className="notifications-user-item__row">
                                 <span className="notifications-user-item__badge">{label}</span>
@@ -639,9 +633,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 )}
                 {notificationTab === 'tickets' && (
                   <div className="notifications-tab-tickets">
-                    {role !== 'admin' ? (
-                      <p className="notifications-empty">Only administrators see ticket alerts.</p>
-                    ) : ticketsNotificationsLoading ? (
+                    {ticketsNotificationsLoading ? (
                       <p className="notifications-muted">Loading…</p>
                     ) : ticketsNotifications.length === 0 ? (
                       <p className="notifications-empty">No ticket notifications yet.</p>
@@ -657,13 +649,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                           return (
                             <li
                               key={n.id}
-                              role={role === 'admin' ? 'button' : undefined}
-                              tabIndex={role === 'admin' ? 0 : undefined}
+                              role={canUseNotifications ? 'button' : undefined}
+                              tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
-                                role === 'admin' ? ' notifications-user-item--clickable' : ''
+                                canUseNotifications ? ' notifications-user-item--clickable' : ''
                               }`}
-                              onClick={role === 'admin' ? () => handleNotificationRowActivate(n, 'tickets') : undefined}
-                              onKeyDown={role === 'admin' ? (e) => handleNotificationRowKeyDown(e, n, 'tickets') : undefined}
+                              onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'tickets') : undefined}
+                              onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'tickets') : undefined}
                             >
                               <div className="notifications-user-item__row">
                                 <span className="notifications-user-item__badge">{label}</span>
@@ -681,9 +673,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 )}
                 {notificationTab === 'interruptions' && (
                   <div className="notifications-tab-interruptions">
-                    {role !== 'admin' ? (
-                      <p className="notifications-empty">Only administrators see interruption alerts.</p>
-                    ) : interruptionsNotificationsLoading ? (
+                    {interruptionsNotificationsLoading ? (
                       <p className="notifications-muted">Loading…</p>
                     ) : interruptionsNotifications.length === 0 ? (
                       <p className="notifications-empty">No interruption notifications yet.</p>
@@ -699,13 +689,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                           return (
                             <li
                               key={n.id}
-                              role={role === 'admin' ? 'button' : undefined}
-                              tabIndex={role === 'admin' ? 0 : undefined}
+                              role={canUseNotifications ? 'button' : undefined}
+                              tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
-                                role === 'admin' ? ' notifications-user-item--clickable' : ''
+                                canUseNotifications ? ' notifications-user-item--clickable' : ''
                               }`}
-                              onClick={role === 'admin' ? () => handleNotificationRowActivate(n, 'interruptions') : undefined}
-                              onKeyDown={role === 'admin' ? (e) => handleNotificationRowKeyDown(e, n, 'interruptions') : undefined}
+                              onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'interruptions') : undefined}
+                              onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'interruptions') : undefined}
                             >
                               <div className="notifications-user-item__row">
                                 <span className="notifications-user-item__badge">{label}</span>
@@ -725,9 +715,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 )}
                 {notificationTab === 'memo' && (
                   <div className="notifications-tab-memo">
-                    {role !== 'admin' ? (
-                      <p className="notifications-empty">Only administrators see memo alerts.</p>
-                    ) : memoNotificationsLoading ? (
+                    {memoNotificationsLoading ? (
                       <p className="notifications-muted">Loading…</p>
                     ) : memoNotifications.length === 0 ? (
                       <p className="notifications-empty">No memo notifications yet.</p>
@@ -743,13 +731,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                           return (
                             <li
                               key={n.id}
-                              role={role === 'admin' ? 'button' : undefined}
-                              tabIndex={role === 'admin' ? 0 : undefined}
+                              role={canUseNotifications ? 'button' : undefined}
+                              tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
-                                role === 'admin' ? ' notifications-user-item--clickable' : ''
+                                canUseNotifications ? ' notifications-user-item--clickable' : ''
                               }`}
-                              onClick={role === 'admin' ? () => handleNotificationRowActivate(n, 'memo') : undefined}
-                              onKeyDown={role === 'admin' ? (e) => handleNotificationRowKeyDown(e, n, 'memo') : undefined}
+                              onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'memo') : undefined}
+                              onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'memo') : undefined}
                             >
                               <div className="notifications-user-item__row">
                                 <span className="notifications-user-item__badge">{label}</span>
@@ -767,33 +755,29 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 )}
                 {notificationTab === 'system' && (
                   <div className="notifications-tab-system" aria-label="System notifications">
-                    {role !== 'admin' ? (
-                      <p className="notifications-empty">Only administrators see system alerts.</p>
-                    ) : null}
+                    <p className="notifications-empty">No system notifications yet.</p>
                   </div>
                 )}
                 </div>
               </div>
-              {role === 'admin' ? (
-                <div className="notifications-popover-footer">
-                  <button
-                    type="button"
-                    className="notifications-mark-all-read"
-                    disabled={markAllReadLoading || notificationTotal === 0}
-                    onClick={handleMarkAllNotificationsRead}
-                  >
-                    {markAllReadLoading ? 'Marking…' : 'Mark all as read'}
-                  </button>
-                  <button
-                    type="button"
-                    className="notifications-close"
-                    aria-label="Close notifications"
-                    onClick={() => setIsNotificationsOpen(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              ) : null}
+              <div className="notifications-popover-footer">
+                <button
+                  type="button"
+                  className="notifications-mark-all-read"
+                  disabled={markAllReadLoading || notificationTotal === 0}
+                  onClick={handleMarkAllNotificationsRead}
+                >
+                  {markAllReadLoading ? 'Marking…' : 'Mark all as read'}
+                </button>
+                <button
+                  type="button"
+                  className="notifications-close"
+                  aria-label="Close notifications"
+                  onClick={() => setIsNotificationsOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -875,7 +859,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       </div>
     </header>
 
-    {notificationDetail && role === 'admin' && detailN ? (
+    {notificationDetail && canUseNotifications && detailN ? (
       <div className="notification-detail-root">
         <div
           className="notification-detail-overlay"

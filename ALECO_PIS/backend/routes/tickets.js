@@ -236,6 +236,7 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
                 assigned_crew,
                 eta,
                 dispatch_notes,
+                concern_resolution_notes,
                 lineman_remarks,
                 hold_reason,
                 hold_since
@@ -443,7 +444,7 @@ keep safe!`;
         // 2. Notify Consumer (optional - only when Notify Consumer toggle is ON)
         let consumerSmsPayload;
         if (is_consumer_notified && consumer_phone) {
-            const consumerMsg = `Greetings! This is from ALECO! Your ticket ${ticket_id} is currently being processed. Please be in touch or visit our website to track your ticket and for follow ups.
+            const consumerMsg = `Good day! This is ALECO. Your ticket ${ticket_id} is now under dispatch. Our service crew/linemen are scheduled to arrive at your location to address your concern. Please stay available for coordination, and you may track updates using your ticket ID.
 
 You can enter this ticket to track:
 ${ticket_id}`;
@@ -477,6 +478,7 @@ ${ticket_id}`;
                 eta = ?, 
                 is_consumer_notified = ?, 
                 dispatch_notes = ?,
+                concern_resolution_notes = NULL,
                 dispatched_at = ?,
                 hold_reason = NULL,
                 hold_since = NULL
@@ -535,6 +537,94 @@ ${ticket_id}`;
     } catch (error) {
         console.error("❌ CRITICAL DISPATCH ERROR:", error.message);
         res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// --- ADMIN: START RESOLUTION FOR NON-LINEMAN CONCERNS (NO CREW REQUIRED) ---
+router.put('/tickets/:ticket_id/resolve-concern', requireAdmin, async (req, res) => {
+    const { ticket_id } = req.params;
+    const { is_consumer_notified, concern_resolution_notes } = req.body;
+    const concernNotes = String(concern_resolution_notes || '').trim();
+
+    if (!concernNotes) {
+        return res.status(400).json({ success: false, message: 'Concern resolution notes are required.' });
+    }
+
+    try {
+        const [statusRows] = await pool.execute(
+            'SELECT status, phone_number FROM aleco_tickets WHERE ticket_id = ?',
+            [ticket_id]
+        );
+        if (statusRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found.' });
+        }
+
+        const fromStatus = statusRows[0]?.status || 'Pending';
+        const consumerPhone = statusRows[0]?.phone_number;
+        const phNow = nowPhilippineForMysql();
+
+        const [dbResult] = await pool.execute(
+            `UPDATE aleco_tickets
+             SET status = 'Ongoing',
+                 assigned_crew = NULL,
+                 eta = NULL,
+                 is_consumer_notified = ?,
+                 dispatch_notes = NULL,
+                 concern_resolution_notes = ?,
+                 dispatched_at = ?,
+                 hold_reason = NULL,
+                 hold_since = NULL
+             WHERE ticket_id = ?`,
+            [is_consumer_notified ? 1 : 0, concernNotes, phNow, ticket_id]
+        );
+
+        if (dbResult.affectedRows === 0) {
+            return res.status(500).json({ success: false, message: 'Failed to start concern resolution.' });
+        }
+
+        let consumerSmsPayload = { attempted: false, skipped: true, reason: 'not_requested' };
+        if (is_consumer_notified && consumerPhone) {
+            const consumerMsg = `Good day! This is ALECO. Your ticket ${ticket_id} has been endorsed for concern resolution and is now in progress. Our support team is reviewing your concern and will provide updates accordingly. Thank you for your patience and cooperation.`;
+            const consumerResult = await sendPhilSMS(consumerPhone, consumerMsg);
+            consumerSmsPayload = { attempted: true, ...consumerResult };
+        } else if (is_consumer_notified) {
+            consumerSmsPayload = { attempted: false, skipped: true, reason: 'no_phone_on_ticket' };
+        }
+
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+        await insertTicketLog(pool, {
+            ticket_id,
+            action: 'status_change',
+            from_status: fromStatus,
+            to_status: 'Ongoing',
+            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+            actor_email: actorEmail || null,
+            actor_name: actorName || 'System',
+            metadata: { resolution_mode: 'concern', concern_resolution_notes: concernNotes }
+        });
+
+        const c = consumerSmsPayload;
+        let message;
+        if (!c.attempted) {
+            message = c.reason === 'not_requested'
+                ? `Ticket ${ticket_id} moved to Ongoing via concern handling.`
+                : `Ticket ${ticket_id} moved to Ongoing. Consumer has no phone on file.`;
+        } else if (c.success) {
+            message = `Ticket ${ticket_id} moved to Ongoing. Consumer notified by SMS.`;
+        } else {
+            message = `Ticket ${ticket_id} moved to Ongoing. Consumer SMS could not be sent.`;
+        }
+
+        return res.status(200).json({
+            success: true,
+            message,
+            sms: { consumer: consumerSmsPayload },
+            ...(c.attempted && !c.success ? { warnings: ['consumer_sms_failed'] } : {})
+        });
+    } catch (error) {
+        console.error('❌ RESOLVE CONCERN ERROR:', error.message);
+        return res.status(500).json({ success: false, message: error.message });
     }
 });
 

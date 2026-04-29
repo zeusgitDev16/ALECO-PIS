@@ -306,6 +306,28 @@ const AdminTickets = () => {
     const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         try {
             if (newStatus === 'Ongoing' && dispatchData) {
+                if (dispatchData.resolution_mode === 'concern') {
+                    const body = { ...dispatchData, ...getActor() };
+                    const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/resolve-concern`), {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        const msg = data.message || 'Concern resolution started.';
+                        if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
+                            toast.warning(`ALECO System: ${msg}`);
+                        } else {
+                            toast.success(`ALECO System: ${msg}`);
+                        }
+                        refetch();
+                    } else {
+                        toast.error('Start resolution failed: ' + (data.message || 'Unknown error'));
+                    }
+                    return;
+                }
+
                 const body = { ...dispatchData, ...getActor() };
                 const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
                     method: 'PUT',

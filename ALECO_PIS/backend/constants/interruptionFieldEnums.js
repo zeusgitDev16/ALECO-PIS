@@ -5,7 +5,7 @@
 
 export const INTERRUPTION_TYPE_VALUES = ['Scheduled', 'Emergency', 'NgcScheduled', 'CustomPoster'];
 
-export const INTERRUPTION_STATUS_VALUES = ['Pending', 'Ongoing', 'Energized'];
+export const INTERRUPTION_STATUS_VALUES = ['Pending', 'Ongoing', 'Energized', 'Cancelled', 'Rescheduled'];
 
 /** @type {Set<string>} */
 export const INTERRUPTION_TYPES = new Set(INTERRUPTION_TYPE_VALUES);

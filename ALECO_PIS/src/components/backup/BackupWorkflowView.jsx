@@ -31,7 +31,7 @@ const BackupWorkflowView = ({
                             <div className="backup-workflow-block-footer">
                                 <div className="backup-workflow-actions backup-workflow-actions--stack">
                                     <button type="button" className="btn-add-purple backup-workflow-btn-full" onClick={onExport} disabled={exporting}>{exporting ? '...' : 'Download'}</button>
-                                    <button type="button" className="btn-action btn-ongoing backup-workflow-btn-full" onClick={onViewInBrowser} disabled={previewLoading}>{previewLoading ? '...' : 'View'}</button>
+                                    <button type="button" className="btn-action btn-ongoing backup-workflow-btn-full" onClick={onViewInBrowser} disabled={previewLoading}>{previewLoading ? '...' : 'Preview export'}</button>
                                 </div>
                             </div>
                         </div>

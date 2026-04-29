@@ -30,6 +30,8 @@ export function getStatusDisplayLabel(status) {
   if (s === 'Energized') return 'Energized';
   if (s === 'Restored') return 'Energized';
   if (s === 'Ongoing') return 'Ongoing';
+  if (s === 'Cancelled') return 'Cancelled';
+  if (s === 'Rescheduled') return 'Rescheduled';
   return s || '—';
 }
 
@@ -47,6 +49,8 @@ export const STATUS_FORM_OPTIONS = [
   { value: 'Pending', label: 'Upcoming' },
   { value: 'Ongoing', label: 'Ongoing' },
   { value: 'Energized', label: 'Energized' },
+  { value: 'Cancelled', label: 'Cancelled' },
+  { value: 'Rescheduled', label: 'Rescheduled' },
 ];
 
 /** Lifecycle options when creating an advisory (no finalize status at create time) */
@@ -85,6 +89,8 @@ export const FILTER_CHIPS = [
   { key: 'pending', label: 'Upcoming', apiStatus: 'Pending' },
   { key: 'ongoing', label: 'Ongoing', apiStatus: 'Ongoing' },
   { key: 'energized', label: 'Energized', apiStatus: 'Energized' },
+  { key: 'cancelled', label: 'Cancelled', apiStatus: 'Cancelled' },
+  { key: 'rescheduled', label: 'Rescheduled', apiStatus: 'Rescheduled' },
 ];
 
 /** True when advisory is in the post-outage / re-energized lifecycle state (for display windows, etc.). */

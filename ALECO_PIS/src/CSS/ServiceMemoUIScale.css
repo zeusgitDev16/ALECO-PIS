@@ -204,6 +204,18 @@
   min-height: calc(32px * var(--service-memo-ui-scale, 1));
 }
 
+/* View mode: make displayed memo data text scale clearly on mobile */
+.service-memos-page-container .service-memo-form-root[data-mode='view'] .service-memo-form-row label {
+  font-size: max(10px, calc(10px * var(--service-memo-ui-scale, 1)));
+}
+
+.service-memos-page-container .service-memo-form-root[data-mode='view'] .service-memo-form-row input,
+.service-memos-page-container .service-memo-form-root[data-mode='view'] .service-memo-form-row textarea {
+  font-size: max(13px, calc(13px * var(--service-memo-ui-scale, 1)));
+  line-height: 1.45;
+  min-height: calc(34px * var(--service-memo-ui-scale, 1));
+}
+
 .service-memos-page-container .service-memo-form-row.two-col {
   gap: calc(10px * var(--service-memo-ui-scale, 1));
 }
@@ -331,11 +343,11 @@
 }
 
 .service-memo-modal-container .service-memo-modal-top-header .header-title {
-  font-size: max(14px, calc(17px * var(--service-memo-ui-scale, 1)));
+  font-size: max(16px, calc(18px * var(--service-memo-ui-scale, 1)));
 }
 
 .service-memo-modal-container .service-memo-modal-top-header .header-subtitle {
-  font-size: max(10px, calc(12px * var(--service-memo-ui-scale, 1)));
+  font-size: max(11px, calc(13px * var(--service-memo-ui-scale, 1)));
 }
 
 .service-memo-modal-container .service-memo-close-btn {
@@ -374,6 +386,27 @@
 .service-memos-page-container .service-memos-toolbar {
   gap: calc(8px * var(--service-memo-ui-scale, 1));
   margin-bottom: calc(12px * var(--service-memo-ui-scale, 1));
+}
+
+/* Service Memo browse toolbar buttons inside modal:
+   override compact interruption defaults so mobile stays tappable/readable */
+.service-memo-modal-container .service-memos-toolbar .interruptions-admin-btn {
+  font-size: max(12px, calc(12px * var(--service-memo-ui-scale, 1))) !important;
+  padding: calc(8px * var(--service-memo-ui-scale, 1)) calc(14px * var(--service-memo-ui-scale, 1)) !important;
+  min-height: max(36px, calc(38px * var(--service-memo-ui-scale, 1)));
+  border-radius: calc(8px * var(--service-memo-ui-scale, 1)) !important;
+}
+
+.service-memo-modal-container .service-memos-toolbar .interruption-filter-inline-btn {
+  width: max(30px, calc(34px * var(--service-memo-ui-scale, 1)));
+  height: max(30px, calc(34px * var(--service-memo-ui-scale, 1)));
+  min-width: max(30px, calc(34px * var(--service-memo-ui-scale, 1)));
+  border-radius: calc(8px * var(--service-memo-ui-scale, 1));
+}
+
+.service-memo-modal-container .service-memos-toolbar .interruption-filter-inline-btn svg {
+  width: max(14px, calc(14px * var(--service-memo-ui-scale, 1)));
+  height: max(14px, calc(14px * var(--service-memo-ui-scale, 1)));
 }
 
 /* ================================================================

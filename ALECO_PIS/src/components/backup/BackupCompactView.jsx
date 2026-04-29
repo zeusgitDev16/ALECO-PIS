@@ -66,7 +66,7 @@ const BackupCompactView = ({
                                 {exporting ? 'Exporting...' : 'Download'}
                             </button>
                             <button className="btn-action btn-ongoing" onClick={onViewInBrowser} disabled={previewLoading}>
-                                {previewLoading ? 'Loading...' : 'View in browser'}
+                                {previewLoading ? 'Loading...' : 'Preview export'}
                             </button>
                         </div>
                     </>

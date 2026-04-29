@@ -55,7 +55,7 @@ export function apiInterruptionTypeToDbLiteral(apiType, dbEnum) {
 }
 
 /**
- * @param {string} apiStatus - Pending | Ongoing | Energized
+ * @param {string} apiStatus - Pending | Ongoing | Energized | Cancelled | Rescheduled
  * @param {Set<string>|null} dbEnum
  * @returns {{ status: string } | { error: string }}
  */
@@ -70,6 +70,6 @@ export function apiInterruptionStatusToDbLiteral(apiStatus, dbEnum) {
     return { status: 'Restored' };
   }
   return {
-    error: `Database status ENUM does not accept "${apiStatus}". Apply backend/migrations/alter_interruption_outage_type_and_energized_status.sql.`,
+    error: `Database status ENUM does not accept "${apiStatus}". Apply backend/migrations/add_cancelled_rescheduled_interruption_statuses.sql.`,
   };
 }

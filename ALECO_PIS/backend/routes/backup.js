@@ -1104,6 +1104,24 @@ router.post('/tickets/archive', requireAdmin, async (req, res) => {
 
 const REQUIRED_TICKET_FIELDS = ['ticket_id', 'first_name', 'last_name', 'phone_number', 'category', 'concern'];
 
+function normalizeTicketId(v) {
+    return String(v ?? '').trim();
+}
+
+function toPreviewTicketRow(row) {
+    const first = String(row.first_name ?? '').trim();
+    const last = String(row.last_name ?? '').trim();
+    const fullName = [first, last].filter(Boolean).join(' ').trim();
+    return {
+        rowNumber: row.__rowNumber ?? null,
+        ticket_id: normalizeTicketId(row.ticket_id),
+        customer_name: fullName || '—',
+        category: row.category ?? '—',
+        status: row.status ?? '—',
+        municipality: row.municipality ?? '—',
+    };
+}
+
 function validateTicket(row, index) {
     const errors = [];
     for (const f of REQUIRED_TICKET_FIELDS) {
@@ -1184,33 +1202,85 @@ router.post('/tickets/import', requireAdmin, upload.single('file'), async (req, 
         }
 
         const errors = [];
+        const invalidRows = [];
         const valid = [];
         for (let i = 0; i < tickets.length; i++) {
             const errs = validateTicket(tickets[i], i);
-            if (errs.length) errors.push(...errs);
-            else valid.push(tickets[i]);
+            if (errs.length) {
+                errors.push(...errs);
+                invalidRows.push({
+                    rowNumber: i + 1,
+                    ticket_id: normalizeTicketId(tickets[i]?.ticket_id) || '—',
+                    reason: errs.join('; '),
+                });
+            } else {
+                valid.push({ ...tickets[i], __rowNumber: i + 1 });
+            }
+        }
+
+        // Normalize IDs + prevent duplicate ticket_id rows inside the same import file.
+        const dedupedValid = [];
+        const seenIds = new Set();
+        for (let i = 0; i < valid.length; i++) {
+            const row = valid[i];
+            const normalizedId = normalizeTicketId(row.ticket_id);
+            if (!normalizedId) {
+                errors.push(`Row ${i + 1}: invalid ticket_id`);
+                invalidRows.push({
+                    rowNumber: row.__rowNumber ?? (i + 1),
+                    ticket_id: '—',
+                    reason: 'invalid ticket_id',
+                });
+                continue;
+            }
+            if (seenIds.has(normalizedId)) {
+                errors.push(`Row ${i + 1}: duplicate ticket_id "${normalizedId}" in uploaded file`);
+                invalidRows.push({
+                    rowNumber: row.__rowNumber ?? (i + 1),
+                    ticket_id: normalizedId,
+                    reason: `duplicate ticket_id "${normalizedId}" in uploaded file`,
+                });
+                continue;
+            }
+            seenIds.add(normalizedId);
+            row.ticket_id = normalizedId;
+            dedupedValid.push(row);
         }
 
         const existingIds = new Set();
-        if (valid.length > 0) {
+        if (dedupedValid.length > 0) {
             const [existing] = await pool.execute(
-                `SELECT ticket_id FROM aleco_tickets WHERE ticket_id IN (${valid.map(() => '?').join(',')})`,
-                valid.map(t => t.ticket_id)
+                `SELECT ticket_id FROM aleco_tickets WHERE ticket_id IN (${dedupedValid.map(() => '?').join(',')})`,
+                dedupedValid.map((t) => t.ticket_id)
             );
-            existing.forEach(r => existingIds.add(r.ticket_id));
+            existing.forEach((r) => existingIds.add(normalizeTicketId(r.ticket_id)));
         }
 
-        const toImport = valid.filter(t => !existingIds.has(String(t.ticket_id).trim()));
-        const skipped = valid.filter(t => existingIds.has(String(t.ticket_id).trim()));
+        const toImport = dedupedValid.filter((t) => !existingIds.has(normalizeTicketId(t.ticket_id)));
+        const skipped = dedupedValid.filter((t) => existingIds.has(normalizeTicketId(t.ticket_id)));
 
         if (dryRun) {
             return res.json({
                 success: true,
-                valid: valid.length,
+                valid: dedupedValid.length,
                 skipped: skipped.length,
                 toImport: toImport.length,
                 failed: errors.length,
-                errors: errors.slice(0, 50)
+                errors: errors.slice(0, 50),
+                importableTickets: toImport.slice(0, 300).map(toPreviewTicketRow),
+                existingTickets: skipped.slice(0, 300).map(toPreviewTicketRow),
+                invalidRows: invalidRows.slice(0, 300),
+            });
+        }
+
+        // All records already exist in DB: explicitly block import and notify user.
+        if (toImport.length === 0) {
+            return res.status(409).json({
+                success: false,
+                message: 'All tickets in this file already exist. No missing tickets to restore.',
+                imported: 0,
+                skipped: skipped.length,
+                failed: errors.length,
             });
         }
 
@@ -1250,7 +1320,13 @@ router.post('/tickets/import', requireAdmin, upload.single('file'), async (req, 
                 for (const c of ticketCols) {
                     if (t[c] !== undefined) {
                         cols.push(c);
-                        vals.push(t[c] === '' || t[c] === null ? null : t[c]);
+                        // Imported backups may contain stale Cloudinary URLs if the original ticket
+                        // was hard-deleted (asset already cleaned up). Force NULL to avoid broken links.
+                        if (c === 'image_url') {
+                            vals.push(null);
+                        } else {
+                            vals.push(t[c] === '' || t[c] === null ? null : t[c]);
+                        }
                     }
                 }
                 if (cols.length === 0) continue;

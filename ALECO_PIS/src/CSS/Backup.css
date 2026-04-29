@@ -1333,6 +1333,42 @@
     justify-content: flex-end;
 }
 
+.import-preview-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.import-preview-tag--ok {
+    color: #065f46;
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+}
+
+.import-preview-tag--exists {
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+}
+
+[data-theme="dark"] .import-preview-tag--ok {
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(110, 231, 183, 0.4);
+}
+
+[data-theme="dark"] .import-preview-tag--exists {
+    color: #fcd34d;
+    background: rgba(251, 191, 36, 0.14);
+    border-color: rgba(252, 211, 77, 0.38);
+}
+
 .backup-delete-verify-modal {
     max-width: 560px;
 }

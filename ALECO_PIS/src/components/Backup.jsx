@@ -4,6 +4,7 @@ import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
 import AdminLayout from './AdminLayout';
 import ExportPreviewModal from './backup/ExportPreviewModal';
+import ImportPreviewModal from './backup/ImportPreviewModal';
 import BackupLayoutPicker from './backup/BackupLayoutPicker';
 import BackupDateBar from './backup/BackupDateBar';
 import BackupCompactView from './backup/BackupCompactView';
@@ -46,6 +47,7 @@ const AdminBackup = () => {
     const [importing, setImporting] = useState(false);
     const [previewing, setPreviewing] = useState(false);
     const [previewResult, setPreviewResult] = useState(null);
+    const [importPreviewOpen, setImportPreviewOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
     const [previewTitle, setPreviewTitle] = useState('Export Preview');
     const [previewLoading, setPreviewLoading] = useState(false);
@@ -175,7 +177,11 @@ const AdminBackup = () => {
             const contentDisposition = res.headers.get('Content-Disposition');
             let filename = isInterruptionsEntity
                 ? `aleco_interruptions_export.${format === 'excel' ? 'xlsx' : 'csv'}`
-                : `aleco_tickets_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
+                : isUsersEntity
+                    ? `aleco_users_export.${format === 'excel' ? 'xlsx' : 'csv'}`
+                    : isPersonnelEntity
+                        ? `aleco_personnel_export.${format === 'excel' ? 'xlsx' : 'csv'}`
+                        : `aleco_tickets_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
             if (contentDisposition) {
                 const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
                 if (match) filename = match[1];
@@ -449,6 +455,7 @@ const AdminBackup = () => {
         }
         setPreviewing(true);
         setPreviewResult(null);
+        setImportPreviewOpen(false);
         try {
             const formData = new FormData();
             formData.append('file', importFile);
@@ -459,7 +466,7 @@ const AdminBackup = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Preview failed');
             setPreviewResult(data);
-            toast.success('Preview complete.');
+            setImportPreviewOpen(true);
         } catch (err) {
             toast.error(err.message || 'Preview failed.');
         } finally {
@@ -481,10 +488,20 @@ const AdminBackup = () => {
                 body: formData
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Import failed');
+            if (!res.ok) {
+                if (res.status === 409) {
+                    toast.info(
+                        data.message ||
+                        `No missing tickets to restore. Existing in DB: ${Number(data.skipped || 0)}.`
+                    );
+                    return;
+                }
+                throw new Error(data.message || 'Import failed');
+            }
             toast.success(`Imported ${data.imported} ticket(s). Skipped: ${data.skipped}. Failed: ${data.failed || 0}.`);
             setImportFile(null);
             setPreviewResult(null);
+            setImportPreviewOpen(false);
         } catch (err) {
             toast.error(err.message || 'Import failed.');
         } finally {
@@ -687,6 +704,12 @@ const AdminBackup = () => {
                 data={previewData}
                 entity={entity}
                 title={previewTitle}
+            />
+
+            <ImportPreviewModal
+                isOpen={importPreviewOpen}
+                onClose={() => setImportPreviewOpen(false)}
+                preview={previewResult}
             />
 
             {exportConfirmOpen && (

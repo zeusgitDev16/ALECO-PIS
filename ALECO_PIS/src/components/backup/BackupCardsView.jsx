@@ -33,7 +33,7 @@ const BackupCardsView = ({
                             {exporting ? '...' : 'Download'}
                         </button>
                         <button type="button" className="btn-action btn-ongoing backup-card-btn-full" onClick={onViewInBrowser} disabled={previewLoading}>
-                            {previewLoading ? '...' : 'View in browser'}
+                            {previewLoading ? '...' : 'Preview export'}
                         </button>
                     </div>
                 </div>

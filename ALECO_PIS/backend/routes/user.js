@@ -7,6 +7,41 @@ import { requireAdmin, requireSelfOrAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
+function parseSocialLinks(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((row) => ({
+        platform: String(row?.platform || '').trim(),
+        url: String(row?.url || '').trim(),
+      }))
+      .filter((row) => row.url);
+  } catch {
+    // Backward compatibility: old schema stored a single URL string.
+    return [{ platform: 'Website', url: text }];
+  }
+}
+
+function normalizeSocialLinks(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const row of value) {
+    const platform = String(row?.platform || '').trim() || 'Website';
+    const url = String(row?.url || '').trim();
+    if (!url) continue;
+    const key = url.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ platform, url });
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
 // 4. The Mailbox (The API Route)
 router.post('/invite', requireAdmin, async (req, res) => {
   const { email, role, code } = req.body;
@@ -202,7 +237,11 @@ router.get('/users/profile', requireSelfOrAdmin('email', 'query'), async (req, r
       [cleanEmail]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'User not found.' });
-    res.status(200).json(rows[0]);
+    const row = rows[0];
+    res.status(200).json({
+      ...row,
+      social_links: parseSocialLinks(row.social_url),
+    });
   } catch (error) {
     console.error('Profile Fetch Error:', error.message);
     res.status(500).json({ error: 'Failed to fetch profile.' });
@@ -211,7 +250,7 @@ router.get('/users/profile', requireSelfOrAdmin('email', 'query'), async (req, r
 
 // Update profile — persists all editable fields to the DB
 router.put('/users/profile', requireSelfOrAdmin('email', 'body'), async (req, res) => {
-  const { email, name, bio, phone, address, social_url } = req.body;
+  const { email, name, bio, phone, address, social_url, social_links } = req.body;
   if (!email || !name || !name.trim()) return res.status(400).json({ error: 'Missing email or name.' });
 
   const cleanEmail = email.trim().toLowerCase();
@@ -219,7 +258,10 @@ router.put('/users/profile', requireSelfOrAdmin('email', 'body'), async (req, re
   const cleanBio   = (bio   || '').trim() || null;
   const cleanPhone = (phone || '').trim() || null;
   const cleanAddr  = (address    || '').trim() || null;
-  const cleanSocial= (social_url || '').trim() || null;
+  const normalizedLinks = normalizeSocialLinks(social_links);
+  const cleanSocial = Array.isArray(social_links)
+    ? (normalizedLinks.length > 0 ? JSON.stringify(normalizedLinks) : null)
+    : ((social_url || '').trim() || null);
 
   try {
     const [result] = await pool.execute(

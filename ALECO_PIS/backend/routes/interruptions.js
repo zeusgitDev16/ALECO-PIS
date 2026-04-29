@@ -163,7 +163,9 @@ function validatePayload(body, { partial = false } = {}) {
     }
   }
   if (!partial || status !== undefined) {
-    if (!status || !STATUSES.has(status)) errors.push('status must be Pending, Ongoing, or Energized');
+    if (!status || !STATUSES.has(status)) {
+      errors.push('status must be Pending, Ongoing, Energized, Cancelled, or Rescheduled');
+    }
   }
   if (!isNgcpScheduled && !isCustomPoster && (!partial || feeder !== undefined || feederIdRaw !== undefined)) {
     const hasFeederText = feeder != null && String(feeder).trim() !== '';
@@ -1082,7 +1084,14 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     if (statusIsChanging && !isPendingToOngoing && statusChangeRemark) {
       const remarkText = String(statusChangeRemark).trim();
       if (remarkText) {
-        const statusLabels = { Pending: 'Upcoming', Ongoing: 'Ongoing', Energized: 'Energized', Restored: 'Energized' };
+        const statusLabels = {
+          Pending: 'Upcoming',
+          Ongoing: 'Ongoing',
+          Energized: 'Energized',
+          Restored: 'Energized',
+          Cancelled: 'Cancelled',
+          Rescheduled: 'Rescheduled',
+        };
         const fromLabel = statusLabels[ex.status] ?? ex.status;
         const toLabel = statusLabels[nextStatus] ?? nextStatus;
         const fullRemark = `Status changed from ${fromLabel} to ${toLabel}: ${remarkText}`;

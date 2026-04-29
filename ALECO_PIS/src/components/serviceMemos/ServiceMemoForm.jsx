@@ -23,6 +23,24 @@ function nowTimeStr() {
   return `${hh}:${mm}`;
 }
 
+function toDateInputValue(value, fallback = '') {
+  const raw = String(value ?? '').trim();
+  if (!raw) return fallback;
+  // Accept ISO / MySQL datetime and keep YYYY-MM-DD for <input type="date">
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (match) return match[1];
+  return fallback;
+}
+
+function toTimeInputValue(value, fallback = '') {
+  const raw = String(value ?? '').trim();
+  if (!raw) return fallback;
+  // Accept HH:mm or HH:mm:ss and keep HH:mm for <input type="time">
+  const match = raw.match(/^(\d{2}:\d{2})/);
+  if (match) return match[1];
+  return fallback;
+}
+
 const CLOSED_TICKET_STATUSES = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
 
 const MEMO_SAVE_STATUS_TOAST =
@@ -242,16 +260,16 @@ const ServiceMemoForm = ({
     setForm({
       ticket_id: memo.ticket_id || '',
       received_by: memo.received_by || '',
-      intake_date: memo.intake_date || memo.service_date || todayDateStr(),
-      intake_time: memo.intake_time || nowTimeStr(),
+      intake_date: toDateInputValue(memo.intake_date || memo.service_date, todayDateStr()),
+      intake_time: toTimeInputValue(memo.intake_time, nowTimeStr()),
       referred_to: memo.referred_to || '',
-      referral_received_date: memo.referral_received_date || todayDateStr(),
-      referral_received_time: memo.referral_received_time || nowTimeStr(),
+      referral_received_date: toDateInputValue(memo.referral_received_date, todayDateStr()),
+      referral_received_time: toTimeInputValue(memo.referral_received_time, nowTimeStr()),
       action_taken: memo.action_taken || memo.work_performed || '',
-      site_arrived_date: memo.site_arrived_date || '',
-      site_arrived_time: memo.site_arrived_time || '',
-      finished_date: memo.finished_date || todayDateStr(),
-      finished_time: memo.finished_time || nowTimeStr(),
+      site_arrived_date: toDateInputValue(memo.site_arrived_date, ''),
+      site_arrived_time: toTimeInputValue(memo.site_arrived_time, ''),
+      finished_date: toDateInputValue(memo.finished_date, todayDateStr()),
+      finished_time: toTimeInputValue(memo.finished_time, nowTimeStr()),
       internal_notes: memo.internal_notes || '',
       resolution_details: memo.resolution_details || '',
     });

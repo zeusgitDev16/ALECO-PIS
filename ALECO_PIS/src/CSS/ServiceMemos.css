@@ -138,6 +138,11 @@
 .service-memo-table-wrap {
   width: 100%;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
@@ -1102,6 +1107,9 @@
 
 .memo-body-content {
   min-height: 200px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Dark mode specific adjustments */
@@ -1954,6 +1962,49 @@
 .service-memo-form-row textarea {
   resize: vertical;
   line-height: 1.4;
+}
+
+/* View mode: keep field values clearly readable (especially in dark mode). */
+.service-memo-form-root[data-mode='view'] .service-memo-form-row input,
+.service-memo-form-root[data-mode='view'] .service-memo-form-row textarea {
+  opacity: 1;
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+  background: var(--bg-input, var(--bg-card));
+}
+
+.service-memo-form-root[data-mode='view'] .service-memo-form-row input:disabled,
+.service-memo-form-root[data-mode='view'] .service-memo-form-row textarea:disabled {
+  opacity: 1;
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row textarea {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  opacity: 1 !important;
+}
+
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input:disabled,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row textarea:disabled,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input[type='date']:disabled,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input[type='time']:disabled {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  opacity: 1 !important;
+  color-scheme: dark;
+}
+
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input[type='date']::-webkit-datetime-edit,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input[type='time']::-webkit-datetime-edit {
+  color: #e5e7eb;
 }
 
 .service-memo-form-row.two-col {

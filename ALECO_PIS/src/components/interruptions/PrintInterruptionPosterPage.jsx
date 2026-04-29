@@ -61,6 +61,10 @@ export default function PrintInterruptionPosterPage() {
     <div className="print-poster-page">
       {item.type === 'NgcScheduled' ? (
         <InterruptionNgcpPrintPoster item={item} />
+      ) : item.type === 'CustomPoster' ? (
+        <div className="print-poster-page--custom-notice">
+          <p>Custom poster advisory — no generated template. Use the uploaded custom image directly.</p>
+        </div>
       ) : (
         <InterruptionAlecoPrintPoster item={item} />
       )}

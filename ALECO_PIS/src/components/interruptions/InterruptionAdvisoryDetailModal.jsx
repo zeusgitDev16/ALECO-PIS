@@ -103,6 +103,8 @@ export default function InterruptionAdvisoryDetailModal({
                 <div className="interruption-detail-dashboard-poster-fallback">
                   {item.type === 'NgcScheduled' ? (
                     <InterruptionNgcpPrintPoster item={item} />
+                  ) : item.type === 'CustomPoster' ? (
+                    <p className="interruption-detail-custom-poster-placeholder">Custom poster image not yet uploaded.</p>
                   ) : (
                     <InterruptionAlecoPrintPoster item={item} />
                   )}

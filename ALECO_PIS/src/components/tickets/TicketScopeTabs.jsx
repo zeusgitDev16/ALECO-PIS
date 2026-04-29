@@ -2,13 +2,14 @@ import React from 'react';
 import '../../CSS/TicketScopeTabs.css';
 
 /**
- * TicketScopeTabs - Switches between Urgent and Regular ticket sections.
+ * TicketScopeTabs - Switches between Urgent, Regular, and Memo-linked sections.
  * Recent Opened Tickets is always visible above the dual pane (separate strip).
  */
-const TicketScopeTabs = ({ scope, onScopeChange, urgentCount, regularCount }) => {
+const TicketScopeTabs = ({ scope, onScopeChange, urgentCount, regularCount, memoLinkedCount }) => {
   const tabs = [
     { id: 'urgent', label: 'Urgent', count: urgentCount, icon: '🚨' },
     { id: 'regular', label: 'Regular', count: regularCount, icon: '📋' },
+    { id: 'memo', label: 'Memo Linked', count: memoLinkedCount, icon: '🧾' },
   ];
 
   return (

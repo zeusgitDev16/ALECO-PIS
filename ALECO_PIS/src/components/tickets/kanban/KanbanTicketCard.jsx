@@ -48,6 +48,7 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
 
     const isUrgent = ticket.is_urgent === 1 || ticket.is_urgent === true;
     const isGroupMaster = ticket.ticket_id?.startsWith('GROUP-');
+    const hasMemoLinked = Number(ticket?.service_memo_id || 0) > 0 || Number(ticket?.has_service_memo || 0) === 1;
     const concernShort = (isGroupMaster ? ticket.address : ticket.concern) && (isGroupMaster ? ticket.address : ticket.concern).length > 50
         ? `${(isGroupMaster ? ticket.address : ticket.concern).substring(0, 50)}...`
         : (isGroupMaster ? ticket.address : ticket.concern) || 'No description';
@@ -56,7 +57,7 @@ const KanbanTicketCard = React.memo(({ ticket, onClick, isSelected, isChecked, o
         <div
             ref={setNodeRef}
             style={style}
-            className={`kanban-ticket-card ${isGroupMaster ? 'kanban-card-group' : ''} ${isUrgent ? 'urgent' : ''} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+            className={`kanban-ticket-card ${isGroupMaster ? 'kanban-card-group' : ''} ${hasMemoLinked ? 'kanban-card-has-memo' : ''} ${isUrgent ? 'urgent' : ''} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
             onClick={() => onClick && onClick(ticket)}
             {...attributes}
         >

@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaEdit, FaSave, FaLock, FaHistory, FaLink, FaExternalLinkAlt } from 'react-icons/fa';
+import {
+  FaEdit, FaSave, FaLock, FaHistory, FaLink, FaExternalLinkAlt, FaPlus, FaTrash,
+  FaFacebook, FaInstagram, FaLinkedin, FaGithub, FaGlobe, FaYoutube, FaTiktok
+} from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
 import { apiUrl } from '../../utils/api';
 import { authFetch } from '../../utils/authFetch';
 import { clearLocalStoragePreservingPreferences } from '../../utils/clearLocalStoragePreservingPreferences';
@@ -44,6 +48,21 @@ const CATEGORY_STYLES = {
   interruption: { label: 'Interruption', bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
   personnel:    { label: 'Personnel',    bg: 'rgba(34,197,94,0.12)',  color: '#22c55e' },
 };
+
+const SOCIAL_PLATFORMS = [
+  { value: 'Facebook', icon: FaFacebook },
+  { value: 'Instagram', icon: FaInstagram },
+  { value: 'LinkedIn', icon: FaLinkedin },
+  { value: 'GitHub', icon: FaGithub },
+  { value: 'X', icon: FaXTwitter },
+  { value: 'YouTube', icon: FaYoutube },
+  { value: 'TikTok', icon: FaTiktok },
+  { value: 'Website', icon: FaGlobe },
+];
+
+function makeSocialLink(platform = 'Website', url = '') {
+  return { id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`, platform, url };
+}
 
 function formatActionLabel(category, action, fromStatus, toStatus) {
   if (category === 'ticket') {
@@ -110,6 +129,7 @@ const ProfilePage = () => {
     address:    '',
     phone:      '',
     social_url: '',
+    social_links: [],
     created_at: null,
   });
 
@@ -131,6 +151,9 @@ const ProfilePage = () => {
         address:     data.address     || '',
         phone:       data.phone       || '',
         social_url:  data.social_url  || '',
+        social_links: Array.isArray(data.social_links)
+          ? data.social_links.map((x) => makeSocialLink(x.platform || 'Website', x.url || ''))
+          : (data.social_url ? [makeSocialLink('Website', data.social_url)] : []),
         created_at:  data.created_at  || null,
       });
     } catch {
@@ -176,6 +199,9 @@ const ProfilePage = () => {
           phone:      userData.phone,
           address:    userData.address,
           social_url: userData.social_url,
+          social_links: (userData.social_links || [])
+            .map((s) => ({ platform: s.platform, url: s.url }))
+            .filter((s) => s.url && String(s.url).trim()),
         }),
       });
       if (!res.ok) {
@@ -269,7 +295,31 @@ const ProfilePage = () => {
   const safeProfilePicSrc = userData.pic
     ? getSafeResourceUrl(userData.pic.replace(/=s\d+(-c)?/g, '=s1024-c'))
     : null;
-  const safeSocialHref = getSafeHttpUrl(userData.social_url);
+  const socialLinks = (userData.social_links || []).filter((s) => String(s.url || '').trim());
+  const socialPreview = socialLinks.length > 0
+    ? socialLinks
+    : (userData.social_url ? [makeSocialLink('Website', userData.social_url)] : []);
+
+  const addSocialLinkRow = () => {
+    setUserData((prev) => ({
+      ...prev,
+      social_links: [...(prev.social_links || []), makeSocialLink()],
+    }));
+  };
+
+  const updateSocialLinkRow = (id, key, value) => {
+    setUserData((prev) => ({
+      ...prev,
+      social_links: (prev.social_links || []).map((row) => (row.id === id ? { ...row, [key]: value } : row)),
+    }));
+  };
+
+  const removeSocialLinkRow = (id) => {
+    setUserData((prev) => ({
+      ...prev,
+      social_links: (prev.social_links || []).filter((row) => row.id !== id),
+    }));
+  };
 
   return (
     <div className="profile-main-container">
@@ -398,40 +448,75 @@ const ProfilePage = () => {
         {/* CONNECT CARD */}
         <div className="profile-card social-media-container">
           <h3><FaLink /> Connect</h3>
-          <div className="social-links-flex">
-            <div className="social-item">
-              <FaLink className="social-icon" />
-              {isEditing ? (
-                <input
-                  className="edit-input-field"
-                  style={{ marginLeft: '12px', flex: 1 }}
-                  value={userData.social_url}
-                  placeholder="https://linkedin.com/in/yourprofile"
-                  onChange={(e) => setUserData({ ...userData, social_url: e.target.value })}
-                />
-              ) : userData.social_url ? (
-                safeSocialHref ? (
-                <a
-                  href={safeSocialHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="social-text"
-                  style={{ marginLeft: '12px', color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  {userData.social_url.replace(/^https?:\/\//, '')}
-                  <FaExternalLinkAlt style={{ fontSize: '0.7rem', opacity: 0.6 }} />
-                </a>
-                ) : (
-                  <span className="social-text" style={{ marginLeft: '12px', color: 'var(--color-text-muted)' }} title="Only http(s) links are allowed">
-                    Invalid link (use https://…)
-                  </span>
-                )
+          <div className="connect-list">
+            {isEditing ? (
+              <>
+                {(userData.social_links || []).length === 0 && (
+                  <p className="connect-empty">No social links yet. Add one below.</p>
+                )}
+                {(userData.social_links || []).map((row) => {
+                  const Icon = SOCIAL_PLATFORMS.find((x) => x.value === row.platform)?.icon || FaGlobe;
+                  return (
+                    <div key={row.id} className="connect-editor-row">
+                      <div className="connect-editor-platform">
+                        <Icon className="social-icon" />
+                        <select
+                          className="connect-platform-select"
+                          value={row.platform}
+                          onChange={(e) => updateSocialLinkRow(row.id, 'platform', e.target.value)}
+                        >
+                          {SOCIAL_PLATFORMS.map((p) => (
+                            <option key={p.value} value={p.value}>{p.value}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <input
+                        className="edit-input-field connect-link-input"
+                        value={row.url}
+                        placeholder="https://..."
+                        onChange={(e) => updateSocialLinkRow(row.id, 'url', e.target.value)}
+                      />
+                      <button type="button" className="connect-remove-btn" onClick={() => removeSocialLinkRow(row.id)} aria-label="Remove link">
+                        <FaTrash />
+                      </button>
+                    </div>
+                  );
+                })}
+                <button type="button" className="connect-add-btn" onClick={addSocialLinkRow}>
+                  <FaPlus /> Add social link
+                </button>
+              </>
+            ) : (
+              socialPreview.length > 0 ? (
+                socialPreview.map((row) => {
+                  const Icon = SOCIAL_PLATFORMS.find((x) => x.value === row.platform)?.icon || FaGlobe;
+                  const href = getSafeHttpUrl(row.url);
+                  return (
+                    <div key={row.id} className="social-item">
+                      <Icon className="social-icon" />
+                      {href ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-text"
+                          style={{ marginLeft: '12px', color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          {String(row.url || '').replace(/^https?:\/\//, '')}
+                          <FaExternalLinkAlt style={{ fontSize: '0.7rem', opacity: 0.6 }} />
+                        </a>
+                      ) : (
+                        <span className="social-text" style={{ marginLeft: '12px', color: 'var(--color-text-muted)' }} title="Only http(s) links are allowed">
+                          Invalid link (use https://…)
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
-                <span className="social-text" style={{ marginLeft: '12px', color: 'var(--color-text-muted)' }}>
-                  No link added
-                </span>
-              )}
-            </div>
+                <p className="connect-empty">No links added yet.</p>
+              )
+            )}
           </div>
         </div>
 

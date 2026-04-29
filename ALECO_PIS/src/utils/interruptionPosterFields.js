@@ -35,6 +35,7 @@ export function getPosterHeadlineText(item) {
   const type = item?.type || 'Emergency';
   if (type === 'Scheduled') return 'SCHEDULED POWER INTERRUPTION';
   if (type === 'NgcScheduled') return 'NGCP SCHEDULED POWER INTERRUPTION';
+  if (type === 'CustomPoster') return 'POWER INTERRUPTION (CUSTOM)';
   if (isEmergencyOutageType(type)) return 'EMERGENCY POWER INTERRUPTION';
   return 'POWER INTERRUPTION';
 }

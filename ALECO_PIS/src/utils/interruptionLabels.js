@@ -5,11 +5,16 @@
  */
 
 /** Types that use scheduled lifecycle (Pending before start) and optional bulletin scheduling. */
-export const INTERRUPTION_SCHEDULED_LIKE_TYPES = new Set(['Scheduled', 'NgcScheduled']);
+export const INTERRUPTION_SCHEDULED_LIKE_TYPES = new Set(['Scheduled', 'NgcScheduled', 'CustomPoster']);
 
 /** @param {string} type */
 export function isScheduledLikeOutageType(type) {
   return INTERRUPTION_SCHEDULED_LIKE_TYPES.has(String(type || ''));
+}
+
+/** @param {string} type */
+export function isCustomPosterType(type) {
+  return String(type || '') === 'CustomPoster';
 }
 
 /** Immediate-publish outage (no staged bulletin by type). */
@@ -25,6 +30,8 @@ export function getStatusDisplayLabel(status) {
   if (s === 'Energized') return 'Energized';
   if (s === 'Restored') return 'Energized';
   if (s === 'Ongoing') return 'Ongoing';
+  if (s === 'Cancelled') return 'Cancelled';
+  if (s === 'Rescheduled') return 'Rescheduled';
   return s || '—';
 }
 
@@ -42,6 +49,8 @@ export const STATUS_FORM_OPTIONS = [
   { value: 'Pending', label: 'Upcoming' },
   { value: 'Ongoing', label: 'Ongoing' },
   { value: 'Energized', label: 'Energized' },
+  { value: 'Cancelled', label: 'Cancelled' },
+  { value: 'Rescheduled', label: 'Rescheduled' },
 ];
 
 /** Lifecycle options when creating an advisory (no finalize status at create time) */
@@ -51,6 +60,7 @@ export const TYPE_FORM_OPTIONS = [
   { value: 'Scheduled', label: 'scheduled' },
   { value: 'Emergency', label: 'emergency' },
   { value: 'NgcScheduled', label: 'NGCP scheduled' },
+  { value: 'CustomPoster', label: 'power interruption (custom)' },
 ];
 
 /** Optional structured cause tag (API / DB `causeCategory`); first value '' = none */
@@ -79,6 +89,8 @@ export const FILTER_CHIPS = [
   { key: 'pending', label: 'Upcoming', apiStatus: 'Pending' },
   { key: 'ongoing', label: 'Ongoing', apiStatus: 'Ongoing' },
   { key: 'energized', label: 'Energized', apiStatus: 'Energized' },
+  { key: 'cancelled', label: 'Cancelled', apiStatus: 'Cancelled' },
+  { key: 'rescheduled', label: 'Rescheduled', apiStatus: 'Rescheduled' },
 ];
 
 /** True when advisory is in the post-outage / re-energized lifecycle state (for display windows, etc.). */

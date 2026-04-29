@@ -43,13 +43,19 @@ export function apiInterruptionTypeToDbLiteral(apiType, dbEnum) {
         'This database cannot store NGCP scheduled advisories until the type column is migrated. Run: node backend/run-migration.js backend/migrations/alter_interruption_outage_type_and_energized_status.sql',
     };
   }
+  if (apiType === 'CustomPoster' && !dbEnum.has('CustomPoster')) {
+    return {
+      error:
+        'This database cannot store CustomPoster advisories until the type column is migrated. Run: node backend/run-migration.js backend/migrations/add_custom_poster_interruption_type.sql',
+    };
+  }
   return {
-    error: `Database type ENUM does not accept "${apiType}". Apply backend/migrations/alter_interruption_outage_type_and_energized_status.sql (or align ENUM with Scheduled, Emergency, NgcScheduled).`,
+    error: `Database type ENUM does not accept "${apiType}". Apply backend/migrations/add_custom_poster_interruption_type.sql (or align ENUM with Scheduled, Emergency, NgcScheduled, CustomPoster).`,
   };
 }
 
 /**
- * @param {string} apiStatus - Pending | Ongoing | Energized
+ * @param {string} apiStatus - Pending | Ongoing | Energized | Cancelled | Rescheduled
  * @param {Set<string>|null} dbEnum
  * @returns {{ status: string } | { error: string }}
  */
@@ -64,6 +70,6 @@ export function apiInterruptionStatusToDbLiteral(apiStatus, dbEnum) {
     return { status: 'Restored' };
   }
   return {
-    error: `Database status ENUM does not accept "${apiStatus}". Apply backend/migrations/alter_interruption_outage_type_and_energized_status.sql.`,
+    error: `Database status ENUM does not accept "${apiStatus}". Apply backend/migrations/add_cancelled_rescheduled_interruption_statuses.sql.`,
   };
 }

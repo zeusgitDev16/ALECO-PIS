@@ -173,10 +173,12 @@ router.post('/google-login', async (req, res) => {
       });
     }
 
-    // 2. DATA SYNC: Update profile pic and name from verified Google claims
+    // 2. DATA SYNC: Keep DB name authoritative (user-editable in Profile page).
+    // Only refresh Google profile picture on sign-in.
+    const syncedProfilePic = google.picture || user.profile_pic;
     await pool.execute(
-      'UPDATE users SET profile_pic = ?, name = ? WHERE email = ?', 
-      [google.picture || user.profile_pic, google.name || user.name, email]
+      'UPDATE users SET profile_pic = ? WHERE email = ?',
+      [syncedProfilePic, email]
     );
 
     let accessToken;
@@ -191,10 +193,10 @@ router.post('/google-login', async (req, res) => {
       accessToken,
       user: { 
         id: user.id,
-        name: google.name || user.name,
+        name: user.name,
         email: user.email, 
         role: user.role, 
-        profilePic: google.picture || user.profile_pic,
+        profilePic: syncedProfilePic,
         tokenVersion: user.token_version // Essential for session verification
       }
     });

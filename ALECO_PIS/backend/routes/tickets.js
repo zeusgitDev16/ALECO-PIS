@@ -11,6 +11,7 @@ import { listUrgentKeywords } from '../utils/urgentKeywordsDb.js';
 import { concernMatchesUrgentKeywords } from '../utils/urgentKeywordMatch.js';
 import { DEFAULT_URGENT_KEYWORDS } from '../constants/defaultUrgentKeywords.js';
 import { clampSqlInt } from '../utils/safeSqlInt.js';
+import { deleteTicketWithCascade } from '../utils/ticketDeleteHelper.js';
 import {
   recordPersonnelNotification,
   PERSONNEL_EVENT,
@@ -324,79 +325,28 @@ router.put('/tickets/:ticketId', requireAdmin, async (req, res) => {
     }
 });
 
-// --- 2c. SOFT DELETE TICKET ROUTE ---
+// --- 2c. HARD DELETE TICKET ROUTE ---
 router.delete('/tickets/:ticketId', requireAdmin, async (req, res) => {
     try {
         const { ticketId } = req.params;
-
-        if (!ticketId || ticketId.startsWith('GROUP-')) {
-            return res.status(400).json({ success: false, message: 'Cannot delete GROUP master. Ungroup first.' });
-        }
-
-        const [existing] = await pool.execute('SELECT ticket_id, parent_ticket_id, deleted_at FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
-        if (existing.length === 0) {
-            return res.status(404).json({ success: false, message: 'Ticket not found.' });
-        }
-
-        if (existing[0].parent_ticket_id) {
-            return res.status(400).json({ success: false, message: 'Cannot delete a ticket that is part of a group. Ungroup first.' });
-        }
-
-        if (existing[0].deleted_at) {
-            return res.status(400).json({ success: false, message: 'Ticket is already deleted.' });
-        }
-
-        // Check for service memo and delete it
-        const [ticketWithMemo] = await pool.execute(
-            'SELECT service_memo_id FROM aleco_tickets WHERE ticket_id = ?',
-            [ticketId]
-        );
-
-        if (ticketWithMemo.length > 0 && ticketWithMemo[0].service_memo_id) {
-            try {
-                console.log(`🔍 Deleting service memo for ticket ${ticketId} (ticket deletion)`);
-                const serviceMemoId = ticketWithMemo[0].service_memo_id;
-
-                // Update ticket to remove service_memo_id FIRST (to avoid foreign key constraint)
-                await pool.execute(
-                    'UPDATE aleco_tickets SET service_memo_id = NULL WHERE ticket_id = ?',
-                    [ticketId]
-                );
-                console.log(`✅ Ticket service_memo_id set to NULL`);
-
-                // Delete the service memo
-                await pool.execute(
-                    'DELETE FROM aleco_service_memos WHERE id = ?',
-                    [serviceMemoId]
-                );
-                console.log(`✅ Service memo deleted for ticket ${ticketId}`);
-            } catch (memoError) {
-                console.error(`⚠️ Failed to delete service memo for ticket ${ticketId}:`, memoError.message);
-                // Don't fail the ticket deletion if memo deletion fails
-            }
-        }
-
-        await pool.execute('UPDATE aleco_tickets SET deleted_at = ? WHERE ticket_id = ?', [nowPhilippineForMysql(), ticketId]);
-
         const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
-        const actorName = req.body?.actor_name || req.headers['x-user-name'];
-        await insertTicketLog(pool, {
-            ticket_id: ticketId,
-            action: 'ticket_deleted',
-            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
-            actor_email: actorEmail || null,
-            actor_name: actorName || 'System',
-            metadata: null
+        const result = await deleteTicketWithCascade({
+            db: pool,
+            ticketId,
+            actorEmail,
+            allowGrouped: false,
         });
+        if (!result.success && result.code === 'not_found') {
+            return res.status(404).json({ success: false, message: result.message });
+        }
+        if (!result.success && result.code === 'grouped') {
+            return res.status(400).json({ success: false, message: result.message });
+        }
+        if (!result.success) {
+            return res.status(500).json({ success: false, message: 'Failed to delete ticket.' });
+        }
 
-        await recordTicketNotification(pool, {
-          eventType: TICKETS_EVENT.DELETED,
-          subjectName: ticketId,
-          detail: 'Ticket removed',
-          actorEmail: (actorEmail && String(actorEmail).trim()) || null,
-        });
-
-        console.log(`✅ TICKET SOFT DELETED: ${ticketId}`);
+        console.log(`✅ TICKET HARD DELETED: ${ticketId}`);
         res.json({ success: true, message: `Ticket ${ticketId} deleted.` });
     } catch (error) {
         console.error('❌ TICKET DELETE ERROR:', error);

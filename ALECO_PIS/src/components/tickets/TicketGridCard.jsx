@@ -8,10 +8,11 @@ import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
  */
 const TicketGridCard = ({ ticket, isSelected, isChecked, onSelectTicket, onToggleSelect }) => {
     const isGroupMaster = ticket.ticket_id?.startsWith('GROUP-');
+    const hasMemoLinked = Number(ticket?.service_memo_id || 0) > 0 || Number(ticket?.has_service_memo || 0) === 1;
 
     return (
         <div
-            className={`ticket-card-container ${isGroupMaster ? 'ticket-card-group' : ''} ${isSelected ? 'selected' : ''}`}
+            className={`ticket-card-container ${isGroupMaster ? 'ticket-card-group' : ''} ${hasMemoLinked ? 'ticket-has-memo' : ''} ${isSelected ? 'selected' : ''}`}
             onClick={() => onSelectTicket(ticket)}
         >
             <div className="ticket-category-banner">

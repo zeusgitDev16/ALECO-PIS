@@ -63,6 +63,15 @@
     border-left-color: var(--accent-primary);
 }
 
+/* Cyan side marker for memo-linked tickets */
+.ticket-card-container.ticket-has-memo {
+    box-shadow: inset 3px 0 0 #06b6d4;
+}
+
+[data-theme="dark"] .ticket-card-container.ticket-has-memo {
+    box-shadow: inset 3px 0 0 #ec4899;
+}
+
 .group-badge-parent {
     background: rgba(124, 58, 237, 0.2);
     color: var(--accent-primary);

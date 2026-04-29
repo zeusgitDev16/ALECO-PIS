@@ -10,7 +10,8 @@ export function getActiveTicketFiltersCount(filters) {
         filters.status,
         filters.groupFilter && filters.groupFilter !== 'all',
         filters.isNew,
-        filters.isUrgent
+        filters.isUrgent,
+        filters.hasMemo
     ].filter(Boolean).length;
 }
 
@@ -36,8 +37,11 @@ const BackupTicketFiltersForm = ({ filters, setFilters, showClear = true }) => {
         }
     };
 
+    const selectAllTickets = () =>
+        setFilters((prev) => ({ ...prev, isNew: false, isUrgent: false, hasMemo: false }));
     const toggleNew = () => setFilters((prev) => ({ ...prev, isNew: !prev.isNew }));
     const toggleUrgent = () => setFilters((prev) => ({ ...prev, isUrgent: !prev.isUrgent }));
+    const toggleHasMemo = () => setFilters((prev) => ({ ...prev, hasMemo: !prev.hasMemo }));
 
     const clearFilters = () => {
         setFilters({
@@ -47,14 +51,23 @@ const BackupTicketFiltersForm = ({ filters, setFilters, showClear = true }) => {
             status: '',
             groupFilter: 'all',
             isNew: false,
-            isUrgent: false
+            isUrgent: false,
+            hasMemo: false
         });
     };
 
     const activeCount = getActiveTicketFiltersCount(filters);
+    const allSelected = !filters.isNew && !filters.isUrgent && !filters.hasMemo;
 
     return (
         <>
+            <button
+                className={`backup-filter-pill ${allSelected ? 'active' : ''}`}
+                onClick={selectAllTickets}
+                type="button"
+            >
+                All
+            </button>
             <button
                 className={`backup-filter-pill ${filters.isNew ? 'active' : ''}`}
                 onClick={toggleNew}
@@ -68,6 +81,13 @@ const BackupTicketFiltersForm = ({ filters, setFilters, showClear = true }) => {
                 type="button"
             >
                 Urgent
+            </button>
+            <button
+                className={`backup-filter-pill ${filters.hasMemo ? 'active' : ''}`}
+                onClick={toggleHasMemo}
+                type="button"
+            >
+                Memo Linked
             </button>
             <select
                 name="status"

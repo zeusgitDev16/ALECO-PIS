@@ -33,6 +33,7 @@ import { getPublicAppBaseUrl } from '../utils/posterCaptureUrl.js';
 import {
   maybeRegeneratePosterAfterMutation,
   captureInterruptionPosterForAdmin,
+  deleteCloudinaryAssetsForAdvisory,
 } from '../services/interruptionPosterCapture.js';
 import { escapeHtmlAttr, shareHeadlineFromType, shareDescriptionFromDto } from '../utils/interruptionShareHtml.js';
 
@@ -148,6 +149,7 @@ function validatePayload(body, { partial = false } = {}) {
   const errors = [];
   const type = body.type;
   const isNgcpScheduled = type === 'NgcScheduled';
+  const isCustomPoster = type === 'CustomPoster';
   const status = body.status;
   const feeder = body.feeder;
   const feederIdRaw = body.feederId;
@@ -157,13 +159,15 @@ function validatePayload(body, { partial = false } = {}) {
 
   if (!partial || type !== undefined) {
     if (!type || !TYPES.has(type)) {
-      errors.push('type must be Scheduled, Emergency, or NgcScheduled');
+      errors.push('type must be Scheduled, Emergency, NgcScheduled, or CustomPoster');
     }
   }
   if (!partial || status !== undefined) {
-    if (!status || !STATUSES.has(status)) errors.push('status must be Pending, Ongoing, or Energized');
+    if (!status || !STATUSES.has(status)) {
+      errors.push('status must be Pending, Ongoing, Energized, Cancelled, or Rescheduled');
+    }
   }
-  if (!isNgcpScheduled && (!partial || feeder !== undefined || feederIdRaw !== undefined)) {
+  if (!isNgcpScheduled && !isCustomPoster && (!partial || feeder !== undefined || feederIdRaw !== undefined)) {
     const hasFeederText = feeder != null && String(feeder).trim() !== '';
     const hasFeederId =
       feederIdRaw !== undefined &&
@@ -178,13 +182,13 @@ function validatePayload(body, { partial = false } = {}) {
   const hasBody = bodyText !== undefined && bodyText !== null && String(bodyText).trim() !== '';
   const hasLegacy = cause !== undefined && cause !== null && String(cause).trim() !== '';
   if (!partial) {
-    if (!hasBody && !hasLegacy) {
+    if (!isCustomPoster && !hasBody && !hasLegacy) {
       errors.push('Provide either body (free-form post) or cause (legacy). At least one is required.');
     }
-    if (type === 'NgcScheduled') {
+    if (type === 'NgcScheduled' || type === 'CustomPoster') {
       const img = body.imageUrl;
       if (img == null || String(img).trim() === '') {
-        errors.push('imageUrl is required for NgcScheduled advisories.');
+        errors.push(`imageUrl is required for ${type === 'NgcScheduled' ? 'NgcScheduled' : 'CustomPoster'} advisories.`);
       }
     }
   }
@@ -686,6 +690,10 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
       feederLabelVal = 'NGCP NOTICE';
       feederIdVal = null;
     }
+    if (type === 'CustomPoster' && !feederLabelVal) {
+      feederLabelVal = 'CUSTOM POSTER';
+      feederIdVal = null;
+    }
     if (!feederLabelVal) {
       return res.status(400).json({ success: false, message: 'feeder is required' });
     }
@@ -720,7 +728,7 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
           bodyVal,
           controlNoVal,
           imageUrlVal,
-          null,
+          type === 'CustomPoster' ? imageUrlVal : null,
           start,
           endEst,
           restored,
@@ -978,8 +986,16 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
       params.push(controlNo != null && String(controlNo).trim() !== '' ? String(controlNo).trim() : null);
     }
     if (imageUrl !== undefined) {
+      const imgVal = imageUrl != null && String(imageUrl).trim() !== '' ? String(imageUrl).trim() : null;
       fields.push('image_url = ?');
-      params.push(imageUrl != null && String(imageUrl).trim() !== '' ? String(imageUrl).trim() : null);
+      params.push(imgVal);
+      if (hasPoster) {
+        const effectiveType = type !== undefined ? type : String(ex.type || '').trim();
+        if (effectiveType === 'CustomPoster') {
+          fields.push('poster_image_url = ?');
+          params.push(imgVal);
+        }
+      }
     }
     if (causeCategory !== undefined) {
       const cc = parseCauseCategoryInput(causeCategory);
@@ -1068,7 +1084,14 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
     if (statusIsChanging && !isPendingToOngoing && statusChangeRemark) {
       const remarkText = String(statusChangeRemark).trim();
       if (remarkText) {
-        const statusLabels = { Pending: 'Upcoming', Ongoing: 'Ongoing', Energized: 'Energized', Restored: 'Energized' };
+        const statusLabels = {
+          Pending: 'Upcoming',
+          Ongoing: 'Ongoing',
+          Energized: 'Energized',
+          Restored: 'Energized',
+          Cancelled: 'Cancelled',
+          Rescheduled: 'Rescheduled',
+        };
         const fromLabel = statusLabels[ex.status] ?? ex.status;
         const toLabel = statusLabels[nextStatus] ?? nextStatus;
         const fullRemark = `Status changed from ${fromLabel} to ${toLabel}: ${remarkText}`;
@@ -1174,8 +1197,10 @@ router.delete('/interruptions/:id/permanent', requireAdmin, async (req, res) => 
         message: 'Permanent delete requires the soft-delete migration. Archive first, then delete permanently.',
       });
     }
+    const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+    const extraCols = hasPoster ? ', image_url, poster_image_url' : ', image_url';
     const [check] = await pool.execute(
-      'SELECT id, deleted_at FROM aleco_interruptions WHERE id = ?',
+      `SELECT id, deleted_at${extraCols} FROM aleco_interruptions WHERE id = ?`,
       [id]
     );
     if (check.length === 0) {
@@ -1187,7 +1212,13 @@ router.delete('/interruptions/:id/permanent', requireAdmin, async (req, res) => 
         message: 'Only archived advisories can be permanently deleted. Archive the advisory first.',
       });
     }
+    const rowSnapshot = check[0];
     await pool.execute('DELETE FROM aleco_interruptions WHERE id = ?', [id]);
+    setImmediate(() => {
+      deleteCloudinaryAssetsForAdvisory(id, rowSnapshot).catch((e) =>
+        console.warn('[poster] permanent-delete cleanup:', e?.message || e)
+      );
+    });
     res.json({ success: true, message: 'Permanently deleted.' });
   } catch (error) {
     console.error('Interruptions permanent delete error:', error);
@@ -1344,6 +1375,13 @@ router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) 
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
     }
 
+    if (String(rawRow.type || '') === 'CustomPoster') {
+      return res.status(400).json({
+        success: false,
+        message: 'CustomPoster advisories use the uploaded image directly as the poster. No poster capture is needed.',
+      });
+    }
+
     const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
     if (!env.CLOUDINARY_CLOUD_NAME || !cloudinary?.uploader?.upload) {
       return res.status(503).json({
@@ -1420,6 +1458,13 @@ router.post('/interruptions/:id/poster-stub', requireAdmin, async (req, res) => 
     const rawRow = capRows[0];
     if (!rawRow) {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+
+    if (String(rawRow.type || '') === 'CustomPoster') {
+      return res.status(400).json({
+        success: false,
+        message: 'CustomPoster advisories use the uploaded image directly as the poster. No poster generation is needed.',
+      });
     }
 
     const cap = await captureInterruptionPosterForAdmin(pool, id, rawRow);

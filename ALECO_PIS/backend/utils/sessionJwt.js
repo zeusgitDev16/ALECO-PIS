@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 
 const ISSUER = 'aleco-pis-api';
 const AUDIENCE = 'aleco-pis-spa';
+const DELETE_SCOPE = 'tickets_archive_delete';
 
 /**
  * HS256 secret for access tokens. Required in production (min 32 chars recommended).
@@ -58,4 +59,40 @@ export function verifyAccessToken(token) {
     throw err;
   }
   return { email, tokenVersion };
+}
+
+/**
+ * Short-lived token that authorizes one archive delete action.
+ * @param {string} email
+ */
+export function signArchiveDeleteToken(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  if (!normalized) throw new Error('signArchiveDeleteToken: invalid email');
+  const secret = getJwtSecret();
+  return jwt.sign({ scope: DELETE_SCOPE }, secret, {
+    subject: normalized,
+    expiresIn: '10m',
+    issuer: ISSUER,
+    audience: AUDIENCE,
+  });
+}
+
+/**
+ * @param {string} token
+ * @returns {{ email: string, scope: string }}
+ */
+export function verifyArchiveDeleteToken(token) {
+  const secret = getJwtSecret();
+  const payload = jwt.verify(token, secret, {
+    issuer: ISSUER,
+    audience: AUDIENCE,
+  });
+  const email = String(payload.sub || '').trim().toLowerCase();
+  const scope = String(payload.scope || '');
+  if (!email || scope !== DELETE_SCOPE) {
+    const err = new Error('Invalid archive delete token');
+    err.code = 'AUTH_INVALID';
+    throw err;
+  }
+  return { email, scope };
 }

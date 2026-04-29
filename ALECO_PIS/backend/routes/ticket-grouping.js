@@ -254,10 +254,26 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireAdmin, async (req, res
     try {
         await connection.beginTransaction();
 
-        // Clear parent_ticket_id and visit_order for all children
-        const [result] = await connection.execute(
-            `UPDATE aleco_tickets SET parent_ticket_id = NULL, visit_order = NULL WHERE parent_ticket_id = ?`,
+        // Read master's current status and children's current statuses for audit log
+        const [masterRows] = await connection.execute(
+            `SELECT status FROM aleco_tickets WHERE ticket_id = ?`,
             [mainTicketId]
+        );
+        if (masterRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Group not found.' });
+        }
+        const masterStatus = masterRows[0].status;
+
+        const [childRows] = await connection.execute(
+            `SELECT ticket_id, status FROM aleco_tickets WHERE parent_ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        // Sync children's status to master's current status, then unlink them
+        const [result] = await connection.execute(
+            `UPDATE aleco_tickets SET status = ?, parent_ticket_id = NULL, visit_order = NULL WHERE parent_ticket_id = ?`,
+            [masterStatus, mainTicketId]
         );
 
         // Delete the GROUP master record
@@ -268,12 +284,29 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireAdmin, async (req, res
 
         await connection.commit();
 
+        const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
+        const actorName = req.body?.actor_name || req.headers['x-user-name'];
+        for (const child of childRows) {
+            if (child.status !== masterStatus) {
+                await insertTicketLog(pool, {
+                    ticket_id: child.ticket_id,
+                    action: 'status_change',
+                    from_status: child.status,
+                    to_status: masterStatus,
+                    actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                    actor_email: actorEmail || null,
+                    actor_name: actorName || 'System',
+                    metadata: { reason: 'ungroup_status_sync', main_ticket_id: mainTicketId }
+                });
+            }
+        }
+
         const affected = result.affectedRows || 0;
-        console.log(`✅ UNGROUP: ${mainTicketId} - ${affected} tickets ungrouped`);
+        console.log(`✅ UNGROUP: ${mainTicketId} - ${affected} tickets ungrouped, status synced to "${masterStatus}"`);
 
         res.json({
             success: true,
-            message: `Group dissolved. ${affected} tickets ungrouped.`,
+            message: `Group dissolved. ${affected} tickets ungrouped with status "${masterStatus}".`,
             ungroupedCount: affected
         });
     } catch (error) {

@@ -38,7 +38,7 @@ function previewSubtitle(entity, metadata) {
     return `${metadata.ticketCount} tickets, ${metadata.logCount} logs`;
 }
 
-const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
+const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets', title = 'Export Preview' }) => {
     const [activeTab, setActiveTab] = useState(() => defaultTabForEntity(entity));
 
     useEffect(() => {
@@ -63,9 +63,12 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                 <button className="dispatch-modal-close-btn" onClick={onClose} aria-label="Close">&times;</button>
 
                 <div className="dispatch-modal-header-container">
-                    <h2 className="dispatch-modal-header">Export Preview</h2>
+                    <h2 className="dispatch-modal-header">{title}</h2>
                     <p className="dispatch-modal-subtitle">
                         {metadata.dateStart} to {metadata.dateEnd} — {previewSubtitle(entity, metadata)}
+                        {entity === 'tickets' && Number(metadata.blockedGroupedCount || 0) > 0
+                            ? ` | Blocked grouped: ${metadata.blockedGroupedCount}`
+                            : ''}
                     </p>
                 </div>
 

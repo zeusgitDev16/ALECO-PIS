@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../CSS/DispatchTicketModal.css';
 
 /**
@@ -11,11 +11,21 @@ import '../../CSS/DispatchTicketModal.css';
  * @param {string} confirmLabel - e.g. "Confirm", "Delete"
  * @param {string} cancelLabel - e.g. "Cancel"
  * @param {string} variant - 'danger' | 'default' | 'success' | 'hold' | 'unresolved' | 'nff' | 'access-denied' | 'ungroup' | 'revert-pending' - affects confirm button style
+ * @param {string} [requireConfirmText] - When set, user must type this exact string before the confirm button is enabled
  */
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', variant = 'default' }) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', variant = 'default', requireConfirmText }) => {
+    const [typed, setTyped] = useState('');
+
+    useEffect(() => {
+        if (!isOpen) setTyped('');
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
+    const canConfirm = !requireConfirmText || typed === requireConfirmText;
+
     const handleConfirm = () => {
+        if (!canConfirm) return;
         onConfirm?.();
         onClose?.();
     };
@@ -44,6 +54,28 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel
                     <p className="dispatch-modal-subtitle">{message}</p>
                 </div>
 
+                {requireConfirmText && (
+                    <div style={{ padding: '0 0 12px 0' }}>
+                        <input
+                            type="text"
+                            value={typed}
+                            onChange={(e) => setTyped(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
+                            placeholder={`Type "${requireConfirmText}" to confirm`}
+                            autoFocus
+                            style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                fontSize: '0.9rem',
+                                border: `1.5px solid ${typed === requireConfirmText ? '#d32f2f' : '#ccc'}`,
+                                borderRadius: '6px',
+                                boxSizing: 'border-box',
+                                outline: 'none',
+                            }}
+                        />
+                    </div>
+                )}
+
                 <div className="dispatch-modal-actions">
                     <button type="button" className="btn-action btn-cancel" onClick={onClose}>
                         {cancelLabel}
@@ -52,6 +84,8 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel
                         type="button"
                         className={`btn-action ${getConfirmClass()}`}
                         onClick={handleConfirm}
+                        disabled={!canConfirm}
+                        style={!canConfirm ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
                     >
                         {confirmLabel}
                     </button>

@@ -4,6 +4,7 @@ import {
   TYPE_FORM_OPTIONS,
   CAUSE_CATEGORY_FORM_OPTIONS,
   isEmergencyOutageType,
+  isCustomPosterType,
 } from '../../utils/interruptionLabels';
 import {
   datetimeLocalToApi,
@@ -102,7 +103,8 @@ export default function InterruptionAdvisoryForm({
 }) {
   const now = useNow([]);
   const isNgcpScheduled = form.type === 'NgcScheduled';
-  const lockTypeForNgcpEdit = Boolean(editingId && isNgcpScheduled);
+  const isCustomPoster = isCustomPosterType(form.type);
+  const lockTypeChange = Boolean(editingId && (isNgcpScheduled || isCustomPoster));
   const unscheduledFutureStart = useMemo(() => {
     if (!isEmergencyOutageType(form.type)) return false;
     const d = datetimeLocalStringToDate(form.dateTimeStart);
@@ -291,7 +293,7 @@ export default function InterruptionAdvisoryForm({
               <select
                 value={form.type}
                 onChange={(ev) => handleTypeChange(ev.target.value)}
-                disabled={lockTypeForNgcpEdit}
+                disabled={lockTypeChange}
               >
                 {TYPE_FORM_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -299,13 +301,13 @@ export default function InterruptionAdvisoryForm({
                   </option>
                 ))}
               </select>
-              {lockTypeForNgcpEdit && (
+              {lockTypeChange && (
                 <span className="interruptions-admin-field-hint">
-                  Outage type is locked for NGCP scheduled advisories to keep UI and backend rules consistent.
+                  Outage type is locked after creation to keep UI and backend rules consistent.
                 </span>
               )}
             </label>
-            {!isNgcpScheduled && (
+            {!isNgcpScheduled && !isCustomPoster && (
               <label>
                 Feeder
                 <FeederCascadeSelect
@@ -316,7 +318,7 @@ export default function InterruptionAdvisoryForm({
                 />
               </label>
             )}
-            {!isNgcpScheduled && (
+            {!isNgcpScheduled && !isCustomPoster && (
               <label>
                 Control #
                 <input
@@ -339,7 +341,7 @@ export default function InterruptionAdvisoryForm({
               </div>
               <DatetimePreview value={form.dateTimeStart} />
             </label>
-            {!isNgcpScheduled && (
+            {!isNgcpScheduled && !isCustomPoster && (
               <label className="interruptions-admin-datetime-field">
                 Estimated restoration (ERT)
                 <div className="interruptions-admin-datetime-wrap">
@@ -353,7 +355,7 @@ export default function InterruptionAdvisoryForm({
                 <DatetimePreview value={form.dateTimeEndEstimated} />
               </label>
             )}
-            {!isNgcpScheduled && (
+            {!isNgcpScheduled && !isCustomPoster && (
               <label className="interruptions-admin-span2">
                 Cause category (optional)
                 <select
@@ -369,13 +371,25 @@ export default function InterruptionAdvisoryForm({
               </label>
             )}
             <div
-              className={`interruptions-admin-span2 interruptions-admin-image-upload${isNgcpScheduled ? ' interruptions-admin-image-upload--ngcp' : ''}`}
+              className={`interruptions-admin-span2 interruptions-admin-image-upload${isNgcpScheduled ? ' interruptions-admin-image-upload--ngcp' : isCustomPoster ? ' interruptions-admin-image-upload--custom' : ''}`}
             >
-              <label>{isNgcpScheduled ? 'Official NGCP notice image (required)' : 'Advisory image (optional)'}</label>
+              <label>
+                {isNgcpScheduled
+                  ? 'Official NGCP notice image (required)'
+                  : isCustomPoster
+                  ? 'Custom poster image (required)'
+                  : 'Advisory image (optional)'}
+              </label>
               {isNgcpScheduled && (
                 <p className="interruptions-admin-field-hint interruptions-admin-image-upload-note--ngcp">
                   Attach the official NGCP poster/notice image. This is required and will be embedded at the center
                   of the ALECO NGCP poster template. Use high-resolution source files (recommended 1800x1100+).
+                </p>
+              )}
+              {isCustomPoster && (
+                <p className="interruptions-admin-field-hint interruptions-admin-image-upload-note--custom">
+                  Upload your custom poster (e.g. from Canva). This image is shown directly in the public feed as
+                  the poster — no template is generated. All other fields below are optional.
                 </p>
               )}
               {imageUploadHint && (
@@ -437,10 +451,10 @@ export default function InterruptionAdvisoryForm({
                 onClick={() => setLegacyFieldsOpen((o) => !o)}
                 aria-expanded={legacyFieldsOpen}
               >
-                {legacyFieldsOpen ? '▼' : '▶'} Legacy metadata (optional)
+                {legacyFieldsOpen ? '▼' : '▶'} {isCustomPoster ? 'Where & Why (optional)' : 'Legacy metadata (optional)'}
               </button>
             ) : (
-              'Where & Why'
+              isCustomPoster ? 'Where & Why (optional)' : 'Where & Why'
             )}
           </legend>
           {(showLegacyFields || legacyFieldsOpen) && (
@@ -675,14 +689,14 @@ export default function InterruptionAdvisoryForm({
                     placeholder="Select auto-restoration date and time"
                     futureOnly
                     strictlyAfter={datetimeLocalStringToDate(
-                      isNgcpScheduled ? form.dateTimeStart : form.dateTimeEndEstimated
+                      (isNgcpScheduled || isCustomPoster) ? form.dateTimeStart : form.dateTimeEndEstimated
                     )}
                   />
                 </div>
                 <DatetimePreview value={form.scheduledRestoreAt} />
-                {isNgcpScheduled ? (
+                {(isNgcpScheduled || isCustomPoster) ? (
                   <p className="interruptions-admin-field-hint">
-                    Optional for NGCP: leave this blank to keep the advisory in pending/manual restoration mode.
+                    Optional: leave this blank to keep the advisory in pending/manual restoration mode.
                     Set a date later when ready to arm auto-restoration.
                   </p>
                 ) : form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim() && (
@@ -712,12 +726,14 @@ export default function InterruptionAdvisoryForm({
           )}
         </fieldset>
 
+        {!isCustomPoster && (
         <details className="interruptions-admin-fieldset interruptions-admin-poster-preview-details">
           <summary className="interruptions-admin-poster-preview-summary">Poster fields preview</summary>
           <InterruptionPosterAlignmentPreview dto={posterPreviewDto} />
         </details>
+        )}
 
-        {editingId && typeof onUpdatePoster === 'function' && (
+        {!isCustomPoster && editingId && typeof onUpdatePoster === 'function' && (
           <div className="interruptions-admin-poster-stub-panel">
             <p className="interruptions-admin-field-hint">
               Keep the public poster synchronized with advisory edits.
@@ -737,6 +753,14 @@ export default function InterruptionAdvisoryForm({
                 {posterAssetBusy ? 'Working…' : 'Update poster'}
               </button>
             </div>
+          </div>
+        )}
+        {isCustomPoster && editingId && (
+          <div className="interruptions-admin-poster-stub-panel">
+            <p className="interruptions-admin-field-hint">
+              This advisory uses your uploaded custom image as the poster — no template generation is needed.
+              To update the poster, upload a new image above.
+            </p>
           </div>
         )}
 

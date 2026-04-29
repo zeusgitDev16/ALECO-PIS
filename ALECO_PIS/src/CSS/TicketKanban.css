@@ -33,6 +33,15 @@
     border-left-color: var(--accent-primary);
 }
 
+/* Cyan side marker for memo-linked tickets */
+.kanban-ticket-card.kanban-card-has-memo {
+    box-shadow: inset 3px 0 0 #06b6d4;
+}
+
+[data-theme="dark"] .kanban-ticket-card.kanban-card-has-memo {
+    box-shadow: inset 3px 0 0 #ec4899;
+}
+
 /* ============================================================================
    KANBAN CONTAINER
    ============================================================================ */

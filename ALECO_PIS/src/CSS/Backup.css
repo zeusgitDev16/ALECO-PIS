@@ -221,6 +221,10 @@
     min-width: calc(120px * var(--backup-ui-scale, 1));
 }
 
+.backup-filter-input {
+    min-width: calc(170px * var(--backup-ui-scale, 1));
+}
+
 .backup-filter-select:focus {
     outline: none;
     border-color: var(--accent-primary);
@@ -1403,6 +1407,20 @@
     outline: none;
     border-color: #7d2ee6;
     box-shadow: 0 0 0 2px rgba(125, 46, 230, 0.12);
+}
+
+[data-theme="dark"] .backup-delete-verify-label {
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .backup-delete-verify-input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .backup-delete-verify-input::placeholder {
+    color: #94a3b8;
 }
 
 .backup-delete-verify-send-btn {

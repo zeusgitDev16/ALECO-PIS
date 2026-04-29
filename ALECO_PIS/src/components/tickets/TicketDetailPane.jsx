@@ -348,13 +348,14 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         </div>
                     )}
 
-                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes) && ['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
+                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes || ticket.concern_resolution_notes) && ['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
                         <div className="detail-group dispatch-info-section">
-                            <label>Dispatch Info</label>
+                            <label>{ticket.concern_resolution_notes ? 'Resolution Info' : 'Dispatch Info'}</label>
                             <div className="dispatch-info-box">
                                 {ticket.assigned_crew && <p><strong>Crew:</strong> {ticket.assigned_crew}</p>}
                                 {ticket.eta && <p><strong>ETA:</strong> {ticket.eta}</p>}
                                 {ticket.dispatch_notes && <p><strong>Notes:</strong> {ticket.dispatch_notes}</p>}
+                                {ticket.concern_resolution_notes && <p><strong>Concern Notes:</strong> {ticket.concern_resolution_notes}</p>}
                                 {ticket.hold_reason && (
                                     <p className="hold-info"><strong>On Hold:</strong> {ticket.hold_reason}{ticket.hold_since ? ` (since ${formatToPhilippineTime(ticket.hold_since)})` : ''}</p>
                                 )}

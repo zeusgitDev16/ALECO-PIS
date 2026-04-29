@@ -11,7 +11,7 @@ export function toMysqlFormatForConcurrency(isoString) {
   return toMysqlFormatPhilippine(isoString);
 }
 
-/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, affectedAreasGrouped: { heading: string, items: string[] }[], feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, posterImageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
+/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, affectedAreasGrouped: { heading: string, items: string[] }[], feeder: string, substationRecloser: string, feederId: number | null, cause: string, indicationMagnitude: string, possibleFaultLocation: string, linemenOnDuty: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, posterImageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
 
 export const emptyForm = {
   type: 'Emergency',
@@ -20,8 +20,12 @@ export const emptyForm = {
   affectedAreasText: '',
   affectedAreasGrouped: [],
   feeder: '',
+  substationRecloser: '',
   feederId: null,
   cause: '',
+  indicationMagnitude: '',
+  possibleFaultLocation: '',
+  linemenOnDuty: '',
   causeCategory: '',
   dateTimeStart: '',
   dateTimeEndEstimated: '',
@@ -145,10 +149,34 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
     type: form.type,
     affectedAreas,
     feeder: isNgcpScheduled ? null : form.feeder,
+    substationRecloser:
+      isNgcpScheduled || isCustomPoster
+        ? null
+        : form.substationRecloser && String(form.substationRecloser).trim()
+          ? String(form.substationRecloser).trim()
+          : null,
     feederId: isNgcpScheduled
       ? null
       : form.feederId != null && String(form.feederId).trim() !== '' ? Number(form.feederId) : null,
     cause: isNgcpScheduled ? null : form.cause,
+    indicationMagnitude:
+      isNgcpScheduled || isCustomPoster
+        ? null
+        : form.indicationMagnitude && String(form.indicationMagnitude).trim()
+          ? String(form.indicationMagnitude).trim()
+          : null,
+    possibleFaultLocation:
+      isNgcpScheduled || isCustomPoster
+        ? null
+        : form.possibleFaultLocation && String(form.possibleFaultLocation).trim()
+          ? String(form.possibleFaultLocation).trim()
+          : null,
+    linemenOnDuty:
+      isNgcpScheduled || isCustomPoster
+        ? null
+        : form.linemenOnDuty && String(form.linemenOnDuty).trim()
+          ? String(form.linemenOnDuty).trim()
+          : null,
     dateTimeStart: datetimeLocalToApi(form.dateTimeStart),
     dateTimeEndEstimated: isNgcpScheduled ? null : datetimeLocalToApi(form.dateTimeEndEstimated),
     causeCategory: (isNgcpScheduled || isCustomPoster) ? null : causeCategory,
@@ -330,8 +358,12 @@ export function rowToFormState(row) {
     affectedAreasText: (row.affectedAreas || []).join(', '),
     affectedAreasGrouped: Array.isArray(row.affectedAreasGrouped) ? row.affectedAreasGrouped : [],
     feeder: row.feeder || '',
+    substationRecloser: row.substationRecloser ? String(row.substationRecloser) : '',
     feederId: row.feederId != null ? Number(row.feederId) : null,
     cause: row.cause || '',
+    indicationMagnitude: row.indicationMagnitude ? String(row.indicationMagnitude) : '',
+    possibleFaultLocation: row.possibleFaultLocation ? String(row.possibleFaultLocation) : '',
+    linemenOnDuty: row.linemenOnDuty ? String(row.linemenOnDuty) : '',
     causeCategory: row.causeCategory ? String(row.causeCategory) : '',
     dateTimeStart: displayToDatetimeLocal(row.dateTimeStart),
     dateTimeEndEstimated: displayToDatetimeLocal(row.dateTimeEndEstimated),

@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
-import { formatToPhilippineTime } from '../utils/dateUtils';
+import { formatPhilippineWallClock } from '../utils/dateUtils';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketTableView.css';
@@ -20,7 +20,7 @@ const ALL_MODULES = Object.keys(MODULE_META);
 
 const formatDate = (d) => {
     if (!d) return '—';
-    return formatToPhilippineTime(d);
+    return formatPhilippineWallClock(d);
 };
 
 const AdminHistory = () => {
@@ -39,6 +39,8 @@ const AdminHistory = () => {
         endDate: '',
     });
     const [page, setPage] = useState(0);
+    const [cellPopup, setCellPopup] = useState({ open: false, text: '', top: 0, left: 0 });
+    const popupRef = useRef(null);
     const limit = 50;
 
     const fetchLogs = async () => {
@@ -75,6 +77,40 @@ const AdminHistory = () => {
     useEffect(() => {
         fetchLogs();
     }, [page, filters.modules, filters.q, filters.actor, filters.startDate, filters.endDate]);
+
+    useEffect(() => {
+        if (!cellPopup.open) return undefined;
+
+        const closePopup = () => setCellPopup((prev) => ({ ...prev, open: false }));
+        const onDocumentDown = (e) => {
+            if (!popupRef.current) return;
+            if (!popupRef.current.contains(e.target)) closePopup();
+        };
+        const onEsc = (e) => {
+            if (e.key === 'Escape') closePopup();
+        };
+
+        document.addEventListener('mousedown', onDocumentDown);
+        document.addEventListener('keydown', onEsc);
+        window.addEventListener('scroll', closePopup, true);
+        window.addEventListener('resize', closePopup);
+
+        return () => {
+            document.removeEventListener('mousedown', onDocumentDown);
+            document.removeEventListener('keydown', onEsc);
+            window.removeEventListener('scroll', closePopup, true);
+            window.removeEventListener('resize', closePopup);
+        };
+    }, [cellPopup.open]);
+
+    const openCellPopup = (e, textValue) => {
+        const text = String(textValue || '—');
+        const rect = e.currentTarget.getBoundingClientRect();
+        const popupWidth = Math.min(420, window.innerWidth - 24);
+        const left = Math.max(12, Math.min(rect.left, window.innerWidth - popupWidth - 12));
+        const top = Math.min(window.innerHeight - 12, rect.bottom + 8);
+        setCellPopup({ open: true, text, left, top });
+    };
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -124,25 +160,37 @@ const AdminHistory = () => {
     const renderTable = () => (
         <div className="history-table-wrap">
             <table className="ticket-table history-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Module</th>
-                        <th>Action</th>
-                        <th>Details</th>
-                        <th>Actor</th>
-                        <th>Entity</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.map((row) => (
-                        <tr key={row.id}>
-                            <td>{formatDate(row.createdAt)}</td>
-                            <td><span className={`history-module-badge module-${row.module}`}>{MODULE_META[row.module]?.label || row.module}</span></td>
-                            <td>{row.title || row.action || '—'}</td>
-                            <td>{row.detail || '—'}</td>
-                            <td>{row.actorName || row.actorEmail || 'System'}</td>
-                            <td>{row.entityLabel || row.entityId || '—'}</td>
+                <tbody className="ticket-table-body history-table-body">
+                    {rows.map((row, index) => (
+                        <tr key={row.id} className={`ticket-table-row ${index % 2 === 0 ? 'even' : 'odd'}`}>
+                            <td className="history-col-date">
+                                <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, formatDate(row.createdAt))}>
+                                    {formatDate(row.createdAt)}
+                                </button>
+                            </td>
+                            <td className="history-col-module">
+                                <span className={`history-module-badge module-${row.module}`}>{MODULE_META[row.module]?.label || row.module}</span>
+                            </td>
+                            <td className="history-col-action">
+                                <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.title || row.action || '—')}>
+                                    {row.title || row.action || '—'}
+                                </button>
+                            </td>
+                            <td className="history-col-details">
+                                <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.detail || '—')}>
+                                    {row.detail || '—'}
+                                </button>
+                            </td>
+                            <td className="history-col-actor">
+                                <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.actorName || row.actorEmail || 'System')}>
+                                    {row.actorName || row.actorEmail || 'System'}
+                                </button>
+                            </td>
+                            <td className="history-col-entity">
+                                <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.entityLabel || row.entityId || '—')}>
+                                    {row.entityLabel || row.entityId || '—'}
+                                </button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>
@@ -179,88 +227,117 @@ const AdminHistory = () => {
                     </div>
                 </div>
 
-                <div className="main-content-card">
-                    <div className="history-summary-grid">
-                        {ALL_MODULES.map((module) => (
-                            <button
-                                key={module}
-                                type="button"
-                                className={`history-summary-card module-${module} ${filters.modules.includes(module) ? 'active' : ''} ${highestModule === module ? 'is-top-module' : ''}`}
-                                onClick={() => toggleModule(module)}
-                            >
-                                <div className="history-summary-title">{MODULE_META[module].label}</div>
-                                <div className="history-summary-count">{countsByModule[module] || 0}</div>
-                                <div className="history-summary-trend">
-                                    {highestModule === module ? 'Most active module' : 'Recent activity'}
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="history-filter-actions">
-                        <button type="button" className="btn-action btn-cancel history-filter-toggle" onClick={() => setMobileFiltersOpen((v) => !v)}>
-                            Filters {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}
-                        </button>
-                        <div className="history-view-toggle" role="tablist" aria-label="History view mode">
-                            <button type="button" className={`history-view-btn ${viewMode === 'timeline' ? 'active' : ''}`} onClick={() => setViewMode('timeline')}>Timeline</button>
-                            <button type="button" className={`history-view-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>Table</button>
+                <div className="main-content-card history-main-content">
+                    <div className="history-sticky-top-guard" aria-hidden="true" />
+                    <div className="history-sticky-controls">
+                        <div className="history-summary-grid">
+                            {ALL_MODULES.map((module) => (
+                                <button
+                                    key={module}
+                                    type="button"
+                                    className={`history-summary-card module-${module} ${filters.modules.includes(module) ? 'active' : ''} ${highestModule === module ? 'is-top-module' : ''}`}
+                                    onClick={() => toggleModule(module)}
+                                >
+                                    <div className="history-summary-title">{MODULE_META[module].label}</div>
+                                    <div className="history-summary-count">{countsByModule[module] || 0}</div>
+                                    <div className="history-summary-trend">
+                                        {highestModule === module ? 'Most active module' : 'Recent activity'}
+                                    </div>
+                                </button>
+                            ))}
                         </div>
-                    </div>
 
-                    <div className={`history-filters-panel ${mobileFiltersOpen ? 'open' : ''}`}>
-                        <input
-                            type="text"
-                            name="q"
-                            placeholder="Search action/details/entity"
-                            value={filters.q}
-                            onChange={handleFilterChange}
-                            className="history-filter-input"
-                        />
-                        <input
-                            type="text"
-                            name="actor"
-                            placeholder="Actor email/name"
-                            value={filters.actor}
-                            onChange={handleFilterChange}
-                            className="history-filter-input"
-                        />
-                        <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="history-filter-input" />
-                        <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="history-filter-input" />
-                        <button type="button" className="btn-action btn-cancel" onClick={clearFilters}>Reset</button>
+                        <div className="history-filter-actions">
+                            <button type="button" className="btn-action btn-cancel history-filter-toggle" onClick={() => setMobileFiltersOpen((v) => !v)}>
+                                Filters {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}
+                            </button>
+                            <div className="history-view-toggle" role="tablist" aria-label="History view mode">
+                                <button type="button" className={`history-view-btn ${viewMode === 'timeline' ? 'active' : ''}`} onClick={() => setViewMode('timeline')}>Timeline</button>
+                                <button type="button" className={`history-view-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>Table</button>
+                            </div>
+                        </div>
+
+                        <div className={`history-filters-panel ${mobileFiltersOpen ? 'open' : ''}`}>
+                            <input
+                                type="text"
+                                name="q"
+                                placeholder="Search action/details/entity"
+                                value={filters.q}
+                                onChange={handleFilterChange}
+                                className="history-filter-input"
+                            />
+                            <input
+                                type="text"
+                                name="actor"
+                                placeholder="Actor email/name"
+                                value={filters.actor}
+                                onChange={handleFilterChange}
+                                className="history-filter-input"
+                            />
+                            <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="history-filter-input" />
+                            <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="history-filter-input" />
+                            <button type="button" className="btn-action btn-cancel" onClick={clearFilters}>Reset</button>
+                        </div>
+
+                        {viewMode === 'table' && rows.length > 0 && (
+                            <div className="history-floating-table-header" role="rowgroup" aria-label="History table headers">
+                                <span className="history-col-date">Date</span>
+                                <span className="history-col-module">Module</span>
+                                <span className="history-col-action">Action</span>
+                                <span className="history-col-details">Details</span>
+                                <span className="history-col-actor">Actor</span>
+                                <span className="history-col-entity">Entity</span>
+                            </div>
+                        )}
                     </div>
 
                     {error && <div className="error-banner" style={{ marginBottom: '16px' }}>{error}</div>}
 
-                    {loading ? (
-                        <p className="widget-text">Loading history...</p>
-                    ) : rows.length === 0 ? (
-                        <p className="widget-text">No history logs found.</p>
-                    ) : (
-                        <>
-                            {viewMode === 'timeline' ? renderTimeline() : renderTable()}
+                    <div className="history-content-region">
+                        {loading ? (
+                            <p className="widget-text">Loading history...</p>
+                        ) : rows.length === 0 ? (
+                            <p className="widget-text">No history logs found.</p>
+                        ) : (
+                            <div className="history-scroll-content">
+                                {viewMode === 'timeline' ? renderTimeline() : renderTable()}
+                            </div>
+                        )}
+                    </div>
 
-                            {totalPages > 1 && (
-                                <div className="history-pagination">
-                                    <button
-                                        className="btn-action btn-cancel"
-                                        disabled={page === 0}
-                                        onClick={() => setPage(p => Math.max(0, p - 1))}
-                                    >
-                                        Previous
-                                    </button>
-                                    <span>Page {page + 1} of {totalPages} ({total} total)</span>
-                                    <button
-                                        className="btn-action btn-ongoing"
-                                        disabled={page >= totalPages - 1}
-                                        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            )}
-                        </>
+                    {totalPages > 1 && (
+                        <div className="history-pagination-footer">
+                            <div className="history-pagination">
+                                <button
+                                    className="btn-action btn-cancel"
+                                    disabled={page === 0}
+                                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                                >
+                                    Previous
+                                </button>
+                                <span>Page {page + 1} of {totalPages} ({total} total)</span>
+                                <button
+                                    className="btn-action btn-ongoing"
+                                    disabled={page >= totalPages - 1}
+                                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
                     )}
                 </div>
+                {cellPopup.open && (
+                    <div
+                        ref={popupRef}
+                        className="history-cell-popup"
+                        style={{ top: `${cellPopup.top}px`, left: `${cellPopup.left}px` }}
+                        role="dialog"
+                        aria-label="Full cell value"
+                    >
+                        {cellPopup.text}
+                    </div>
+                )}
             </div>
         </AdminLayout>
     );

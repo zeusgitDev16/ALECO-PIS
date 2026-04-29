@@ -1,4 +1,6 @@
 import express from 'express';
+import ExcelJS from 'exceljs';
+import { stringify } from 'csv-stringify/sync';
 import pool from '../config/db.js';
 import { requireAdmin } from '../middleware/requireRole.js';
 
@@ -25,18 +27,69 @@ const COLLATE = 'utf8mb4_unicode_ci';
 
 const C = (expr) => `CONVERT(${expr} USING utf8mb4) COLLATE ${COLLATE}`;
 
-router.get('/history', requireAdmin, async (req, res) => {
-  try {
-    const page = toInt(req.query.page, 0);
-    const limit = Math.min(Math.max(toInt(req.query.limit, 50), 10), 200);
-    const offset = page * limit;
-    const modules = parseModules(req.query.modules);
-    const q = String(req.query.q || '').trim();
-    const actor = String(req.query.actor || '').trim();
-    const startDate = String(req.query.startDate || '').trim();
-    const endDate = String(req.query.endDate || '').trim();
+const HISTORY_COLUMNS = [
+  { key: 'createdAt', header: 'Date' },
+  { key: 'module', header: 'Module' },
+  { key: 'action', header: 'Action' },
+  { key: 'title', header: 'Title' },
+  { key: 'detail', header: 'Details' },
+  { key: 'actorEmail', header: 'Actor Email' },
+  { key: 'actorName', header: 'Actor Name' },
+  { key: 'entityId', header: 'Entity ID' },
+  { key: 'entityLabel', header: 'Entity Label' },
+  { key: 'severityTag', header: 'Severity' },
+];
 
-    const unionSql = `
+function getDateRangeFromPreset(preset) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const day = now.getDate();
+
+  if (preset === 'today') {
+    const d = now.toISOString().slice(0, 10);
+    return { startDate: d, endDate: d };
+  }
+  if (preset === 'last7') {
+    const end = new Date(now);
+    const start = new Date(now);
+    start.setDate(start.getDate() - 6);
+    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+  }
+  if (preset === 'thisWeek') {
+    const dayOfWeek = now.getDay();
+    const start = new Date(now);
+    start.setDate(day - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+  }
+  if (preset === 'thisMonth') {
+    const start = new Date(year, month, 1);
+    const end = new Date(year, month + 1, 0);
+    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+  }
+  if (preset === 'lastMonth') {
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
+    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+  }
+  if (preset === 'thisYear') {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31);
+    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+  }
+  return null;
+}
+
+function buildDateFilter(preset, startDate, endDate) {
+  if (startDate && endDate) return { startDate, endDate };
+  const fromPreset = preset ? getDateRangeFromPreset(preset) : null;
+  return fromPreset || null;
+}
+
+function buildHistoryUnionSql() {
+  return `
       SELECT
         ${C("CONCAT('tickets-', l.id)")} AS id,
         ${C("'tickets'")} AS module,
@@ -47,11 +100,21 @@ router.get('/history', requireAdmin, async (req, res) => {
           WHEN l.action = 'hold' THEN 'Ticket put on hold'
           WHEN l.action = 'ticket_deleted' THEN 'Ticket deleted'
           WHEN l.action = 'ticket_edit' THEN 'Ticket updated'
+          WHEN l.action = 'status_change' AND JSON_UNQUOTE(JSON_EXTRACT(l.metadata, '$.resolution_mode')) = 'concern' THEN 'Concern resolution started'
           WHEN l.action = 'status_change' THEN 'Ticket status changed'
           ELSE 'Ticket activity'
         END`)} AS title,
         ${C(`CASE
-          WHEN l.action = 'status_change' THEN CONCAT(COALESCE(l.from_status, '—'), ' -> ', COALESCE(l.to_status, '—'))
+          WHEN l.action = 'status_change' THEN CONCAT(
+            COALESCE(l.from_status, '—'), ' -> ', COALESCE(l.to_status, '—'),
+            CASE
+              WHEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(l.metadata, '$.concern_resolution_notes')), '') <> ''
+                THEN CONCAT(' | Concern: ', JSON_UNQUOTE(JSON_EXTRACT(l.metadata, '$.concern_resolution_notes')))
+              WHEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(l.metadata, '$.dispatch_notes')), '') <> ''
+                THEN CONCAT(' | Notes: ', JSON_UNQUOTE(JSON_EXTRACT(l.metadata, '$.dispatch_notes')))
+              ELSE ''
+            END
+          )
           ELSE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(l.metadata, '$.note')), '')
         END`)} AS detail,
         ${C('l.actor_email')} AS actorEmail,
@@ -163,28 +226,50 @@ router.get('/history', requireAdmin, async (req, res) => {
         ${C("'neutral'")} AS severityTag
       FROM access_codes a
     `;
+}
 
-    const where = [];
+function buildHistoryWhereSql({ modules, q, actor, startDate, endDate }) {
+  const where = [];
+  const esc = (v) => pool.escape(v);
+
+  if (Array.isArray(modules) && modules.length > 0) {
+    where.push(`h.module IN (${modules.map((m) => esc(m)).join(',')})`);
+  }
+  if (q) {
+    const like = `%${q}%`;
+    where.push(`(h.title LIKE ${esc(like)} OR h.detail LIKE ${esc(like)} OR h.entityLabel LIKE ${esc(like)})`);
+  }
+  if (actor) {
+    const like = `%${actor}%`;
+    where.push(`(h.actorEmail LIKE ${esc(like)} OR h.actorName LIKE ${esc(like)})`);
+  }
+  if (startDate) {
+    where.push(`DATE(h.createdAt) >= ${esc(startDate)}`);
+  }
+  if (endDate) {
+    where.push(`DATE(h.createdAt) <= ${esc(endDate)}`);
+  }
+  return where.length ? `WHERE ${where.join(' AND ')}` : '';
+}
+
+router.get('/history', requireAdmin, async (req, res) => {
+  try {
+    const page = toInt(req.query.page, 0);
+    const limit = Math.min(Math.max(toInt(req.query.limit, 50), 10), 200);
+    const offset = page * limit;
+    const modules = parseModules(req.query.modules);
+    const q = String(req.query.q || '').trim();
+    const actor = String(req.query.actor || '').trim();
+    const preset = String(req.query.preset || '').trim();
+    const rawStartDate = String(req.query.startDate || '').trim();
+    const rawEndDate = String(req.query.endDate || '').trim();
+    const dateFilter = buildDateFilter(preset, rawStartDate, rawEndDate);
+    const startDate = dateFilter?.startDate || rawStartDate;
+    const endDate = dateFilter?.endDate || rawEndDate;
+
+    const unionSql = buildHistoryUnionSql();
+    const whereSql = buildHistoryWhereSql({ modules, q, actor, startDate, endDate });
     const esc = (v) => pool.escape(v);
-
-    if (modules.length > 0) {
-      where.push(`h.module IN (${modules.map((m) => esc(m)).join(',')})`);
-    }
-    if (q) {
-      const like = `%${q}%`;
-      where.push(`(h.title LIKE ${esc(like)} OR h.detail LIKE ${esc(like)} OR h.entityLabel LIKE ${esc(like)})`);
-    }
-    if (actor) {
-      const like = `%${actor}%`;
-      where.push(`(h.actorEmail LIKE ${esc(like)} OR h.actorName LIKE ${esc(like)})`);
-    }
-    if (startDate) {
-      where.push(`DATE(h.createdAt) >= ${esc(startDate)}`);
-    }
-    if (endDate) {
-      where.push(`DATE(h.createdAt) <= ${esc(endDate)}`);
-    }
-    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM (${unionSql}) h ${whereSql}`);
     const total = Number(countRows[0]?.total || 0);
@@ -214,6 +299,143 @@ router.get('/history', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('History feed error:', error.message);
     res.status(500).json({ success: false, message: 'Failed to load history feed.' });
+  }
+});
+
+router.get('/history/export/preview', requireAdmin, async (req, res) => {
+  try {
+    const { preset, startDate, endDate } = req.query;
+    const dateFilter = buildDateFilter(
+      String(preset || '').trim(),
+      String(startDate || '').trim(),
+      String(endDate || '').trim()
+    );
+    if (!dateFilter) {
+      return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+    }
+
+    const modules = parseModules(req.query.modules);
+    const q = String(req.query.q || '').trim();
+    const actor = String(req.query.actor || '').trim();
+    const limit = Math.min(Math.max(toInt(req.query.limit, 300), 50), 1000);
+    const unionSql = buildHistoryUnionSql();
+    const whereSql = buildHistoryWhereSql({
+      modules,
+      q,
+      actor,
+      startDate: dateFilter.startDate,
+      endDate: dateFilter.endDate,
+    });
+    const esc = (v) => pool.escape(v);
+
+    const [rows] = await pool.query(
+      `SELECT * FROM (${unionSql}) h ${whereSql} ORDER BY h.createdAt DESC LIMIT ${esc(limit)}`
+    );
+    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM (${unionSql}) h ${whereSql}`);
+
+    return res.json({
+      success: true,
+      metadata: {
+        dateStart: dateFilter.startDate,
+        dateEnd: dateFilter.endDate,
+        selectedModules: modules,
+        total: Number(countRows[0]?.total || 0),
+      },
+      history: rows,
+    });
+  } catch (error) {
+    console.error('History export preview error:', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to generate history export preview.' });
+  }
+});
+
+router.get('/history/export', requireAdmin, async (req, res) => {
+  try {
+    const { preset, startDate, endDate, format } = req.query;
+    const dateFilter = buildDateFilter(
+      String(preset || '').trim(),
+      String(startDate || '').trim(),
+      String(endDate || '').trim()
+    );
+    if (!dateFilter) {
+      return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+    }
+
+    const fmt = String(format || 'excel').toLowerCase() === 'csv' ? 'csv' : 'excel';
+    const modules = parseModules(req.query.modules);
+    const q = String(req.query.q || '').trim();
+    const actor = String(req.query.actor || '').trim();
+    const unionSql = buildHistoryUnionSql();
+    const whereSql = buildHistoryWhereSql({
+      modules,
+      q,
+      actor,
+      startDate: dateFilter.startDate,
+      endDate: dateFilter.endDate,
+    });
+
+    const [rows] = await pool.query(
+      `SELECT * FROM (${unionSql}) h ${whereSql} ORDER BY h.createdAt DESC`
+    );
+    const fileStamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const exportedBy = String(req.headers['x-user-email'] || req.user?.email || '').trim();
+
+    await pool.execute(
+      `INSERT INTO aleco_export_log (export_date, date_start, date_end, ticket_count, log_count, format, exported_by)
+       VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
+      [dateFilter.startDate, dateFilter.endDate, rows.length, 0, fmt, exportedBy || null]
+    );
+
+    if (fmt === 'excel') {
+      const workbook = new ExcelJS.Workbook();
+      const ws = workbook.addWorksheet('History');
+      ws.columns = HISTORY_COLUMNS.map((col) => ({ header: col.header, key: col.key, width: 24 }));
+      ws.getRow(1).font = { bold: true };
+      ws.getRow(1).alignment = { vertical: 'middle' };
+
+      rows.forEach((row) => {
+        ws.addRow({
+          createdAt: row.createdAt ? new Date(row.createdAt) : '',
+          module: row.module || '',
+          action: row.action || '',
+          title: row.title || '',
+          detail: row.detail || '',
+          actorEmail: row.actorEmail || '',
+          actorName: row.actorName || '',
+          entityId: row.entityId || '',
+          entityLabel: row.entityLabel || '',
+          severityTag: row.severityTag || '',
+        });
+      });
+      ws.getColumn('createdAt').numFmt = 'yyyy-mm-dd hh:mm:ss';
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const filename = `aleco_history_export_${fileStamp}.xlsx`;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(Buffer.from(buffer));
+    }
+
+    const csvRows = rows.map((row) => ({
+      Date: row.createdAt ? new Date(row.createdAt).toISOString() : '',
+      Module: row.module || '',
+      Action: row.action || '',
+      Title: row.title || '',
+      Details: row.detail || '',
+      'Actor Email': row.actorEmail || '',
+      'Actor Name': row.actorName || '',
+      'Entity ID': row.entityId || '',
+      'Entity Label': row.entityLabel || '',
+      Severity: row.severityTag || '',
+    }));
+    const csv = stringify(csvRows, { header: true });
+    const filename = `aleco_history_export_${fileStamp}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(csv);
+  } catch (error) {
+    console.error('History export error:', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to export history.' });
   }
 });
 

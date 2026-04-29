@@ -50,6 +50,7 @@ const TicketHistoryLogs = ({ ticketId, isVisible }) => {
         if (action === 'resume_hold') return 'Resumed from hold';
         if (action === 'bulk_restore') return 'Marked as Restored (bulk)';
         if (action === 'status_change') {
+            if (metadata?.resolution_mode === 'concern' && to_status === 'Ongoing') return 'Concern resolution started';
             if (from_status === 'Pending' && to_status === 'Ongoing') return 'Dispatched';
             if (to_status === 'Restored') return actor_type === 'sms_lineman' ? 'Resolved (via lineman SMS)' : 'Resolved (manual)';
             if (to_status === 'Unresolved') return 'Marked Unresolved';
@@ -77,6 +78,7 @@ const TicketHistoryLogs = ({ ticketId, isVisible }) => {
         if (m.eta) parts.push(`ETA: ${m.eta}`);
         if (m.hold_reason) parts.push(`Reason: ${m.hold_reason}`);
         if (m.dispatch_notes) parts.push(`Notes: ${m.dispatch_notes}`);
+        if (m.concern_resolution_notes) parts.push(`Concern: ${m.concern_resolution_notes}`);
         if (m.lineman_remarks) parts.push(`Remarks: ${m.lineman_remarks}`);
         return parts.length > 0 ? parts.join(' • ') : null;
     };

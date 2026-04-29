@@ -546,6 +546,42 @@ export default function InterruptionAdvisoryForm({
                 Shown on the poster as REASON when filled; otherwise the advisory body is used.
               </span>
             </label>
+            <label>
+              Substation / recloser (optional)
+              <input
+                type="text"
+                value={form.substationRecloser}
+                onChange={(ev) => setForm((f) => ({ ...f, substationRecloser: ev.target.value }))}
+                placeholder="e.g. Daraga Substation"
+              />
+            </label>
+            <label>
+              Indication & magnitude (optional)
+              <input
+                type="text"
+                value={form.indicationMagnitude}
+                onChange={(ev) => setForm((f) => ({ ...f, indicationMagnitude: ev.target.value }))}
+                placeholder="e.g. Fault current / feeder trip"
+              />
+            </label>
+            <label>
+              Possible fault location (optional)
+              <input
+                type="text"
+                value={form.possibleFaultLocation}
+                onChange={(ev) => setForm((f) => ({ ...f, possibleFaultLocation: ev.target.value }))}
+                placeholder="e.g. Brgy. Sample, pole 23"
+              />
+            </label>
+            <label>
+              Linemen on duty (optional)
+              <input
+                type="text"
+                value={form.linemenOnDuty}
+                onChange={(ev) => setForm((f) => ({ ...f, linemenOnDuty: ev.target.value }))}
+                placeholder="Crew names / team code"
+              />
+            </label>
           </div>
           )}
         </fieldset>

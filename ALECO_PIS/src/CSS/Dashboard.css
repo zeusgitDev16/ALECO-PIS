@@ -203,7 +203,7 @@ body.admin-app-scroll-lock {
     margin-bottom: 40px; /* Balanced bottom margin for the unified features group */
     display: flex;
     flex-direction: column;
-    gap: 120px; /* Separation between primary operational metrics and auxiliary support tools */
+    gap: 24px; /* Further reduced to pull primary and auxiliary blocks into view */
     overflow: visible; /* Prevents clipping of component shadows */
     min-height: 0;
 }
@@ -213,7 +213,7 @@ body.admin-app-scroll-lock {
 .dashboard-features-grid {
     display: flex;
     flex-direction: column;
-    gap: 120px; /* Matched gap for consistent dashboard rhythm */
+    gap: 20px; /* Tighter vertical flow to fit more on one screen */
     width: 100%;
     background: transparent;
     padding: 0;
@@ -226,7 +226,7 @@ body.admin-app-scroll-lock {
 .dashboard-auxiliary-container {
     display: flex;
     flex-direction: column;
-    gap: 120px; /* Unified cluster spacing */
+    gap: 20px; /* Matched gap for a compact dashboard footprint */
     width: 100%;
     background: transparent;
     margin-bottom: 0;
@@ -262,14 +262,14 @@ body.admin-app-scroll-lock {
 
 .dashboard-power-advisories-wrapper .column-section-title {
     margin: 0 !important;
-    font-size: 1.15rem;
+    font-size: 0.9rem !important; /* Shrunk further for unified density */
     letter-spacing: -0.01em;
     color: var(--text-header);
 }
 
 .dashboard-power-advisories-wrapper .widget-text {
     margin: 0 !important;
-    font-size: 0.85rem;
+    font-size: 0.7rem !important; /* Scaled down section description */
 }
 
 /* Unified parent containers for all Dashboard Features (Power Advisories, Tickets, B2B, Personnel)
@@ -306,6 +306,135 @@ body.admin-app-scroll-lock {
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* --- DASHBOARD CONTENT MAXIMIZATION (NO-SCROLL ONE-SCREEN FIT) --- */
+#power-grid-section,
+#ticket-overview-section,
+#b2b-mail-section,
+#personnel-section {
+    max-height: none !important; /* Unlocks the 75vh limit to fit all content */
+    overflow-y: visible !important;
+    padding-bottom: 12px !important; 
+    gap: 6px;
+    scrollbar-width: none !important; /* Hide scrollbar for Firefox */
+}
+
+#power-grid-section::-webkit-scrollbar,
+#ticket-overview-section::-webkit-scrollbar,
+#b2b-mail-section::-webkit-scrollbar,
+#personnel-section::-webkit-scrollbar {
+    display: none !important; /* Hide scrollbar for Chrome/Safari */
+}
+
+/* Dense Rectangle Stats Grid for All Sections */
+#power-grid-section .stats-grid,
+#ticket-overview-section .stats-grid,
+#b2b-mail-section .stats-grid,
+#personnel-section .stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Tightened column width */
+    gap: 3px; /* Reduced grid separation */
+}
+
+#power-grid-section .stat-card,
+#ticket-overview-section .stat-card,
+#b2b-mail-section .stat-card,
+#personnel-section .stat-card {
+    padding: 1px 6px; /* Ultra-thin padding */
+    gap: 6px; /* Tighter internal layout */
+    border-radius: 6px;
+    min-height: 28px; /* Further reduced height for a slimmer profile */
+}
+
+#power-grid-section .stat-number,
+#ticket-overview-section .stat-number,
+#b2b-mail-section .stat-number,
+#personnel-section .stat-number {
+    font-size: 0.7rem; /* Slightly smaller numbers */
+}
+
+#power-grid-section .stat-label,
+#ticket-overview-section .stat-label,
+#b2b-mail-section .stat-label,
+#personnel-section .stat-label {
+    font-size: 0.42rem; /* Scaled down labels */
+}
+
+#power-grid-section .stat-trend,
+#ticket-overview-section .stat-trend,
+#b2b-mail-section .stat-trend,
+#personnel-section .stat-trend {
+    font-size: 0.42rem;
+}
+
+#power-grid-section .stat-icon-box,
+#ticket-overview-section .stat-icon-box,
+#b2b-mail-section .stat-icon-box,
+#personnel-section .stat-icon-box {
+    width: 18px; /* Shrunken icons */
+    height: 18px;
+    font-size: 0.6rem;
+}
+
+/* High-Density Charts Layout */
+#power-grid-section .charts-grid-main,
+#power-grid-section .charts-grid-secondary,
+#ticket-overview-section .charts-grid-main,
+#ticket-overview-section .charts-grid-secondary,
+#b2b-mail-section .charts-grid-main,
+#personnel-section .charts-grid-main {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Expanded container width to ensure no feature clipping */
+    gap: 16px; /* Increased gap for better visual separation between expanded boxes */
+}
+
+#power-grid-section .chart-card,
+#ticket-overview-section .chart-card,
+#b2b-mail-section .chart-card,
+#personnel-section .chart-card {
+    padding: 20px 24px; /* Expanded internal breathing room to fit charts and legends perfectly */
+    overflow: hidden; /* Hard boundary to prevent any content from exceeding the container box */
+}
+
+#power-grid-section .chart-header-group,
+#ticket-overview-section .chart-header-group,
+#b2b-mail-section .chart-header-group,
+#personnel-section .chart-header-group {
+    margin-bottom: 4px;
+    gap: 6px;
+}
+
+#power-grid-section .chart-header-group h4,
+#ticket-overview-section .chart-header-group h4,
+#b2b-mail-section .chart-header-group h4,
+#personnel-section .chart-header-group h4 {
+    font-size: 0.75rem; /* Scaled header to match expanded container */
+}
+
+#power-grid-section .chart-wrapper .recharts-responsive-container,
+#ticket-overview-section .chart-wrapper .recharts-responsive-container,
+#b2b-mail-section .chart-wrapper .recharts-responsive-container,
+#personnel-section .chart-wrapper .recharts-responsive-container {
+    height: 130px !important; /* Proportionally expanded chart height to utilize the larger container box */
+}
+
+/* Dense Location/Category Insights */
+#power-grid-section .location-row,
+#ticket-overview-section .location-row {
+    gap: 2px;
+}
+
+.location-insight-list {
+    gap: 4px;
+}
+
+#power-grid-section .loc-info,
+#ticket-overview-section .loc-info {
+    font-size: 0.52rem; /* Ultra-compact text for municipality/category insights */
+    margin-bottom: 1px;
+}
+
+.loc-bar-bg {
+    height: 2px; /* Thinner trend bars to save vertical space */
+}
+
 /* Custom Scrollbar for the Features Wrappers - Matched slimmer system profile */
 .dashboard-power-advisories-wrapper::-webkit-scrollbar,
 .dashboard-ticket-features-wrapper::-webkit-scrollbar,
@@ -340,6 +469,14 @@ body.admin-app-scroll-lock {
 .dashboard-b2b-mail-wrapper > *:last-child,
 .dashboard-personnel-wrapper > *:last-child {
     margin-bottom: 80px !important; /* SIGNIFICANT buffer ensuring the last content piece is never stuck at the bottom edge */
+}
+
+/* Remove the excessive bottom margin for the maximized sections */
+#power-grid-section > *:last-child,
+#ticket-overview-section > *:last-child,
+#b2b-mail-section > *:last-child,
+#personnel-section > *:last-child {
+    margin-bottom: 0 !important;
 }
 
 .placeholder-desc {
@@ -423,6 +560,24 @@ body.admin-app-scroll-lock {
     animation: active-outage-pulse 2s infinite;
 }
 
+/* Cancelled - Gray/Neutral */
+.stat-card.cancelled {
+    border-bottom-color: #6b7280 !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(107, 114, 128, 0.05) 100%) !important;
+}
+
+/* Scheduled (Total) - Blue (distinct from pending/upcoming) */
+.stat-card.scheduled {
+    border-bottom-color: #3b82f6 !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
+}
+
+/* Rescheduled - Rose/Rose-tinted */
+.stat-card.rescheduled {
+    border-bottom-color: #f43f5e !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(244, 63, 94, 0.05) 100%) !important;
+}
+
 .stat-card.memo {
     border-bottom-color: #ec4899 !important;
     background: linear-gradient(180deg, var(--bg-card) 0%, rgba(236, 72, 153, 0.05) 100%) !important;
@@ -441,8 +596,8 @@ body.admin-app-scroll-lock {
 .dashboard-ticket-features-wrapper .section-label-group p,
 .dashboard-b2b-mail-wrapper .section-label-group p,
 .dashboard-personnel-wrapper .section-label-group p {
-    margin: 0 0 10px 0 !important;
-    font-size: 0.85rem;
+    margin: 0 0 4px 0 !important;
+    font-size: 0.75rem;
 }
 
 /* Loading state for analytics */
@@ -543,10 +698,10 @@ body.admin-app-scroll-lock {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 18px;
+    padding: 6px 12px;
     background: var(--bg-body, rgba(128, 128, 128, 0.03));
     border: 1px solid var(--border-color);
-    border-radius: 16px;
+    border-radius: 10px;
     transition: all 0.2s ease;
 }
 
@@ -563,13 +718,13 @@ body.admin-app-scroll-lock {
 }
 
 .b2b-activity-label {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-header);
 }
 
 .b2b-activity-time {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: var(--text-secondary);
     opacity: 0.8;
 }
@@ -594,10 +749,10 @@ body.admin-app-scroll-lock {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 18px;
+    padding: 6px 12px;
     background: var(--bg-body, rgba(128, 128, 128, 0.03));
     border: 1px solid var(--border-color);
-    border-radius: 16px;
+    border-radius: 10px;
     transition: all 0.2s ease;
 }
 
@@ -608,7 +763,7 @@ body.admin-app-scroll-lock {
 }
 
 .personnel-activity-label {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-header);
 }
@@ -711,6 +866,9 @@ body.admin-app-scroll-lock {
 .denied .stat-icon-box { background: rgba(249, 115, 22, 0.1); color: #f97316; }
 .urgent .stat-icon-box { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
 .memo .stat-icon-box { background: rgba(236, 72, 153, 0.1); color: #ec4899; }
+.cancelled .stat-icon-box { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+.scheduled .stat-icon-box { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.rescheduled .stat-icon-box { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
 
 .stat-content { display: flex; flex-direction: column; min-width: 0; }
 .stat-label { font-size: 0.65rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
@@ -750,7 +908,7 @@ body.admin-app-scroll-lock {
 
 /* Force the main charts to a larger height to fill the container boxes perfectly */
 .charts-grid-main .chart-wrapper .recharts-responsive-container {
-    height: 180px !important; /* Reduced further to reclaim bottom space */
+    height: 130px !important; /* Consistent height for main grid charts */
 }
 
 /* Target the internal legend wrapper to remove unnecessary spacing from JSX inline styles */
@@ -761,8 +919,8 @@ body.admin-app-scroll-lock {
 
 /* Brute-force remove any margin from the Recharts SVG container */
 .charts-grid-main .recharts-wrapper {
-    margin-bottom: -15px !important; 
-    margin-top: -5px !important;
+    margin-bottom: 0 !important; /* Reset margins to keep graph features inside card boundaries */
+    margin-top: 0 !important;
 }
 
 .chart-header-group {
@@ -823,8 +981,14 @@ body.admin-app-scroll-lock {
 /* Customize Recharts Legend text */
 .recharts-legend-item-text {
     color: var(--text-secondary) !important;
-    font-size: 11px !important;
-    font-weight: 600 !important;
+    font-size: 6.5px !important; /* Shrunk legend labels to fit narrow cards */
+    font-weight: 700 !important;
+}
+
+/* Customize Axis Labels */
+.recharts-cartesian-axis-tick-value {
+    font-size: 6.5px !important;
+    font-weight: 600;
 }
 
 /* Dark mode legend adjustment */

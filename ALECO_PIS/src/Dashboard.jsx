@@ -3,7 +3,7 @@ import AdminLayout from './components/AdminLayout';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     PieChart, Pie, Cell, LineChart, Line, Legend 
-} from 'recharts'; // Ensure PieChart, Cell, LineChart, Line, Legend are imported
+} from 'recharts';
 import { 
     FaTicketAlt, FaClock, FaCheckCircle, FaExclamationTriangle, 
     FaMapMarkerAlt, FaChartPie, FaChartLine, FaListUl,
@@ -91,6 +91,9 @@ const AdminDashboard = () => {
         // Upcoming: Scheduled maintenance events
         const upcoming = sourceData.filter(i => i.status === 'Pending' && i.type === 'Scheduled').length;
         const total = hasData ? interruptions.length : 52;
+        const cancelled = sourceData.filter(i => i.status === 'Cancelled').length;
+        const rescheduled = sourceData.filter(i => i.status === 'Rescheduled').length;
+        const scheduledTotal = sourceData.filter(i => i.type === 'Scheduled').length; // Total scheduled advisories
         
         const restored24h = sourceData.filter(i => {
             if (i.status !== 'Restored' || !i.date_time_restored) return false;
@@ -182,7 +185,7 @@ const AdminDashboard = () => {
 
         const trendData = Object.values(trendMap);
 
-        return { active, upcoming, restored24h, total, feeders, topAreas, trendData, causeData, typeData };
+        return { active, upcoming, restored24h, total, cancelled, scheduledTotal, rescheduled, feeders, topAreas, trendData, causeData, typeData };
     }, [interruptions]);
 
     // Dynamic calculations for Support Tickets analytics
@@ -407,6 +410,30 @@ const AdminDashboard = () => {
                                     <span className="stat-label">Total Recorded</span>
                                     <h3 className="stat-number">{interruptionStats.total}</h3>
                                     <span className="stat-trend">Advisory Logs</span>
+                                </div>
+                            </div>
+                            <div className="stat-card scheduled">
+                                <div className="stat-icon-box"><FaCalendarAlt /></div>
+                                <div className="stat-content">
+                                    <span className="stat-label">Total Scheduled</span>
+                                    <h3 className="stat-number">{interruptionStats.scheduledTotal}</h3>
+                                    <span className="stat-trend">Planned Events</span>
+                                </div>
+                            </div>
+                            <div className="stat-card cancelled">
+                                <div className="stat-icon-box"><FaTimesCircle /></div>
+                                <div className="stat-content">
+                                    <span className="stat-label">Cancelled</span>
+                                    <h3 className="stat-number">{interruptionStats.cancelled}</h3>
+                                    <span className="stat-trend">No longer active</span>
+                                </div>
+                            </div>
+                            <div className="stat-card rescheduled">
+                                <div className="stat-icon-box"><FaClock /></div>
+                                <div className="stat-content">
+                                    <span className="stat-label">Rescheduled</span>
+                                    <h3 className="stat-number">{interruptionStats.rescheduled}</h3>
+                                    <span className="stat-trend">Adjusted dates</span>
                                 </div>
                             </div>
                         </div>

@@ -1,37 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
 import { formatToPhilippineTime } from '../utils/dateUtils';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketTableView.css';
+import '../CSS/History.css';
 
-const getActionLabel = (log) => {
-    const { action, from_status, to_status, actor_type, metadata } = log;
-    if (action === 'dispatch') return 'Dispatched';
-    if (action === 'group_dispatch') return 'Group dispatched';
-    if (action === 'hold') return 'Put on hold';
-    if (action === 'bulk_restore') return 'Bulk Restored';
-    if (action === 'ticket_edit') return 'Ticket edited';
-    if (action === 'ticket_deleted') return 'Ticket deleted';
-    if (action === 'status_change') {
-        if (from_status === 'Pending' && to_status === 'Ongoing') return 'Dispatched';
-        if (to_status === 'Restored') return actor_type === 'sms_lineman' ? 'Resolved (SMS)' : 'Resolved';
-        if (to_status === 'Unresolved') return 'Unresolved';
-        if (to_status === 'NoFaultFound') return 'No Fault Found';
-        if (to_status === 'AccessDenied') return 'Access Denied';
-        return `${from_status || '—'} → ${to_status}`;
-    }
-    return action || '—';
+const MODULE_META = {
+    tickets: { label: 'Tickets' },
+    interruptions: { label: 'Interruptions' },
+    personnel: { label: 'Personnel' },
+    users: { label: 'Users' },
+    data_management: { label: 'Data Management' },
+    b2b: { label: 'B2B Mail' },
 };
 
-const getActorDisplay = (log) => {
-    if (log.actor_type === 'sms_lineman') {
-        const kw = log.metadata?.keyword;
-        return kw ? `Lineman SMS (${kw})` : 'Lineman SMS';
-    }
-    return log.actor_name || log.actor_email || 'System';
-};
+const ALL_MODULES = Object.keys(MODULE_META);
 
 const formatDate = (d) => {
     if (!d) return '—';
@@ -39,15 +24,19 @@ const formatDate = (d) => {
 };
 
 const AdminHistory = () => {
-    const [logs, setLogs] = useState([]);
+    const [rows, setRows] = useState([]);
     const [total, setTotal] = useState(0);
+    const [countsByModule, setCountsByModule] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+    const [viewMode, setViewMode] = useState('timeline');
     const [filters, setFilters] = useState({
-        ticketId: '',
-        actor_email: '',
+        modules: ALL_MODULES,
+        q: '',
+        actor: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
     });
     const [page, setPage] = useState(0);
     const limit = 50;
@@ -57,21 +46,23 @@ const AdminHistory = () => {
         setError(null);
         try {
             const params = new URLSearchParams();
-            if (filters.ticketId) params.set('ticketId', filters.ticketId);
-            if (filters.actor_email) params.set('actor_email', filters.actor_email);
+            if (filters.modules.length) params.set('modules', filters.modules.join(','));
+            if (filters.q) params.set('q', filters.q);
+            if (filters.actor) params.set('actor', filters.actor);
             if (filters.startDate) params.set('startDate', filters.startDate);
             if (filters.endDate) params.set('endDate', filters.endDate);
             params.set('limit', limit);
-            params.set('offset', page * limit);
+            params.set('page', page);
 
-            const response = await authFetch(apiUrl(`/api/tickets/logs?${params}`));
+            const response = await authFetch(apiUrl(`/api/history?${params}`));
             const data = await response.json();
 
             if (response.ok && data.success) {
-                setLogs(data.data || []);
+                setRows(data.data || []);
                 setTotal(data.total ?? 0);
+                setCountsByModule(data.countsByModule || {});
             } else {
-                setError(data.message || 'Failed to load logs');
+                setError(data.message || 'Failed to load history');
             }
         } catch (err) {
             console.error('History fetch error:', err);
@@ -83,7 +74,7 @@ const AdminHistory = () => {
 
     useEffect(() => {
         fetchLogs();
-    }, [page, filters.ticketId, filters.actor_email, filters.startDate, filters.endDate]);
+    }, [page, filters.modules, filters.q, filters.actor, filters.startDate, filters.endDate]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -91,87 +82,165 @@ const AdminHistory = () => {
         setPage(0);
     };
 
+    const toggleModule = (module) => {
+        setFilters((prev) => {
+            const exists = prev.modules.includes(module);
+            let next = exists ? prev.modules.filter((m) => m !== module) : [...prev.modules, module];
+            if (next.length === 0) next = ALL_MODULES;
+            return { ...prev, modules: next };
+        });
+        setPage(0);
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            modules: ALL_MODULES,
+            q: '',
+            actor: '',
+            startDate: '',
+            endDate: '',
+        });
+        setPage(0);
+    };
+
     const totalPages = Math.ceil(total / limit);
+    const highestModule = useMemo(() => {
+        const entries = Object.entries(countsByModule || {});
+        if (entries.length === 0) return null;
+        entries.sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+        const [name, value] = entries[0];
+        return Number(value || 0) > 0 ? name : null;
+    }, [countsByModule]);
+    const activeFiltersCount = useMemo(() => {
+        let n = 0;
+        if (filters.modules.length !== ALL_MODULES.length) n += 1;
+        if (filters.q) n += 1;
+        if (filters.actor) n += 1;
+        if (filters.startDate) n += 1;
+        if (filters.endDate) n += 1;
+        return n;
+    }, [filters]);
+
+    const renderTable = () => (
+        <div className="history-table-wrap">
+            <table className="ticket-table history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Module</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                        <th>Actor</th>
+                        <th>Entity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((row) => (
+                        <tr key={row.id}>
+                            <td>{formatDate(row.createdAt)}</td>
+                            <td><span className={`history-module-badge module-${row.module}`}>{MODULE_META[row.module]?.label || row.module}</span></td>
+                            <td>{row.title || row.action || '—'}</td>
+                            <td>{row.detail || '—'}</td>
+                            <td>{row.actorName || row.actorEmail || 'System'}</td>
+                            <td>{row.entityLabel || row.entityId || '—'}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+
+    const renderTimeline = () => (
+        <div className="history-timeline">
+            {rows.map((row) => (
+                <article key={row.id} className="history-event-card">
+                    <div className="history-event-header">
+                        <span className={`history-module-badge module-${row.module}`}>{MODULE_META[row.module]?.label || row.module}</span>
+                        <time>{formatDate(row.createdAt)}</time>
+                    </div>
+                    <h4>{row.title || row.action || 'Activity'}</h4>
+                    <p>{row.detail || 'No extra details.'}</p>
+                    <div className="history-event-meta">
+                        <span>Actor: {row.actorName || row.actorEmail || 'System'}</span>
+                        <span>Entity: {row.entityLabel || row.entityId || '—'}</span>
+                    </div>
+                </article>
+            ))}
+        </div>
+    );
 
     return (
         <AdminLayout activePage="history">
             <div className="admin-page-container">
                 <div className="dashboard-header-flex">
                     <div className="header-text-group">
-                        <h2 className="header-title">History Logs</h2>
-                        <p className="header-subtitle">View system activity and audit trails.</p>
+                        <h2 className="header-title">System History</h2>
+                        <p className="header-subtitle">Unified activity feed across tickets, interruptions, personnel, users, data management, and B2B mail.</p>
                     </div>
                 </div>
 
                 <div className="main-content-card">
-                    <div className="history-filters" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                    <div className="history-summary-grid">
+                        {ALL_MODULES.map((module) => (
+                            <button
+                                key={module}
+                                type="button"
+                                className={`history-summary-card module-${module} ${filters.modules.includes(module) ? 'active' : ''} ${highestModule === module ? 'is-top-module' : ''}`}
+                                onClick={() => toggleModule(module)}
+                            >
+                                <div className="history-summary-title">{MODULE_META[module].label}</div>
+                                <div className="history-summary-count">{countsByModule[module] || 0}</div>
+                                <div className="history-summary-trend">
+                                    {highestModule === module ? 'Most active module' : 'Recent activity'}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="history-filter-actions">
+                        <button type="button" className="btn-action btn-cancel history-filter-toggle" onClick={() => setMobileFiltersOpen((v) => !v)}>
+                            Filters {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}
+                        </button>
+                        <div className="history-view-toggle" role="tablist" aria-label="History view mode">
+                            <button type="button" className={`history-view-btn ${viewMode === 'timeline' ? 'active' : ''}`} onClick={() => setViewMode('timeline')}>Timeline</button>
+                            <button type="button" className={`history-view-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>Table</button>
+                        </div>
+                    </div>
+
+                    <div className={`history-filters-panel ${mobileFiltersOpen ? 'open' : ''}`}>
                         <input
                             type="text"
-                            name="ticketId"
-                            placeholder="Ticket ID"
-                            value={filters.ticketId}
+                            name="q"
+                            placeholder="Search action/details/entity"
+                            value={filters.q}
                             onChange={handleFilterChange}
-                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', minWidth: '140px' }}
+                            className="history-filter-input"
                         />
                         <input
                             type="text"
-                            name="actor_email"
-                            placeholder="Actor email"
-                            value={filters.actor_email}
+                            name="actor"
+                            placeholder="Actor email/name"
+                            value={filters.actor}
                             onChange={handleFilterChange}
-                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', minWidth: '180px' }}
+                            className="history-filter-input"
                         />
-                        <input
-                            type="date"
-                            name="startDate"
-                            value={filters.startDate}
-                            onChange={handleFilterChange}
-                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}
-                        />
-                        <input
-                            type="date"
-                            name="endDate"
-                            value={filters.endDate}
-                            onChange={handleFilterChange}
-                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}
-                        />
+                        <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="history-filter-input" />
+                        <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="history-filter-input" />
+                        <button type="button" className="btn-action btn-cancel" onClick={clearFilters}>Reset</button>
                     </div>
 
                     {error && <div className="error-banner" style={{ marginBottom: '16px' }}>{error}</div>}
 
                     {loading ? (
                         <p className="widget-text">Loading history...</p>
-                    ) : logs.length === 0 ? (
+                    ) : rows.length === 0 ? (
                         <p className="widget-text">No history logs found.</p>
                     ) : (
                         <>
-                            <div style={{ overflowX: 'auto', maxHeight: '400px', overflowY: 'auto' }}>
-                                <table className="ticket-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Ticket</th>
-                                            <th>Action</th>
-                                            <th>From → To</th>
-                                            <th>Actor</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {logs.map((log) => (
-                                            <tr key={log.id}>
-                                                <td>{formatDate(log.created_at)}</td>
-                                                <td><code>{log.ticket_id}</code></td>
-                                                <td>{getActionLabel(log)}</td>
-                                                <td>{log.from_status ? `${log.from_status} → ${log.to_status || '—'}` : '—'}</td>
-                                                <td>{getActorDisplay(log)}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            {viewMode === 'timeline' ? renderTimeline() : renderTable()}
 
                             {totalPages > 1 && (
-                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '16px' }}>
+                                <div className="history-pagination">
                                     <button
                                         className="btn-action btn-cancel"
                                         disabled={page === 0}

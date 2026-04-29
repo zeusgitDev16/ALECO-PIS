@@ -295,7 +295,7 @@ body.admin-app-scroll-lock {
     max-height: 75vh; /* Slightly reduced to ensure the widget is manageable and scrollable on laptop screens */
     overflow-y: auto;
     overflow-x: hidden;
-    overscroll-behavior: contain; /* Locks the scroll focus to the widget while hovering, ensuring you reach the bottom of the internal list */
+    overscroll-behavior: auto; /* Unlocks chained scrolling so the main page continues moving when widget limit is reached */
     overflow-anchor: none; /* Prevents scroll-jumping when new activity logs are added to the list */
     -webkit-overflow-scrolling: touch; /* Smoother scrolling interaction on mobile devices */
     scrollbar-width: thin; /* Consistent, accessible scrollbar thickness */
@@ -806,7 +806,7 @@ body.admin-app-scroll-lock {
 /* Ensure dashboard scroll area respects mobile safe areas and providing breathing room */
 .admin-content:has(.dashboard-page-container) {
     scroll-padding-top: 180px; /* Global landing buffer to keep the dashboard header visible after navigation */
-    scroll-padding-bottom: 800px; /* SIGNIFICANTLY increased buffer to allow the last Personnel items to be scrolled to the center */
+    scroll-padding-bottom: 60px; /* Reduced buffer so the scroll track can reach the true bottom of the 150vh runway */
 }
 
 /* Data Management: last workflow step (import) stays reachable when scrolling */

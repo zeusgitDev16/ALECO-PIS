@@ -363,41 +363,69 @@ body.admin-app-scroll-lock {
     border: 1px solid var(--border-color); 
 }
 
-/* --- POWER GRID STATUS ENHANCEMENTS --- */
+/* --- SEMANTIC STAT CARD ENHANCEMENTS --- */
 @keyframes active-outage-pulse {
     0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
     70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
     100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-.dashboard-power-advisories-wrapper .stat-card {
-    border-bottom: 3px solid transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.stat-card {
+    border-bottom: 3px solid transparent !important;
 }
 
-/* Active Outages - Dangerous/Alert state */
-.dashboard-power-advisories-wrapper .stat-card.urgent { 
-    border-bottom-color: #ef4444; 
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%);
+/* Total/Informational - Blue */
+.stat-card.total { 
+    border-bottom-color: #2563eb !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(37, 99, 235, 0.05) 100%) !important;
+}
+
+/* Pending/Scheduled - Amber */
+.stat-card.pending { 
+    border-bottom-color: #f59e0b !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(245, 158, 11, 0.05) 100%) !important;
+}
+
+/* Ongoing/Work-in-progress - Indigo */
+.stat-card.ongoing { 
+    border-bottom-color: #6366f1 !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.05) 100%) !important;
+}
+
+/* Resolved/Restored - Green */
+.stat-card.resolved { 
+    border-bottom-color: #22c55e !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.05) 100%) !important;
+}
+
+/* Unresolved/Issue - Rose */
+.stat-card.unresolved { 
+    border-bottom-color: #e11d48 !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(225, 29, 72, 0.05) 100%) !important;
+}
+
+/* No Fault Found - Slate */
+.stat-card.nofault { 
+    border-bottom-color: #64748b !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(100, 116, 139, 0.05) 100%) !important;
+}
+
+/* Access Denied - Orange */
+.stat-card.denied { 
+    border-bottom-color: #f97316 !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(249, 115, 22, 0.05) 100%) !important;
+}
+
+/* Urgent/Critical - Red */
+.stat-card.urgent { 
+    border-bottom-color: #ef4444 !important; 
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%) !important;
     animation: active-outage-pulse 2s infinite;
 }
 
-/* Upcoming - Warning/Scheduled state */
-.dashboard-power-advisories-wrapper .stat-card.pending { 
-    border-bottom-color: #f59e0b;
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(245, 158, 11, 0.05) 100%);
-}
-
-/* Restored - Success/Healthy state */
-.dashboard-power-advisories-wrapper .stat-card.resolved { 
-    border-bottom-color: #22c55e;
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.05) 100%);
-}
-
-/* Total Recorded - Informational state */
-.dashboard-power-advisories-wrapper .stat-card.total { 
-    border-bottom-color: #2563eb;
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(37, 99, 235, 0.05) 100%);
+.stat-card.memo {
+    border-bottom-color: #ec4899 !important;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(236, 72, 153, 0.05) 100%) !important;
 }
 
 /* Tighten spacing for labels inside the features box */
@@ -682,6 +710,7 @@ body.admin-app-scroll-lock {
 .nofault .stat-icon-box { background: rgba(100, 116, 139, 0.1); color: #64748b; }
 .denied .stat-icon-box { background: rgba(249, 115, 22, 0.1); color: #f97316; }
 .urgent .stat-icon-box { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.memo .stat-icon-box { background: rgba(236, 72, 153, 0.1); color: #ec4899; }
 
 .stat-content { display: flex; flex-direction: column; min-width: 0; }
 .stat-label { font-size: 0.65rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }

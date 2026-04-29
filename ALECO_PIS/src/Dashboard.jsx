@@ -858,13 +858,6 @@ const AdminDashboard = () => {
                     </div> {/* End of Auxiliary Container (B2B & Personnel) */}
                     </div> {/* End of Analytics Container */}
                 </div>
-                {/* Existing Incident Tracking Feed below */}
-                <div className="main-content-card">
-                    <div className="placeholder-content">
-                        <h3>Active Incident Tracking</h3>
-                        <p className="widget-text">Detailed logs will appear here based on selected filters.</p>
-                    </div>
-                </div>
             </div>
         </AdminLayout>
     );

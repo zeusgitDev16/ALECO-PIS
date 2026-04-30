@@ -83,7 +83,6 @@ body.admin-app-scroll-lock {
   flex-direction: row;
   width: 100%;
   min-height: 0;
-  height: 100%;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -94,7 +93,6 @@ body.admin-app-scroll-lock {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  height: 100%;
   overflow: hidden;
 }
 
@@ -102,7 +100,6 @@ body.admin-app-scroll-lock {
   flex: 1 1 0;
   display: block;
   min-height: 0; /* Critical flexbox constraint to enable internal scrolling */
-  height: 100%; /* Anchor height for calculating the full scroll range */
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

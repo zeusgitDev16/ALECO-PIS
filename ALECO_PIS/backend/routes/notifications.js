@@ -7,6 +7,13 @@ const router = express.Router();
 const NOTIFICATION_COUNT_TABS = ['user', 'personnel', 'b2b-mail', 'tickets', 'interruptions', 'memo', 'system'];
 let personalReadsTableReady = false;
 
+async function getUserIdByEmail(email) {
+  const clean = String(email || '').trim();
+  if (!clean) return 0;
+  const [rows] = await pool.execute('SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [clean]);
+  return Number(rows[0]?.id || 0);
+}
+
 async function ensurePersonalReadsTable() {
   if (personalReadsTableReady) return;
   await pool.execute(
@@ -43,8 +50,7 @@ router.get('/notifications/counts', async (req, res) => {
 
   try {
     await ensurePersonalReadsTable();
-    const [users] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
-    const userId = Number(users[0]?.id || 0);
+    const userId = await getUserIdByEmail(email);
     if (!userId) {
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ success: true, counts: emptyCounts(), total: 0 });
@@ -94,10 +100,9 @@ router.post('/notifications/mark-all-read', async (req, res) => {
 
   try {
     await ensurePersonalReadsTable();
-    const [users] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
-    const userId = Number(users[0]?.id || 0);
+    const userId = await getUserIdByEmail(email);
     if (!userId) {
-      return res.status(403).json({ success: false, message: 'Forbidden.' });
+      return res.json({ success: true, updated: 0 });
     }
 
     const ts = nowPhilippineForMysql();
@@ -139,10 +144,9 @@ router.patch('/notifications/:id/read', async (req, res) => {
 
   try {
     await ensurePersonalReadsTable();
-    const [users] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
-    const userId = Number(users[0]?.id || 0);
+    const userId = await getUserIdByEmail(email);
     if (!userId) {
-      return res.status(403).json({ success: false, message: 'Forbidden.' });
+      return res.json({ success: true, alreadyRead: true });
     }
 
     const [check] = await pool.execute('SELECT id FROM aleco_admin_notifications WHERE id = ?', [id]);
@@ -187,8 +191,7 @@ router.get('/notifications', async (req, res) => {
 
   try {
     await ensurePersonalReadsTable();
-    const [users] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
-    const userId = Number(users[0]?.id || 0);
+    const userId = await getUserIdByEmail(email);
     if (!userId) {
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ success: true, data: [] });
@@ -196,7 +199,7 @@ router.get('/notifications', async (req, res) => {
 
     const [rows] = await pool.execute(
       `SELECT n.id, n.tab, n.event_type AS eventType, n.subject_email AS subjectEmail, n.subject_name AS subjectName,
-              detail, actor_email AS actorEmail, created_at AS createdAt
+              n.detail, n.actor_email AS actorEmail, n.created_at AS createdAt
        FROM aleco_admin_notifications n
        LEFT JOIN aleco_admin_notification_reads r
          ON r.notification_id = n.id AND r.user_id = ?

@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
+import { authMutation } from '../utils/authMutation';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
+import { matchesRealtimeModule } from '../utils/realtimeModules';
 import { useMatchMedia } from '../hooks/useMatchMedia';
 import AdminLayout from './AdminLayout';
 import AddCrew from './personnels/AddCrew';
@@ -34,11 +37,7 @@ const PersonnelManagement = () => {
     const [actionContext, setActionContext] = useState(null);
     const isMobile = useMatchMedia('(max-width: 767px)');
 
-    useEffect(() => {
-        fetchAllData();
-    }, []);
-
-    const fetchAllData = async () => {
+    const fetchAllData = useCallback(async () => {
         setIsLoading(true);
         try {
             const [crewRes, poolRes] = await Promise.all([
@@ -56,21 +55,36 @@ const PersonnelManagement = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchAllData();
+    }, [fetchAllData]);
+
+    useEffect(() => {
+        const onRealtimeChange = (ev) => {
+            if (matchesRealtimeModule(ev?.detail?.module, REALTIME_MODULES.PERSONNEL, REALTIME_MODULES.SYSTEM)) {
+                fetchAllData();
+            }
+        };
+        window.addEventListener('aleco:realtime-change', onRealtimeChange);
+        return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
+    }, [fetchAllData]);
 
     const handleDeleteCrew = async (crew) => {
         if (!window.confirm(`Delete crew "${crew.crew_name}"? This cannot be undone.`)) return;
         setIsLoading(true);
         try {
-            const res = await authFetch(apiUrl(`/api/crews/delete/${crew.id}`), {
-            method: 'DELETE',
-            headers: {
-                'x-user-email': localStorage.getItem('userEmail') || '',
-                'x-user-name':  localStorage.getItem('userName')  || '',
-            },
-        });
-            const data = await res.json().catch(() => ({}));
-            if (res.ok) {
+            const result = await authMutation(apiUrl(`/api/crews/delete/${crew.id}`), {
+                method: 'DELETE',
+                body: {
+                    actor_email: localStorage.getItem('userEmail') || '',
+                    actor_name: localStorage.getItem('userName') || '',
+                },
+                emitRealtime: { module: REALTIME_MODULES.PERSONNEL },
+            });
+            const data = result.data || {};
+            if (result.ok) {
                 setDetailContext(null);
                 setActionContext(null);
                 await fetchAllData();
@@ -89,15 +103,16 @@ const PersonnelManagement = () => {
         if (!window.confirm(`Remove "${man.full_name}" from the linemen pool? This cannot be undone.`)) return;
         setIsLoading(true);
         try {
-            const res = await authFetch(apiUrl(`/api/pool/delete/${man.id}`), {
-            method: 'DELETE',
-            headers: {
-                'x-user-email': localStorage.getItem('userEmail') || '',
-                'x-user-name':  localStorage.getItem('userName')  || '',
-            },
-        });
-            const data = await res.json().catch(() => ({}));
-            if (res.ok) {
+            const result = await authMutation(apiUrl(`/api/pool/delete/${man.id}`), {
+                method: 'DELETE',
+                body: {
+                    actor_email: localStorage.getItem('userEmail') || '',
+                    actor_name: localStorage.getItem('userName') || '',
+                },
+                emitRealtime: { module: REALTIME_MODULES.PERSONNEL },
+            });
+            const data = result.data || {};
+            if (result.ok) {
                 setDetailContext(null);
                 setActionContext(null);
                 await fetchAllData();
@@ -122,21 +137,32 @@ const PersonnelManagement = () => {
         const method = isEdit ? 'PUT' : 'POST';
 
         try {
-            const res = await fetch(url, {
+            const result = await authMutation(url, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-email': localStorage.getItem('userEmail') || '',
-                    'x-user-name':  localStorage.getItem('userName')  || '',
+                body: {
+                    ...crewData,
+                    actor_email: localStorage.getItem('userEmail') || '',
+                    actor_name: localStorage.getItem('userName') || '',
                 },
-                body: JSON.stringify(crewData)
+                emitRealtime: { module: REALTIME_MODULES.PERSONNEL },
             });
             
-            if (res.ok) {
+            if (result.ok) {
+                if (isEdit) {
+                    const updatedCrew = {
+                        ...crewData,
+                        lead_lineman: crewData.lead_id || null,
+                        phone_number: crewData.phone_number,
+                    };
+                    setCrews((prev) =>
+                        prev.map((c) => (String(c.id) === String(crewData.id) ? { ...c, ...updatedCrew } : c))
+                    );
+                }
+                setEditingCrew(null);
                 setIsCrewModalOpen(false);
-                fetchAllData(); 
+                await fetchAllData();
             } else {
-                const errorData = await res.json();
+                const errorData = result.data || {};
                 alert(`Failed to save crew: ${errorData.message}`);
             }
         } catch (error) { 
@@ -156,21 +182,31 @@ const PersonnelManagement = () => {
         const method = isEdit ? 'PUT' : 'POST';
 
         try {
-            const res = await fetch(url, {
+            const result = await authMutation(url, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-email': localStorage.getItem('userEmail') || '',
-                    'x-user-name':  localStorage.getItem('userName')  || '',
+                body: {
+                    ...linemanData,
+                    actor_email: localStorage.getItem('userEmail') || '',
+                    actor_name: localStorage.getItem('userName') || '',
                 },
-                body: JSON.stringify(linemanData)
+                emitRealtime: { module: REALTIME_MODULES.PERSONNEL },
             });
             
-            if (res.ok) {
+            if (result.ok) {
+                if (isEdit) {
+                    const updatedLineman = {
+                        ...linemanData,
+                        contact_no: linemanData.contact_no,
+                    };
+                    setLinemenPool((prev) =>
+                        prev.map((m) => (String(m.id) === String(linemanData.id) ? { ...m, ...updatedLineman } : m))
+                    );
+                }
+                setEditingLineman(null);
                 setIsLinemenModalOpen(false);
-                fetchAllData(); 
+                await fetchAllData();
             } else {
-                const errorData = await res.json();
+                const errorData = result.data || {};
                 alert(`Failed to save lineman: ${errorData.message}`);
             }
         } catch (error) { 
@@ -187,6 +223,40 @@ const PersonnelManagement = () => {
     const filteredCrews = crews.filter(c => 
         c.crew_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    useEffect(() => {
+        if (!detailContext) return;
+        if (detailContext.variant === 'lineman') {
+            const latest = linemenPool.find((m) => String(m.id) === String(detailContext.data?.id));
+            if (latest && latest !== detailContext.data) {
+                setDetailContext({ variant: 'lineman', data: latest });
+            }
+            return;
+        }
+        if (detailContext.variant === 'crew') {
+            const latest = crews.find((c) => String(c.id) === String(detailContext.data?.id));
+            if (latest && latest !== detailContext.data) {
+                setDetailContext({ variant: 'crew', data: latest });
+            }
+        }
+    }, [detailContext, linemenPool, crews]);
+
+    useEffect(() => {
+        if (!actionContext) return;
+        if (actionContext.variant === 'lineman') {
+            const latest = linemenPool.find((m) => String(m.id) === String(actionContext.data?.id));
+            if (latest && latest !== actionContext.data) {
+                setActionContext({ variant: 'lineman', data: latest });
+            }
+            return;
+        }
+        if (actionContext.variant === 'crew') {
+            const latest = crews.find((c) => String(c.id) === String(actionContext.data?.id));
+            if (latest && latest !== actionContext.data) {
+                setActionContext({ variant: 'crew', data: latest });
+            }
+        }
+    }, [actionContext, linemenPool, crews]);
 
     const openEditFromDetail = (row) => {
         const v = detailContext?.variant;

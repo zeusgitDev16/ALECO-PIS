@@ -6,6 +6,15 @@ import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
 import '../../CSS/InterruptionFeed.css';
 import '../../CSS/PublicInterruptionPosterPage.css';
 
+function mapPosterLoadError(message) {
+  const raw = String(message || '').trim();
+  const lower = raw.toLowerCase();
+  if (lower.includes('not found or not public') || lower.includes('not public')) {
+    return 'This advisory is currently hidden from the public feed (pulled/archived) or not yet scheduled to go live.';
+  }
+  return raw || 'Could not load advisory.';
+}
+
 /**
  * Minimal public page for print / headless capture (Puppeteer). Uses the same infographic as the home feed.
  */
@@ -30,7 +39,7 @@ export default function PublicInterruptionPosterPage() {
         setError(null);
       } else {
         setItem(null);
-        setError(r.message || 'Could not load advisory.');
+        setError(mapPosterLoadError(r.message));
       }
     })();
     return () => {

@@ -4,6 +4,8 @@
  */
 import { apiUrl } from '../utils/api';
 import axios from './axiosConfig';
+import { authMutation } from '../utils/authMutation';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
 
 /**
  * Load a ticket row for memo creation (admin list API).
@@ -171,33 +173,27 @@ export async function getServiceMemo(id) {
  * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
  */
 export async function createServiceMemo(body) {
-  let res;
   try {
-    res = await fetch(apiUrl('/api/service-memos'), {
+    const result = await authMutation(apiUrl('/api/service-memos'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-      },
-      body: JSON.stringify(body),
+      body,
+      emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
+    return {
+      ok: result.ok,
+      success: result.success,
+      data: result.data?.data ?? null,
+      status: result.status,
+      message:
+        typeof result.data?.message === 'string'
+          ? result.data.message
+          : !result.ok
+            ? `Request failed (${result.status}).`
+            : null,
+    };
   } catch {
     return { ok: false, success: false, data: null, message: 'Network error.', status: 0 };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    data: json?.data ?? null,
-    status: res.status,
-    message:
-      typeof json?.message === 'string'
-        ? json.message
-        : !res.ok
-          ? `Request failed (${res.status}).`
-          : null,
-  };
 }
 
 /**
@@ -210,33 +206,27 @@ export async function allocateControlNumber(ticketId) {
   if (!q) {
     return { ok: false, success: false, data: null, message: 'Ticket ID is required.', status: 400 };
   }
-  let res;
   try {
-    res = await fetch(apiUrl('/api/service-memos/allocate-control-number'), {
+    const result = await authMutation(apiUrl('/api/service-memos/allocate-control-number'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-      },
-      body: JSON.stringify({ ticket_id: q }),
+      body: { ticket_id: q },
+      emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
+    return {
+      ok: result.ok,
+      success: result.success,
+      data: result.data?.data ?? null,
+      status: result.status,
+      message:
+        typeof result.data?.message === 'string'
+          ? result.data.message
+          : !result.ok
+            ? `Request failed (${result.status}).`
+            : null,
+    };
   } catch {
     return { ok: false, success: false, data: null, message: 'Network error.', status: 0 };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    data: json?.data ?? null,
-    status: res.status,
-    message:
-      typeof json?.message === 'string'
-        ? json.message
-        : !res.ok
-          ? `Request failed (${res.status}).`
-          : null,
-  };
 }
 
 /**
@@ -245,26 +235,20 @@ export async function allocateControlNumber(ticketId) {
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
 export async function updateServiceMemo(id, body) {
-  let res;
   try {
-    res = await fetch(apiUrl(`/api/service-memos/${id}`), {
+    const result = await authMutation(apiUrl(`/api/service-memos/${id}`), {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-      },
-      body: JSON.stringify(body),
+      body,
+      emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
+    return {
+      ok: result.ok,
+      success: result.success,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+    };
   } catch {
     return { ok: false, success: false, message: 'Network error.' };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }
 
 /**
@@ -272,26 +256,20 @@ export async function updateServiceMemo(id, body) {
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
 export async function closeServiceMemo(id) {
-  let res;
   try {
-    res = await fetch(apiUrl(`/api/service-memos/${id}/close`), {
+    const result = await authMutation(apiUrl(`/api/service-memos/${id}/close`), {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-      },
-      body: '{}',
+      body: {},
+      emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
+    return {
+      ok: result.ok,
+      success: result.success,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+    };
   } catch {
     return { ok: false, success: false, message: 'Network error.' };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }
 
 /**
@@ -299,23 +277,18 @@ export async function closeServiceMemo(id) {
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
 export async function deleteServiceMemo(id) {
-  let res;
   try {
-    res = await fetch(apiUrl(`/api/service-memos/${id}`), {
+    const result = await authMutation(apiUrl(`/api/service-memos/${id}`), {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-      },
+      body: {},
+      emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
+    return {
+      ok: result.ok,
+      success: result.success,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+    };
   } catch {
     return { ok: false, success: false, message: 'Network error.' };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { apiUrl } from '../../utils/api';
 import { authFetch } from '../../utils/authFetch';
+import { authMutation } from '../../utils/authMutation';
+import { REALTIME_MODULES } from '../../constants/realtimeModules';
 import { clearLocalStoragePreservingPreferences } from '../../utils/clearLocalStoragePreservingPreferences';
 import { useTheme } from '../../context/ThemeContext';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
@@ -26,8 +28,10 @@ const USER_EVENT_LABELS = {
 
 const PERSONNEL_EVENT_LABELS = {
   crew_created: 'Crew created',
+  crew_updated: 'Crew updated',
   crew_deleted: 'Crew deleted',
   lineman_created: 'Lineman added',
+  lineman_updated: 'Lineman updated',
   lineman_deleted: 'Lineman removed',
 };
 
@@ -146,7 +150,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       }
 
       if (storedRole) {
-        setRole(storedRole.toLowerCase());
+        setRole(String(storedRole).trim().toLowerCase());
       } else {
         setRole('employee');
       }
@@ -203,6 +207,16 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
     fetchNotificationCounts();
   }, [isNotificationsOpen, canUseNotifications, fetchNotificationCounts]);
 
+  useEffect(() => {
+    if (!canUseNotifications) return undefined;
+    const onRealtimeChange = () => {
+      fetchNotificationCounts();
+      if (isNotificationsOpen) setNotificationListVersion((v) => v + 1);
+    };
+    window.addEventListener('aleco:realtime-change', onRealtimeChange);
+    return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
+  }, [canUseNotifications, isNotificationsOpen, fetchNotificationCounts]);
+
   const notificationTotal = useMemo(
     () => NOTIFICATION_TABS.reduce((sum, t) => sum + (Number(notificationCounts[t.id]) || 0), 0),
     [notificationCounts]
@@ -212,9 +226,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
     if (!canUseNotifications) return;
     setMarkAllReadLoading(true);
     try {
-      const r = await authFetch(apiUrl('/api/notifications/mark-all-read'), { method: 'POST' });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.success) return;
+      const result = await authMutation(apiUrl('/api/notifications/mark-all-read'), {
+        method: 'POST',
+        body: {},
+        emitRealtime: { module: REALTIME_MODULES.SYSTEM },
+      });
+      const j = result.data || {};
+      if (!result.ok || !j.success) return;
       fetchNotificationCounts();
       setNotificationListVersion((v) => v + 1);
     } finally {
@@ -273,9 +291,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
     if (id == null) return;
     setMarkOneReadLoadingId(id);
     try {
-      const r = await authFetch(apiUrl(`/api/notifications/${id}/read`), { method: 'PATCH' });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.success) return;
+      const result = await authMutation(apiUrl(`/api/notifications/${id}/read`), {
+        method: 'PATCH',
+        body: {},
+        emitRealtime: { module: REALTIME_MODULES.SYSTEM },
+      });
+      const j = result.data || {};
+      if (!result.ok || !j.success) return;
       removeNotificationFromList(notificationDetail.tabId, id);
       fetchNotificationCounts();
       setNotificationDetail(null);
@@ -376,10 +398,9 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
         const userEmail = localStorage.getItem('userEmail'); 
         
         if (userEmail) {
-          await authFetch(apiUrl('/api/logout-all'), {
+          await authMutation(apiUrl('/api/logout-all'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: userEmail })
+            body: { email: userEmail },
           });
           console.log("--- [SECURITY] Global session flush completed ---");
         }

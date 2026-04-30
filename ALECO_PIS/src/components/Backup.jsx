@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
+import { authMutation } from '../utils/authMutation';
 import AdminLayout from './AdminLayout';
 import ExportPreviewModal from './backup/ExportPreviewModal';
 import ImportPreviewModal from './backup/ImportPreviewModal';
@@ -21,6 +22,7 @@ import ComingSoonPlaceholder from './backup/ComingSoonPlaceholder';
 import TicketFilterDrawer from './tickets/TicketFilterDrawer';
 import { USER_ROLES } from '../constants/userRoles';
 import { DATA_MANAGEMENT_ENTITIES } from '../constants/dataManagementEntities';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/BackupUIScale.css';
 import '../CSS/Buttons.css';
@@ -350,13 +352,12 @@ const AdminBackup = () => {
         setPreviewTitle('Delete Preview');
         try {
             const body = getArchiveBody();
-            const res = await authFetch(apiUrl('/api/tickets/archive/preview'), {
+            const result = await authMutation(apiUrl('/api/tickets/archive/preview'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
+                body,
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Delete preview failed');
+            const data = result.data || {};
+            if (!result.ok) throw new Error(data.message || 'Delete preview failed');
             setPreviewData(data);
             setPreviewModalOpen(true);
         } catch (err) {
@@ -386,13 +387,13 @@ const AdminBackup = () => {
         setArchiving(true);
         try {
             const body = { ...getArchiveBody(), deleteAuthToken };
-            const res = await authFetch(apiUrl('/api/tickets/archive'), {
+            const result = await authMutation(apiUrl('/api/tickets/archive'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                body,
+                emitRealtime: { module: REALTIME_MODULES.DATA_MANAGEMENT },
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Archive failed');
+            const data = result.data || {};
+            if (!result.ok) throw new Error(data.message || 'Archive failed');
             const deletedCount = Number(data.deletedCount || 0);
             const blockedCount = Number(data.blockedGroupedCount || 0);
             if (blockedCount > 0) {
@@ -449,13 +450,12 @@ const AdminBackup = () => {
         }
         setRequestingDeleteCode(true);
         try {
-            const res = await authFetch(apiUrl('/api/tickets/archive/request-delete-code'), {
+            const result = await authMutation(apiUrl('/api/tickets/archive/request-delete-code'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: entered }),
+                body: { email: entered },
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Failed to send code.');
+            const data = result.data || {};
+            if (!result.ok) throw new Error(data.message || 'Failed to send code.');
             setDeleteCooldownSeconds(Number(data.cooldownSeconds || 60));
             toast.success('Verification code sent to your email.');
         } catch (err) {
@@ -474,13 +474,12 @@ const AdminBackup = () => {
         }
         setVerifyingDeleteCode(true);
         try {
-            const res = await authFetch(apiUrl('/api/tickets/archive/verify-delete-code'), {
+            const result = await authMutation(apiUrl('/api/tickets/archive/verify-delete-code'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: entered, code }),
+                body: { email: entered, code },
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Failed to verify code.');
+            const data = result.data || {};
+            if (!result.ok) throw new Error(data.message || 'Failed to verify code.');
             setDeleteAuthToken(data.deleteAuthToken || '');
             toast.success('Delete verification confirmed. You can now delete.');
         } catch (err) {
@@ -501,12 +500,12 @@ const AdminBackup = () => {
         try {
             const formData = new FormData();
             formData.append('file', importFile);
-            const res = await authFetch(apiUrl('/api/tickets/import?dryRun=true'), {
+            const result = await authMutation(apiUrl('/api/tickets/import?dryRun=true'), {
                 method: 'POST',
                 body: formData
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Preview failed');
+            const data = result.data || {};
+            if (!result.ok) throw new Error(data.message || 'Preview failed');
             setPreviewResult(data);
             setImportPreviewOpen(true);
         } catch (err) {
@@ -525,13 +524,14 @@ const AdminBackup = () => {
         try {
             const formData = new FormData();
             formData.append('file', importFile);
-            const res = await authFetch(apiUrl('/api/tickets/import'), {
+            const result = await authMutation(apiUrl('/api/tickets/import'), {
                 method: 'POST',
-                body: formData
+                body: formData,
+                emitRealtime: { module: REALTIME_MODULES.DATA_MANAGEMENT },
             });
-            const data = await res.json();
-            if (!res.ok) {
-                if (res.status === 409) {
+            const data = result.data || {};
+            if (!result.ok) {
+                if (result.status === 409) {
                     toast.info(
                         data.message ||
                         `No missing tickets to restore. Existing in DB: ${Number(data.skipped || 0)}.`

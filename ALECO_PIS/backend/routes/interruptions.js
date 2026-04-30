@@ -28,7 +28,7 @@ import { clampSqlInt } from '../utils/safeSqlInt.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 import { INTERRUPTION_TYPES, INTERRUPTION_STATUSES } from '../constants/interruptionFieldEnums.js';
 import { recordInterruptionNotification, INTERRUPTIONS_EVENT } from '../utils/adminNotifications.js';
-import { requireAdmin } from '../middleware/requireRole.js';
+import { requireStaff } from '../middleware/requireRole.js';
 import { getPublicAppBaseUrl } from '../utils/posterCaptureUrl.js';
 import {
   maybeRegeneratePosterAfterMutation,
@@ -38,6 +38,53 @@ import {
 import { escapeHtmlAttr, shareHeadlineFromType, shareDescriptionFromDto } from '../utils/interruptionShareHtml.js';
 
 const router = express.Router();
+
+function normalizeExpectedUpdatedAt(raw) {
+  if (raw === undefined || raw === null) return null;
+  const text = String(raw).trim();
+  if (!text) return null;
+  return toMysqlDateTime(text);
+}
+
+async function buildOptimisticInterruptionWhere(id, expectedUpdatedAtRaw) {
+  const [rows] = await pool.execute('SELECT id, status, updated_at FROM aleco_interruptions WHERE id = ?', [id]);
+  const latest = rows[0] || null;
+  if (!latest) {
+    return { missing: true, whereSql: 'id = ?', whereParams: [id], conflict: false, latest: null };
+  }
+  const expectedMysql = normalizeExpectedUpdatedAt(expectedUpdatedAtRaw);
+  if (!expectedUpdatedAtRaw || !String(expectedUpdatedAtRaw).trim()) {
+    return { missing: false, whereSql: 'id = ?', whereParams: [id], conflict: false, latest };
+  }
+  if (!expectedMysql) {
+    return { invalidExpected: true, missing: false, whereSql: 'id = ?', whereParams: [id], conflict: false, latest };
+  }
+
+  const latestMysql = toMysqlDateTimeFromRow(latest.updated_at);
+  const latestMinute = latestMysql ? String(latestMysql).slice(0, 16) : '';
+  const expectedMinute = String(expectedMysql).slice(0, 16);
+  if (latestMinute && expectedMinute && latestMinute !== expectedMinute) {
+    return {
+      missing: false,
+      whereSql: 'id = ?',
+      whereParams: [id],
+      conflict: true,
+      latest: {
+        id: latest.id,
+        status: latest.status,
+        updated_at: toIsoForClient(latest.updated_at) ?? latest.updated_at,
+      },
+    };
+  }
+
+  return {
+    missing: false,
+    whereSql: "id = ? AND DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i') = DATE_FORMAT(?, '%Y-%m-%d %H:%i')",
+    whereParams: [id, expectedMysql],
+    conflict: false,
+    latest,
+  };
+}
 
 /**
  * @param {import('express').Request} req
@@ -360,8 +407,8 @@ function publicInterruptionVisibilityAndClauses(hasDeletedAtColumn, hasPulledFro
   return clauses;
 }
 
-/** If query asks for admin-only views (archive / future / scheduled), enforce admin role. */
-function requireAdminIfListQueryFlags(req, res, next) {
+/** If query asks for staff views (archive / future / scheduled), enforce authenticated staff role. */
+function requireStaffIfListQueryFlags(req, res, next) {
   const q = req.query || {};
   const adminList =
     q.includeDeleted === '1' ||
@@ -371,12 +418,12 @@ function requireAdminIfListQueryFlags(req, res, next) {
     q.includeFuture === '1' ||
     q.includeFuture === 'true' ||
     q.includeScheduled === '1';
-  if (adminList) return requireAdmin(req, res, next);
+  if (adminList) return requireStaff(req, res, next);
   return next();
 }
 
 /** Public + admin list (default: non-deleted only; admin archive via query flags). */
-router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
+router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
   try {
     const limit = clampSqlInt(req.query.limit, 1, 200, 100);
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
@@ -491,7 +538,7 @@ router.get('/interruptions', requireAdminIfListQueryFlags, async (req, res) => {
 });
 
 /** Upload image for advisory (optional). Returns imageUrl for form. */
-router.post('/interruptions/upload-image', requireAdmin, upload.single('image'), async (req, res) => {
+router.post('/interruptions/upload-image', requireStaff, upload.single('image'), async (req, res) => {
   try {
     if (!req.file || !req.file.path) {
       return res.status(400).json({ success: false, message: 'No image file uploaded.' });
@@ -632,22 +679,38 @@ router.get('/interruptions/:id', async (req, res) => {
 });
 
 /** Append remark (optional notes for advisory) */
-router.post('/interruptions/:id/updates', requireAdmin, async (req, res) => {
+router.post('/interruptions/:id/updates', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
   const remark = req.body?.remark;
   const actorEmail = req.body?.actorEmail ?? null;
   const actorName = req.body?.actorName ?? null;
+  const expectedUpdatedAt = req.body?.expectedUpdatedAt ?? req.body?.expected_updated_at;
 
   try {
-    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
-    const existsSql = hasDel
-      ? 'SELECT id FROM aleco_interruptions WHERE id = ? AND deleted_at IS NULL'
-      : 'SELECT id FROM aleco_interruptions WHERE id = ?';
-    const [existing] = await pool.execute(existsSql, [id]);
-    if (existing.length === 0) {
+    const optimistic = await buildOptimisticInterruptionWhere(id, expectedUpdatedAt);
+    if (optimistic.invalidExpected) {
+      return res.status(400).json({ success: false, message: 'expectedUpdatedAt must be a valid date/time.' });
+    }
+    if (optimistic.missing) {
       return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+    if (optimistic.conflict) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_INTERRUPTION',
+        message: 'This advisory was updated elsewhere. Reload the latest advisory and try again.',
+        latest: optimistic.latest,
+      });
+    }
+
+    const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+    if (hasDel) {
+      const [delCheck] = await pool.execute('SELECT deleted_at FROM aleco_interruptions WHERE id = ?', [id]);
+      if (delCheck[0]?.deleted_at != null && String(delCheck[0].deleted_at).trim() !== '') {
+        return res.status(410).json({ success: false, message: 'This advisory is archived. Restore it before updating.' });
+      }
     }
 
     const created = await addUserUpdate(pool, id, { remark, actorEmail, actorName });
@@ -663,7 +726,7 @@ router.post('/interruptions/:id/updates', requireAdmin, async (req, res) => {
 });
 
 /** Create (admin UI): no restoration time; status derived from type + start */
-router.post('/interruptions', requireAdmin, async (req, res) => {
+router.post('/interruptions', requireStaff, async (req, res) => {
   const errs = validatePayload(req.body, { partial: false });
   if (errs.length) return res.status(400).json({ success: false, message: errs.join(' ') });
 
@@ -869,7 +932,7 @@ router.post('/interruptions', requireAdmin, async (req, res) => {
 });
 
 /** Update */
-router.put('/interruptions/:id', requireAdmin, async (req, res) => {
+router.put('/interruptions/:id', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -1234,19 +1297,40 @@ router.put('/interruptions/:id', requireAdmin, async (req, res) => {
 /**
  * Soft delete (UX still uses DELETE). Row and remarks remain for reporting.
  */
-router.delete('/interruptions/:id', requireAdmin, async (req, res) => {
+router.delete('/interruptions/:id', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+  const expectedUpdatedAt = req.body?.expectedUpdatedAt ?? req.body?.expected_updated_at;
 
   try {
+    const optimistic = await buildOptimisticInterruptionWhere(id, expectedUpdatedAt);
+    if (optimistic.invalidExpected) {
+      return res.status(400).json({ success: false, message: 'expectedUpdatedAt must be a valid date/time.' });
+    }
+    if (optimistic.missing) {
+      return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+    if (optimistic.conflict) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_INTERRUPTION',
+        message: 'This advisory was updated elsewhere. Reload the latest advisory and try again.',
+        latest: optimistic.latest,
+      });
+    }
+
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     if (hasDel) {
       const [result] = await pool.execute(
-        `UPDATE aleco_interruptions SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL`,
-        [nowPhilippineForMysql(), id]
+        `UPDATE aleco_interruptions SET deleted_at = ? WHERE ${optimistic.whereSql} AND deleted_at IS NULL`,
+        [nowPhilippineForMysql(), ...optimistic.whereParams]
       );
       if (result.affectedRows === 0) {
-        return res.status(404).json({ success: false, message: 'Interruption not found or already archived.' });
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_INTERRUPTION',
+          message: 'This advisory was updated elsewhere or already archived. Reload and try again.',
+        });
       }
       const archiver =
         req.authUser?.email ||
@@ -1273,7 +1357,7 @@ router.delete('/interruptions/:id', requireAdmin, async (req, res) => {
 });
 
 /** Permanently delete an archived advisory. Only allowed when deleted_at IS NOT NULL. */
-router.delete('/interruptions/:id/permanent', requireAdmin, async (req, res) => {
+router.delete('/interruptions/:id/permanent', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -1315,11 +1399,28 @@ router.delete('/interruptions/:id/permanent', requireAdmin, async (req, res) => 
 });
 
 /** Restore a soft-deleted advisory (admin). */
-router.patch('/interruptions/:id/restore', requireAdmin, async (req, res) => {
+router.patch('/interruptions/:id/restore', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+  const expectedUpdatedAt = req.body?.expectedUpdatedAt ?? req.body?.expected_updated_at;
 
   try {
+    const optimistic = await buildOptimisticInterruptionWhere(id, expectedUpdatedAt);
+    if (optimistic.invalidExpected) {
+      return res.status(400).json({ success: false, message: 'expectedUpdatedAt must be a valid date/time.' });
+    }
+    if (optimistic.missing) {
+      return res.status(404).json({ success: false, message: 'Interruption not found.' });
+    }
+    if (optimistic.conflict) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_INTERRUPTION',
+        message: 'This advisory was updated elsewhere. Reload the latest advisory and try again.',
+        latest: optimistic.latest,
+      });
+    }
+
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     if (!hasDel) {
       return res.status(503).json({
@@ -1328,11 +1429,15 @@ router.patch('/interruptions/:id/restore', requireAdmin, async (req, res) => {
       });
     }
     const [result] = await pool.execute(
-      `UPDATE aleco_interruptions SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL`,
-      [id]
+      `UPDATE aleco_interruptions SET deleted_at = NULL WHERE ${optimistic.whereSql} AND deleted_at IS NOT NULL`,
+      [...optimistic.whereParams]
     );
     if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Interruption not found or not archived.' });
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_INTERRUPTION',
+        message: 'This advisory was updated elsewhere or is not archived anymore. Reload and try again.',
+      });
     }
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
@@ -1349,11 +1454,28 @@ router.patch('/interruptions/:id/restore', requireAdmin, async (req, res) => {
 });
 
 /** Pull advisory out of public feed (temporarily hide without archiving). */
-router.patch('/interruptions/:id/pull-from-feed', requireAdmin, async (req, res) => {
+router.patch('/interruptions/:id/pull-from-feed', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+  const expectedUpdatedAt = req.body?.expectedUpdatedAt ?? req.body?.expected_updated_at;
 
   try {
+    const optimistic = await buildOptimisticInterruptionWhere(id, expectedUpdatedAt);
+    if (optimistic.invalidExpected) {
+      return res.status(400).json({ success: false, message: 'expectedUpdatedAt must be a valid date/time.' });
+    }
+    if (optimistic.missing) {
+      return res.status(404).json({ success: false, message: 'Advisory not found.' });
+    }
+    if (optimistic.conflict) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_INTERRUPTION',
+        message: 'This advisory was updated elsewhere. Reload the latest advisory and try again.',
+        latest: optimistic.latest,
+      });
+    }
+
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     if (!hasPulled) {
@@ -1378,10 +1500,17 @@ router.patch('/interruptions/:id/pull-from-feed', requireAdmin, async (req, res)
       });
     }
     const phNow = nowPhilippineForMysql();
-    await pool.execute(
-      'UPDATE aleco_interruptions SET pulled_from_feed_at = ?, updated_at = ? WHERE id = ?',
-      [phNow, phNow, id]
+    const [upd] = await pool.execute(
+      `UPDATE aleco_interruptions SET pulled_from_feed_at = ?, updated_at = ? WHERE ${optimistic.whereSql}`,
+      [phNow, phNow, ...optimistic.whereParams]
     );
+    if (upd.affectedRows === 0) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_INTERRUPTION',
+        message: 'This advisory was updated elsewhere. Reload and try again.',
+      });
+    }
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
@@ -1393,11 +1522,28 @@ router.patch('/interruptions/:id/pull-from-feed', requireAdmin, async (req, res)
 });
 
 /** Push advisory back into public feed (make visible again per normal rules). */
-router.patch('/interruptions/:id/push-to-feed', requireAdmin, async (req, res) => {
+router.patch('/interruptions/:id/push-to-feed', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+  const expectedUpdatedAt = req.body?.expectedUpdatedAt ?? req.body?.expected_updated_at;
 
   try {
+    const optimistic = await buildOptimisticInterruptionWhere(id, expectedUpdatedAt);
+    if (optimistic.invalidExpected) {
+      return res.status(400).json({ success: false, message: 'expectedUpdatedAt must be a valid date/time.' });
+    }
+    if (optimistic.missing) {
+      return res.status(404).json({ success: false, message: 'Advisory not found.' });
+    }
+    if (optimistic.conflict) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_INTERRUPTION',
+        message: 'This advisory was updated elsewhere. Reload the latest advisory and try again.',
+        latest: optimistic.latest,
+      });
+    }
+
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     if (!hasPulled) {
@@ -1421,10 +1567,17 @@ router.patch('/interruptions/:id/push-to-feed', requireAdmin, async (req, res) =
         message: 'Archived advisories cannot be pushed. Restore it first.',
       });
     }
-    await pool.execute(
-      'UPDATE aleco_interruptions SET pulled_from_feed_at = NULL, updated_at = ? WHERE id = ?',
-      [nowPhilippineForMysql(), id]
+    const [upd] = await pool.execute(
+      `UPDATE aleco_interruptions SET pulled_from_feed_at = NULL, updated_at = ? WHERE ${optimistic.whereSql}`,
+      [nowPhilippineForMysql(), ...optimistic.whereParams]
     );
+    if (upd.affectedRows === 0) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_INTERRUPTION',
+        message: 'This advisory was updated elsewhere. Reload and try again.',
+      });
+    }
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
@@ -1440,7 +1593,7 @@ router.patch('/interruptions/:id/push-to-feed', requireAdmin, async (req, res) =
  * Uses the live print page when the advisory is public-visible; otherwise (or if print fails) uses an HTML fallback.
  * For the print path, set `PUBLIC_APP_URL` or `FRONTEND_ORIGIN` to the deployed SPA origin.
  */
-router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) => {
+router.post('/interruptions/:id/poster-capture', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -1518,7 +1671,7 @@ router.post('/interruptions/:id/poster-capture', requireAdmin, async (req, res) 
  * Uses the same `captureInterruptionPosterForAdmin` path — tries print capture first,
  * falls back to the HTML template listing. Replaces the old 1×1-blank stub approach.
  */
-router.post('/interruptions/:id/poster-stub', requireAdmin, async (req, res) => {
+router.post('/interruptions/:id/poster-stub', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 

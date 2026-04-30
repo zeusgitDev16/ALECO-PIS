@@ -273,13 +273,24 @@ const AdminInterruptions = () => {
   const handleSaveStatus = useCallback(
     async (payload) => {
       if (!updateModalId) return { saved: false };
-      const result = await saveAdvisory({ editingId: updateModalId, payload });
+      const latestForUpdateModal =
+        (editDetail && editDetail.id === updateModalId ? editDetail : null) ||
+        interruptions.find((item) => item.id === updateModalId) ||
+        null;
+      const expectedUpdatedAt = latestForUpdateModal?.updatedAt || null;
+      const result = await saveAdvisory({
+        editingId: updateModalId,
+        payload: {
+          ...payload,
+          ...(expectedUpdatedAt ? { expectedUpdatedAt } : {}),
+        },
+      });
       if (result.saved) {
         await loadEditDetail(updateModalId);
       }
       return result;
     },
-    [updateModalId, saveAdvisory, loadEditDetail]
+    [updateModalId, saveAdvisory, loadEditDetail, editDetail, interruptions]
   );
 
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
@@ -736,11 +747,11 @@ const AdminInterruptions = () => {
                 ))}
               </div>
             </div>
-            <div className="interruption-filter-drawer-actions">
+            <div className="filter-drawer-actions">
               {getActiveFiltersCount() > 0 && (
                 <button
                   type="button"
-                  className="interruption-filter-drawer-clear-btn"
+                  className="filter-drawer-clear-btn"
                   onClick={() => {
                     setActiveChipKey('all');
                     setSearchQuery('');
@@ -753,7 +764,7 @@ const AdminInterruptions = () => {
               )}
               <button
                 type="button"
-                className="interruption-filter-drawer-reset-btn"
+                className="filter-drawer-reset-btn"
                 onClick={() => {
                   setActiveChipKey('all');
                   setSearchQuery('');
@@ -765,7 +776,7 @@ const AdminInterruptions = () => {
               </button>
               <button
                 type="button"
-                className="interruption-filter-drawer-refresh-btn"
+                className="filter-drawer-reset-btn"
                 onClick={() => {
                   fetchList();
                   setFilterDrawerOpen(false);

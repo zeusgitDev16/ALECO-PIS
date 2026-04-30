@@ -3,6 +3,7 @@ import AdminLayout from './AdminLayout';
 import InviteNewUsers from './containers/InviteNewUsers';
 import AllUsers from './containers/AllUsers';
 import UsersLayoutPicker from './users/UsersLayoutPicker';
+import { USER_ROLES } from '../constants/userRoles';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/UsersUIScale.css';
 import '../CSS/UsersDashboard.css';
@@ -10,6 +11,8 @@ import '../CSS/UsersDashboard.css';
 const AdminUsers = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [usersLayout, setUsersLayout] = useState('compact');
+  const currentRole = String(localStorage.getItem('userRole') || USER_ROLES.EMPLOYEE).toLowerCase();
+  const canManageInvites = currentRole === USER_ROLES.ADMIN;
 
   const handleUserInvited = () => {
     setRefreshKey((k) => k + 1);
@@ -30,10 +33,10 @@ const AdminUsers = () => {
         {/* Main Content Card (Scrollable) */}
         <div className="main-content-card users-main-content">
           {/* Invitation System Container */}
-          <InviteNewUsers onUserInvited={handleUserInvited} />
+          {canManageInvites && <InviteNewUsers onUserInvited={handleUserInvited} />}
 
           {/* Content Area */}
-          <AllUsers refreshKey={refreshKey} layout={usersLayout} />
+          <AllUsers refreshKey={refreshKey} layout={usersLayout} showPendingInvites={canManageInvites} />
         </div>
       </div>
     </AdminLayout>

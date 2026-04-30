@@ -146,7 +146,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       }
 
       if (storedRole) {
-        setRole(storedRole.toLowerCase());
+        setRole(String(storedRole).trim().toLowerCase());
       } else {
         setRole('employee');
       }
@@ -202,6 +202,16 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
     if (!isNotificationsOpen || !canUseNotifications) return undefined;
     fetchNotificationCounts();
   }, [isNotificationsOpen, canUseNotifications, fetchNotificationCounts]);
+
+  useEffect(() => {
+    if (!canUseNotifications) return undefined;
+    const onRealtimeChange = () => {
+      fetchNotificationCounts();
+      if (isNotificationsOpen) setNotificationListVersion((v) => v + 1);
+    };
+    window.addEventListener('aleco:realtime-change', onRealtimeChange);
+    return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
+  }, [canUseNotifications, isNotificationsOpen, fetchNotificationCounts]);
 
   const notificationTotal = useMemo(
     () => NOTIFICATION_TABS.reduce((sum, t) => sum + (Number(notificationCounts[t.id]) || 0), 0),

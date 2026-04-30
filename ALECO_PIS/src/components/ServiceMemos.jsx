@@ -45,6 +45,17 @@ const ServiceMemos = () => {
     return () => window.removeEventListener('service-memo-deleted', handleServiceMemoDeleted);
   }, [fetchList]);
 
+  useEffect(() => {
+    const onRealtimeChange = (ev) => {
+      const module = String(ev?.detail?.module || '').toLowerCase();
+      if (module === 'service-memos' || module === 'tickets' || module === 'data-management' || module === 'system') {
+        fetchList();
+      }
+    };
+    window.addEventListener('aleco:realtime-change', onRealtimeChange);
+    return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
+  }, [fetchList]);
+
   const loadDetail = useCallback(async (id) => {
     setDetailLoading(true);
     setDetailMemo(null);

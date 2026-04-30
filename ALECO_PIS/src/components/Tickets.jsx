@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
+import { authMutation } from '../utils/authMutation';
+import { withExpectedUpdatedAt } from '../utils/optimisticConcurrency';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketsPage.css';
@@ -163,6 +165,17 @@ const AdminTickets = () => {
         fetchCrews();
     }, []);
 
+    useEffect(() => {
+        const onRealtimeChange = (ev) => {
+            const module = String(ev?.detail?.module || '').toLowerCase();
+            if (module === 'tickets' || module === 'service-memos' || module === 'data-management' || module === 'system') {
+                refetch();
+            }
+        };
+        window.addEventListener('aleco:realtime-change', onRealtimeChange);
+        return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
+    }, [refetch]);
+
     const toggleTicketSelection = (id) => {
         setSelectedIds(prev => {
             return prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
@@ -259,20 +272,27 @@ const AdminTickets = () => {
 
     const handlePutHold = async (ticketId, holdData) => {
         try {
+            const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
+            const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
             const body = { ...holdData, ...getActor() };
-            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/hold`), {
+            const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/hold`), {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                body,
+                expectedUpdatedAt,
+                expectedUpdatedAtField: 'expected_updated_at',
+                emitRealtime: { module: 'tickets' },
             });
-            const data = await response.json();
-            if (response.ok && data.success) {
+            const data = result.data || {};
+            if (result.success) {
                 const msg = data.message || `Ticket ${ticketId} put on hold.`;
                 if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
                     toast.warning(`ALECO System: ${msg}`);
                 } else {
                     toast.success(`ALECO System: ${msg}`);
                 }
+                refetch();
+            } else if (result.conflict) {
+                toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
                 refetch();
             } else {
                 toast.error('Hold failed: ' + (data.message || 'Unknown error'));
@@ -285,14 +305,21 @@ const AdminTickets = () => {
 
     const handleResumeFromHold = async (ticketId) => {
         try {
-            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
+            const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
+            const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
+            const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(getActor())
+                body: { ...getActor() },
+                expectedUpdatedAt,
+                expectedUpdatedAtField: 'expected_updated_at',
+                emitRealtime: { module: 'tickets' },
             });
-            const data = await response.json();
-            if (response.ok && data.success) {
+            const data = result.data || {};
+            if (result.success) {
                 toast.success(`ALECO System: ${data.message || `Ticket ${ticketId} resumed.`}`);
+                refetch();
+            } else if (result.conflict) {
+                toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
                 refetch();
             } else {
                 toast.error(data.message || 'Could not resume ticket.');
@@ -305,16 +332,19 @@ const AdminTickets = () => {
 
     const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         try {
+            const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
+            const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
             if (newStatus === 'Ongoing' && dispatchData) {
                 if (dispatchData.resolution_mode === 'concern') {
-                    const body = { ...dispatchData, ...getActor() };
-                    const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/resolve-concern`), {
+                    const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/resolve-concern`), {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
+                        body: { ...dispatchData, ...getActor() },
+                        expectedUpdatedAt,
+                        expectedUpdatedAtField: 'expected_updated_at',
+                        emitRealtime: { module: 'tickets' },
                     });
-                    const data = await response.json();
-                    if (response.ok && data.success) {
+                    const data = result.data || {};
+                    if (result.success) {
                         const msg = data.message || 'Concern resolution started.';
                         if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
                             toast.warning(`ALECO System: ${msg}`);
@@ -322,28 +352,35 @@ const AdminTickets = () => {
                             toast.success(`ALECO System: ${msg}`);
                         }
                         refetch();
+                    } else if (result.conflict) {
+                        toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
+                        refetch();
                     } else {
                         toast.error('Start resolution failed: ' + (data.message || 'Unknown error'));
                     }
                     return;
                 }
 
-                const body = { ...dispatchData, ...getActor() };
-                const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
+                const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+                    body: { ...dispatchData, ...getActor() },
+                    expectedUpdatedAt,
+                    expectedUpdatedAtField: 'expected_updated_at',
+                    emitRealtime: { module: 'tickets' },
                 });
 
-                const data = await response.json();
+                const data = result.data || {};
 
-                if (response.ok && data.success) {
+                if (result.success) {
                     const msg = data.message || 'Dispatch complete.';
                     if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
                         toast.warning(`ALECO System: ${msg}`);
                     } else {
                         toast.success(`ALECO System: ${msg}`);
                     }
+                    refetch();
+                } else if (result.conflict) {
+                    toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
                     refetch();
                 } else {
                     toast.error('Dispatch failed: ' + (data.message || 'Unknown error'));
@@ -355,21 +392,33 @@ const AdminTickets = () => {
                     ? apiUrl(`/api/tickets/group/${ticketId}/status`)
                     : apiUrl(`/api/tickets/${ticketId}/status`);
 
-                const response = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus, ...getActor() })
-                });
+                const payload = {
+                        status: newStatus,
+                        ...getActor(),
+                        ...(isGroupMaster ? {} : withExpectedUpdatedAt({}, expectedUpdatedAt, 'expected_updated_at'))
+                    };
 
-                const data = await response.json();
+                const result = isGroupMaster
+                    ? await authMutation(url, { method: 'PUT', body: payload, emitRealtime: { module: 'tickets' } })
+                    : await authMutation(url, {
+                        method: 'PUT',
+                        body: payload,
+                        expectedUpdatedAt,
+                        expectedUpdatedAtField: 'expected_updated_at',
+                        emitRealtime: { module: 'tickets' },
+                    });
+                const data = result.data || {};
 
-                if (response.ok && data.success) {
+                if (result.success) {
                     const msg = newStatus === 'Pending'
                         ? `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} reverted to Pending. You can start resolution again.`
                         : `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} marked as ${newStatus}.`;
                     toast.success(msg);
                     refetch();
                     return data; // Return full response including service_memo_warning
+                } else if (result.conflict) {
+                    toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
+                    refetch();
                 } else {
                     toast.error("Status update failed: " + data.message);
                 }

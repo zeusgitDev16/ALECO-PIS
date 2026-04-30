@@ -8,12 +8,14 @@ import '../../CSS/AllUsers.css';
 
 const isActiveStatus = (user) => user.status === 'Active';
 
-const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
+const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = true }) => {
   const [users, setUsers] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [accountActionUser, setAccountActionUser] = useState(null);
+  const currentRole = String(localStorage.getItem('userRole') || USER_ROLES.EMPLOYEE).toLowerCase();
+  const canManageUsers = currentRole === USER_ROLES.ADMIN;
   const [loadError, setLoadError] = useState('');
 
   const fetchData = async () => {
@@ -48,6 +50,17 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
   useEffect(() => {
     fetchData();
   }, [refreshKey]);
+
+  useEffect(() => {
+    const onRealtimeChange = (ev) => {
+      const module = String(ev?.detail?.module || '').toLowerCase();
+      if (module === 'users' || module === 'system') {
+        fetchData();
+      }
+    };
+    window.addEventListener('aleco:realtime-change', onRealtimeChange);
+    return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
+  }, []);
 
   const filteredUsers = (Array.isArray(users) ? users : []).filter((user) => {
     const searchTerm = searchQuery.toLowerCase();
@@ -194,11 +207,13 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
         </div>
       </div>
       <div className="users-user-card-meta">{renderRoleStatus(user)}</div>
-      <div className="users-user-card-actions">
-        <button type="button" className="action-btn-toggle" onClick={() => openAccountActionModal(user)}>
-          {isActiveStatus(user) ? 'Disable' : 'Enable'}
-        </button>
-      </div>
+      {canManageUsers ? (
+        <div className="users-user-card-actions">
+          <button type="button" className="action-btn-toggle" onClick={() => openAccountActionModal(user)}>
+            {isActiveStatus(user) ? 'Disable' : 'Enable'}
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 
@@ -212,7 +227,7 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
             <th>Email</th>
             <th>Role</th>
             <th>Account Status</th>
-            <th>Actions</th>
+            {canManageUsers ? <th>Actions</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -238,16 +253,18 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
                     ● {user.status}
                   </span>
                 </td>
-                <td>
-                  <button type="button" className="action-btn-toggle" onClick={() => openAccountActionModal(user)}>
-                    {isActiveStatus(user) ? 'Disable' : 'Enable'}
-                  </button>
-                </td>
+                {canManageUsers ? (
+                  <td>
+                    <button type="button" className="action-btn-toggle" onClick={() => openAccountActionModal(user)}>
+                      {isActiveStatus(user) ? 'Disable' : 'Enable'}
+                    </button>
+                  </td>
+                ) : null}
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="6" className="users-table-empty">
+              <td colSpan={canManageUsers ? 6 : 5} className="users-table-empty">
                 {emptyMessage}
               </td>
             </tr>
@@ -328,14 +345,16 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact' }) => {
         </div>
       </div>
 
-      {renderPendingSection()}
+      {showPendingInvites ? renderPendingSection() : null}
 
-      <UserAccountActionModal
-        isOpen={!!accountActionUser}
-        user={accountActionUser}
-        onClose={() => setAccountActionUser(null)}
-        onValidatedConfirm={() => executeToggleStatus(accountActionUser)}
-      />
+      {canManageUsers ? (
+        <UserAccountActionModal
+          isOpen={!!accountActionUser}
+          user={accountActionUser}
+          onClose={() => setAccountActionUser(null)}
+          onValidatedConfirm={() => executeToggleStatus(accountActionUser)}
+        />
+      ) : null}
     </>
   );
 };

@@ -3,7 +3,7 @@ import pool from '../config/db.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { sendAppMail } from '../utils/appMail.js';
 import { recordUserNotification, USER_EVENT } from '../utils/adminNotifications.js';
-import { requireAdmin, requireSelfOrAdmin } from '../middleware/requireRole.js';
+import { requireStaff, requireSelfOrAdmin } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
@@ -43,7 +43,7 @@ function normalizeSocialLinks(value) {
 }
 
 // 4. The Mailbox (The API Route)
-router.post('/invite', requireAdmin, async (req, res) => {
+router.post('/invite', requireStaff, async (req, res) => {
   const { email, role, code } = req.body;
   if (!email || !role || !code) return res.status(400).json({ error: "Missing info." });
 
@@ -121,7 +121,7 @@ router.post('/invite', requireAdmin, async (req, res) => {
   } 
 });
 
-router.post('/send-email', requireAdmin, async (req, res) => {
+router.post('/send-email', requireStaff, async (req, res) => {
   const { email, code } = req.body;
 
   if (!email || !code) {
@@ -200,7 +200,7 @@ router.post('/check-email', async (req, res) => {
   }
 });
 // Fetch all registered users
-router.get('/users', requireAdmin, async (req, res) => {
+router.get('/users', requireStaff, async (req, res) => {
   try {
     // Matches schema columns: id, name, email, role, status
     const [rows] = await pool.execute(
@@ -332,7 +332,7 @@ router.get('/users/activity', requireSelfOrAdmin('email', 'query'), async (req, 
 });
 
 // Toggle Status (Matches Schema Casing)
-router.post('/users/toggle-status', requireAdmin, async (req, res) => {
+router.post('/users/toggle-status', requireStaff, async (req, res) => {
   const { id, currentStatus } = req.body;
   
   // Ensure we use 'Active' and 'Disabled' to match the Enum definition

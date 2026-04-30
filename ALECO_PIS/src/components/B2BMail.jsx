@@ -163,6 +163,18 @@ const B2BMail = () => {
     }
   }, [composeMessage, clearComposeMessage]);
 
+  useEffect(() => {
+    const onRealtimeChange = (ev) => {
+      const module = String(ev?.detail?.module || '').toLowerCase();
+      if (module === 'b2b-mail' || module === 'data-management' || module === 'system') {
+        loadContacts();
+        loadMessages();
+      }
+    };
+    window.addEventListener('aleco:realtime-change', onRealtimeChange);
+    return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
+  }, [loadContacts, loadMessages]);
+
   // Modal handlers
   const openNewContact = () => {
     setEditingContact(null);

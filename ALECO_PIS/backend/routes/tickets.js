@@ -20,7 +20,8 @@ import {
 } from '../utils/adminNotifications.js';
 
 import { sendAppMail } from '../utils/appMail.js';
-import { requireAdmin } from '../middleware/requireRole.js';
+import { requireStaff } from '../middleware/requireRole.js';
+import { buildOptimisticTicketWhere, normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
 
 function actorEmailFromReq(req) {
   return req.authUser?.email || String(req.headers['x-user-email'] || '').trim() || null;
@@ -258,7 +259,7 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
 });
 
 // --- 2b. EDIT TICKET ROUTE (Dispatcher) ---
-router.put('/tickets/:ticketId', requireAdmin, async (req, res) => {
+router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
     try {
         const { ticketId } = req.params;
         const body = req.body;
@@ -327,7 +328,7 @@ router.put('/tickets/:ticketId', requireAdmin, async (req, res) => {
 });
 
 // --- 2c. HARD DELETE TICKET ROUTE ---
-router.delete('/tickets/:ticketId', requireAdmin, async (req, res) => {
+router.delete('/tickets/:ticketId', requireStaff, async (req, res) => {
     try {
         const { ticketId } = req.params;
         const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
@@ -390,9 +391,10 @@ router.post('/tickets/send-copy', async (req, res) => {
 
 
 // --- ADMIN: DISPATCH TICKET ROUTE (PHILSMS INTEGRATION) ---
-router.put('/tickets/:ticket_id/dispatch', requireAdmin, async (req, res) => {
+router.put('/tickets/:ticket_id/dispatch', requireStaff, async (req, res) => {
     const { ticket_id } = req.params;
     const { assigned_crew, eta, is_consumer_notified, dispatch_notes } = req.body;
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
 
     console.log(`\n🚀 STARTING DYNAMIC DISPATCH for Ticket: ${ticket_id}`);
 
@@ -485,13 +487,23 @@ ${ticket_id}`;
             WHERE ticket_id = ?
         `;
 
-        const [dbResult] = await pool.execute(updateQuery, [
+        const optimistic = await buildOptimisticTicketWhere(pool, ticket_id, expectedUpdatedAt);
+        if (optimistic.conflict) {
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_TICKET',
+                message: 'Ticket was updated by another user. Reload the latest ticket details and try again.',
+                latest: optimistic.latest,
+            });
+        }
+        const guardedUpdateQuery = updateQuery.replace('WHERE ticket_id = ?', `WHERE ${optimistic.whereSql}`);
+        const [dbResult] = await pool.execute(guardedUpdateQuery, [
             assigned_crew, 
             eta, 
             is_consumer_notified ? 1 : 0, 
             dispatch_notes || '', 
             phNow,
-            ticket_id
+            ...optimistic.whereParams
         ]);
 
         if (dbResult.affectedRows > 0) {
@@ -541,9 +553,10 @@ ${ticket_id}`;
 });
 
 // --- ADMIN: START RESOLUTION FOR NON-LINEMAN CONCERNS (NO CREW REQUIRED) ---
-router.put('/tickets/:ticket_id/resolve-concern', requireAdmin, async (req, res) => {
+router.put('/tickets/:ticket_id/resolve-concern', requireStaff, async (req, res) => {
     const { ticket_id } = req.params;
     const { is_consumer_notified, concern_resolution_notes } = req.body;
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
     const concernNotes = String(concern_resolution_notes || '').trim();
 
     if (!concernNotes) {
@@ -563,6 +576,16 @@ router.put('/tickets/:ticket_id/resolve-concern', requireAdmin, async (req, res)
         const consumerPhone = statusRows[0]?.phone_number;
         const phNow = nowPhilippineForMysql();
 
+        const optimistic = await buildOptimisticTicketWhere(pool, ticket_id, expectedUpdatedAt);
+        if (optimistic.conflict) {
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_TICKET',
+                message: 'Ticket was updated by another user. Reload the latest ticket details and try again.',
+                latest: optimistic.latest,
+            });
+        }
+
         const [dbResult] = await pool.execute(
             `UPDATE aleco_tickets
              SET status = 'Ongoing',
@@ -574,8 +597,8 @@ router.put('/tickets/:ticket_id/resolve-concern', requireAdmin, async (req, res)
                  dispatched_at = ?,
                  hold_reason = NULL,
                  hold_since = NULL
-             WHERE ticket_id = ?`,
-            [is_consumer_notified ? 1 : 0, concernNotes, phNow, ticket_id]
+             WHERE ${optimistic.whereSql}`,
+            [is_consumer_notified ? 1 : 0, concernNotes, phNow, ...optimistic.whereParams]
         );
 
         if (dbResult.affectedRows === 0) {
@@ -629,18 +652,29 @@ router.put('/tickets/:ticket_id/resolve-concern', requireAdmin, async (req, res)
 });
 
 // --- ADMIN: PUT TICKET ON HOLD (Dispatcher-initiated) ---
-router.put('/tickets/:ticket_id/hold', requireAdmin, async (req, res) => {
+router.put('/tickets/:ticket_id/hold', requireStaff, async (req, res) => {
     const { ticket_id } = req.params;
     const { hold_reason, notify_consumer } = req.body;
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
 
     if (!hold_reason || !hold_reason.trim()) {
         return res.status(400).json({ success: false, message: 'Hold reason is required.' });
     }
 
     try {
+        const optimistic = await buildOptimisticTicketWhere(pool, ticket_id, expectedUpdatedAt);
+        if (optimistic.conflict) {
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_TICKET',
+                message: 'Ticket was updated by another user. Reload the latest ticket details and try again.',
+                latest: optimistic.latest,
+            });
+        }
+
         const [dbResult] = await pool.execute(
-            `UPDATE aleco_tickets SET status = 'OnHold', hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
-            [hold_reason.trim(), nowPhilippineForMysql(), ticket_id]
+            `UPDATE aleco_tickets SET status = 'OnHold', hold_reason = ?, hold_since = ? WHERE ${optimistic.whereSql} AND status = 'Ongoing'`,
+            [hold_reason.trim(), nowPhilippineForMysql(), ...optimistic.whereParams]
         );
 
         if (dbResult.affectedRows === 0) {
@@ -704,13 +738,24 @@ router.put('/tickets/:ticket_id/hold', requireAdmin, async (req, res) => {
 });
 
 // --- RESUME FROM HOLD (Dispatcher) — clears hold fields and returns ticket to Ongoing ---
-router.put('/tickets/:ticket_id/resume-hold', requireAdmin, async (req, res) => {
+router.put('/tickets/:ticket_id/resume-hold', requireStaff, async (req, res) => {
     const { ticket_id } = req.params;
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
 
     try {
+        const optimistic = await buildOptimisticTicketWhere(pool, ticket_id, expectedUpdatedAt);
+        if (optimistic.conflict) {
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_TICKET',
+                message: 'Ticket was updated by another user. Reload the latest ticket details and try again.',
+                latest: optimistic.latest,
+            });
+        }
+
         const [dbResult] = await pool.execute(
-            `UPDATE aleco_tickets SET status = 'Ongoing', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'OnHold'`,
-            [ticket_id]
+            `UPDATE aleco_tickets SET status = 'Ongoing', hold_reason = NULL, hold_since = NULL WHERE ${optimistic.whereSql} AND status = 'OnHold'`,
+            [...optimistic.whereParams]
         );
 
         if (dbResult.affectedRows === 0) {
@@ -1203,7 +1248,7 @@ function levenshteinDistance(str1, str2) {
 // ============================================================================
 // GET ALL TICKET LOGS (System-wide History - must be before /:ticketId/logs)
 // ============================================================================
-router.get('/tickets/logs', requireAdmin, async (req, res) => {
+router.get('/tickets/logs', requireStaff, async (req, res) => {
     try {
         const { ticketId, actor_email, startDate, endDate, limit = 50, offset = 0 } = req.query;
         const conditions = [];
@@ -1266,7 +1311,7 @@ router.get('/tickets/logs', requireAdmin, async (req, res) => {
 // ============================================================================
 // GET TICKET LOGS (Single ticket - History / Audit Trail)
 // ============================================================================
-router.get('/tickets/:ticketId/logs', requireAdmin, async (req, res) => {
+router.get('/tickets/:ticketId/logs', requireStaff, async (req, res) => {
     try {
         const { ticketId } = req.params;
         const [rows] = await pool.execute(
@@ -1305,6 +1350,7 @@ const statusUpdateHandler = async (req, res) => {
     try {
         const { ticketId } = req.params;
         const { status } = req.body;
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
 
         console.log(`📊 Manual Status Update Request: ${ticketId} → ${status}`);
 
@@ -1321,13 +1367,23 @@ const statusUpdateHandler = async (req, res) => {
         const [currentRows] = await pool.execute('SELECT status FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
         const fromStatus = currentRows.length > 0 ? currentRows[0].status : null;
 
+        const optimistic = await buildOptimisticTicketWhere(pool, ticketId, expectedUpdatedAt);
+        if (optimistic.conflict) {
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_TICKET',
+                message: 'Ticket was updated by another user. Reload the latest ticket details and try again.',
+                latest: optimistic.latest,
+            });
+        }
+
         // Update the database
         const updateQuery = `
             UPDATE aleco_tickets
             SET status = ?
-            WHERE ticket_id = ?
+            WHERE ${optimistic.whereSql}
         `;
-        const [dbResult] = await pool.execute(updateQuery, [status, ticketId]);
+        const [dbResult] = await pool.execute(updateQuery, [status, ...optimistic.whereParams]);
 
         if (dbResult.affectedRows > 0) {
             const actorEmail = req.body.actor_email || req.headers['x-user-email'];
@@ -1355,15 +1411,15 @@ const statusUpdateHandler = async (req, res) => {
     }
 };
 
-router.put('/tickets/:ticketId/status', requireAdmin, statusUpdateHandler);
-router.put('/:ticketId/status', requireAdmin, statusUpdateHandler); // Legacy - backward compat
+router.put('/tickets/:ticketId/status', requireStaff, statusUpdateHandler);
+router.put('/:ticketId/status', requireStaff, statusUpdateHandler); // Legacy - backward compat
 
 // ============================================================================
 // PERSONNEL MANAGEMENT ROUTES (Surgically Updated for 3-Table Architecture)
 // ============================================================================
 
 // --- 1. GET ALL CREWS (With Dynamic Member Counts & Lead Names) ---
-router.get('/crews/list', requireAdmin, async (req, res) => {
+router.get('/crews/list', requireStaff, async (req, res) => {
     try {
         const availableOnly = req.query.availableOnly === 'true';
 
@@ -1425,7 +1481,7 @@ router.get('/crews/list', requireAdmin, async (req, res) => {
 });
 
 // --- 2. CREATE NEW CREW (With Junction Table Insertion) ---
-router.post('/crews/add', requireAdmin, async (req, res) => {
+router.post('/crews/add', requireStaff, async (req, res) => {
     const { crew_name, lead_id, phone_number, members } = req.body;
 
     // P1 Conflict validation: Orphaned crew - must have at least one member
@@ -1515,7 +1571,7 @@ router.post('/crews/add', requireAdmin, async (req, res) => {
 });
 
 // --- 3. UPDATE CREW (Wipe old members, insert new ones) ---
-router.put('/crews/update/:id', requireAdmin, async (req, res) => {
+router.put('/crews/update/:id', requireStaff, async (req, res) => {
     const { id } = req.params;
     const { crew_name, lead_id, phone_number, status, members } = req.body;
 
@@ -1601,7 +1657,7 @@ router.put('/crews/update/:id', requireAdmin, async (req, res) => {
 });
 
 // --- 4. DELETE CREW ---
-router.delete('/crews/delete/:id', requireAdmin, async (req, res) => {
+router.delete('/crews/delete/:id', requireStaff, async (req, res) => {
     const { id } = req.params;
     try {
         const [[crewRow]] = await pool.execute('SELECT crew_name FROM aleco_personnel WHERE id = ?', [id]);
@@ -1631,7 +1687,7 @@ router.delete('/crews/delete/:id', requireAdmin, async (req, res) => {
 // ============================================================================
 
 // GET: All Linemen
-router.get('/pool/list', requireAdmin, async (req, res) => {
+router.get('/pool/list', requireStaff, async (req, res) => {
     try {
         const [linemen] = await pool.execute('SELECT * FROM aleco_linemen_pool ORDER BY full_name ASC');
         res.status(200).json(linemen);
@@ -1641,7 +1697,7 @@ router.get('/pool/list', requireAdmin, async (req, res) => {
 });
 
 // POST: Add new Lineman
-router.post('/pool/add', requireAdmin, async (req, res) => {
+router.post('/pool/add', requireStaff, async (req, res) => {
     const { full_name, designation, contact_no, status, leave_start, leave_end, leave_reason } = req.body;
     try {
         const formattedPhone = normalizePhoneForDB(contact_no);
@@ -1674,7 +1730,7 @@ router.post('/pool/add', requireAdmin, async (req, res) => {
 });
 
 // PUT: Update Lineman
-router.put('/pool/update/:id', requireAdmin, async (req, res) => {
+router.put('/pool/update/:id', requireStaff, async (req, res) => {
     const { id } = req.params;
     const { full_name, designation, contact_no, status, leave_start, leave_end, leave_reason } = req.body;
     try {
@@ -1701,7 +1757,7 @@ router.put('/pool/update/:id', requireAdmin, async (req, res) => {
 });
 
 // DELETE: Remove lineman from pool (blocked if assigned to a crew or as lead)
-router.delete('/pool/delete/:id', requireAdmin, async (req, res) => {
+router.delete('/pool/delete/:id', requireStaff, async (req, res) => {
     const { id } = req.params;
     const linemanId = Number(id);
     if (!Number.isFinite(linemanId)) {

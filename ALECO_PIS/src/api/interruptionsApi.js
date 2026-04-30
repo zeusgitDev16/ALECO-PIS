@@ -4,6 +4,8 @@
  */
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
+import { authMutation } from '../utils/authMutation';
+import { withExpectedUpdatedAt } from '../utils/optimisticConcurrency';
 
 /**
  * @typedef {object} InterruptionsListResult
@@ -130,25 +132,22 @@ export async function createInterruption(body) {
  * @param {object} body
  */
 export async function updateInterruption(id, body) {
-  let res;
   try {
-    res = await authFetch(apiUrl(`/api/interruptions/${id}`), {
+    const result = await authMutation(apiUrl(`/api/interruptions/${id}`), {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body,
     });
+    return {
+      ok: result.ok,
+      status: result.status,
+      success: result.success,
+      data: result.data?.data ?? null,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+      code: result.data?.code ?? null,
+    };
   } catch {
-    return { ok: false, status: 0, success: false, data: null, message: null };
+    return { ok: false, status: 0, success: false, data: null, message: null, code: null };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    status: res.status,
-    success,
-    data: json?.data ?? null,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }
 
 /**
@@ -156,23 +155,23 @@ export async function updateInterruption(id, body) {
  * @param {number} id
  * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
  */
-export async function pullFromFeed(id) {
+export async function pullFromFeed(id, { expectedUpdatedAt = null } = {}) {
   try {
-    const res = await authFetch(apiUrl(`/api/interruptions/${id}/pull-from-feed`), {
+    const body = withExpectedUpdatedAt({}, expectedUpdatedAt, 'expectedUpdatedAt');
+    const result = await authMutation(apiUrl(`/api/interruptions/${id}/pull-from-feed`), {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body,
     });
-    const json = await res.json().catch(() => null);
-    const success = res.ok && json && json.success === true;
     return {
-      ok: res.ok,
-      success,
-      data: success ? json?.data ?? null : null,
-      message: typeof json?.message === 'string' ? json.message : null,
+      ok: result.ok,
+      status: result.status,
+      success: result.success,
+      data: result.success ? result.data?.data ?? null : null,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+      code: result.data?.code ?? null,
     };
   } catch {
-    return { ok: false, success: false, data: null, message: null };
+    return { ok: false, status: 0, success: false, data: null, message: null, code: null };
   }
 }
 
@@ -181,43 +180,46 @@ export async function pullFromFeed(id) {
  * @param {number} id
  * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
  */
-export async function pushToFeed(id) {
+export async function pushToFeed(id, { expectedUpdatedAt = null } = {}) {
   try {
-    const res = await authFetch(apiUrl(`/api/interruptions/${id}/push-to-feed`), {
+    const body = withExpectedUpdatedAt({}, expectedUpdatedAt, 'expectedUpdatedAt');
+    const result = await authMutation(apiUrl(`/api/interruptions/${id}/push-to-feed`), {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body,
     });
-    const json = await res.json().catch(() => null);
-    const success = res.ok && json && json.success === true;
     return {
-      ok: res.ok,
-      success,
-      data: success ? json?.data ?? null : null,
-      message: typeof json?.message === 'string' ? json.message : null,
+      ok: result.ok,
+      status: result.status,
+      success: result.success,
+      data: result.success ? result.data?.data ?? null : null,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+      code: result.data?.code ?? null,
     };
   } catch {
-    return { ok: false, success: false, data: null, message: null };
+    return { ok: false, status: 0, success: false, data: null, message: null, code: null };
   }
 }
 
 /**
  * @param {number} id
  */
-export async function deleteInterruption(id) {
-  let res;
+export async function deleteInterruption(id, { expectedUpdatedAt = null } = {}) {
   try {
-    res = await authFetch(apiUrl(`/api/interruptions/${id}`), { method: 'DELETE' });
+    const body = withExpectedUpdatedAt({}, expectedUpdatedAt, 'expectedUpdatedAt');
+    const result = await authMutation(apiUrl(`/api/interruptions/${id}`), {
+      method: 'DELETE',
+      body,
+    });
+    return {
+      ok: result.ok,
+      status: result.status,
+      success: result.success,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+      code: result.data?.code ?? null,
+    };
   } catch {
-    return { ok: false, success: false, message: null };
+    return { ok: false, status: 0, success: false, message: null, code: null };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }
 
 /**
@@ -245,25 +247,24 @@ export async function permanentlyDeleteInterruption(id) {
  * @param {number} id
  * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
  */
-export async function restoreInterruption(id) {
-  let res;
+export async function restoreInterruption(id, { expectedUpdatedAt = null } = {}) {
   try {
-    res = await authFetch(apiUrl(`/api/interruptions/${id}/restore`), {
+    const body = withExpectedUpdatedAt({}, expectedUpdatedAt, 'expectedUpdatedAt');
+    const result = await authMutation(apiUrl(`/api/interruptions/${id}/restore`), {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body,
     });
+    return {
+      ok: result.ok,
+      status: result.status,
+      success: result.success,
+      data: result.data?.data ?? null,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+      code: result.data?.code ?? null,
+    };
   } catch {
-    return { ok: false, success: false, data: null, message: null };
+    return { ok: false, status: 0, success: false, data: null, message: null, code: null };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    data: json?.data ?? null,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }
 
 /**
@@ -322,24 +323,22 @@ export async function uploadInterruptionImage(file, { contextType = null } = {})
  * @param {{ remark: string, actorEmail?: string, actorName?: string }} body
  */
 export async function addInterruptionUpdate(id, body) {
-  let res;
   try {
-    res = await authFetch(apiUrl(`/api/interruptions/${id}/updates`), {
+    const result = await authMutation(apiUrl(`/api/interruptions/${id}/updates`), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body,
     });
+    return {
+      ok: result.ok,
+      status: result.status,
+      success: result.success,
+      data: result.data?.data ?? null,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+      code: result.data?.code ?? null,
+    };
   } catch {
-    return { ok: false, success: false, data: null, message: null };
+    return { ok: false, status: 0, success: false, data: null, message: null, code: null };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    data: json?.data ?? null,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }
 
 /**

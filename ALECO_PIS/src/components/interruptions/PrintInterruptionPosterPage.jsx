@@ -5,6 +5,15 @@ import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
 import InterruptionNgcpPrintPoster from './InterruptionNgcpPrintPoster';
 import '../../CSS/InterruptionPrintPoster.css';
 
+function mapPosterLoadError(message) {
+  const raw = String(message || '').trim();
+  const lower = raw.toLowerCase();
+  if (lower.includes('not found or not public') || lower.includes('not public')) {
+    return 'This advisory is currently hidden from the public feed (pulled/archived) or not yet scheduled to go live.';
+  }
+  return raw || 'Could not load advisory.';
+}
+
 /**
  * Full ALECO print layout for server-side Puppeteer capture (`/print-interruption/:id`).
  */
@@ -33,7 +42,7 @@ export default function PrintInterruptionPosterPage() {
         setError(null);
       } else {
         setItem(null);
-        setError(r.message || 'Could not load advisory.');
+        setError(mapPosterLoadError(r.message));
       }
     })();
     return () => {

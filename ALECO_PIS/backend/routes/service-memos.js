@@ -12,7 +12,7 @@ import {
   peekNextMemoControlNumber,
 } from '../utils/memoControlNumber.js';
 import { recordMemoNotification, MEMO_EVENT } from '../utils/adminNotifications.js';
-import { requireAdmin } from '../middleware/requireRole.js';
+import { requireStaff } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
@@ -78,7 +78,7 @@ function trimQuery(v) {
 }
 
 // GET /api/service-memos - Fetch service memos with filters
-router.get('/service-memos', requireAdmin, async (req, res) => {
+router.get('/service-memos', requireStaff, async (req, res) => {
   try {
     const {
       tab = 'all',
@@ -202,7 +202,7 @@ router.get('/service-memos', requireAdmin, async (req, res) => {
 });
 
 // POST /api/service-memos/allocate-control-number — **preview** next PREFIX-########## (saved memos + 1 only; no DB reservation until Save)
-router.post('/service-memos/allocate-control-number', requireAdmin, async (req, res) => {
+router.post('/service-memos/allocate-control-number', requireStaff, async (req, res) => {
   try {
     const currentUserEmail = getActorEmail(req);
     if (!currentUserEmail || !String(currentUserEmail).trim()) {
@@ -279,7 +279,7 @@ router.post('/service-memos/allocate-control-number', requireAdmin, async (req, 
 });
 
 // GET /api/service-memos/:id - Single memo with ticket join
-router.get('/service-memos/:id', requireAdmin, async (req, res) => {
+router.get('/service-memos/:id', requireStaff, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isFinite(id) || id <= 0) {
@@ -318,7 +318,7 @@ function buildExtendedFromBody(body) {
 }
 
 // POST /api/service-memos - Create service memo
-router.post('/service-memos', requireAdmin, async (req, res) => {
+router.post('/service-memos', requireStaff, async (req, res) => {
   try {
     const body = req.body || {};
     const {
@@ -463,7 +463,7 @@ router.post('/service-memos', requireAdmin, async (req, res) => {
 });
 
 // PUT /api/service-memos/:id - Update service memo
-router.put('/service-memos/:id', requireAdmin, async (req, res) => {
+router.put('/service-memos/:id', requireStaff, async (req, res) => {
   try {
     const { id } = req.params;
     const body = req.body || {};
@@ -570,7 +570,7 @@ router.put('/service-memos/:id', requireAdmin, async (req, res) => {
 });
 
 // PUT /api/service-memos/:id/close - Close service memo
-router.put('/service-memos/:id/close', requireAdmin, async (req, res) => {
+router.put('/service-memos/:id/close', requireStaff, async (req, res) => {
   try {
     const { id } = req.params;
     const currentUserEmail = getActorEmail(req);
@@ -609,7 +609,7 @@ router.put('/service-memos/:id/close', requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/service-memos/:id - Delete service memo
-router.delete('/service-memos/:id', requireAdmin, async (req, res) => {
+router.delete('/service-memos/:id', requireStaff, async (req, res) => {
   try {
     const { id } = req.params;
     const currentUserEmail = getActorEmail(req);

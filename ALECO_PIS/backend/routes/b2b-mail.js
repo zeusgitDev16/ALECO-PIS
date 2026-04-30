@@ -14,7 +14,7 @@ import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { sendB2BMail } from '../utils/b2bMailProvider.js';
 import { pollB2BInboundOnce, relinkUnlinkedInbound, fetchTargetedReplies } from '../services/b2bInboundImapPoll.js';
 import { recordB2BMailNotification, B2B_MAIL_EVENT } from '../utils/adminNotifications.js';
-import { requireAdmin } from '../middleware/requireRole.js';
+import { requireStaff } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
@@ -48,7 +48,7 @@ function resolveBaseUrl(req) {
     return `${proto}://${host}`.replace(/\/$/, '');
 }
 
-router.get('/b2b-mail/contacts', requireAdmin, async (req, res) => {
+router.get('/b2b-mail/contacts', requireStaff, async (req, res) => {
     try {
         const rows = await listContacts({
             q: req.query.q || '',
@@ -62,7 +62,7 @@ router.get('/b2b-mail/contacts', requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/b2b-mail/contacts', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/contacts', requireStaff, async (req, res) => {
     try {
         const body = req.body || {};
         const hadNumericId =
@@ -88,7 +88,7 @@ router.post('/b2b-mail/contacts', requireAdmin, async (req, res) => {
     }
 });
 
-router.put('/b2b-mail/contacts/:id', requireAdmin, async (req, res) => {
+router.put('/b2b-mail/contacts/:id', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
@@ -110,7 +110,7 @@ router.put('/b2b-mail/contacts/:id', requireAdmin, async (req, res) => {
     }
 });
 
-router.patch('/b2b-mail/contacts/:id/active', requireAdmin, async (req, res) => {
+router.patch('/b2b-mail/contacts/:id/active', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         const active = req.body?.active;
@@ -141,7 +141,7 @@ router.patch('/b2b-mail/contacts/:id/active', requireAdmin, async (req, res) => 
     }
 });
 
-router.post('/b2b-mail/contacts/:id/send-verification', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/contacts/:id/send-verification', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
@@ -260,7 +260,7 @@ router.get('/b2b-mail/contacts/verify', async (req, res) => {
     }
 });
 
-router.get('/b2b-mail/messages', requireAdmin, async (req, res) => {
+router.get('/b2b-mail/messages', requireStaff, async (req, res) => {
     try {
         const folder = String(req.query.folder || 'all');
         const q = String(req.query.q || '').trim();
@@ -294,7 +294,7 @@ router.get('/b2b-mail/messages', requireAdmin, async (req, res) => {
     }
 });
 
-router.get('/b2b-mail/messages/:id', requireAdmin, async (req, res) => {
+router.get('/b2b-mail/messages/:id', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
@@ -318,7 +318,7 @@ router.get('/b2b-mail/messages/:id', requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/b2b-mail/messages/preview-recipients', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/messages/preview-recipients', requireStaff, async (req, res) => {
     try {
         const list = await previewRecipientsFromPayload(req.body || {});
         return res.json({
@@ -335,7 +335,7 @@ router.post('/b2b-mail/messages/preview-recipients', requireAdmin, async (req, r
     }
 });
 
-router.post('/b2b-mail/messages/:id/preview-recipients', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/messages/:id/preview-recipients', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
@@ -357,7 +357,7 @@ router.post('/b2b-mail/messages/:id/preview-recipients', requireAdmin, async (re
     }
 });
 
-router.post('/b2b-mail/messages/draft', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/messages/draft', requireStaff, async (req, res) => {
     try {
         const body = withActorFromReq(req, req.body || {});
         const id = await saveDraft(body);
@@ -370,7 +370,7 @@ router.post('/b2b-mail/messages/draft', requireAdmin, async (req, res) => {
     }
 });
 
-router.put('/b2b-mail/messages/:id', requireAdmin, async (req, res) => {
+router.put('/b2b-mail/messages/:id', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
@@ -384,7 +384,7 @@ router.put('/b2b-mail/messages/:id', requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/b2b-mail/messages/:id/send', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/messages/:id/send', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
@@ -408,7 +408,7 @@ router.post('/b2b-mail/messages/:id/send', requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/b2b-mail/messages/:id/retry', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/messages/:id/retry', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
@@ -432,7 +432,7 @@ router.post('/b2b-mail/messages/:id/retry', requireAdmin, async (req, res) => {
     }
 });
 
-router.get('/b2b-mail/templates', requireAdmin, async (req, res) => {
+router.get('/b2b-mail/templates', requireStaff, async (req, res) => {
     try {
         const [rows] = await pool.execute(
             `SELECT id, name, subject, body_html, body_text, is_system, created_by_email, created_at, updated_at
@@ -445,7 +445,7 @@ router.get('/b2b-mail/templates', requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/b2b-mail/templates', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/templates', requireStaff, async (req, res) => {
     try {
         const body = withActorFromReq(req, req.body || {});
         const name = String(body.name || '').trim();
@@ -473,7 +473,7 @@ router.post('/b2b-mail/templates', requireAdmin, async (req, res) => {
     }
 });
 
-router.get('/b2b-mail/inbound', requireAdmin, async (req, res) => {
+router.get('/b2b-mail/inbound', requireStaff, async (req, res) => {
     try {
         const messageId = req.query.messageId != null && String(req.query.messageId).trim() !== '' ? Number(req.query.messageId) : null;
         const params = [];
@@ -498,7 +498,7 @@ router.get('/b2b-mail/inbound', requireAdmin, async (req, res) => {
  * Force a fresh IMAP poll, retroactively re-link unmatched rows, then return updated results.
  * Used by the "Refresh Replies" button in the UI.
  */
-router.post('/b2b-mail/inbound/refresh', requireAdmin, async (req, res) => {
+router.post('/b2b-mail/inbound/refresh', requireStaff, async (req, res) => {
     try {
         const messageId = req.query.messageId != null && String(req.query.messageId).trim() !== '' ? Number(req.query.messageId) : null;
 

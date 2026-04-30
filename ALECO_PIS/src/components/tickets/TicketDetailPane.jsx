@@ -11,6 +11,7 @@ import EditTicketModal from './EditTicketModal';
 import ConfirmModal from './ConfirmModal';
 import TicketHistoryLogs from './TicketHistoryLogs';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
+import { authFetch } from '../../utils/authFetch';
 
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
@@ -30,6 +31,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
     const [isNoFaultFoundConfirmOpen, setIsNoFaultFoundConfirmOpen] = useState(false);
     const [isAccessDeniedConfirmOpen, setIsAccessDeniedConfirmOpen] = useState(false);
     const [groupData, setGroupData] = useState(null);
+    const [memoControlNumber, setMemoControlNumber] = useState('');
+    const [isMemoLoading, setIsMemoLoading] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
 
     const isGroupMaster = ticket?.ticket_id?.startsWith('GROUP-');
@@ -49,6 +52,41 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
             setGroupData(null);
         }
     }, [ticket?.ticket_id]);
+
+    useEffect(() => {
+        let active = true;
+        const memoId = Number(ticket?.service_memo_id);
+        const shouldLoadMemo = Number.isFinite(memoId) && memoId > 0 && !isGroupMaster;
+
+        if (!shouldLoadMemo) {
+            setMemoControlNumber('');
+            setIsMemoLoading(false);
+            return () => {
+                active = false;
+            };
+        }
+
+        setIsMemoLoading(true);
+        authFetch(apiUrl(`/api/service-memos/${memoId}`))
+            .then((res) => res.json().catch(() => null))
+            .then((json) => {
+                if (!active) return;
+                const controlNo = String(json?.data?.control_number || '').trim();
+                setMemoControlNumber(controlNo);
+            })
+            .catch(() => {
+                if (!active) return;
+                setMemoControlNumber('');
+            })
+            .finally(() => {
+                if (!active) return;
+                setIsMemoLoading(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [ticket?.service_memo_id, isGroupMaster]);
 
     // Add/remove modal-open class to body to prevent sticky header overlap
     useEffect(() => {
@@ -110,7 +148,13 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 <div className="detail-header">
                     <div className="detail-header-align-shell">
                         <div className="header-left">
-                            <h2 className="detail-title">{ticket.ticket_id}</h2>
+                            <h2
+                                className={`detail-title detail-title-copyable ${copiedField === 'ticketId' ? 'copied' : ''}`}
+                                onClick={() => handleCopy(ticket.ticket_id, 'ticketId')}
+                                title={copiedField === 'ticketId' ? 'Copied' : 'Click to copy Ticket ID'}
+                            >
+                                {ticket.ticket_id}
+                            </h2>
                             <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
                                 {ticket.status}
                             </span>
@@ -151,6 +195,14 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 <div className="detail-grid">
                     {!isGroupMaster && (
                         <>
+                            <div className="detail-group">
+                                <label>Memo Link</label>
+                                <p className="detail-value memo-link-highlight">
+                                    {isMemoLoading
+                                        ? 'Loading memo...'
+                                        : (memoControlNumber || 'No memo yet')}
+                                </p>
+                            </div>
                             <div className="detail-group">
                                 <label>Reporter Name</label>
                                 <p className="detail-value">{fullName}</p>
@@ -296,13 +348,14 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         </div>
                     )}
 
-                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes) && ['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
+                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes || ticket.concern_resolution_notes) && ['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
                         <div className="detail-group dispatch-info-section">
-                            <label>Dispatch Info</label>
+                            <label>{ticket.concern_resolution_notes ? 'Resolution Info' : 'Dispatch Info'}</label>
                             <div className="dispatch-info-box">
                                 {ticket.assigned_crew && <p><strong>Crew:</strong> {ticket.assigned_crew}</p>}
                                 {ticket.eta && <p><strong>ETA:</strong> {ticket.eta}</p>}
                                 {ticket.dispatch_notes && <p><strong>Notes:</strong> {ticket.dispatch_notes}</p>}
+                                {ticket.concern_resolution_notes && <p><strong>Concern Notes:</strong> {ticket.concern_resolution_notes}</p>}
                                 {ticket.hold_reason && (
                                     <p className="hold-info"><strong>On Hold:</strong> {ticket.hold_reason}{ticket.hold_since ? ` (since ${formatToPhilippineTime(ticket.hold_since)})` : ''}</p>
                                 )}
@@ -549,11 +602,12 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 onConfirm={() => {
                     onDeleteTicket?.(ticket.ticket_id);
                 }}
-                title="Delete Ticket"
-                message={`Delete ticket ${ticket.ticket_id}? This cannot be undone.`}
-                confirmLabel="Delete"
+                title="Permanently Delete Ticket"
+                message={`This will permanently delete ticket ${ticket.ticket_id} and remove any uploaded image from storage. This action cannot be undone.`}
+                confirmLabel="Permanently Delete"
                 cancelLabel="Cancel"
                 variant="danger"
+                requireConfirmText={ticket.ticket_id}
             />
 
             <ConfirmModal

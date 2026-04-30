@@ -44,6 +44,15 @@
     background: linear-gradient(90deg, rgba(124, 58, 237, 0.1) 0%, var(--bg-body) 100%);
 }
 
+/* Cyan side marker for memo-linked rows */
+.ticket-table-row.ticket-row-has-memo {
+    box-shadow: inset 3px 0 0 #06b6d4;
+}
+
+[data-theme="dark"] .ticket-table-row.ticket-row-has-memo {
+    box-shadow: inset 3px 0 0 #ec4899;
+}
+
 /* Empty State */
 .ticket-table-empty {
     padding: 60px 20px;

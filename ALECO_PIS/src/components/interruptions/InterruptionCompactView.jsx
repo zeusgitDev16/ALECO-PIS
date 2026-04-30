@@ -58,12 +58,15 @@ export default function InterruptionCompactView({
   onRestoreAdvisory,
   saving,
 }) {
-  const [detailItem, setDetailItem] = useState(null);
+  const [detailItemId, setDetailItemId] = useState(null);
+  const [detailItemFallback, setDetailItemFallback] = useState(null);
 
   const openDetail = (item) => {
     if (item?.id != null && onOpenAdvisory) onOpenAdvisory(item.id);
-    setDetailItem(item);
+    setDetailItemId(item?.id ?? null);
+    setDetailItemFallback(item || null);
   };
+  const detailItem = (items || []).find((it) => it.id === detailItemId) || detailItemFallback;
   const [sortConfig, setSortConfig] = useState({ key: 'dateTimeStart', direction: 'desc' });
   const now = useNow([]);
   const isClickableLayout = useMatchMedia('(max-width: 767px)');
@@ -285,13 +288,18 @@ export default function InterruptionCompactView({
       {detailItem && (
         <InterruptionAdvisoryDetailModal
           item={detailItem}
-          onClose={() => setDetailItem(null)}
+          onClose={() => {
+            setDetailItemId(null);
+            setDetailItemFallback(null);
+          }}
           onEdit={(it) => {
-            setDetailItem(null);
+            setDetailItemId(null);
+            setDetailItemFallback(null);
             onEdit(it);
           }}
           onUpdate={onUpdate ? (it) => {
-            setDetailItem(null);
+            setDetailItemId(null);
+            setDetailItemFallback(null);
             onUpdate(it);
           } : undefined}
           onPullFromFeed={onPullFromFeed}
@@ -300,7 +308,10 @@ export default function InterruptionCompactView({
             onRestoreAdvisory
               ? async (id) => {
                   const ok = await onRestoreAdvisory(id);
-                  if (ok) setDetailItem(null);
+                  if (ok) {
+                    setDetailItemId(null);
+                    setDetailItemFallback(null);
+                  }
                 }
               : undefined
           }

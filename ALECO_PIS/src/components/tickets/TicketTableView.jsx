@@ -137,11 +137,12 @@ const TicketTableView = ({
                         const isSelected = selectedTicket?.ticket_id === ticket.ticket_id;
                         const isChecked = selectedIds.includes(ticket.ticket_id);
                         const isUrgent = ticket.is_urgent === 1 || ticket.is_urgent === true;
+                        const hasMemoLinked = Number(ticket?.service_memo_id || 0) > 0 || Number(ticket?.has_service_memo || 0) === 1;
 
                         return (
                             <tr
                                 key={ticket.ticket_id}
-                                className={`ticket-table-row ${isGroupMaster ? 'ticket-row-group' : ''} ${isSelected ? 'selected' : ''} ${isUrgent ? 'urgent' : ''} ${index % 2 === 0 ? 'even' : 'odd'}`}
+                                className={`ticket-table-row ${isGroupMaster ? 'ticket-row-group' : ''} ${hasMemoLinked ? 'ticket-row-has-memo' : ''} ${isSelected ? 'selected' : ''} ${isUrgent ? 'urgent' : ''} ${index % 2 === 0 ? 'even' : 'odd'}`}
                                 onClick={() => onSelectTicket(ticket)}
                             >
                                 <td className="col-checkbox">

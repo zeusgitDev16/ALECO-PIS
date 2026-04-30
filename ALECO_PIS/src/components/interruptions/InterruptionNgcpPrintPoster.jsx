@@ -10,6 +10,29 @@ import { getPosterHeadlineText, getPosterReferenceDisplay } from '../../utils/in
 import { getPosterFooterContact } from '../../config/posterPublicEnv';
 
 /**
+ * Split the NGCP headline into a two-tone title:
+ *   - Part A (pre): everything before "POWER INTERRUPTION"  → green/cyan
+ *   - Part B (post): "POWER INTERRUPTION"                    → white
+ * Falls back to a single span if the expected token isn't present.
+ * @param {string} title
+ */
+function renderNgcpTitle(title) {
+  const token = 'POWER INTERRUPTION';
+  const idx = typeof title === 'string' ? title.indexOf(token) : -1;
+  if (idx === -1) {
+    return <span className="ngcp-print-poster-title-post">{title}</span>;
+  }
+  const pre = title.slice(0, idx).trim();
+  const post = title.slice(idx).trim();
+  return (
+    <>
+      {pre ? <span className="ngcp-print-poster-title-pre">{pre}</span> : null}
+      <span className="ngcp-print-poster-title-post">{post}</span>
+    </>
+  );
+}
+
+/**
  * NGCP scheduled print poster layout.
  * Embeds the uploaded NGCP letter image in a centered document frame.
  * @param {{ item: object }} props
@@ -29,7 +52,7 @@ export default function InterruptionNgcpPrintPoster({ item }) {
       <div className="ngcp-print-poster-frame">
         <header className="ngcp-print-poster-head">
           <div className="ngcp-print-poster-head-main">
-            <h1 className="ngcp-print-poster-title">{title}</h1>
+            <h1 className="ngcp-print-poster-title">{renderNgcpTitle(title)}</h1>
             {refLine ? <p className="ngcp-print-poster-ref">{refLine}</p> : null}
           </div>
           <div className="ngcp-print-poster-date-card">

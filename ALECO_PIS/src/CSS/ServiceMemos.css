@@ -138,6 +138,11 @@
 .service-memo-table-wrap {
   width: 100%;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
@@ -1102,6 +1107,9 @@
 
 .memo-body-content {
   min-height: 200px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Dark mode specific adjustments */
@@ -1114,8 +1122,8 @@
 /* Service Memo Search Header (replacing tabs) - Compact with dual pane space */
 .service-memo-search-header {
   display: flex;
-  gap: 16px;
   width: 100%;
+  min-width: 0;
   align-items: flex-start;
 }
 
@@ -1123,32 +1131,79 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 0 0 55%;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .service-memo-search-right {
-  flex: 1;
-  min-height: 80px;
+  flex: 0 0 auto;
+  min-height: 0;
 }
 
 .service-memo-search-row {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-}
-
-.service-memo-search-row:first-child {
-  gap: 16px;
+  min-width: 0;
 }
 
 .service-memo-search-field {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .service-memo-search-field--full {
   flex: 1;
+}
+
+/* Tabs row: tabs on left, Status field on right */
+.service-memo-tabs-filter-row {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.service-memo-tabs-filter-row .service-memo-tab-row {
+  flex: 0 0 auto;
+}
+
+.service-memo-tabs-filter-row .service-memo-inline-desktop-field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Select variant of search input */
+.service-memo-search-select {
+  min-height: 22px;
+  height: auto;
+  cursor: pointer;
+}
+
+/* Desktop-only fields: hidden by default (mobile-first) */
+.service-memo-inline-desktop-field {
+  display: none;
+}
+
+/* Mobile-only rows: shown by default */
+.service-memo-mobile-only-row {
+  display: flex;
+}
+
+/* Desktop breakpoint — show inline filter fields, hide mobile-only rows */
+@media (min-width: 769px) {
+  .service-memo-inline-desktop-field {
+    display: flex;
+  }
+  .service-memo-mobile-only-row {
+    display: none;
+  }
+  /* Address row: revert --full so all three fields share width equally */
+  .service-memo-search-row .service-memo-search-field--full.service-memo-inline-desktop-field,
+  .service-memo-search-row:not(.service-memo-tabs-filter-row) .service-memo-search-field {
+    flex: 1;
+  }
 }
 
 .service-memo-search-label {
@@ -1160,7 +1215,8 @@
 
 .service-memo-search-input {
   flex: 1;
-  min-width: 80px;
+  min-width: 0;
+  width: 0;
   height: 22px;
   padding: 2px 6px;
   font-size: 0.75rem;
@@ -1906,6 +1962,49 @@
 .service-memo-form-row textarea {
   resize: vertical;
   line-height: 1.4;
+}
+
+/* View mode: keep field values clearly readable (especially in dark mode). */
+.service-memo-form-root[data-mode='view'] .service-memo-form-row input,
+.service-memo-form-root[data-mode='view'] .service-memo-form-row textarea {
+  opacity: 1;
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+  background: var(--bg-input, var(--bg-card));
+}
+
+.service-memo-form-root[data-mode='view'] .service-memo-form-row input:disabled,
+.service-memo-form-root[data-mode='view'] .service-memo-form-row textarea:disabled {
+  opacity: 1;
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row textarea {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  opacity: 1 !important;
+}
+
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input:disabled,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row textarea:disabled,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input[type='date']:disabled,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input[type='time']:disabled {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  opacity: 1 !important;
+  color-scheme: dark;
+}
+
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input[type='date']::-webkit-datetime-edit,
+[data-theme='dark'] .service-memo-form-root[data-mode='view'] .service-memo-form-row input[type='time']::-webkit-datetime-edit {
+  color: #e5e7eb;
 }
 
 .service-memo-form-row.two-col {

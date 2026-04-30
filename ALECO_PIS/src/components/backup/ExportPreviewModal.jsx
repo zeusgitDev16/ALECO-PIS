@@ -4,14 +4,27 @@ import '../../CSS/DispatchTicketModal.css';
 import '../../CSS/TicketTableView.css';
 import '../../CSS/Backup.css';
 
-const TICKET_COLUMNS = ['ticket_id', 'first_name', 'last_name', 'phone_number', 'category', 'concern', 'status', 'created_at'];
+const TICKET_COLUMNS = ['ticket_id', 'first_name', 'last_name', 'phone_number', 'category', 'concern', 'concern_resolution_notes', 'status', 'created_at'];
 const LOG_COLUMNS = ['id', 'ticket_id', 'action', 'from_status', 'to_status', 'actor_type', 'created_at'];
-const INTERRUPTION_COLUMNS = ['id', 'type', 'status', 'feeder', 'cause', 'date_time_start', 'created_at'];
+const INTERRUPTION_COLUMNS = [
+    'date',
+    'time started',
+    'time energized',
+    'substation/recloser',
+    'feeder',
+    'caused',
+    'indication & magnitude',
+    'possible fault location',
+    'isolated area',
+    'linemen on duty',
+    'remarks/reasons',
+];
 const INTERRUPTION_UPDATE_COLUMNS = ['id', 'interruption_id', 'remark', 'kind', 'actor_email', 'actor_name', 'created_at'];
 const USER_COLUMNS = ['id', 'name', 'email', 'role', 'status', 'created_at'];
 const PERSONNEL_CREW_COLUMNS = ['id', 'crew_name', 'lead_lineman', 'phone_number', 'status', 'created_at'];
 const PERSONNEL_CREW_MEMBER_COLUMNS = ['crew_id', 'lineman_id'];
 const PERSONNEL_LINEMEN_COLUMNS = ['id', 'full_name', 'designation', 'contact_no', 'status', 'leave_start', 'leave_end', 'leave_reason'];
+const HISTORY_COLUMNS = ['createdAt', 'module', 'action', 'title', 'detail', 'actorEmail', 'actorName', 'entityId', 'entityLabel', 'severityTag'];
 
 const formatDate = (d) => {
     if (!d) return '—';
@@ -19,6 +32,7 @@ const formatDate = (d) => {
 };
 
 function defaultTabForEntity(entity) {
+    if (entity === 'history') return 'history';
     if (entity === 'interruptions') return 'interruptions';
     if (entity === 'users') return 'users';
     if (entity === 'personnel') return 'crews';
@@ -32,13 +46,16 @@ function previewSubtitle(entity, metadata) {
     if (entity === 'users') {
         return `${metadata.userCount ?? 0} users`;
     }
+    if (entity === 'history') {
+        return `${metadata.total ?? 0} rows`;
+    }
     if (entity === 'personnel') {
         return `${metadata.crewCount ?? 0} crews, ${metadata.crewMemberCount ?? 0} member rows, ${metadata.linemanCount ?? 0} linemen`;
     }
     return `${metadata.ticketCount} tickets, ${metadata.logCount} logs`;
 }
 
-const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
+const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets', title = 'Export Preview' }) => {
     const [activeTab, setActiveTab] = useState(() => defaultTabForEntity(entity));
 
     useEffect(() => {
@@ -50,12 +67,13 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
     const metadata = data?.metadata || {};
     const tickets = data?.tickets || [];
     const logs = data?.logs || [];
-    const interruptions = data?.interruptions || [];
+    const interruptions = data?.alecoInterruptions || data?.interruptions || [];
     const updates = data?.updates || [];
     const users = data?.users || [];
     const crews = data?.crews || [];
     const crewMembers = data?.crewMembers || [];
     const linemen = data?.linemen || [];
+    const history = data?.history || [];
 
     return (
         <div className="dispatch-modal-overlay" onClick={onClose}>
@@ -63,9 +81,12 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                 <button className="dispatch-modal-close-btn" onClick={onClose} aria-label="Close">&times;</button>
 
                 <div className="dispatch-modal-header-container">
-                    <h2 className="dispatch-modal-header">Export Preview</h2>
+                    <h2 className="dispatch-modal-header">{title}</h2>
                     <p className="dispatch-modal-subtitle">
                         {metadata.dateStart} to {metadata.dateEnd} — {previewSubtitle(entity, metadata)}
+                        {entity === 'tickets' && Number(metadata.blockedGroupedCount || 0) > 0
+                            ? ` | Blocked grouped: ${metadata.blockedGroupedCount}`
+                            : ''}
                     </p>
                 </div>
 
@@ -115,6 +136,15 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                             Users ({users.length})
                         </button>
                     )}
+                    {entity === 'history' && (
+                        <button
+                            type="button"
+                            className={`export-preview-tab ${activeTab === 'history' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('history')}
+                        >
+                            History ({history.length})
+                        </button>
+                    )}
                     {entity === 'personnel' && (
                         <>
                             <button
@@ -161,9 +191,7 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                                             <tr key={row.id || i}>
                                                 {INTERRUPTION_COLUMNS.map((col) => (
                                                     <td key={col}>
-                                                        {col === 'created_at' || col === 'date_time_start'
-                                                            ? formatDate(row[col])
-                                                            : (row[col] ?? '—')}
+                                                        {row[col] ?? '—'}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -276,6 +304,34 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets' }) => {
                                                 {USER_COLUMNS.map((col) => (
                                                     <td key={col}>
                                                         {col === 'created_at' ? formatDate(row[col]) : (row[col] ?? '—')}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
+                    )}
+                    {entity === 'history' && activeTab === 'history' && (
+                        history.length === 0 ? (
+                            <p className="export-preview-empty">No history rows in this date range.</p>
+                        ) : (
+                            <div className="export-preview-scroll">
+                                <table className="ticket-table">
+                                    <thead>
+                                        <tr>
+                                            {HISTORY_COLUMNS.map((c) => (
+                                                <th key={c}>{c.replace(/([A-Z])/g, ' $1').trim()}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {history.map((row, i) => (
+                                            <tr key={row.id || i}>
+                                                {HISTORY_COLUMNS.map((col) => (
+                                                    <td key={col}>
+                                                        {col === 'createdAt' ? formatDate(row[col]) : (row[col] ?? '—')}
                                                     </td>
                                                 ))}
                                             </tr>

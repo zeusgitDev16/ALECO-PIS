@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import InterruptionFeedPostBody from './InterruptionFeedPostBody';
 import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
@@ -14,10 +14,13 @@ import {
  * @param {{ item: object, now: number, onExpand?: function, isExpandedView?: boolean }} props
  */
 export default function InterruptionFeedPost({ item, now, onExpand, isExpandedView = false }) {
+  const cardRef = useRef(null);
+  const imgRef = useRef(null);
   const isBlankStub = typeof item.posterImageUrl === 'string' && item.posterImageUrl.includes('_stub');
   const safePosterUrl = (!isBlankStub && item.posterImageUrl) ? getSafeResourceUrl(item.posterImageUrl) : null;
   const typeModifier = isEmergencyOutageType(item.type) ? 'emergency'
     : item.type === 'NgcScheduled' ? 'ngcscheduled'
+    : item.type === 'CustomPoster' ? 'customposter'
     : 'scheduled';
   const startMs = item.dateTimeStart ? Date.parse(String(item.dateTimeStart)) : Number.NaN;
   const effectiveStatus =
@@ -28,8 +31,23 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
   const statusLabel = getStatusDisplayLabel(effectiveStatus);
   const clickable = !isExpandedView && Boolean(onExpand);
 
+  const applyPosterWidth = useCallback(() => {
+    const img = imgRef.current;
+    const card = cardRef.current;
+    if (!card || !img || !img.naturalWidth || !img.naturalHeight) return;
+    const cardH = card.offsetHeight;
+    if (!cardH) return;
+    const w = Math.ceil(cardH * (img.naturalWidth / img.naturalHeight));
+    card.style.maxWidth = `${w}px`;
+  }, []);
+
+  useEffect(() => {
+    applyPosterWidth();
+  }, [applyPosterWidth]);
+
   return (
     <article
+      ref={cardRef}
       className={`interruption-feed-post interruption-feed-post--type-${typeModifier}${safePosterUrl ? ' interruption-feed-post--poster' : ''}`}
       onClick={clickable ? onExpand : undefined}
       role={clickable ? 'button' : undefined}
@@ -47,10 +65,11 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
       {safePosterUrl ? (
         <div className="feed-post-poster-display">
           <img
+            ref={imgRef}
             src={safePosterUrl}
             alt="Advisory poster"
-            loading="lazy"
             className="feed-post-poster-img"
+            onLoad={applyPosterWidth}
           />
         </div>
       ) : (

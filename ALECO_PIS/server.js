@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 // Removed mysql, nodemailer, bcrypt, and cloudinary - they are all handled by the bricks now!
 
 import { buildAllowedCorsOrigins, normalizeOrigin, hasExplicitPublicCorsEnv } from './backend/config/corsOrigins.js';
@@ -19,6 +21,7 @@ import feedersRoutes from './backend/routes/feeders.js';
 import b2bMailRoutes from './backend/routes/b2b-mail.js';
 import serviceMemosRoutes from './backend/routes/service-memos.js';
 import notificationsRoutes from './backend/routes/notifications.js';
+import historyRoutes from './backend/routes/history.js';
 import pool from './backend/config/db.js';
 import {
   transitionScheduledStarts,
@@ -32,6 +35,7 @@ dotenv.config();
 process.env.TZ = 'Asia/Manila';
 
 const app = express();
+const httpServer = http.createServer(app);
 // Render (and most hosts) assign PORT via env; local dev uses 5000
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -61,9 +65,67 @@ const corsOptions = {
     exposedHeaders: ['Content-Disposition'],
 };
 
+const io = new SocketIOServer(httpServer, {
+    cors: {
+        origin(origin, callback) {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(normalizeOrigin(origin))) return callback(null, true);
+            return callback(null, false);
+        },
+        methods: ['GET', 'POST'],
+    },
+    path: '/socket.io',
+});
+
+io.on('connection', (socket) => {
+    socket.emit('realtime:connected', {
+        ts: new Date().toISOString(),
+        transport: socket.conn?.transport?.name || 'unknown',
+    });
+});
+
+function moduleFromApiPath(pathname) {
+    const p = String(pathname || '').toLowerCase();
+    if (p.includes('/crews') || p.includes('/pool')) return 'personnel';
+    if (p.includes('/tickets')) return 'tickets';
+    if (p.includes('/interruptions')) return 'interruptions';
+    if (p.includes('/service-memos') || p.includes('/memo')) return 'service-memos';
+    if (p.includes('/b2b-mail')) return 'b2b-mail';
+    if (p.includes('/users') || p.includes('/invite') || p.includes('/send-email')) return 'users';
+    if (p.includes('/notifications')) return 'notifications';
+    if (p.includes('/backup') || p.includes('/export') || p.includes('/import') || p.includes('/archive')) return 'data-management';
+    if (p.includes('/history')) return 'history';
+    if (p.includes('/feeders')) return 'feeders';
+    return 'system';
+}
+
 // 2. Middleware (The Guards)
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Global realtime broadcaster for successful write operations.
+app.use('/api', (req, res, next) => {
+    const method = String(req.method || '').toUpperCase();
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return next();
+
+    const startedAt = Date.now();
+    res.on('finish', () => {
+        if (res.statusCode < 200 || res.statusCode >= 400) return;
+        const path = req.originalUrl || req.path || '';
+        const module = moduleFromApiPath(path);
+        const actorEmail = req.authUser?.email || null;
+        io.emit('realtime:entity-changed', {
+            module,
+            method,
+            path,
+            actorEmail,
+            statusCode: res.statusCode,
+            ts: new Date().toISOString(),
+            durationMs: Date.now() - startedAt,
+        });
+    });
+    return next();
+});
 
 /** Uptime / load balancer — no DB (Render health checks). Must be registered before the API session gate. */
 app.get('/api/health', (req, res) => {
@@ -89,6 +151,7 @@ app.use('/api', feedersRoutes);
 app.use('/api', b2bMailRoutes);
 app.use('/api', serviceMemosRoutes);
 app.use('/api', notificationsRoutes);
+app.use('/api', historyRoutes);
 
 app.get('/api/debug/routes', (req, res) => {
     res.json({
@@ -167,7 +230,7 @@ app.get('/api/debug/routes', (req, res) => {
 });
 
 // 4. Start the Office
-app.listen(PORT, '0.0.0.0', () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on port ${PORT}`);
 
   const runScheduledInterruptionTransition = () => {

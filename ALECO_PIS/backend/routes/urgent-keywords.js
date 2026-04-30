@@ -1,7 +1,7 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { listUrgentKeywords, replaceUrgentKeywords } from '../utils/urgentKeywordsDb.js';
-import { requireAdmin } from '../middleware/requireRole.js';
+import { requireStaff } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ router.get('/urgent-keywords', async (req, res) => {
  * PUT /urgent-keywords
  * Body: { keywords: string[] }
  */
-router.put('/urgent-keywords', requireAdmin, async (req, res) => {
+router.put('/urgent-keywords', requireStaff, async (req, res) => {
     try {
         const { keywords: raw } = req.body || {};
         if (!Array.isArray(raw)) {

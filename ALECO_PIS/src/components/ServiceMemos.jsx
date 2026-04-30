@@ -9,6 +9,8 @@ import ServiceMemoFilters from './serviceMemos/ServiceMemoFilters';
 import ServiceMemoForm from './serviceMemos/ServiceMemoForm';
 import ConfirmModal from './tickets/ConfirmModal';
 import { getServiceMemo } from '../api/serviceMemosApi';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
+import { matchesRealtimeModule } from '../utils/realtimeModules';
 
 const ServiceMemos = () => {
   const {
@@ -43,6 +45,22 @@ const ServiceMemos = () => {
     };
     window.addEventListener('service-memo-deleted', handleServiceMemoDeleted);
     return () => window.removeEventListener('service-memo-deleted', handleServiceMemoDeleted);
+  }, [fetchList]);
+
+  useEffect(() => {
+    const onRealtimeChange = (ev) => {
+      if (matchesRealtimeModule(
+        ev?.detail?.module,
+        REALTIME_MODULES.SERVICE_MEMOS,
+        REALTIME_MODULES.TICKETS,
+        REALTIME_MODULES.DATA_MANAGEMENT,
+        REALTIME_MODULES.SYSTEM
+      )) {
+        fetchList();
+      }
+    };
+    window.addEventListener('aleco:realtime-change', onRealtimeChange);
+    return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
   }, [fetchList]);
 
   const loadDetail = useCallback(async (id) => {
@@ -144,8 +162,7 @@ const ServiceMemos = () => {
       );
     }
 
-    const isOwner = detailMemo.owner_email === userEmail;
-    const formMode = detailMode === 'update' && isOwner ? 'update' : 'view';
+    const formMode = detailMode === 'update' ? 'update' : 'view';
 
     return (
       <div className="admin-page-container service-memos-page-container">

@@ -2,6 +2,7 @@ import {
   getStatusDisplayLabel,
   isEmergencyOutageType,
   isScheduledLikeOutageType,
+  isCustomPosterType,
 } from './interruptionLabels.js';
 import { isoToDatetimeLocalPhilippine, toMysqlFormatPhilippine } from './dateUtils.js';
 
@@ -10,7 +11,7 @@ export function toMysqlFormatForConcurrency(isoString) {
   return toMysqlFormatPhilippine(isoString);
 }
 
-/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, affectedAreasGrouped: { heading: string, items: string[] }[], feeder: string, feederId: number | null, cause: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, posterImageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
+/** @typedef {{ type: string, status: string, statusChangeRemark: string, affectedAreasText: string, affectedAreasGrouped: { heading: string, items: string[] }[], feeder: string, substationRecloser: string, feederId: number | null, cause: string, indicationMagnitude: string, possibleFaultLocation: string, linemenOnDuty: string, causeCategory: string, dateTimeStart: string, dateTimeEndEstimated: string, dateTimeRestored: string, schedulePublicLater: boolean, publicVisibleAt: string, body: string, controlNo: string, imageUrl: string, posterImageUrl: string, scheduleAutoRestore: boolean, scheduledRestoreAt: string, scheduledRestoreRemark: string }} InterruptionFormState */
 
 export const emptyForm = {
   type: 'Emergency',
@@ -19,8 +20,12 @@ export const emptyForm = {
   affectedAreasText: '',
   affectedAreasGrouped: [],
   feeder: '',
+  substationRecloser: '',
   feederId: null,
   cause: '',
+  indicationMagnitude: '',
+  possibleFaultLocation: '',
+  linemenOnDuty: '',
   causeCategory: '',
   dateTimeStart: '',
   dateTimeEndEstimated: '',
@@ -123,6 +128,7 @@ export function computeInitialStatusPreview(type, dateTimeStartLocal) {
  */
 export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } = {}) {
   const isNgcpScheduled = form.type === 'NgcScheduled';
+  const isCustomPoster = isCustomPosterType(form.type);
   const affectedAreas = form.affectedAreasText
     .split(',')
     .map((x) => x.trim())
@@ -143,15 +149,39 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
     type: form.type,
     affectedAreas,
     feeder: isNgcpScheduled ? null : form.feeder,
+    substationRecloser:
+      isNgcpScheduled || isCustomPoster
+        ? null
+        : form.substationRecloser && String(form.substationRecloser).trim()
+          ? String(form.substationRecloser).trim()
+          : null,
     feederId: isNgcpScheduled
       ? null
       : form.feederId != null && String(form.feederId).trim() !== '' ? Number(form.feederId) : null,
     cause: isNgcpScheduled ? null : form.cause,
+    indicationMagnitude:
+      isNgcpScheduled || isCustomPoster
+        ? null
+        : form.indicationMagnitude && String(form.indicationMagnitude).trim()
+          ? String(form.indicationMagnitude).trim()
+          : null,
+    possibleFaultLocation:
+      isNgcpScheduled || isCustomPoster
+        ? null
+        : form.possibleFaultLocation && String(form.possibleFaultLocation).trim()
+          ? String(form.possibleFaultLocation).trim()
+          : null,
+    linemenOnDuty:
+      isNgcpScheduled || isCustomPoster
+        ? null
+        : form.linemenOnDuty && String(form.linemenOnDuty).trim()
+          ? String(form.linemenOnDuty).trim()
+          : null,
     dateTimeStart: datetimeLocalToApi(form.dateTimeStart),
     dateTimeEndEstimated: isNgcpScheduled ? null : datetimeLocalToApi(form.dateTimeEndEstimated),
-    causeCategory: isNgcpScheduled ? null : causeCategory,
+    causeCategory: (isNgcpScheduled || isCustomPoster) ? null : causeCategory,
     body: form.body && String(form.body).trim() ? String(form.body).trim() : null,
-    controlNo: isNgcpScheduled
+    controlNo: (isNgcpScheduled || isCustomPoster)
       ? null
       : form.controlNo && String(form.controlNo).trim() ? String(form.controlNo).trim() : null,
     imageUrl: form.imageUrl && String(form.imageUrl).trim() ? String(form.imageUrl).trim() : null,
@@ -201,6 +231,7 @@ export function buildInterruptionPayload(form, { editingId, baselineUpdatedAt } 
 export function validateInterruptionForm(form, { editingId = null } = {}) {
   const errors = [];
   const isNgcpScheduled = form.type === 'NgcScheduled';
+  const isCustomPoster = isCustomPosterType(form.type);
   const hasBody = form.body && String(form.body).trim();
   const hasCause = form.cause && String(form.cause).trim();
   const hasFeeder = form.feeder && String(form.feeder).trim();
@@ -211,16 +242,16 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
     Number(form.feederId) > 0;
   const hasDateTimeStart = form.dateTimeStart && String(form.dateTimeStart).trim();
 
-  if (!isNgcpScheduled && !hasFeeder && !hasFeederId) {
+  if (!isNgcpScheduled && !isCustomPoster && !hasFeeder && !hasFeederId) {
     errors.push('Feeder is required.');
   }
-  if (!hasBody && !hasCause) {
+  if (!isCustomPoster && !hasBody && !hasCause) {
     errors.push('Provide either a post body (content) or a cause/reason. At least one is required.');
   }
   if (!hasDateTimeStart) {
     errors.push('Start date and time is required.');
   }
-  if (!isNgcpScheduled && isScheduledLikeOutageType(form.type)) {
+  if (!isNgcpScheduled && !isCustomPoster && isScheduledLikeOutageType(form.type)) {
     const cn = form.controlNo && String(form.controlNo).trim();
     if (!cn) {
       errors.push('Control # is required for scheduled advisories (poster reference).');
@@ -230,6 +261,12 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
     const hasImage = form.imageUrl && String(form.imageUrl).trim();
     if (!hasImage) {
       errors.push('NGCP scheduled advisories require an attached NGCP image before publishing.');
+    }
+  }
+  if (!editingId && isCustomPoster) {
+    const hasImage = form.imageUrl && String(form.imageUrl).trim();
+    if (!hasImage) {
+      errors.push('Custom poster advisories require an uploaded poster image before publishing.');
     }
   }
   // Public bulletin timing is create-only; ignore on edit to avoid stale/locked schedule blocking updates.
@@ -242,7 +279,7 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
   if (form.scheduleAutoRestore) {
     const start = datetimeLocalStringToDate(form.dateTimeStart);
     const ertS = form.dateTimeEndEstimated && String(form.dateTimeEndEstimated).trim();
-    if (!isNgcpScheduled) {
+    if (!isNgcpScheduled && !isCustomPoster) {
       if (!ertS) {
         errors.push('Estimated restoration (ERT) is required when scheduling automatic restoration.');
       } else {
@@ -253,17 +290,17 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
       }
     }
     const hasScheduledRestoreAt = form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim();
-    if (!isNgcpScheduled && !hasScheduledRestoreAt) {
+    if (!isNgcpScheduled && !isCustomPoster && !hasScheduledRestoreAt) {
       errors.push('Scheduled auto-restoration requires a date and time.');
     } else if (hasScheduledRestoreAt) {
       const r = datetimeLocalStringToDate(form.scheduledRestoreAt);
       if (r && r.getTime() <= Date.now()) {
         errors.push('Scheduled restoration time must be in the future.');
       }
-      if (r && isNgcpScheduled && start && r.getTime() <= start.getTime()) {
-        errors.push('Auto-restore must be after Start for NGCP advisories.');
+      if (r && (isNgcpScheduled || isCustomPoster) && start && r.getTime() <= start.getTime()) {
+        errors.push('Auto-restore must be after Start for NGCP/custom advisories.');
       }
-      if (r && !isNgcpScheduled && ertS) {
+      if (r && !isNgcpScheduled && !isCustomPoster && ertS) {
         const ert = datetimeLocalStringToDate(form.dateTimeEndEstimated);
         if (ert && r.getTime() <= ert.getTime()) {
           errors.push(
@@ -273,7 +310,7 @@ export function validateInterruptionForm(form, { editingId = null } = {}) {
       }
     }
     if (
-      (!isNgcpScheduled || (form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim())) &&
+      ((!isNgcpScheduled && !isCustomPoster) || (form.scheduledRestoreAt && String(form.scheduledRestoreAt).trim())) &&
       (!form.scheduledRestoreRemark || !String(form.scheduledRestoreRemark).trim())
     ) {
       errors.push('A remark is required for scheduled auto-restoration (it will be logged when auto-restored).');
@@ -321,8 +358,12 @@ export function rowToFormState(row) {
     affectedAreasText: (row.affectedAreas || []).join(', '),
     affectedAreasGrouped: Array.isArray(row.affectedAreasGrouped) ? row.affectedAreasGrouped : [],
     feeder: row.feeder || '',
+    substationRecloser: row.substationRecloser ? String(row.substationRecloser) : '',
     feederId: row.feederId != null ? Number(row.feederId) : null,
     cause: row.cause || '',
+    indicationMagnitude: row.indicationMagnitude ? String(row.indicationMagnitude) : '',
+    possibleFaultLocation: row.possibleFaultLocation ? String(row.possibleFaultLocation) : '',
+    linemenOnDuty: row.linemenOnDuty ? String(row.linemenOnDuty) : '',
     causeCategory: row.causeCategory ? String(row.causeCategory) : '',
     dateTimeStart: displayToDatetimeLocal(row.dateTimeStart),
     dateTimeEndEstimated: displayToDatetimeLocal(row.dateTimeEndEstimated),

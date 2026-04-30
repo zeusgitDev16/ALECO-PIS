@@ -3,6 +3,7 @@ import { apiUrl } from '../../utils/api';
 import '../../CSS/DispatchTicketModal.css';
 
 const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride, subtitleOverride, groupMainTicketId }) => {
+    const [activeTab, setActiveTab] = useState('dispatch');
     // Form States
     const [crew, setCrew] = useState('');
     const [eta, setEta] = useState('');
@@ -27,6 +28,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
                 .finally(() => setIsLoadingCrews(false));
         } else {
             // Reset form when modal closes
+            setActiveTab('dispatch');
             setCrew('');
             setEta('');
             setNotes('');
@@ -55,13 +57,20 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("1. Dispatch Modal Submitted!");
-        // Bundles the new dispatch data to send to the backend
-        onSubmit({ 
-            assigned_crew: crew, 
-            eta: eta, 
-            is_consumer_notified: notifyConsumer, 
-            dispatch_notes: notes 
+        if (activeTab === 'concern') {
+            onSubmit({
+                resolution_mode: 'concern',
+                is_consumer_notified: notifyConsumer,
+                concern_resolution_notes: notes
+            });
+            return;
+        }
+        onSubmit({
+            resolution_mode: 'dispatch',
+            assigned_crew: crew,
+            eta: eta,
+            is_consumer_notified: notifyConsumer,
+            dispatch_notes: notes
         });
     };
 
@@ -74,55 +83,81 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
                 </button>
 
                 <div className="dispatch-modal-header-container">
-                    <h2 className="dispatch-modal-header">{titleOverride || '🚚 Dispatch Crew'}</h2>
+                    <h2 className="dispatch-modal-header">{titleOverride || 'Start Resolution'}</h2>
                     <p className="dispatch-modal-subtitle">
-                        {subtitleOverride || <>Assign field unit for Ticket <span className="highlight-id">{ticket.ticket_id}</span></>}
+                        {subtitleOverride || <>Choose how to resolve Ticket <span className="highlight-id">{ticket.ticket_id}</span></>}
                     </p>
+                </div>
+
+                <div className="dispatch-modal-tabs" role="tablist" aria-label="Resolution type">
+                    <button
+                        type="button"
+                        role="tab"
+                        className={`dispatch-modal-tab ${activeTab === 'dispatch' ? 'active' : ''}`}
+                        aria-selected={activeTab === 'dispatch'}
+                        onClick={() => setActiveTab('dispatch')}
+                    >
+                        Dispatch Crew
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        className={`dispatch-modal-tab ${activeTab === 'concern' ? 'active' : ''}`}
+                        aria-selected={activeTab === 'concern'}
+                        onClick={() => setActiveTab('concern')}
+                    >
+                        Concern
+                    </button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="dispatch-modal-body">
-                        <div className="dispatch-form-group">
-                            <label>Assigned Crew / Unit</label>
-                            <select 
-                                className="dispatch-form-input" 
-                                value={crew} 
-                                onChange={e => setCrew(e.target.value)} 
-                                required
-                                disabled={isLoadingCrews}
-                            >
-                                <option value="">
-                                    {isLoadingCrews ? '-- Loading Units... --' : availableCrews.length === 0 ? '-- No available crews --' : '-- Select Field Unit --'}
-                                </option>
-                                
-                                {/* --- CREWS (filtered: Available only, lead Active) --- */}
-                                {availableCrews.map((c) => (
-                                    <option key={c.id} value={c.crew_name}>
-                                        {c.crew_name} ({c.lead_lineman_name || 'No Lead'}) - {c.member_count} Members
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {activeTab === 'dispatch' && (
+                            <>
+                                <div className="dispatch-form-group">
+                                    <label>Assigned Crew / Unit</label>
+                                    <select
+                                        className="dispatch-form-input"
+                                        value={crew}
+                                        onChange={e => setCrew(e.target.value)}
+                                        required
+                                        disabled={isLoadingCrews}
+                                    >
+                                        <option value="">
+                                            {isLoadingCrews ? '-- Loading Units... --' : availableCrews.length === 0 ? '-- No available crews --' : '-- Select Field Unit --'}
+                                        </option>
+                                        {availableCrews.map((c) => (
+                                            <option key={c.id} value={c.crew_name}>
+                                                {c.crew_name} ({c.lead_lineman_name || 'No Lead'}) - {c.member_count} Members
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="dispatch-form-group">
+                                    <label>Estimated Time of Arrival (ETA)</label>
+                                    <input
+                                        type="text"
+                                        className="dispatch-form-input"
+                                        placeholder="e.g., 45 mins, 1.5 hours..."
+                                        value={eta}
+                                        onChange={e => setEta(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </>
+                        )}
 
                         <div className="dispatch-form-group">
-                            <label>Estimated Time of Arrival (ETA)</label>
-                            <input 
-                                type="text" 
-                                className="dispatch-form-input" 
-                                placeholder="e.g., 45 mins, 1.5 hours..." 
-                                value={eta} 
-                                onChange={e => setEta(e.target.value)} 
-                                required 
-                            />
-                        </div>
-
-                        <div className="dispatch-form-group">
-                            <label>Dispatch Notes / Operational Context</label>
-                            <textarea 
-                                className="dispatch-form-textarea" 
-                                placeholder="e.g., Bring replacement 50kVA transformer..." 
-                                value={notes} 
-                                onChange={e => setNotes(e.target.value)} 
+                            <label>{activeTab === 'dispatch' ? 'Dispatch Notes / Operational Context' : 'Concern Resolution Notes'}</label>
+                            <textarea
+                                className="dispatch-form-textarea"
+                                placeholder={activeTab === 'dispatch'
+                                    ? 'e.g., Bring replacement 50kVA transformer...'
+                                    : 'e.g., Concern clarified and guidance provided to consumer...'}
+                                value={notes}
+                                onChange={e => setNotes(e.target.value)}
+                                required={activeTab === 'concern'}
                             />
                         </div>
 
@@ -132,7 +167,9 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
                                 <div className="toggle-text">
                                     <span className="toggle-title">Notify Consumer</span>
                                     <span className="toggle-desc">
-                                        {groupMembers.length > 0 ? (
+                                        {activeTab === 'concern' ? (
+                                            <>When ON, send consumer an SMS that their concern is now being handled</>
+                                        ) : groupMembers.length > 0 ? (
                                             <>When ON, consumers with phone numbers will receive SMS when dispatched</>
                                         ) : (
                                             <>Send SMS update with ETA to {ticket.phone_number || 'the consumer'}</>
@@ -176,7 +213,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
                             Cancel
                         </button>
                         <button type="submit" className="btn-action btn-ongoing">
-                            Confirm Dispatch
+                            {activeTab === 'dispatch' ? 'Confirm Dispatch' : 'Start Concern Resolution'}
                         </button>
                     </div>
                 </form>

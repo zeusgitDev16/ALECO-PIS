@@ -95,8 +95,8 @@ export default function UpdateAdvisoryModal({
   const showEnergizedFields = newStatus === 'Energized';
 
   const lifecycleSteps = useMemo(() => {
-    if (isEmergencyOutageType(item?.type)) return ['Ongoing', 'Energized'];
-    return ['Pending', 'Ongoing', 'Energized'];
+    if (isEmergencyOutageType(item?.type)) return ['Ongoing', 'Energized', 'Rescheduled', 'Cancelled'];
+    return ['Pending', 'Ongoing', 'Energized', 'Rescheduled', 'Cancelled'];
   }, [item?.type]);
 
   const handleSubmitStatus = async (e) => {

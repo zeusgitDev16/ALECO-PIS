@@ -48,13 +48,18 @@ export default function InterruptionAdvisoryBoard({
   onRestoreAdvisory,
   saving,
 }) {
-  const [detailItem, setDetailItem] = useState(null);
+  const [detailItemId, setDetailItemId] = useState(null);
+  const [detailItemFallback, setDetailItemFallback] = useState(null);
 
   const openDetail = (item) => {
     if (item?.id != null && onOpenAdvisory) onOpenAdvisory(item.id);
-    setDetailItem(item);
+    setDetailItemId(item?.id ?? null);
+    setDetailItemFallback(item || null);
   };
-  const [actionModalItem, setActionModalItem] = useState(null);
+  const [actionModalItemId, setActionModalItemId] = useState(null);
+  const [actionModalItemFallback, setActionModalItemFallback] = useState(null);
+  const detailItem = (items || []).find((it) => it.id === detailItemId) || detailItemFallback;
+  const actionModalItem = (items || []).find((it) => it.id === actionModalItemId) || actionModalItemFallback;
   const isMobile = useMatchMedia('(max-width: 767px)');
   const now = useNow([]);
 
@@ -109,7 +114,10 @@ export default function InterruptionAdvisoryBoard({
               onDelete={() => onDelete(item.id)}
               onPermanentDelete={onPermanentDelete ? () => onPermanentDelete(item.id) : undefined}
               onExpand={() => openDetail(item)}
-              onCardClick={isMobile ? (it) => setActionModalItem(it) : undefined}
+              onCardClick={isMobile ? (it) => {
+                setActionModalItemId(it?.id ?? null);
+                setActionModalItemFallback(it || null);
+              } : undefined}
               feedIndicator={item.deletedAt ? 'archived' : isCurrentlyOnPublicFeed(item, now) ? 'on-feed' : 'not-on-feed'}
               onPullFromFeed={onPullFromFeed}
               onPushToFeed={onPushToFeed}
@@ -122,13 +130,18 @@ export default function InterruptionAdvisoryBoard({
       {detailItem && (
         <InterruptionAdvisoryDetailModal
           item={detailItem}
-          onClose={() => setDetailItem(null)}
+          onClose={() => {
+            setDetailItemId(null);
+            setDetailItemFallback(null);
+          }}
           onEdit={(it) => {
-            setDetailItem(null);
+            setDetailItemId(null);
+            setDetailItemFallback(null);
             onEdit(it);
           }}
           onUpdate={onUpdate ? (it) => {
-            setDetailItem(null);
+            setDetailItemId(null);
+            setDetailItemFallback(null);
             onUpdate(it);
           } : undefined}
           onPullFromFeed={onPullFromFeed}
@@ -137,7 +150,10 @@ export default function InterruptionAdvisoryBoard({
             onRestoreAdvisory
               ? async (id) => {
                   const ok = await onRestoreAdvisory(id);
-                  if (ok) setDetailItem(null);
+                  if (ok) {
+                    setDetailItemId(null);
+                    setDetailItemFallback(null);
+                  }
                 }
               : undefined
           }
@@ -149,22 +165,29 @@ export default function InterruptionAdvisoryBoard({
       {actionModalItem && (
         <InterruptionCardActionModal
           item={actionModalItem}
-          onClose={() => setActionModalItem(null)}
+          onClose={() => {
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
+          }}
           onViewFull={() => {
             const it = actionModalItem;
-            setActionModalItem(null);
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
             openDetail(it);
           }}
           onEdit={(it) => {
-            setActionModalItem(null);
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
             onEdit(it);
           }}
           onUpdate={onUpdate ? (it) => {
-            setActionModalItem(null);
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
             onUpdate(it);
           } : undefined}
           onArchive={(id) => {
-            setActionModalItem(null);
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
             onDelete(id);
           }}
           onPermanentDelete={onPermanentDelete || undefined}

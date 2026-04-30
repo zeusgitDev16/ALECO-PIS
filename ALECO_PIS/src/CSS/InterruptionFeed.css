@@ -2,10 +2,10 @@
 .interruption-feed {
   display: flex;
   flex-direction: row;
-  gap: 32px; /* Increased gap for better card separation */
+  gap: calc(40px * var(--public-section-scale, 1)); /* scales with breakpoint */
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 44px 2px 18px 2px; /* top room for the floating status banner */
+  padding: calc(44px * var(--public-section-scale, 1)) calc(16px * var(--public-section-scale, 1)) calc(18px * var(--public-section-scale, 1)) calc(16px * var(--public-section-scale, 1)); /* top room for the floating status banner */
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
   align-items: flex-start;
@@ -296,6 +296,16 @@
   color: #15803d;
 }
 
+.feed-post-status-chip--cancelled {
+  background: rgba(107, 114, 128, 0.24);
+  color: #374151;
+}
+
+.feed-post-status-chip--rescheduled {
+  background: rgba(244, 63, 94, 0.2);
+  color: #be123c;
+}
+
 [data-theme='dark'] .feed-post-status-chip--pending {
   background: rgba(245, 158, 11, 0.25);
   color: #fbbf24;
@@ -310,6 +320,16 @@
 [data-theme='dark'] .feed-post-status-chip--energized {
   background: rgba(34, 197, 94, 0.2);
   color: #4ade80;
+}
+
+[data-theme='dark'] .feed-post-status-chip--cancelled {
+  background: rgba(156, 163, 175, 0.26);
+  color: #f3f4f6;
+}
+
+[data-theme='dark'] .feed-post-status-chip--rescheduled {
+  background: rgba(244, 63, 94, 0.32);
+  color: #ffe4e6;
 }
 
 .feed-post-header-timestamp {
@@ -901,6 +921,16 @@
   --banner-fg: #ecfdf5;
 }
 
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--cancelled {
+  --banner-bg: #6b7280;
+  --banner-fg: #f9fafb;
+}
+
+.interruption-feed-post .feed-post-status-banner .feed-post-status-chip--rescheduled {
+  --banner-bg: #e11d48;
+  --banner-fg: #fff1f2;
+}
+
 [data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--pending {
   --banner-bg: #f59e0b;
   --banner-fg: #431407;
@@ -915,6 +945,16 @@
 [data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--energized {
   --banner-bg: #22c55e;
   --banner-fg: #052e16;
+}
+
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--cancelled {
+  --banner-bg: #9ca3af;
+  --banner-fg: #111827;
+}
+
+[data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip--rescheduled {
+  --banner-bg: #fb7185;
+  --banner-fg: #4c0519;
 }
 
 [data-theme='dark'] .interruption-feed-post .feed-post-status-banner .feed-post-status-chip {
@@ -982,10 +1022,10 @@
    ============================================================ */
 .interruption-feed-post--poster {
   height: calc(380px * var(--public-section-scale, 1));
-  width: max-content; /* Card follows poster's natural width at the fixed height */
+  width: max-content; /* JS overrides with computed size on img load (see InterruptionFeedPost.jsx) */
   min-width: 0;
   max-width: none;
-  overflow: visible;
+  overflow: visible; /* keep floating status banner above card */
 }
 
 .interruption-feed-post--poster .feed-post-poster-display {
@@ -1423,6 +1463,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(300px * var(--public-section-scale, 1));
   }
 
@@ -1465,6 +1508,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(230px * var(--public-section-scale, 1));
   }
 
@@ -1612,6 +1658,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(245px * var(--public-section-scale, 1));
   }
 
@@ -1727,6 +1776,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(270px * var(--public-section-scale, 1));
   }
 
@@ -1837,6 +1889,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(270px * var(--public-section-scale, 1)); /* freeze at 375-profile height */
   }
 
@@ -1922,8 +1977,8 @@
 /* --- 768px - 1023px: tablet landscape --- */
 @media (min-width: 768px) and (max-width: 1023px) {
   .interruption-feed {
-    padding: 44px 12px 18px 12px;
-    gap: 22px;
+    padding: calc(44px * var(--public-section-scale, 1)) calc(14px * var(--public-section-scale, 1)) calc(18px * var(--public-section-scale, 1)) calc(14px * var(--public-section-scale, 1));
+    gap: calc(28px * var(--public-section-scale, 1));
   }
 
   .interruption-feed-post {
@@ -1935,6 +1990,9 @@
   }
 
   .interruption-feed-post--poster {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
     height: calc(340px * var(--public-section-scale, 1));
   }
 
@@ -1955,6 +2013,9 @@
   .interruption-feed {
     max-width: 100%;
     margin: 0 auto;
+    gap: calc(48px * var(--public-section-scale, 1));
+    padding-left: calc(20px * var(--public-section-scale, 1));
+    padding-right: calc(20px * var(--public-section-scale, 1));
   }
 }
 

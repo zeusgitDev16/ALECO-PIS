@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import '../CSS/Sidebar.css';
 import alecoLogo from '../assets/Aleco-logo-modified.png';
 import CreatePost from './buttons/CreatePost';
+import { USER_ROLES } from '../constants/userRoles';
 
 // Accept isOpen and toggleSidebar from AdminLayout
 const AdminSidebar = ({ activePage, isOpen, toggleSidebar, onOpenServiceMemos }) => {
+  const currentRole = String(localStorage.getItem('userRole') || USER_ROLES.EMPLOYEE).toLowerCase();
+  const canViewHistory = currentRole === USER_ROLES.ADMIN;
   
   // Safely close the sidebar only if it's currently open (Mobile behavior)
   const handleLinkClick = () => {
@@ -100,13 +103,15 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar, onOpenServiceMemos })
 
             <span className="sidebar-label">Archives*</span>
 
-            <Link to="/admin-history" className={`sidebar-item ${activePage === 'history' ? 'active' : ''}`} onClick={handleLinkClick}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span>History</span>
-            </Link>
+            {canViewHistory && (
+              <Link to="/admin-history" className={`sidebar-item ${activePage === 'history' ? 'active' : ''}`} onClick={handleLinkClick}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>History</span>
+              </Link>
+            )}
 
             <Link to="/admin-backup" className={`sidebar-item ${activePage === 'backup' ? 'active' : ''}`} onClick={handleLinkClick}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

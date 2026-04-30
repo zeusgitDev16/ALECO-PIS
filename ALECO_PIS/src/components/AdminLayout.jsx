@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AdminSidebar from './Sidebar';
 import SearchBarGlobal from './searchBars/SearchBarGlobal';
 import LandingPage from './headers/landingPage';
 import ServiceMemoModalContainer from './ServiceMemoModalContainer';
+import { getRealtimeSocket } from '../utils/realtimeSocket.js';
 import '../CSS/Dashboard.css';
 
 const AdminLayout = ({ children, activePage }) => {
@@ -12,6 +13,17 @@ const AdminLayout = ({ children, activePage }) => {
 
   const handleOpenServiceMemos = () => setIsServiceMemoModalOpen(true);
   const handleCloseServiceMemos = () => setIsServiceMemoModalOpen(false);
+
+  useEffect(() => {
+    const socket = getRealtimeSocket();
+    const onRealtimeChanged = (payload) => {
+      window.dispatchEvent(new CustomEvent('aleco:realtime-change', { detail: payload }));
+    };
+    socket.on('realtime:entity-changed', onRealtimeChanged);
+    return () => {
+      socket.off('realtime:entity-changed', onRealtimeChanged);
+    };
+  }, []);
 
   return (
     <div className="admin-shell-root">

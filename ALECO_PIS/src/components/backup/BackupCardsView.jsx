@@ -4,9 +4,10 @@ import BackupFileInput from './BackupFileInput';
 
 const BackupCardsView = ({
     entity = 'tickets',
+    canDeleteTickets = false,
     format, onFormatChange,
     exporting, onExport, previewLoading, onViewInBrowser,
-    archiving, onArchiveClick,
+    archiving, onArchiveClick, onArchivePreview,
     importFile, onImportFileChange, importing, previewing, onPreview, onImport, previewResult
 }) => {
     const ticketsOnly = entity === 'tickets';
@@ -32,7 +33,7 @@ const BackupCardsView = ({
                             {exporting ? '...' : 'Download'}
                         </button>
                         <button type="button" className="btn-action btn-ongoing backup-card-btn-full" onClick={onViewInBrowser} disabled={previewLoading}>
-                            {previewLoading ? '...' : 'View in browser'}
+                            {previewLoading ? '...' : 'Preview export'}
                         </button>
                     </div>
                 </div>
@@ -40,20 +41,25 @@ const BackupCardsView = ({
 
             {ticketsOnly && (
                 <>
-                    <div className="backup-card backup-card--archive">
-                        <div className="backup-card-stack">
-                            <div className="backup-card-icon-wrap" aria-hidden="true">
-                                <div className="backup-card-icon">⊟</div>
+                    {canDeleteTickets && (
+                        <div className="backup-card backup-card--archive">
+                            <div className="backup-card-stack">
+                                <div className="backup-card-icon-wrap" aria-hidden="true">
+                                    <div className="backup-card-icon">⊟</div>
+                                </div>
+                                <h4 className="backup-card-title">Delete</h4>
+                                <p className="backup-card-desc">Permanently delete ungrouped tickets in date range.</p>
                             </div>
-                            <h4 className="backup-card-title">Archive</h4>
-                            <p className="backup-card-desc">Soft-delete tickets in date range.</p>
+                            <div className="backup-card-footer">
+                                <button type="button" className="btn-action btn-ongoing backup-card-btn-full" onClick={onArchivePreview} disabled={previewLoading}>
+                                    {previewLoading ? 'Loading...' : 'Preview delete'}
+                                </button>
+                                <button type="button" className="btn-action btn-delete backup-card-btn-full" onClick={onArchiveClick} disabled={archiving}>
+                                    {archiving ? 'Deleting...' : 'Delete'}
+                                </button>
+                            </div>
                         </div>
-                        <div className="backup-card-footer">
-                            <button type="button" className="btn-action btn-delete backup-card-btn-full" onClick={onArchiveClick} disabled={archiving}>
-                                {archiving ? 'Archiving...' : 'Archive'}
-                            </button>
-                        </div>
-                    </div>
+                    )}
 
                     <div className="backup-card backup-card--import">
                         <div className="backup-card-stack">

@@ -4,7 +4,7 @@ import { sendPhilSMS } from '../utils/sms.js';
 import { insertTicketLog } from '../utils/ticketLogHelper.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
-import { requireAdmin } from '../middleware/requireRole.js';
+import { requireStaff } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ const router = express.Router();
  * Generates a main ticket ID and links all selected tickets to it using parent_ticket_id
  * POST /api/tickets/group/create
  */
-router.post('/tickets/group/create', requireAdmin, async (req, res) => {
+router.post('/tickets/group/create', requireStaff, async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
@@ -154,7 +154,7 @@ router.post('/tickets/group/create', requireAdmin, async (req, res) => {
  * Returns all ticket groups with their member tickets
  * GET /api/tickets/groups
  */
-router.get('/tickets/groups', requireAdmin, async (req, res) => {
+router.get('/tickets/groups', requireStaff, async (req, res) => {
     try {
         // Get all master tickets (groups)
         const [groups] = await pool.execute(
@@ -193,7 +193,7 @@ router.get('/tickets/groups', requireAdmin, async (req, res) => {
  * Returns the group master with its children (for detail pane when viewing a parent)
  * GET /api/tickets/group/:mainTicketId
  */
-router.get('/tickets/group/:mainTicketId', requireAdmin, async (req, res) => {
+router.get('/tickets/group/:mainTicketId', requireStaff, async (req, res) => {
     const { mainTicketId } = req.params;
 
     if (!mainTicketId || !mainTicketId.startsWith('GROUP-')) {
@@ -239,7 +239,7 @@ router.get('/tickets/group/:mainTicketId', requireAdmin, async (req, res) => {
  * Dissolves a group: clears parent_ticket_id and visit_order for all children, deletes GROUP master
  * PUT /api/tickets/group/:mainTicketId/ungroup
  */
-router.put('/tickets/group/:mainTicketId/ungroup', requireAdmin, async (req, res) => {
+router.put('/tickets/group/:mainTicketId/ungroup', requireStaff, async (req, res) => {
     const { mainTicketId } = req.params;
 
     if (!mainTicketId || !mainTicketId.startsWith('GROUP-')) {
@@ -254,10 +254,26 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireAdmin, async (req, res
     try {
         await connection.beginTransaction();
 
-        // Clear parent_ticket_id and visit_order for all children
-        const [result] = await connection.execute(
-            `UPDATE aleco_tickets SET parent_ticket_id = NULL, visit_order = NULL WHERE parent_ticket_id = ?`,
+        // Read master's current status and children's current statuses for audit log
+        const [masterRows] = await connection.execute(
+            `SELECT status FROM aleco_tickets WHERE ticket_id = ?`,
             [mainTicketId]
+        );
+        if (masterRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Group not found.' });
+        }
+        const masterStatus = masterRows[0].status;
+
+        const [childRows] = await connection.execute(
+            `SELECT ticket_id, status FROM aleco_tickets WHERE parent_ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        // Sync children's status to master's current status, then unlink them
+        const [result] = await connection.execute(
+            `UPDATE aleco_tickets SET status = ?, parent_ticket_id = NULL, visit_order = NULL WHERE parent_ticket_id = ?`,
+            [masterStatus, mainTicketId]
         );
 
         // Delete the GROUP master record
@@ -268,12 +284,29 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireAdmin, async (req, res
 
         await connection.commit();
 
+        const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
+        const actorName = req.body?.actor_name || req.headers['x-user-name'];
+        for (const child of childRows) {
+            if (child.status !== masterStatus) {
+                await insertTicketLog(pool, {
+                    ticket_id: child.ticket_id,
+                    action: 'status_change',
+                    from_status: child.status,
+                    to_status: masterStatus,
+                    actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                    actor_email: actorEmail || null,
+                    actor_name: actorName || 'System',
+                    metadata: { reason: 'ungroup_status_sync', main_ticket_id: mainTicketId }
+                });
+            }
+        }
+
         const affected = result.affectedRows || 0;
-        console.log(`✅ UNGROUP: ${mainTicketId} - ${affected} tickets ungrouped`);
+        console.log(`✅ UNGROUP: ${mainTicketId} - ${affected} tickets ungrouped, status synced to "${masterStatus}"`);
 
         res.json({
             success: true,
-            message: `Group dissolved. ${affected} tickets ungrouped.`,
+            message: `Group dissolved. ${affected} tickets ungrouped with status "${masterStatus}".`,
             ungroupedCount: affected
         });
     } catch (error) {
@@ -290,7 +323,7 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireAdmin, async (req, res
  * Dispatches same crew/ETA/notes to all child tickets in the group
  * PUT /api/tickets/group/:mainTicketId/dispatch
  */
-router.put('/tickets/group/:mainTicketId/dispatch', requireAdmin, async (req, res) => {
+router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, res) => {
     const { mainTicketId } = req.params;
     const { assigned_crew, eta, is_consumer_notified, dispatch_notes } = req.body;
 
@@ -386,7 +419,9 @@ ${mainTicketId}`;
 
             const phNow = nowPhilippineForMysql();
             await pool.execute(
-                `UPDATE aleco_tickets SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, dispatched_at = ? WHERE ticket_id = ?`,
+                `UPDATE aleco_tickets
+                 SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, concern_resolution_notes = NULL, dispatched_at = ?
+                 WHERE ticket_id = ?`,
                 [assigned_crew, eta, is_consumer_notified ? 1 : 0, dispatch_notes || '', phNow, member.ticket_id]
             );
             const actorEmail = req.body.actor_email || req.headers['x-user-email'];
@@ -450,7 +485,7 @@ ${mainTicketId}`;
  * Updates the status of a ticket group and all its member tickets
  * PUT /api/tickets/group/:mainTicketId/status
  */
-router.put('/tickets/group/:mainTicketId/status', requireAdmin, async (req, res) => {
+router.put('/tickets/group/:mainTicketId/status', requireStaff, async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
@@ -537,7 +572,7 @@ router.put('/tickets/group/:mainTicketId/status', requireAdmin, async (req, res)
  * Marks multiple tickets as Restored (using correct enum value)
  * PUT /api/tickets/bulk/restore
  */
-router.put('/tickets/bulk/restore', requireAdmin, async (req, res) => {
+router.put('/tickets/bulk/restore', requireStaff, async (req, res) => {
     const connection = await pool.getConnection();
 
     try {

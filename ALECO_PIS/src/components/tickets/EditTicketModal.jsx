@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
-import { authFetch } from '../../utils/authFetch';
+import { authMutation } from '../../utils/authMutation';
+import { REALTIME_MODULES } from '../../constants/realtimeModules';
 import { toast } from 'react-toastify';
 import AlecoScopeDropdown from '../dropdowns/AlecoScopeDropdown';
 import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown';
@@ -81,19 +82,18 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
 
         setIsSubmitting(true);
         try {
-            const body = {
+            const result = await authMutation(apiUrl(`/api/tickets/${ticket.ticket_id}`), {
+                method: 'PUT',
+                body: {
                 ...formData,
                 actor_email: localStorage.getItem('userEmail') || null,
                 actor_name: localStorage.getItem('userName') || null
-            };
-            const response = await authFetch(apiUrl(`/api/tickets/${ticket.ticket_id}`), {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                },
+                emitRealtime: { module: REALTIME_MODULES.TICKETS },
             });
-            const data = await response.json();
+            const data = result.data || {};
 
-            if (response.ok && data.success) {
+            if (result.ok && data.success) {
                 toast.success(`Ticket ${ticket.ticket_id} updated.`);
                 onSuccess?.();
                 onClose();

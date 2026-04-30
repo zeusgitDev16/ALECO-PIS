@@ -3,9 +3,10 @@ import BackupFileInput from './BackupFileInput';
 
 const BackupWorkflowView = ({
     entity = 'tickets',
+    canDeleteTickets = false,
     format, onFormatChange,
     exporting, onExport, previewLoading, onViewInBrowser,
-    archiving, onArchiveClick,
+    archiving, onArchiveClick, onArchivePreview,
     importFile, onImportFileChange, importing, previewing, onPreview, onImport, previewResult
 }) => {
     const ticketsOnly = entity === 'tickets';
@@ -19,7 +20,7 @@ const BackupWorkflowView = ({
             <div className="backup-workflow-step">
                 <span className="backup-workflow-badge">2</span>
                 <div className="backup-workflow-content">
-                    <h4 className="backup-workflow-title">{ticketsOnly ? 'Export or Archive' : 'Export'}</h4>
+                    <h4 className="backup-workflow-title">{ticketsOnly && canDeleteTickets ? 'Export or Delete' : 'Export'}</h4>
                     <div className="backup-workflow-row">
                         <div className="backup-workflow-block">
                             <div className="backup-workflow-block-main">
@@ -30,18 +31,21 @@ const BackupWorkflowView = ({
                             <div className="backup-workflow-block-footer">
                                 <div className="backup-workflow-actions backup-workflow-actions--stack">
                                     <button type="button" className="btn-add-purple backup-workflow-btn-full" onClick={onExport} disabled={exporting}>{exporting ? '...' : 'Download'}</button>
-                                    <button type="button" className="btn-action btn-ongoing backup-workflow-btn-full" onClick={onViewInBrowser} disabled={previewLoading}>{previewLoading ? '...' : 'View'}</button>
+                                    <button type="button" className="btn-action btn-ongoing backup-workflow-btn-full" onClick={onViewInBrowser} disabled={previewLoading}>{previewLoading ? '...' : 'Preview export'}</button>
                                 </div>
                             </div>
                         </div>
-                        {ticketsOnly && (
+                        {ticketsOnly && canDeleteTickets && (
                             <div className="backup-workflow-block">
                                 <div className="backup-workflow-block-main">
-                                    <span className="backup-workflow-sub">Archive</span>
+                                    <span className="backup-workflow-sub">Delete</span>
                                 </div>
                                 <div className="backup-workflow-block-footer">
+                                    <button type="button" className="btn-action btn-ongoing backup-workflow-btn-full" onClick={onArchivePreview} disabled={previewLoading}>
+                                        {previewLoading ? '...' : 'Preview'}
+                                    </button>
                                     <button type="button" className="btn-action btn-delete backup-workflow-btn-full" onClick={onArchiveClick} disabled={archiving}>
-                                        {archiving ? '...' : 'Archive'}
+                                        {archiving ? '...' : 'Delete'}
                                     </button>
                                 </div>
                             </div>

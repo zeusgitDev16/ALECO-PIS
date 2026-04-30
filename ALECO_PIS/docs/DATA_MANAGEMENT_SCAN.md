@@ -1,6 +1,6 @@
 # Data Management — documentation
 
-Admin feature for **export**, **import**, and **archive** of operational data. In the UI it is labeled **Data Management** and reached from the sidebar at **`/admin-backup`**.
+Admin feature for **export**, **import**, and **bulk delete** of operational data. In the UI it is labeled **Data Management** and reached from the sidebar at **`/admin-backup`**.
 
 **Lego brick:** [`backend/routes/backup.js`](../backend/routes/backup.js) is mounted in [`server.js`](../server.js) **before** [`backend/routes/tickets.js`](../backend/routes/tickets.js) so these paths are registered before any `/tickets/:ticketId` handlers:
 
@@ -46,7 +46,9 @@ All URLs are under the Express **`/api`** prefix. The frontend uses [`apiUrl()`]
 |--------|--------|------|--------|
 | Preview (JSON) | GET | `/api/tickets/export/preview` | Query: `preset` or `startDate`+`endDate`, plus optional filters (see below). Returns `tickets` + `logs` + `metadata`. |
 | Download file | GET | `/api/tickets/export` | Same query params; `format=excel` (default) or `csv`. Optional headers: `X-User-Email`, `X-User-Name` (logged in `aleco_export_log`). |
-| Archive | POST | `/api/tickets/archive` | JSON body: same date + filter shape as export. Soft-deletes matching tickets and deletes their ticket logs. |
+| Request delete code | POST | `/api/tickets/archive/request-delete-code` | Admin only. Body: `email` (must match logged-in admin email). Sends 6-digit code to registered email. |
+| Verify delete code | POST | `/api/tickets/archive/verify-delete-code` | Admin only. Body: `email`, `code`. Returns short-lived `deleteAuthToken` when valid. |
+| Archive | POST | `/api/tickets/archive` | JSON body: same date + filter shape as export. Permanently deletes eligible tickets and their logs; grouped tickets are blocked until ungrouped. |
 | Import dry run | POST | `/api/tickets/import?dryRun=true` | `multipart/form-data`, field **`file`** — `.xlsx` or `.csv`, max 10MB. |
 | Import | POST | `/api/tickets/import` | Same as dry run; performs transactional insert. |
 
@@ -75,12 +77,14 @@ Server-side selection is implemented in **`buildTicketQuery`** in [`backup.js`](
 
 ### Archive
 
-1. Resolves the same ticket set as export (via a count/select variant of the query).
-2. **`DELETE FROM aleco_ticket_logs`** for those `ticket_id`s.
-3. **`UPDATE aleco_tickets SET deleted_at = NOW()`** for the same filter set (soft delete).
-4. Response: `{ success, archivedCount }`.
+1. Admin requests a 6-digit delete code using their own logged-in email and verifies it to receive a short-lived `deleteAuthToken`.
+2. Archive request requires that `deleteAuthToken`; without it, delete is rejected.
+3. Route resolves the same ticket set as export (via a select variant of the query).
+4. Grouped tickets (`GROUP-*`, children, and tickets with children) are blocked and returned as blocked.
+5. Eligible ungrouped tickets are permanently deleted, including logs and linked service memo cleanup.
+6. Response includes `{ success, deletedCount, blockedGroupedCount, blockedSampleIds }`.
 
-**UI warning** ([`Backup.jsx`](../src/components/Backup.jsx) + `ConfirmModal`): states that archive removes logs and cannot be undone — matches server behavior.
+**UI behavior** ([`Backup.jsx`](../src/components/Backup.jsx)): delete controls are visible to admins only; employees see export/import only. Admins must complete email-code verification before permanent delete can run.
 
 ### Import
 

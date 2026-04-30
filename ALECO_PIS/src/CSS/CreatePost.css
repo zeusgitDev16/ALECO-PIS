@@ -35,10 +35,10 @@ html:not([data-theme="dark"]) .create-post-btn svg {
   transform: scale(1.02);
 }
 
-/* Dark: bright mango-amber (not used elsewhere); same “hot” glow recipe as the blue */
+/* Dark: pink tone to match memo-linked highlight */
 [data-theme="dark"] .create-post-btn {
   border: none;
-  background-color: #ffa602;
+  background-color: #ec4899;
   border-radius: 0.9em;
   cursor: pointer;
   padding: 0.8em 1.2em 0.8em 1em;
@@ -46,8 +46,8 @@ html:not([data-theme="dark"]) .create-post-btn svg {
   font-size: calc(0.85rem * var(--sb-scale, 1));
   width: 100%;
   box-shadow:
-    0 0 10px rgba(255, 166, 2, 0.72),
-    0 0 22px rgba(255, 200, 90, 0.38);
+    0 0 10px rgba(236, 72, 153, 0.72),
+    0 0 22px rgba(244, 114, 182, 0.38);
   overflow: hidden;
 }
 
@@ -55,7 +55,7 @@ html:not([data-theme="dark"]) .create-post-btn svg {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #140d04;
+  color: #fff;
   font-weight: 600;
 }
 
@@ -66,10 +66,10 @@ html:not([data-theme="dark"]) .create-post-btn svg {
 }
 
 [data-theme="dark"] .create-post-btn:hover {
-  background-color: #c97800;
+  background-color: #db2777;
   box-shadow:
-    0 0 20px rgba(255, 176, 40, 0.88),
-    0 0 40px rgba(255, 150, 20, 0.48);
+    0 0 20px rgba(244, 114, 182, 0.88),
+    0 0 40px rgba(236, 72, 153, 0.48);
   transform: scale(1.02);
 }
 

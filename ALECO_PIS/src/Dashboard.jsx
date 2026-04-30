@@ -7,11 +7,12 @@ import {
 import { 
     FaTicketAlt, FaClock, FaCheckCircle, FaExclamationTriangle, 
     FaMapMarkerAlt, FaChartPie, FaChartLine, FaListUl,
-    FaTools, FaExclamationCircle, FaSearch, FaLock, FaBolt, FaCalendarAlt
+    FaTools, FaExclamationCircle, FaSearch, FaLock, FaBolt, FaCalendarAlt, FaUsers
 } from 'react-icons/fa';
 import axios from 'axios';
 import { apiUrl } from './utils/api';
 import useTickets from './utils/useTickets';
+import { FaEnvelope, FaPaperPlane, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa'; // New B2B icons
 import './CSS/AdminPageLayout.css';
 import './CSS/Dashboard.css';
 
@@ -90,6 +91,9 @@ const AdminDashboard = () => {
         // Upcoming: Scheduled maintenance events
         const upcoming = sourceData.filter(i => i.status === 'Pending' && i.type === 'Scheduled').length;
         const total = hasData ? interruptions.length : 52;
+        const cancelled = sourceData.filter(i => i.status === 'Cancelled').length;
+        const rescheduled = sourceData.filter(i => i.status === 'Rescheduled').length;
+        const scheduledTotal = sourceData.filter(i => i.type === 'Scheduled').length; // Total scheduled advisories
         
         const restored24h = sourceData.filter(i => {
             if (i.status !== 'Restored' || !i.date_time_restored) return false;
@@ -181,7 +185,7 @@ const AdminDashboard = () => {
 
         const trendData = Object.values(trendMap);
 
-        return { active, upcoming, restored24h, total, feeders, topAreas, trendData, causeData, typeData };
+        return { active, upcoming, restored24h, total, cancelled, scheduledTotal, rescheduled, feeders, topAreas, trendData, causeData, typeData };
     }, [interruptions]);
 
     // Dynamic calculations for Support Tickets analytics
@@ -189,7 +193,7 @@ const AdminDashboard = () => {
         const hasData = tickets.length > 0;
         const sourceData = hasData ? tickets : [
             { id: 1, status: 'Pending', category: 'Primary Line No Power', municipality: 'Legazpi', is_urgent: 1, created_at: new Date().toISOString() },
-            { id: 2, status: 'Ongoing', category: 'Metering Issue', municipality: 'Daraga', is_urgent: 0, created_at: new Date().toISOString() },
+            { id: 2, status: 'Ongoing', category: 'Metering Issue', municipality: 'Daraga', is_urgent: 0, created_at: new Date().toISOString(), service_memo_id: 101 },
             { id: 3, status: 'Restored', category: 'Fallen Pole', municipality: 'Camalig', is_urgent: 0, created_at: new Date().toISOString() },
             { id: 4, status: 'NoFaultFound', category: 'Other', municipality: 'Guinobatan', is_urgent: 0, created_at: new Date().toISOString() }
         ];
@@ -250,9 +254,76 @@ const AdminDashboard = () => {
         const nofault = sourceData.filter(t => t.status === 'NoFaultFound').length;
         const denied = sourceData.filter(t => t.status === 'AccessDenied').length;
         const urgent = sourceData.filter(t => t.is_urgent === 1).length;
+        const memoLinked = sourceData.filter(t => Number(t?.service_memo_id || 0) > 0 || Number(t?.has_service_memo || 0) === 1).length;
 
-        return { total, pending, ongoing, resolved, unresolved, nofault, denied, urgent, trendData, categoryData, topLocations };
+        return { total, pending, ongoing, resolved, unresolved, nofault, denied, urgent, memoLinked, trendData, categoryData, topLocations };
     }, [tickets]);
+
+    // Dynamic calculations for B2B Mail features
+    const b2bMailStats = useMemo(() => {
+        // Mock data for B2B Mail
+        const totalSent = 1250;
+        const delivered = 1180;
+        const failed = 50;
+        const pending = 20;
+
+        const deliveryData = [
+            { name: 'Sent', value: totalSent, fill: 'var(--accent-primary)' },
+            { name: 'Delivered', value: delivered, fill: 'var(--accent-success)' },
+            { name: 'Failed', value: failed, fill: 'var(--accent-danger)' },
+            { name: 'Pending', value: pending, fill: 'var(--accent-warning)' },
+        ];
+
+        const recentActivity = [
+            { id: 1, subject: 'Advisory: Scheduled Maintenance', recipient: 'ABC Corp', status: 'Sent', time: '2 min ago' },
+            { id: 2, subject: 'Invoice: Q1 2024', recipient: 'XYZ Ltd', status: 'Failed', time: '15 min ago' },
+            { id: 3, subject: 'Notification: Power Restoration', recipient: 'PQR Inc', status: 'Delivered', time: '1 hour ago' },
+            { id: 4, subject: 'Advisory: Unscheduled Outage', recipient: 'LMN Co', status: 'Pending', time: '3 hours ago' },
+            { id: 5, subject: 'Report: Monthly Consumption', recipient: 'DEF Group', status: 'Sent', time: 'Yesterday' },
+        ];
+
+        // NEW: Mock data for Daily Mail Activity (last 7 days)
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const dailyTrendData = days.map((day, index) => ({
+            name: day,
+            sent: 100 + index * 10 + Math.floor(Math.random() * 20),
+            delivered: 90 + index * 10 + Math.floor(Math.random() * 15),
+            failed: 5 + Math.floor(Math.random() * 5),
+        }));
+
+        // NEW: Mock data for Contact Verification Insights
+        const verificationData = [
+            { name: 'Verified', value: 94, fill: 'var(--accent-success)' },
+            { name: 'Unverified', value: 6, fill: 'var(--accent-warning)' }
+        ];
+
+        return { totalSent, delivered, failed, pending, deliveryData, recentActivity, dailyTrendData, verificationData };
+    }, []);
+
+    // Dynamic calculations for Personnel Overview
+    const personnelStats = useMemo(() => {
+        // Mock data for Personnel Overview
+        const totalLinemen = 45;
+        const availableCrews = 8;
+        const activeDeployments = 12;
+        const onLeave = 3;
+
+        const crewStatusData = [
+            { name: 'Available', value: availableCrews, fill: 'var(--accent-success)' },
+            { name: 'On-Task', value: activeDeployments, fill: 'var(--accent-primary)' },
+            { name: 'Offline', value: 2, fill: 'var(--text-secondary)' },
+        ];
+
+        const recentDeployments = [
+            { id: 1, crew: 'Crew Alpha', location: 'Brgy. Rawis', task: 'Line Maintenance', status: 'Deployed', time: 'Started: 08:30 AM' },
+            { id: 2, crew: 'Crew Bravo', location: 'Legazpi Port', task: 'Fault Clearing', status: 'Standby', time: 'Awaiting dispatch' },
+            { id: 3, crew: 'Crew Charlie', location: 'Daraga Proper', task: 'Transformer Check', status: 'Deployed', time: 'Started: 09:15 AM' },
+            { id: 4, crew: 'Crew Delta', location: 'Brgy. Bitano', task: 'Service Connection', status: 'Deployed', time: 'Started: 10:00 AM' },
+        ];
+
+        return { totalLinemen, availableCrews, activeDeployments, onLeave, crewStatusData, recentDeployments };
+    }, []);
+
 
     return (
         <AdminLayout activePage="home">
@@ -276,11 +347,24 @@ const AdminDashboard = () => {
                         >
                             <FaChartPie /> Analytics
                         </button>
+                        <button 
+                            className="dash-nav-btn"
+                            onClick={() => document.getElementById('b2b-mail-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            <FaListUl /> B2B Mail
+                        </button>
+                        <button 
+                            className="dash-nav-btn"
+                            onClick={() => document.getElementById('personnel-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            <FaUsers /> Personnel
+                        </button>
                     </div>
                 </div>
 
                 {/* Analytics Section */}
                 <div className="analytics-container">
+                    <div className="dashboard-features-grid">
                     {/* 1. Power Advisories Container (Interruptions) */}
                     <div id="power-grid-section" className="dashboard-power-advisories-wrapper">
                         <div className="section-label-group">
@@ -326,6 +410,30 @@ const AdminDashboard = () => {
                                     <span className="stat-label">Total Recorded</span>
                                     <h3 className="stat-number">{interruptionStats.total}</h3>
                                     <span className="stat-trend">Advisory Logs</span>
+                                </div>
+                            </div>
+                            <div className="stat-card scheduled">
+                                <div className="stat-icon-box"><FaCalendarAlt /></div>
+                                <div className="stat-content">
+                                    <span className="stat-label">Total Scheduled</span>
+                                    <h3 className="stat-number">{interruptionStats.scheduledTotal}</h3>
+                                    <span className="stat-trend">Planned Events</span>
+                                </div>
+                            </div>
+                            <div className="stat-card cancelled">
+                                <div className="stat-icon-box"><FaTimesCircle /></div>
+                                <div className="stat-content">
+                                    <span className="stat-label">Cancelled</span>
+                                    <h3 className="stat-number">{interruptionStats.cancelled}</h3>
+                                    <span className="stat-trend">No longer active</span>
+                                </div>
+                            </div>
+                            <div className="stat-card rescheduled">
+                                <div className="stat-icon-box"><FaClock /></div>
+                                <div className="stat-content">
+                                    <span className="stat-label">Rescheduled</span>
+                                    <h3 className="stat-number">{interruptionStats.rescheduled}</h3>
+                                    <span className="stat-trend">Adjusted dates</span>
                                 </div>
                             </div>
                         </div>
@@ -492,6 +600,14 @@ const AdminDashboard = () => {
                                 <span className="stat-trend negative">High priority</span>
                             </div>
                         </div>
+                        <div className="stat-card memo">
+                            <div className="stat-icon-box"><FaListUl /></div>
+                            <div className="stat-content">
+                                <span className="stat-label">Memo Linked</span>
+                                <h3 className="stat-number">{ticketStats.memoLinked}</h3>
+                                <span className="stat-trend">Service Memos</span>
+                            </div>
+                        </div>
                     </div>
 
                     {/* 2 & 3. Main Charts Row */}
@@ -586,15 +702,197 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                     </div>
-                    </div>
-                </div>
+                    </div> {/* End of Ticket Overview & Analytics Wrapper */}
 
-                {/* Existing Incident Tracking Feed below */}
-                <div className="main-content-card">
-                    <div className="placeholder-content">
-                        <h3>Active Incident Tracking</h3>
-                        <p className="widget-text">Detailed logs will appear here based on selected filters.</p>
+                    {/* Dedicated parent container for B2B and Personnel modules */}
+                    <div className="dashboard-auxiliary-container">
+                        {/* 3. B2B Mail Overview Container */}
+                    <div id="b2b-mail-section" className="dashboard-b2b-mail-wrapper">
+                        <div className="section-label-group">
+                            <h3 className="column-section-title">B2B Mail Overview</h3>
+                            <p className="widget-text">Tracking of outgoing business notifications and partner communications.</p>
+                        </div>
+                        
+                        <div className="b2b-analytics-layout">
+                            {/* B2B Mail Summary Stats */}
+                            <div className="stats-grid">
+                                <div className="stat-card total">
+                                    <div className="stat-icon-box"><FaEnvelope /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Total Sent</span>
+                                        <h3 className="stat-number">{b2bMailStats.totalSent}</h3>
+                                        <span className="stat-trend">All Time</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card resolved">
+                                    <div className="stat-icon-box"><FaPaperPlane /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Delivered</span>
+                                        <h3 className="stat-number">{b2bMailStats.delivered}</h3>
+                                        <span className="stat-trend positive">Success Rate</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card urgent">
+                                    <div className="stat-icon-box"><FaTimesCircle /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Failed</span>
+                                        <h3 className="stat-number">{b2bMailStats.failed}</h3>
+                                        <span className="stat-trend negative">Needs Attention</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card pending">
+                                    <div className="stat-icon-box"><FaHourglassHalf /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Pending</span>
+                                        <h3 className="stat-number">{b2bMailStats.pending}</h3>
+                                        <span className="stat-trend">In Queue</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* B2B Mail Delivery Status Chart */}
+                            <div className="charts-grid-main">
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaChartPie className="chart-icon" />
+                                        <h4>Delivery Status</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        <ResponsiveContainer width="100%" height={180}>
+                                            <BarChart data={b2bMailStats.deliveryData} layout="vertical">
+                                                <XAxis type="number" hide />
+                                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} width={80} />
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Bar dataKey="value" barSize={20} radius={[0, 4, 4, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* B2B Contact Verification Health Analytics */}
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaCheckCircle className="chart-icon" />
+                                        <h4>Contact Verification Health</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        <ResponsiveContainer width="100%" height={180}>
+                                            <PieChart>
+                                                <Pie data={b2bMailStats.verificationData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                    {b2bMailStats.verificationData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Recent Mail Activity List */}
+                            <div className="b2b-activity-list">
+                                {b2bMailStats.recentActivity.map(activity => (
+                                    <div key={activity.id} className="b2b-activity-item">
+                                        <div className="b2b-activity-content">
+                                            <span className="b2b-activity-label">{activity.subject}</span>
+                                            <span className="b2b-activity-time">To: {activity.recipient} • {activity.time}</span>
+                                        </div>
+                                        <span className={`feeder-status-tag ${activity.status.toLowerCase()}`}>
+                                            {activity.status}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
+
+                    {/* 4. Personnel Section Container */}
+                    <div id="personnel-section" className="dashboard-personnel-wrapper">
+                        <div className="section-label-group">
+                            <h3 className="column-section-title">Personnel & Crew Status</h3>
+                            <p className="widget-text">Monitoring of field crews, linemen availability, and active deployments.</p>
+                        </div>
+                        
+                        <div className="personnel-analytics-layout">
+                            {/* Personnel Summary Stats */}
+                            <div className="stats-grid">
+                                <div className="stat-card total">
+                                    <div className="stat-icon-box"><FaUsers /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Total Linemen</span>
+                                        <h3 className="stat-number">{personnelStats.totalLinemen}</h3>
+                                        <span className="stat-trend">Personnel Pool</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card resolved">
+                                    <div className="stat-icon-box"><FaCheckCircle /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Available Crews</span>
+                                        <h3 className="stat-number">{personnelStats.availableCrews}</h3>
+                                        <span className="stat-trend positive">Ready for dispatch</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card ongoing">
+                                    <div className="stat-icon-box"><FaTools /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Active Tasks</span>
+                                        <h3 className="stat-number">{personnelStats.activeDeployments}</h3>
+                                        <span className="stat-trend">Crews deployed</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card pending">
+                                    <div className="stat-icon-box"><FaClock /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">On Leave</span>
+                                        <h3 className="stat-number">{personnelStats.onLeave}</h3>
+                                        <span className="stat-trend">Away from duty</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Charts Row - Crew Status Distribution */}
+                            <div className="charts-grid-main">
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaChartPie className="chart-icon" />
+                                        <h4>Crew Status Distribution</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        <ResponsiveContainer width="100%" height={180}>
+                                            <PieChart>
+                                                <Pie data={personnelStats.crewStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                    {personnelStats.crewStatusData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Recent Personnel/Crew Activity List */}
+                            <div className="personnel-activity-list">
+                                {personnelStats.recentDeployments.map(deployment => (
+                                    <div key={deployment.id} className="personnel-activity-item">
+                                        <div className="personnel-activity-content">
+                                            <span className="personnel-activity-label">{deployment.crew} - {deployment.task}</span>
+                                            <span className="personnel-activity-time">{deployment.location} • {deployment.time}</span>
+                                        </div>
+                                        <span className={`feeder-status-tag ${deployment.status === 'Deployed' ? 'critical' : 'scheduled'}`}>
+                                            {deployment.status}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    </div> {/* End of Auxiliary Container (B2B & Personnel) */}
+                    </div> {/* End of Analytics Container */}
                 </div>
             </div>
         </AdminLayout>

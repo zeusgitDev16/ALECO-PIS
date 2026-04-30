@@ -27,6 +27,7 @@ export function requireRole(...allowedRoles) {
 }
 
 export const requireAdmin = requireRole('admin');
+export const requireStaff = requireRole('admin', 'employee');
 
 /**
  * Allows access if session user is admin, or if target email matches session user (e.g. profile read/update).

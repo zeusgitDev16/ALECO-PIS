@@ -5,13 +5,36 @@ import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 const router = express.Router();
 
 const NOTIFICATION_COUNT_TABS = ['user', 'personnel', 'b2b-mail', 'tickets', 'interruptions', 'memo', 'system'];
+let personalReadsTableReady = false;
 
-/** Unread rows only (read_at IS NULL). Falls back if read_at column missing. */
-const UNREAD_SQL = 'read_at IS NULL';
+async function getUserIdByEmail(email) {
+  const clean = String(email || '').trim();
+  if (!clean) return 0;
+  const [rows] = await pool.execute('SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [clean]);
+  return Number(rows[0]?.id || 0);
+}
+
+async function ensurePersonalReadsTable() {
+  if (personalReadsTableReady) return;
+  await pool.execute(
+    `CREATE TABLE IF NOT EXISTS aleco_admin_notification_reads (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      notification_id BIGINT UNSIGNED NOT NULL,
+      user_id BIGINT UNSIGNED NOT NULL,
+      read_at DATETIME NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_admin_notif_reads_notif_user (notification_id, user_id),
+      KEY idx_admin_notif_reads_user_read (user_id, read_at),
+      KEY idx_admin_notif_reads_notif (notification_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+  );
+  personalReadsTableReady = true;
+}
 
 /**
  * GET /notifications/counts
- * Per-tab unread counts and total for admin bell badge. Non-admins get zeros.
+ * Per-tab unread counts and total for the current authenticated user.
  */
 router.get('/notifications/counts', async (req, res) => {
   const email = req.authUser?.email;
@@ -26,17 +49,22 @@ router.get('/notifications/counts', async (req, res) => {
   };
 
   try {
-    const [users] = await pool.execute('SELECT role FROM users WHERE email = ?', [email]);
-    const role = String(users[0]?.role || '').toLowerCase();
-    if (role !== 'admin') {
+    await ensurePersonalReadsTable();
+    const userId = await getUserIdByEmail(email);
+    if (!userId) {
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ success: true, counts: emptyCounts(), total: 0 });
     }
 
     const placeholders = NOTIFICATION_COUNT_TABS.map(() => '?').join(',');
     const [rows] = await pool.execute(
-      `SELECT tab, COUNT(*) AS c FROM aleco_admin_notifications WHERE tab IN (${placeholders}) AND ${UNREAD_SQL} GROUP BY tab`,
-      NOTIFICATION_COUNT_TABS
+      `SELECT n.tab, COUNT(*) AS c
+       FROM aleco_admin_notifications n
+       LEFT JOIN aleco_admin_notification_reads r
+         ON r.notification_id = n.id AND r.user_id = ?
+       WHERE n.tab IN (${placeholders}) AND r.id IS NULL
+       GROUP BY n.tab`,
+      [userId, ...NOTIFICATION_COUNT_TABS]
     );
 
     const counts = emptyCounts();
@@ -55,11 +83,6 @@ router.get('/notifications/counts', async (req, res) => {
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ success: true, counts: emptyCounts(), total: 0 });
     }
-    if (e?.code === 'ER_BAD_FIELD_ERROR') {
-      console.warn('[GET /notifications/counts] read_at missing — run backend/sql/aleco_admin_notifications_read_at.sql');
-      res.setHeader('Cache-Control', 'no-store');
-      return res.json({ success: true, counts: emptyCounts(), total: 0 });
-    }
     console.error('[GET /notifications/counts]', e.message);
     res.status(500).json({ success: false, message: 'Failed to load notification counts.' });
   }
@@ -67,7 +90,7 @@ router.get('/notifications/counts', async (req, res) => {
 
 /**
  * POST /notifications/mark-all-read
- * Sets read_at on all unread rows (admin). Clears bell/tab counters.
+ * Marks all unread rows as read for current authenticated user.
  */
 router.post('/notifications/mark-all-read', async (req, res) => {
   const email = req.authUser?.email;
@@ -76,29 +99,28 @@ router.post('/notifications/mark-all-read', async (req, res) => {
   }
 
   try {
-    const [users] = await pool.execute('SELECT role FROM users WHERE email = ?', [email]);
-    const role = String(users[0]?.role || '').toLowerCase();
-    if (role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Forbidden.' });
+    await ensurePersonalReadsTable();
+    const userId = await getUserIdByEmail(email);
+    if (!userId) {
+      return res.json({ success: true, updated: 0 });
     }
 
     const ts = nowPhilippineForMysql();
     const [result] = await pool.execute(
-      `UPDATE aleco_admin_notifications SET read_at = ? WHERE read_at IS NULL`,
-      [ts]
+      `INSERT INTO aleco_admin_notification_reads (notification_id, user_id, read_at)
+       SELECT n.id, ?, ?
+       FROM aleco_admin_notifications n
+       LEFT JOIN aleco_admin_notification_reads r
+         ON r.notification_id = n.id AND r.user_id = ?
+       WHERE r.id IS NULL
+       ON DUPLICATE KEY UPDATE read_at = VALUES(read_at)`,
+      [userId, ts, userId]
     );
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, updated: result.affectedRows ?? 0 });
   } catch (e) {
     if (e?.code === 'ER_NO_SUCH_TABLE') {
       return res.json({ success: true, updated: 0 });
-    }
-    if (e?.code === 'ER_BAD_FIELD_ERROR') {
-      console.warn('[POST /notifications/mark-all-read] read_at missing — run backend/sql/aleco_admin_notifications_read_at.sql');
-      return res.status(503).json({
-        success: false,
-        message: 'Database migration required: add read_at to aleco_admin_notifications.',
-      });
     }
     console.error('[POST /notifications/mark-all-read]', e.message);
     res.status(500).json({ success: false, message: 'Failed to mark notifications as read.' });
@@ -107,7 +129,7 @@ router.post('/notifications/mark-all-read', async (req, res) => {
 
 /**
  * PATCH /notifications/:id/read
- * Mark a single notification as read (admin). Reduces unread counts by one.
+ * Mark a single notification as read for current authenticated user.
  */
 router.patch('/notifications/:id/read', async (req, res) => {
   const email = req.authUser?.email;
@@ -121,23 +143,26 @@ router.patch('/notifications/:id/read', async (req, res) => {
   }
 
   try {
-    const [users] = await pool.execute('SELECT role FROM users WHERE email = ?', [email]);
-    const role = String(users[0]?.role || '').toLowerCase();
-    if (role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Forbidden.' });
+    await ensurePersonalReadsTable();
+    const userId = await getUserIdByEmail(email);
+    if (!userId) {
+      return res.json({ success: true, alreadyRead: true });
+    }
+
+    const [check] = await pool.execute('SELECT id FROM aleco_admin_notifications WHERE id = ?', [id]);
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Notification not found.' });
     }
 
     const ts = nowPhilippineForMysql();
     const [result] = await pool.execute(
-      `UPDATE aleco_admin_notifications SET read_at = ? WHERE id = ? AND ${UNREAD_SQL}`,
-      [ts, id]
+      `INSERT INTO aleco_admin_notification_reads (notification_id, user_id, read_at)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE read_at = VALUES(read_at)`,
+      [id, userId, ts]
     );
 
     if (result.affectedRows === 0) {
-      const [check] = await pool.execute('SELECT id FROM aleco_admin_notifications WHERE id = ?', [id]);
-      if (check.length === 0) {
-        return res.status(404).json({ success: false, message: 'Notification not found.' });
-      }
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ success: true, alreadyRead: true });
     }
@@ -148,13 +173,6 @@ router.patch('/notifications/:id/read', async (req, res) => {
     if (e?.code === 'ER_NO_SUCH_TABLE') {
       return res.status(503).json({ success: false, message: 'Notifications table missing.' });
     }
-    if (e?.code === 'ER_BAD_FIELD_ERROR') {
-      console.warn('[PATCH /notifications/:id/read] read_at missing — run backend/sql/aleco_admin_notifications_read_at.sql');
-      return res.status(503).json({
-        success: false,
-        message: 'Database migration required: add read_at to aleco_admin_notifications.',
-      });
-    }
     console.error('[PATCH /notifications/:id/read]', e.message);
     res.status(500).json({ success: false, message: 'Failed to mark notification as read.' });
   }
@@ -162,7 +180,7 @@ router.patch('/notifications/:id/read', async (req, res) => {
 
 /**
  * GET /notifications?tab=user
- * Lists recent unread admin notifications for the given tab. Admins see rows; others get an empty list.
+ * Lists recent unread notifications for the given tab for the current user.
  */
 router.get('/notifications', async (req, res) => {
   const tab = String(req.query.tab || 'user').trim().toLowerCase() || 'user';
@@ -172,31 +190,28 @@ router.get('/notifications', async (req, res) => {
   }
 
   try {
-    const [users] = await pool.execute('SELECT role FROM users WHERE email = ?', [email]);
-    const role = String(users[0]?.role || '').toLowerCase();
-    if (role !== 'admin') {
+    await ensurePersonalReadsTable();
+    const userId = await getUserIdByEmail(email);
+    if (!userId) {
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ success: true, data: [] });
     }
 
     const [rows] = await pool.execute(
-      `SELECT id, tab, event_type AS eventType, subject_email AS subjectEmail, subject_name AS subjectName,
-              detail, actor_email AS actorEmail, created_at AS createdAt
-       FROM aleco_admin_notifications
-       WHERE tab = ? AND ${UNREAD_SQL}
-       ORDER BY created_at DESC
+      `SELECT n.id, n.tab, n.event_type AS eventType, n.subject_email AS subjectEmail, n.subject_name AS subjectName,
+              n.detail, n.actor_email AS actorEmail, n.created_at AS createdAt
+       FROM aleco_admin_notifications n
+       LEFT JOIN aleco_admin_notification_reads r
+         ON r.notification_id = n.id AND r.user_id = ?
+       WHERE n.tab = ? AND r.id IS NULL
+       ORDER BY n.created_at DESC
        LIMIT 80`,
-      [tab]
+      [userId, tab]
     );
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, data: rows });
   } catch (e) {
     if (e?.code === 'ER_NO_SUCH_TABLE') {
-      res.setHeader('Cache-Control', 'no-store');
-      return res.json({ success: true, data: [] });
-    }
-    if (e?.code === 'ER_BAD_FIELD_ERROR') {
-      console.warn('[GET /notifications] read_at missing — run backend/sql/aleco_admin_notifications_read_at.sql');
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ success: true, data: [] });
     }

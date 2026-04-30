@@ -1,12 +1,12 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
-import { requireAdmin } from '../middleware/requireRole.js';
+import { requireStaff } from '../middleware/requireRole.js';
 
 const router = express.Router();
 
 // IDEMPOTENT FILTER ROUTE: Returns tickets based on admin dashboard filters
-router.get('/filtered-tickets', requireAdmin, async (req, res) => {
+router.get('/filtered-tickets', requireStaff, async (req, res) => {
     try {
         const {
             tab, isNew, isUrgent, status, searchQuery, category,

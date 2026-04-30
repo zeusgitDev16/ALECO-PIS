@@ -11,6 +11,9 @@ import {
   getInterruption,
   addInterruptionUpdate,
 } from '../api/interruptionsApi.js';
+import { isOptimisticConflict } from '../utils/optimisticConcurrency.js';
+import { REALTIME_MODULES } from '../constants/realtimeModules.js';
+import { matchesRealtimeModule } from '../utils/realtimeModules.js';
 
 const ADMIN_LIMIT = 200;
 
@@ -41,6 +44,16 @@ export function useAdminInterruptions() {
 
   const listQuery = archiveFilterToQuery(listArchiveFilter);
 
+  const getExpectedUpdatedAtById = useCallback(
+    (id) => {
+      if (!id) return null;
+      if (editDetail && editDetail.id === id && editDetail.updatedAt) return editDetail.updatedAt;
+      const row = (interruptions || []).find((item) => item.id === id);
+      return row?.updatedAt || null;
+    },
+    [editDetail, interruptions]
+  );
+
   const fetchList = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
@@ -70,6 +83,21 @@ export function useAdminInterruptions() {
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [fetchList]);
+
+  useEffect(() => {
+    const onRealtimeChange = (ev) => {
+      if (matchesRealtimeModule(
+        ev?.detail?.module,
+        REALTIME_MODULES.INTERRUPTIONS,
+        REALTIME_MODULES.DATA_MANAGEMENT,
+        REALTIME_MODULES.SYSTEM
+      )) {
+        fetchList();
+      }
+    };
+    window.addEventListener('aleco:realtime-change', onRealtimeChange);
+    return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
   }, [fetchList]);
 
   const loadEditDetail = useCallback(async (id) => {
@@ -109,7 +137,18 @@ export function useAdminInterruptions() {
       const body = { remark };
       if (userEmail) body.actorEmail = userEmail;
       if (userName) body.actorName = userName;
+      const expectedUpdatedAt = getExpectedUpdatedAtById(id);
+      if (expectedUpdatedAt) body.expectedUpdatedAt = expectedUpdatedAt;
       const r = await addInterruptionUpdate(id, body);
+      if (isOptimisticConflict(r.status, r)) {
+        setMemoMessage({
+          type: 'err',
+          text: r.message || 'This advisory changed while you were editing. Reloaded latest data.',
+        });
+        await fetchList();
+        await loadEditDetail(id);
+        return false;
+      }
       if (r.success && r.data?.updates) {
         setEditDetail((prev) => (prev && prev.id === id ? { ...prev, updates: r.data.updates } : prev));
         setMemoMessage({ type: 'ok', text: 'Remark added.' });
@@ -123,7 +162,7 @@ export function useAdminInterruptions() {
     } finally {
       setMemoSaving(false);
     }
-  }, []);
+  }, [fetchList, getExpectedUpdatedAtById, loadEditDetail]);
 
   /**
    * @param {{ editingId: number|null, payload: object }} args
@@ -137,7 +176,7 @@ export function useAdminInterruptions() {
         const r = editingId
           ? await updateInterruption(editingId, payload)
           : await createInterruption(payload);
-        if (r.status === 409) {
+        if (isOptimisticConflict(r.status, r)) {
           setMessage({
             type: 'conflict',
             text:
@@ -172,7 +211,15 @@ export function useAdminInterruptions() {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await deleteInterruption(id);
+        const r = await deleteInterruption(id, { expectedUpdatedAt: getExpectedUpdatedAtById(id) });
+        if (isOptimisticConflict(r.status, r)) {
+          setMessage({
+            type: 'conflict',
+            text: r.message || 'This advisory was updated elsewhere. Reloaded latest data.',
+          });
+          await fetchList();
+          return false;
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Archive failed.' });
           return false;
@@ -190,7 +237,7 @@ export function useAdminInterruptions() {
         setSaving(false);
       }
     },
-    [fetchList]
+    [fetchList, getExpectedUpdatedAtById]
   );
 
   const restoreAdvisory = useCallback(
@@ -198,7 +245,15 @@ export function useAdminInterruptions() {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await restoreInterruption(id);
+        const r = await restoreInterruption(id, { expectedUpdatedAt: getExpectedUpdatedAtById(id) });
+        if (isOptimisticConflict(r.status, r)) {
+          setMessage({
+            type: 'conflict',
+            text: r.message || 'This advisory was updated elsewhere. Reloaded latest data.',
+          });
+          await fetchList();
+          return false;
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Restore failed.' });
           return false;
@@ -213,7 +268,7 @@ export function useAdminInterruptions() {
         setSaving(false);
       }
     },
-    [fetchList]
+    [fetchList, getExpectedUpdatedAtById]
   );
 
   const permanentDeleteAdvisory = useCallback(
@@ -221,7 +276,17 @@ export function useAdminInterruptions() {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await permanentlyDeleteInterruption(id);
+        const r = await permanentlyDeleteInterruption(id, {
+          expectedUpdatedAt: getExpectedUpdatedAtById(id),
+        });
+        if (isOptimisticConflict(r.status, r)) {
+          setMessage({
+            type: 'conflict',
+            text: r.message || 'This advisory was updated elsewhere. Reloaded latest data.',
+          });
+          await fetchList();
+          return false;
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Permanent delete failed.' });
           return false;
@@ -236,7 +301,7 @@ export function useAdminInterruptions() {
         setSaving(false);
       }
     },
-    [fetchList]
+    [fetchList, getExpectedUpdatedAtById]
   );
 
   const pullFromFeedAdvisory = useCallback(
@@ -244,7 +309,15 @@ export function useAdminInterruptions() {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await pullFromFeed(id);
+        const r = await pullFromFeed(id, { expectedUpdatedAt: getExpectedUpdatedAtById(id) });
+        if (isOptimisticConflict(r.status, r)) {
+          setMessage({
+            type: 'conflict',
+            text: r.message || 'This advisory was updated elsewhere. Reloaded latest data.',
+          });
+          await fetchList();
+          return false;
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Pull from feed failed.' });
           return false;
@@ -259,7 +332,7 @@ export function useAdminInterruptions() {
         setSaving(false);
       }
     },
-    [fetchList]
+    [fetchList, getExpectedUpdatedAtById]
   );
 
   const pushToFeedAdvisory = useCallback(
@@ -267,7 +340,15 @@ export function useAdminInterruptions() {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await pushToFeed(id);
+        const r = await pushToFeed(id, { expectedUpdatedAt: getExpectedUpdatedAtById(id) });
+        if (isOptimisticConflict(r.status, r)) {
+          setMessage({
+            type: 'conflict',
+            text: r.message || 'This advisory was updated elsewhere. Reloaded latest data.',
+          });
+          await fetchList();
+          return false;
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Push to feed failed.' });
           return false;
@@ -282,7 +363,7 @@ export function useAdminInterruptions() {
         setSaving(false);
       }
     },
-    [fetchList]
+    [fetchList, getExpectedUpdatedAtById]
   );
 
   return {

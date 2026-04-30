@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
+import { authMutation } from '../utils/authMutation';
+import { withExpectedUpdatedAt } from '../utils/optimisticConcurrency';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
+import { matchesRealtimeModule } from '../utils/realtimeModules';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketsPage.css';
@@ -53,7 +57,7 @@ const AdminTickets = () => {
     const [ticketScope, setTicketScope] = useState(() => {
         try {
             const saved = localStorage.getItem('ticketScope');
-            if (saved && ['urgent', 'regular'].includes(saved)) return saved;
+            if (saved && ['urgent', 'regular', 'memo'].includes(saved)) return saved;
         } catch {}
         return 'regular';
     });
@@ -67,6 +71,10 @@ const AdminTickets = () => {
         (tickets || []).filter(t => t.is_urgent !== 1 && t.is_urgent !== true),
         [tickets]
     );
+    const memoLinkedTickets = useMemo(() =>
+        (tickets || []).filter((t) => Number(t?.service_memo_id || 0) > 0 || Number(t?.has_service_memo || 0) === 1),
+        [tickets]
+    );
     const recentTickets = useMemo(() => {
         if (!recentIds?.length || !tickets?.length) return [];
         return recentIds.map(id => tickets.find(t => t.ticket_id === id)).filter(Boolean);
@@ -74,8 +82,9 @@ const AdminTickets = () => {
 
     const scopeTickets = useMemo(() => {
         if (ticketScope === 'urgent') return urgentTickets;
+        if (ticketScope === 'memo') return memoLinkedTickets;
         return regularTickets;
-    }, [ticketScope, urgentTickets, regularTickets]);
+    }, [ticketScope, urgentTickets, regularTickets, memoLinkedTickets]);
 
     useEffect(() => {
         try {
@@ -84,7 +93,7 @@ const AdminTickets = () => {
     }, [ticketScope]);
 
     const handleScopeChange = (newScope) => {
-        if ((newScope === 'urgent' || newScope === 'regular') && newScope !== ticketScope) {
+        if ((newScope === 'urgent' || newScope === 'regular' || newScope === 'memo') && newScope !== ticketScope) {
             setTicketScope(newScope);
             /* Selection persists across scope switch - selected IDs stay when switching Urgent ↔ Regular */
         }
@@ -129,7 +138,9 @@ const AdminTickets = () => {
                 const withoutGroupMasters = rows.filter((t) => !String(t?.ticket_id || '').startsWith('GROUP-'));
                 const scoped = ticketScope === 'urgent'
                     ? withoutGroupMasters.filter(t => t.is_urgent === 1 || t.is_urgent === true)
-                    : withoutGroupMasters.filter(t => t.is_urgent !== 1 && t.is_urgent !== true);
+                    : ticketScope === 'memo'
+                        ? withoutGroupMasters.filter((t) => Number(t?.service_memo_id || 0) > 0 || Number(t?.has_service_memo || 0) === 1)
+                        : withoutGroupMasters.filter(t => t.is_urgent !== 1 && t.is_urgent !== true);
                 setMapTickets(scoped);
             } catch (e) {
                 if (e?.name === 'AbortError') return;
@@ -155,6 +166,22 @@ const AdminTickets = () => {
         };
         fetchCrews();
     }, []);
+
+    useEffect(() => {
+        const onRealtimeChange = (ev) => {
+            if (matchesRealtimeModule(
+                ev?.detail?.module,
+                REALTIME_MODULES.TICKETS,
+                REALTIME_MODULES.SERVICE_MEMOS,
+                REALTIME_MODULES.DATA_MANAGEMENT,
+                REALTIME_MODULES.SYSTEM
+            )) {
+                refetch();
+            }
+        };
+        window.addEventListener('aleco:realtime-change', onRealtimeChange);
+        return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
+    }, [refetch]);
 
     const toggleTicketSelection = (id) => {
         setSelectedIds(prev => {
@@ -252,20 +279,27 @@ const AdminTickets = () => {
 
     const handlePutHold = async (ticketId, holdData) => {
         try {
+            const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
+            const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
             const body = { ...holdData, ...getActor() };
-            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/hold`), {
+            const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/hold`), {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                body,
+                expectedUpdatedAt,
+                expectedUpdatedAtField: 'expected_updated_at',
+                emitRealtime: { module: REALTIME_MODULES.TICKETS },
             });
-            const data = await response.json();
-            if (response.ok && data.success) {
+            const data = result.data || {};
+            if (result.success) {
                 const msg = data.message || `Ticket ${ticketId} put on hold.`;
                 if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
                     toast.warning(`ALECO System: ${msg}`);
                 } else {
                     toast.success(`ALECO System: ${msg}`);
                 }
+                refetch();
+            } else if (result.conflict) {
+                toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
                 refetch();
             } else {
                 toast.error('Hold failed: ' + (data.message || 'Unknown error'));
@@ -278,14 +312,21 @@ const AdminTickets = () => {
 
     const handleResumeFromHold = async (ticketId) => {
         try {
-            const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
+            const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
+            const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
+            const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(getActor())
+                body: { ...getActor() },
+                expectedUpdatedAt,
+                expectedUpdatedAtField: 'expected_updated_at',
+                emitRealtime: { module: REALTIME_MODULES.TICKETS },
             });
-            const data = await response.json();
-            if (response.ok && data.success) {
+            const data = result.data || {};
+            if (result.success) {
                 toast.success(`ALECO System: ${data.message || `Ticket ${ticketId} resumed.`}`);
+                refetch();
+            } else if (result.conflict) {
+                toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
                 refetch();
             } else {
                 toast.error(data.message || 'Could not resume ticket.');
@@ -298,23 +339,55 @@ const AdminTickets = () => {
 
     const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
         try {
+            const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
+            const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
             if (newStatus === 'Ongoing' && dispatchData) {
-                const body = { ...dispatchData, ...getActor() };
-                const response = await authFetch(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
+                if (dispatchData.resolution_mode === 'concern') {
+                    const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/resolve-concern`), {
+                        method: 'PUT',
+                        body: { ...dispatchData, ...getActor() },
+                        expectedUpdatedAt,
+                        expectedUpdatedAtField: 'expected_updated_at',
+                        emitRealtime: { module: REALTIME_MODULES.TICKETS },
+                    });
+                    const data = result.data || {};
+                    if (result.success) {
+                        const msg = data.message || 'Concern resolution started.';
+                        if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
+                            toast.warning(`ALECO System: ${msg}`);
+                        } else {
+                            toast.success(`ALECO System: ${msg}`);
+                        }
+                        refetch();
+                    } else if (result.conflict) {
+                        toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
+                        refetch();
+                    } else {
+                        toast.error('Start resolution failed: ' + (data.message || 'Unknown error'));
+                    }
+                    return;
+                }
+
+                const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/dispatch`), {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+                    body: { ...dispatchData, ...getActor() },
+                    expectedUpdatedAt,
+                    expectedUpdatedAtField: 'expected_updated_at',
+                    emitRealtime: { module: REALTIME_MODULES.TICKETS },
                 });
 
-                const data = await response.json();
+                const data = result.data || {};
 
-                if (response.ok && data.success) {
+                if (result.success) {
                     const msg = data.message || 'Dispatch complete.';
                     if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
                         toast.warning(`ALECO System: ${msg}`);
                     } else {
                         toast.success(`ALECO System: ${msg}`);
                     }
+                    refetch();
+                } else if (result.conflict) {
+                    toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
                     refetch();
                 } else {
                     toast.error('Dispatch failed: ' + (data.message || 'Unknown error'));
@@ -326,21 +399,33 @@ const AdminTickets = () => {
                     ? apiUrl(`/api/tickets/group/${ticketId}/status`)
                     : apiUrl(`/api/tickets/${ticketId}/status`);
 
-                const response = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus, ...getActor() })
-                });
+                const payload = {
+                        status: newStatus,
+                        ...getActor(),
+                        ...(isGroupMaster ? {} : withExpectedUpdatedAt({}, expectedUpdatedAt, 'expected_updated_at'))
+                    };
 
-                const data = await response.json();
+                const result = isGroupMaster
+                    ? await authMutation(url, { method: 'PUT', body: payload, emitRealtime: { module: REALTIME_MODULES.TICKETS } })
+                    : await authMutation(url, {
+                        method: 'PUT',
+                        body: payload,
+                        expectedUpdatedAt,
+                        expectedUpdatedAtField: 'expected_updated_at',
+                        emitRealtime: { module: REALTIME_MODULES.TICKETS },
+                    });
+                const data = result.data || {};
 
-                if (response.ok && data.success) {
+                if (result.success) {
                     const msg = newStatus === 'Pending'
                         ? `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} reverted to Pending. You can start resolution again.`
                         : `ALECO System: ${isGroupMaster ? 'Group' : 'Ticket'} ${ticketId} marked as ${newStatus}.`;
                     toast.success(msg);
                     refetch();
                     return data; // Return full response including service_memo_warning
+                } else if (result.conflict) {
+                    toast.warning(data.message || 'This ticket was already updated by another user. Reloading latest data.');
+                    refetch();
                 } else {
                     toast.error("Status update failed: " + data.message);
                 }
@@ -477,6 +562,7 @@ const AdminTickets = () => {
                             onScopeChange={handleScopeChange}
                             urgentCount={urgentTickets.length}
                             regularCount={regularTickets.length}
+                            memoLinkedCount={memoLinkedTickets.length}
                         />
                     }
                     selectAllBar={
@@ -575,6 +661,39 @@ const AdminTickets = () => {
                     {ticketScope === 'regular' && viewMode === 'workflow' && (
                         <TicketKanbanView
                             tickets={regularTickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            onUpdateTicket={handleUpdateTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    </div>
+
+                    <div className="dashboard-widget main-content-card" id="ticket-panel-memo" role="tabpanel" aria-labelledby="ticket-tab-memo" hidden={ticketScope !== 'memo'}>
+                    {ticketScope === 'memo' && viewMode === 'card' && (
+                        <TicketListPane
+                            tickets={memoLinkedTickets}
+                            isLoading={isLoading}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                            includeUrgent={true}
+                        />
+                    )}
+                    {ticketScope === 'memo' && viewMode === 'compact' && (
+                        <TicketTableView
+                            tickets={memoLinkedTickets}
+                            selectedTicket={selectedTicket}
+                            onSelectTicket={handleSelectTicket}
+                            selectedIds={selectedIds}
+                            onToggleSelect={toggleTicketSelection}
+                        />
+                    )}
+                    {ticketScope === 'memo' && viewMode === 'workflow' && (
+                        <TicketKanbanView
+                            tickets={memoLinkedTickets}
                             selectedTicket={selectedTicket}
                             onSelectTicket={handleSelectTicket}
                             onUpdateTicket={handleUpdateTicket}

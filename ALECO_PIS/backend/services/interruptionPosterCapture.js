@@ -149,14 +149,18 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
     });
     const page = await browser.newPage();
     const vw = Math.min(
-      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_WIDTH || '900'), 10) || 900, 480),
-      1200
+      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_WIDTH || '1200'), 10) || 1200, 700),
+      1800
     );
     const vh = Math.min(
-      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_HEIGHT || '1400'), 10) || 1400, 600),
-      2400
+      Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_HEIGHT || '1700'), 10) || 1700, 900),
+      3200
     );
-    await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 2 });
+    const dsf = Math.min(
+      Math.max(parseInt(String(env.POSTER_CAPTURE_DEVICE_SCALE_FACTOR || '3'), 10) || 3, 2),
+      4
+    );
+    await page.setViewport({ width: vw, height: vh, deviceScaleFactor: dsf });
     await page.goto(posterPageUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
     const readySelector =
       variant === 'infographic' ? '.feed-advisory-infographic' : '.aleco-print-poster';
@@ -195,14 +199,27 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
       )
     );
     await new Promise((resolve) => setTimeout(resolve, 300));
-    const posterBottom = await page.evaluate((sel) => {
+    const posterBounds = await page.evaluate((sel) => {
       const el = document.querySelector(sel);
-      if (!el) return 0;
-      return Math.ceil(el.getBoundingClientRect().bottom);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.floor(r.left)),
+        width: Math.ceil(r.width),
+        height: Math.ceil(r.bottom),
+      };
     }, readySelector);
     const screenshotOpts =
-      posterBottom > 50
-        ? { type: 'png', clip: { x: 0, y: 0, width: vw, height: posterBottom } }
+      posterBounds && posterBounds.height > 50
+        ? {
+            type: 'png',
+            clip: {
+              x: posterBounds.x,
+              y: 0,
+              width: Math.min(posterBounds.width, vw - posterBounds.x),
+              height: posterBounds.height,
+            },
+          }
         : { type: 'png', fullPage: true };
     const buf = await page.screenshot(screenshotOpts);
     const b64 = Buffer.from(buf).toString('base64');
@@ -211,7 +228,9 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
       folder: 'aleco_posters',
       public_id: `interruption_${id}_capture`,
       overwrite: true,
+      invalidate: true,
       resource_type: 'image',
+      format: 'png',
     });
     const posterUrl = up?.secure_url || up?.url || null;
     if (!posterUrl) return { error: 'Cloudinary did not return a URL.' };
@@ -256,6 +275,7 @@ export async function captureFallbackListingToCloudinary(dto, id) {
       folder: 'aleco_posters',
       public_id: `interruption_${id}_fallback`,
       overwrite: true,
+      invalidate: true,
       resource_type: 'image',
     });
     const posterUrl = up?.secure_url || up?.url || null;
@@ -282,6 +302,8 @@ export async function captureFallbackListingToCloudinary(dto, id) {
  */
 export async function maybeRegeneratePosterAfterMutation(pool, id, previousRawRow, nextRawRow) {
   try {
+    if (String(nextRawRow?.type || '') === 'CustomPoster') return;
+
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     if (!hasPoster) return;
 
@@ -321,14 +343,61 @@ export async function maybeRegeneratePosterAfterMutation(pool, id, previousRawRo
 }
 
 /**
- * Admin "Capture poster": live print screenshot when the row is public-visible (SPA can load JSON);
- * otherwise (or if print fails) generate the minimal listing image from row data alone.
- *
- * @param {import('mysql2/promise').Pool} pool
- * @param {number} id
- * @param {import('mysql2').RowDataPacket} rawRow
- * @returns {Promise<{ posterUrl: string } | { error: string }>}
+ * Extract the Cloudinary public_id from a secure_url.
+ * Format: https://res.cloudinary.com/{cloud}/{type}/upload/[v{n}/]{public_id}.{ext}
+ * @param {string|null|undefined} url
+ * @returns {string|null}
  */
+function extractCloudinaryPublicId(url) {
+  if (!url || typeof url !== 'string') return null;
+  if (!url.includes('res.cloudinary.com')) return null;
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)$/i);
+  if (!match) return null;
+  const pathWithExt = match[1].split('?')[0];
+  const lastDot = pathWithExt.lastIndexOf('.');
+  if (lastDot === -1) return pathWithExt;
+  const ext = pathWithExt.slice(lastDot + 1);
+  return /^[a-z0-9]{2,5}$/i.test(ext) ? pathWithExt.slice(0, lastDot) : pathWithExt;
+}
+
+/**
+ * Best-effort Cloudinary cleanup for a permanently deleted advisory.
+ * Destroys: generated poster assets (capture + fallback, by predictable public_id),
+ * plus any uploaded image_url and poster_image_url found on the row.
+ * All deletions run in parallel and silently ignore individual failures.
+ * Safe to call when Cloudinary is not configured — exits immediately.
+ *
+ * @param {number} id
+ * @param {{ image_url?: string|null, poster_image_url?: string|null }} row
+ */
+export async function deleteCloudinaryAssetsForAdvisory(id, row) {
+  try {
+    const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
+    if (!env.CLOUDINARY_CLOUD_NAME || !cloudinary?.uploader?.destroy) return;
+
+    const toDelete = new Set();
+
+    toDelete.add(`aleco_posters/interruption_${id}_capture`);
+    toDelete.add(`aleco_posters/interruption_${id}_fallback`);
+
+    const imagePublicId = extractCloudinaryPublicId(row?.image_url);
+    if (imagePublicId) toDelete.add(imagePublicId);
+
+    const posterPublicId = extractCloudinaryPublicId(row?.poster_image_url);
+    if (posterPublicId) toDelete.add(posterPublicId);
+
+    await Promise.allSettled(
+      [...toDelete].map((publicId) =>
+        cloudinary.uploader
+          .destroy(publicId, { invalidate: true })
+          .catch((e) => console.warn(`[poster] cleanup destroy "${publicId}":`, e?.message || e))
+      )
+    );
+  } catch (e) {
+    console.warn('[poster] deleteCloudinaryAssetsForAdvisory:', e?.message || e);
+  }
+}
+
 export async function captureInterruptionPosterForAdmin(pool, id, rawRow) {
   const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
   const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);

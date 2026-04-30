@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { apiUrl } from '../../utils/api';
 import { authFetch } from '../../utils/authFetch';
+import { authMutation } from '../../utils/authMutation';
+import { REALTIME_MODULES } from '../../constants/realtimeModules';
 import { DEFAULT_URGENT_KEYWORDS } from '../../constants/urgentKeywordsDefaults';
 import ConfirmModal from './ConfirmModal';
 import '../../CSS/UrgentKeywordsPanel.css';
@@ -93,13 +95,13 @@ const UrgentKeywordsPanel = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const res = await authFetch(apiUrl('/api/urgent-keywords'), {
+            const result = await authMutation(apiUrl('/api/urgent-keywords'), {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keywords })
+                body: { keywords },
+                emitRealtime: { module: REALTIME_MODULES.TICKETS },
             });
-            const data = await res.json();
-            if (!res.ok || !data?.success) {
+            const data = result.data || {};
+            if (!result.ok || !data?.success) {
                 throw new Error(data?.message || 'Save failed');
             }
             setKeywords(data.keywords || []);

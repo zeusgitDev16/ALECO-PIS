@@ -122,6 +122,17 @@ export function formatDisplayDateTime(val) {
 export function toMysqlDateTime(input) {
   if (input === undefined || input === null || input === '') return null;
   const raw = typeof input === 'string' ? input.trim() : String(input);
+  // If client sends ISO with timezone (Z or +08:00), convert to Philippine wall clock first.
+  // This is critical for optimistic concurrency because updatedAt is often sent as ISO UTC.
+  if (/Z$/i.test(raw) || /[+-]\d{2}:?\d{2}$/.test(raw)) {
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) {
+      const msPh = d.getTime() + 8 * 60 * 60 * 1000;
+      const ph = new Date(msPh);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${ph.getUTCFullYear()}-${pad(ph.getUTCMonth() + 1)}-${pad(ph.getUTCDate())} ${pad(ph.getUTCHours())}:${pad(ph.getUTCMinutes())}:00`;
+    }
+  }
   const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
   if (m) {
     const sec = m[6] != null ? String(m[6]).padStart(2, '0').slice(0, 2) : '00';

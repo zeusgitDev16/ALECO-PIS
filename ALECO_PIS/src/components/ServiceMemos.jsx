@@ -9,6 +9,8 @@ import ServiceMemoFilters from './serviceMemos/ServiceMemoFilters';
 import ServiceMemoForm from './serviceMemos/ServiceMemoForm';
 import ConfirmModal from './tickets/ConfirmModal';
 import { getServiceMemo } from '../api/serviceMemosApi';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
+import { matchesRealtimeModule } from '../utils/realtimeModules';
 
 const ServiceMemos = () => {
   const {
@@ -47,8 +49,13 @@ const ServiceMemos = () => {
 
   useEffect(() => {
     const onRealtimeChange = (ev) => {
-      const module = String(ev?.detail?.module || '').toLowerCase();
-      if (module === 'service-memos' || module === 'tickets' || module === 'data-management' || module === 'system') {
+      if (matchesRealtimeModule(
+        ev?.detail?.module,
+        REALTIME_MODULES.SERVICE_MEMOS,
+        REALTIME_MODULES.TICKETS,
+        REALTIME_MODULES.DATA_MANAGEMENT,
+        REALTIME_MODULES.SYSTEM
+      )) {
         fetchList();
       }
     };
@@ -155,8 +162,7 @@ const ServiceMemos = () => {
       );
     }
 
-    const isOwner = detailMemo.owner_email === userEmail;
-    const formMode = detailMode === 'update' && isOwner ? 'update' : 'view';
+    const formMode = detailMode === 'update' ? 'update' : 'view';
 
     return (
       <div className="admin-page-container service-memos-page-container">

@@ -1,37 +1,46 @@
 import { apiUrl } from '../utils/api';
-
-function adminHeaders(extra = {}) {
-    const h = { ...extra };
-    if (typeof localStorage !== 'undefined') {
-        const token = localStorage.getItem('accessToken');
-        const e = localStorage.getItem('userEmail');
-        const n = localStorage.getItem('userName');
-        const tv = localStorage.getItem('tokenVersion');
-        if (token) h.Authorization = `Bearer ${token}`;
-        if (e) h['X-User-Email'] = e;
-        if (tv !== null && tv !== undefined) h['X-Token-Version'] = String(tv);
-        if (n) h['X-User-Name'] = n;
-    }
-    return h;
-}
+import { authFetch } from '../utils/authFetch';
+import { authMutation } from '../utils/authMutation';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
 
 async function jsonFetch(path, options = {}) {
-    let res;
+    const method = String(options.method || 'GET').toUpperCase();
+    const url = apiUrl(path);
     try {
-        const headers = { ...adminHeaders(), ...(options.headers || {}) };
-        res = await fetch(apiUrl(path), { ...options, headers });
+        if (method === 'GET') {
+            const res = await authFetch(url, { ...options });
+            const json = await res.json().catch(() => null);
+            return {
+                ok: res.ok,
+                status: res.status,
+                success: res.ok && json?.success === true,
+                data: json?.data ?? null,
+                message: typeof json?.message === 'string' ? json.message : null,
+                totalInbound: json?.totalInbound ?? null,
+            };
+        }
+
+        const rawBody = options.body;
+        const parsedBody = typeof rawBody === 'string'
+            ? (rawBody.trim() ? JSON.parse(rawBody) : {})
+            : (rawBody || {});
+        const mutation = await authMutation(url, {
+            method,
+            body: parsedBody,
+            emitRealtime: { module: REALTIME_MODULES.B2B_MAIL },
+            ...(options.signal ? { signal: options.signal } : {}),
+        });
+        return {
+            ok: mutation.ok,
+            status: mutation.status,
+            success: mutation.success,
+            data: mutation.data?.data ?? null,
+            message: typeof mutation.data?.message === 'string' ? mutation.data.message : null,
+            totalInbound: mutation.data?.totalInbound ?? null,
+        };
     } catch {
         return { ok: false, success: false, data: null, message: null, status: 0 };
     }
-    const json = await res.json().catch(() => null);
-    return {
-        ok: res.ok,
-        status: res.status,
-        success: res.ok && json?.success === true,
-        data: json?.data ?? null,
-        message: typeof json?.message === 'string' ? json.message : null,
-        totalInbound: json?.totalInbound ?? null,
-    };
 }
 
 export const listB2BContacts = ({ q = '', feederId = '', active = '' } = {}) =>
@@ -40,29 +49,25 @@ export const listB2BContacts = ({ q = '', feederId = '', active = '' } = {}) =>
 export const createB2BContact = (body) =>
     jsonFetch('/api/b2b-mail/contacts', {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body || {}),
+        body: body || {},
     });
 
 export const updateB2BContact = (id, body) =>
     jsonFetch(`/api/b2b-mail/contacts/${id}`, {
         method: 'PUT',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body || {}),
+        body: body || {},
     });
 
 export const toggleB2BContactActive = (id, active) =>
     jsonFetch(`/api/b2b-mail/contacts/${id}/active`, {
         method: 'PATCH',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ active: Boolean(active) }),
+        body: { active: Boolean(active) },
     });
 
 export const sendB2BContactVerification = (id) =>
     jsonFetch(`/api/b2b-mail/contacts/${id}/send-verification`, {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: '{}',
+        body: {},
     });
 
 export const listB2BMessages = ({ folder = 'all', q = '' } = {}) =>
@@ -73,43 +78,37 @@ export const getB2BMessageDetail = (id) => jsonFetch(`/api/b2b-mail/messages/${i
 export const saveB2BDraft = (body) =>
     jsonFetch('/api/b2b-mail/messages/draft', {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body || {}),
+        body: body || {},
     });
 
 export const updateB2BDraft = (id, body) =>
     jsonFetch(`/api/b2b-mail/messages/${id}`, {
         method: 'PUT',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body || {}),
+        body: body || {},
     });
 
 export const previewB2BRecipientsBody = (body) =>
     jsonFetch('/api/b2b-mail/messages/preview-recipients', {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body || {}),
+        body: body || {},
     });
 
 export const previewB2BRecipientsByMessageId = (id) =>
     jsonFetch(`/api/b2b-mail/messages/${id}/preview-recipients`, {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: '{}',
+        body: {},
     });
 
 export const sendB2BMessage = (id) =>
     jsonFetch(`/api/b2b-mail/messages/${id}/send`, {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: '{}',
+        body: {},
     });
 
 export const retryB2BMessage = (id) =>
     jsonFetch(`/api/b2b-mail/messages/${id}/retry`, {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: '{}',
+        body: {},
     });
 
 export const listB2BTemplates = () => jsonFetch('/api/b2b-mail/templates');
@@ -117,8 +116,7 @@ export const listB2BTemplates = () => jsonFetch('/api/b2b-mail/templates');
 export const createB2BTemplate = (body) =>
     jsonFetch('/api/b2b-mail/templates', {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body || {}),
+        body: body || {},
     });
 
 export const listB2BInbound = ({ messageId = '' } = {}) =>
@@ -129,8 +127,7 @@ export const refreshB2BInbound = ({ messageId = '' } = {}) => {
     const tid = setTimeout(() => controller.abort(), 60000);
     return jsonFetch(`/api/b2b-mail/inbound/refresh?messageId=${encodeURIComponent(messageId)}`, {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: '{}',
+        body: {},
         signal: controller.signal,
     }).finally(() => clearTimeout(tid));
 };

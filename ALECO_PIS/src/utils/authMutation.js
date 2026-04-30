@@ -13,20 +13,24 @@ export async function authMutation(url, options = {}) {
     expectedUpdatedAt = null,
     expectedUpdatedAtField = null,
     emitRealtime = null,
+    signal,
   } = options;
 
+  const formDataBody = typeof FormData !== 'undefined' && body instanceof FormData;
   const normalizedHeaders = new Headers(headers || {});
-  if (!normalizedHeaders.has('Content-Type') && body != null) {
+  if (!normalizedHeaders.has('Content-Type') && body != null && !formDataBody) {
     normalizedHeaders.set('Content-Type', 'application/json');
   }
 
   let nextBody = body;
-  if (body != null && expectedUpdatedAtField) {
+  if (body != null && expectedUpdatedAtField && !formDataBody) {
     nextBody = withExpectedUpdatedAt(body, expectedUpdatedAt, expectedUpdatedAtField);
   }
 
   const fetchBody = nextBody == null
     ? undefined
+    : formDataBody
+      ? nextBody
     : typeof nextBody === 'string'
       ? nextBody
       : JSON.stringify(nextBody);
@@ -35,6 +39,7 @@ export async function authMutation(url, options = {}) {
     method,
     headers: normalizedHeaders,
     ...(fetchBody !== undefined ? { body: fetchBody } : {}),
+    ...(signal ? { signal } : {}),
   });
 
   const data = await parseJsonSafe(response);

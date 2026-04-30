@@ -12,6 +12,8 @@ import {
   addInterruptionUpdate,
 } from '../api/interruptionsApi.js';
 import { isOptimisticConflict } from '../utils/optimisticConcurrency.js';
+import { REALTIME_MODULES } from '../constants/realtimeModules.js';
+import { matchesRealtimeModule } from '../utils/realtimeModules.js';
 
 const ADMIN_LIMIT = 200;
 
@@ -85,8 +87,12 @@ export function useAdminInterruptions() {
 
   useEffect(() => {
     const onRealtimeChange = (ev) => {
-      const module = String(ev?.detail?.module || '').toLowerCase();
-      if (module === 'interruptions' || module === 'data-management' || module === 'system') {
+      if (matchesRealtimeModule(
+        ev?.detail?.module,
+        REALTIME_MODULES.INTERRUPTIONS,
+        REALTIME_MODULES.DATA_MANAGEMENT,
+        REALTIME_MODULES.SYSTEM
+      )) {
         fetchList();
       }
     };
@@ -170,7 +176,7 @@ export function useAdminInterruptions() {
         const r = editingId
           ? await updateInterruption(editingId, payload)
           : await createInterruption(payload);
-        if (r.status === 409) {
+        if (isOptimisticConflict(r.status, r)) {
           setMessage({
             type: 'conflict',
             text:
@@ -270,7 +276,17 @@ export function useAdminInterruptions() {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await permanentlyDeleteInterruption(id);
+        const r = await permanentlyDeleteInterruption(id, {
+          expectedUpdatedAt: getExpectedUpdatedAtById(id),
+        });
+        if (isOptimisticConflict(r.status, r)) {
+          setMessage({
+            type: 'conflict',
+            text: r.message || 'This advisory was updated elsewhere. Reloaded latest data.',
+          });
+          await fetchList();
+          return false;
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Permanent delete failed.' });
           return false;
@@ -285,7 +301,7 @@ export function useAdminInterruptions() {
         setSaving(false);
       }
     },
-    [fetchList]
+    [fetchList, getExpectedUpdatedAtById]
   );
 
   const pullFromFeedAdvisory = useCallback(

@@ -4,6 +4,8 @@ import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
 import { authMutation } from '../utils/authMutation';
 import { withExpectedUpdatedAt } from '../utils/optimisticConcurrency';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
+import { matchesRealtimeModule } from '../utils/realtimeModules';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketsPage.css';
@@ -167,8 +169,13 @@ const AdminTickets = () => {
 
     useEffect(() => {
         const onRealtimeChange = (ev) => {
-            const module = String(ev?.detail?.module || '').toLowerCase();
-            if (module === 'tickets' || module === 'service-memos' || module === 'data-management' || module === 'system') {
+            if (matchesRealtimeModule(
+                ev?.detail?.module,
+                REALTIME_MODULES.TICKETS,
+                REALTIME_MODULES.SERVICE_MEMOS,
+                REALTIME_MODULES.DATA_MANAGEMENT,
+                REALTIME_MODULES.SYSTEM
+            )) {
                 refetch();
             }
         };
@@ -280,7 +287,7 @@ const AdminTickets = () => {
                 body,
                 expectedUpdatedAt,
                 expectedUpdatedAtField: 'expected_updated_at',
-                emitRealtime: { module: 'tickets' },
+                emitRealtime: { module: REALTIME_MODULES.TICKETS },
             });
             const data = result.data || {};
             if (result.success) {
@@ -312,7 +319,7 @@ const AdminTickets = () => {
                 body: { ...getActor() },
                 expectedUpdatedAt,
                 expectedUpdatedAtField: 'expected_updated_at',
-                emitRealtime: { module: 'tickets' },
+                emitRealtime: { module: REALTIME_MODULES.TICKETS },
             });
             const data = result.data || {};
             if (result.success) {
@@ -341,7 +348,7 @@ const AdminTickets = () => {
                         body: { ...dispatchData, ...getActor() },
                         expectedUpdatedAt,
                         expectedUpdatedAtField: 'expected_updated_at',
-                        emitRealtime: { module: 'tickets' },
+                        emitRealtime: { module: REALTIME_MODULES.TICKETS },
                     });
                     const data = result.data || {};
                     if (result.success) {
@@ -366,7 +373,7 @@ const AdminTickets = () => {
                     body: { ...dispatchData, ...getActor() },
                     expectedUpdatedAt,
                     expectedUpdatedAtField: 'expected_updated_at',
-                    emitRealtime: { module: 'tickets' },
+                    emitRealtime: { module: REALTIME_MODULES.TICKETS },
                 });
 
                 const data = result.data || {};
@@ -399,13 +406,13 @@ const AdminTickets = () => {
                     };
 
                 const result = isGroupMaster
-                    ? await authMutation(url, { method: 'PUT', body: payload, emitRealtime: { module: 'tickets' } })
+                    ? await authMutation(url, { method: 'PUT', body: payload, emitRealtime: { module: REALTIME_MODULES.TICKETS } })
                     : await authMutation(url, {
                         method: 'PUT',
                         body: payload,
                         expectedUpdatedAt,
                         expectedUpdatedAtField: 'expected_updated_at',
-                        emitRealtime: { module: 'tickets' },
+                        emitRealtime: { module: REALTIME_MODULES.TICKETS },
                     });
                 const data = result.data || {};
 

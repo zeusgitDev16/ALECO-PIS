@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
 import { authFetch } from '../../utils/authFetch';
+import { authMutation } from '../../utils/authMutation';
+import { REALTIME_MODULES } from '../../constants/realtimeModules';
+import { matchesRealtimeModule } from '../../utils/realtimeModules';
 import { USER_ROLES } from '../../constants/userRoles';
 import UserAvatar from './UserAvatar';
 import UserAccountActionModal from '../users/UserAccountActionModal';
@@ -53,8 +56,7 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
 
   useEffect(() => {
     const onRealtimeChange = (ev) => {
-      const module = String(ev?.detail?.module || '').toLowerCase();
-      if (module === 'users' || module === 'system') {
+      if (matchesRealtimeModule(ev?.detail?.module, REALTIME_MODULES.USERS, REALTIME_MODULES.SYSTEM)) {
         fetchData();
       }
     };
@@ -84,24 +86,19 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
 
   const executeToggleStatus = async (user) => {
     const currentAdminEmail = localStorage.getItem('userEmail');
-    const response = await authFetch(apiUrl('/api/users/toggle-status'), {
+    const result = await authMutation(apiUrl('/api/users/toggle-status'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: {
         id: user.id,
         currentStatus: user.status,
         requesterEmail: currentAdminEmail
-      })
+      },
+      emitRealtime: { module: REALTIME_MODULES.USERS },
     });
 
-    if (!response.ok) {
-      let message = 'Failed to update status.';
-      try {
-        const errorData = await response.json();
-        if (errorData.error) message = errorData.error;
-      } catch {
-        /* ignore */
-      }
+    if (!result.ok) {
+      const errorData = result.data || {};
+      const message = errorData.error || errorData.message || 'Failed to update status.';
       throw new Error(message);
     }
     await fetchData();

@@ -7,6 +7,8 @@ import {
 import { FaXTwitter } from 'react-icons/fa6';
 import { apiUrl } from '../../utils/api';
 import { authFetch } from '../../utils/authFetch';
+import { authMutation } from '../../utils/authMutation';
+import { REALTIME_MODULES } from '../../constants/realtimeModules';
 import { clearLocalStoragePreservingPreferences } from '../../utils/clearLocalStoragePreservingPreferences';
 import { getSafeHttpUrl, getSafeResourceUrl } from '../../utils/safeUrl';
 import '../../CSS/ProfilePage.css';
@@ -189,10 +191,9 @@ const ProfilePage = () => {
     if (!isEditing) { setIsEditing(true); return; }
     setIsSaving(true);
     try {
-      const res = await authFetch(apiUrl('/api/users/profile'), {
+      const result = await authMutation(apiUrl('/api/users/profile'), {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           email:      userData.email,
           name:       userData.name,
           bio:        userData.bio,
@@ -202,10 +203,11 @@ const ProfilePage = () => {
           social_links: (userData.social_links || [])
             .map((s) => ({ platform: s.platform, url: s.url }))
             .filter((s) => s.url && String(s.url).trim()),
-        }),
+        },
+        emitRealtime: { module: REALTIME_MODULES.USERS },
       });
-      if (!res.ok) {
-        const err = await res.json();
+      if (!result.ok) {
+        const err = result.data || {};
         alert(err.error || 'Failed to save profile.');
         return;
       }
@@ -228,13 +230,12 @@ const ProfilePage = () => {
     e.preventDefault();
     setPwLoading(true);
     try {
-      const res = await authFetch(apiUrl('/api/forgot-password'), {
+      const result = await authMutation(apiUrl('/api/forgot-password'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userData.email }),
+        body: { email: userData.email },
       });
-      if (!res.ok) {
-        const err = await res.json();
+      if (!result.ok) {
+        const err = result.data || {};
         alert(err.error || 'Failed to send reset code.');
         return;
       }
@@ -253,13 +254,12 @@ const ProfilePage = () => {
     if (pwNew.length < 8)   { alert('Password must be at least 8 characters.'); return; }
     setPwLoading(true);
     try {
-      const res = await authFetch(apiUrl('/api/reset-password'), {
+      const result = await authMutation(apiUrl('/api/reset-password'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userData.email, code: pwCode, newPassword: pwNew }),
+        body: { email: userData.email, code: pwCode, newPassword: pwNew },
       });
-      if (!res.ok) {
-        const err = await res.json();
+      if (!result.ok) {
+        const err = result.data || {};
         alert(err.error || 'Reset failed.');
         return;
       }

@@ -1646,6 +1646,12 @@ router.put('/crews/update/:id', requireStaff, async (req, res) => {
         const actorEmail = req.headers['x-user-email'] || null;
         const actorName  = req.headers['x-user-name']  || null;
         await logPersonnelAction(pool, actorEmail, actorName, 'update_crew', crew_name);
+        await recordPersonnelNotification(pool, {
+          eventType: PERSONNEL_EVENT.CREW_UPDATED,
+          subjectName: crew_name,
+          detail: `Crew #${id}`,
+          actorEmail: actorEmailFromReq(req),
+        });
         res.status(200).json({ success: true, message: 'Crew information updated.' });
     } catch (error) {
         await connection.rollback();
@@ -1750,6 +1756,12 @@ router.put('/pool/update/:id', requireStaff, async (req, res) => {
         const actorEmail = req.headers['x-user-email'] || null;
         const actorName  = req.headers['x-user-name']  || null;
         await logPersonnelAction(pool, actorEmail, actorName, 'update_lineman', full_name);
+        await recordPersonnelNotification(pool, {
+          eventType: PERSONNEL_EVENT.LINEMAN_UPDATED,
+          subjectName: full_name,
+          detail: `Lineman #${id}`,
+          actorEmail: actorEmailFromReq(req),
+        });
         res.status(200).json({ success: true, message: 'Lineman updated.' });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server error." });

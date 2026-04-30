@@ -6,6 +6,7 @@ import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
 import { authMutation } from '../utils/authMutation';
 import { withExpectedUpdatedAt } from '../utils/optimisticConcurrency';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
 
 /**
  * @typedef {object} InterruptionsListResult
@@ -227,20 +228,24 @@ export async function deleteInterruption(id, { expectedUpdatedAt = null } = {}) 
  * @param {number} id
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
-export async function permanentlyDeleteInterruption(id) {
-  let res;
+export async function permanentlyDeleteInterruption(id, { expectedUpdatedAt = null } = {}) {
   try {
-    res = await authFetch(apiUrl(`/api/interruptions/${id}/permanent`), { method: 'DELETE' });
+    const body = withExpectedUpdatedAt({}, expectedUpdatedAt, 'expectedUpdatedAt');
+    const result = await authMutation(apiUrl(`/api/interruptions/${id}/permanent`), {
+      method: 'DELETE',
+      body,
+      emitRealtime: { module: REALTIME_MODULES.INTERRUPTIONS },
+    });
+    return {
+      ok: result.ok,
+      status: result.status,
+      success: result.success,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+      code: result.data?.code ?? null,
+    };
   } catch {
-    return { ok: false, success: false, message: null };
+    return { ok: false, status: 0, success: false, message: null, code: null };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }
 
 /**

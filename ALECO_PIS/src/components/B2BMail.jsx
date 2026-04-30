@@ -5,6 +5,9 @@ import { useB2BContacts } from '../hooks/useB2BContacts';
 import { useB2BMessages } from '../hooks/useB2BMessages';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
+import { authMutation } from '../utils/authMutation';
+import { REALTIME_MODULES } from '../constants/realtimeModules';
+import { matchesRealtimeModule } from '../utils/realtimeModules';
 import { FEEDER_AREAS } from '../config/feederConfig';
 import B2BContactList from './b2bmail/B2BContactList';
 import B2BBulkActionBar from './b2bmail/B2BBulkActionBar';
@@ -165,8 +168,12 @@ const B2BMail = () => {
 
   useEffect(() => {
     const onRealtimeChange = (ev) => {
-      const module = String(ev?.detail?.module || '').toLowerCase();
-      if (module === 'b2b-mail' || module === 'data-management' || module === 'system') {
+      if (matchesRealtimeModule(
+        ev?.detail?.module,
+        REALTIME_MODULES.B2B_MAIL,
+        REALTIME_MODULES.DATA_MANAGEMENT,
+        REALTIME_MODULES.SYSTEM
+      )) {
         loadContacts();
         loadMessages();
       }
@@ -219,11 +226,12 @@ const B2BMail = () => {
     let success = 0;
     for (const id of selectedIds) {
       try {
-        const res = await authFetch(apiUrl(`/api/b2b-mail/contacts/${id}`), {
+        const result = await authMutation(apiUrl(`/api/b2b-mail/contacts/${id}`), {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          body: {},
+          emitRealtime: { module: REALTIME_MODULES.B2B_MAIL },
         });
-        if (res.ok) success++;
+        if (result.ok) success++;
       } catch {
         // ignore
       }

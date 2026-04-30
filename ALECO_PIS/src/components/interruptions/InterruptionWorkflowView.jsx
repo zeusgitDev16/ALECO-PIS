@@ -62,13 +62,18 @@ export default function InterruptionWorkflowView({
 }) {
   const grouped = useMemo(() => groupInterruptionsByStatus(items), [items]);
   const columnConfig = getInterruptionColumnConfig();
-  const [detailItem, setDetailItem] = useState(null);
+  const [detailItemId, setDetailItemId] = useState(null);
+  const [detailItemFallback, setDetailItemFallback] = useState(null);
 
   const openDetail = (item) => {
     if (item?.id != null && onOpenAdvisory) onOpenAdvisory(item.id);
-    setDetailItem(item);
+    setDetailItemId(item?.id ?? null);
+    setDetailItemFallback(item || null);
   };
-  const [actionModalItem, setActionModalItem] = useState(null);
+  const [actionModalItemId, setActionModalItemId] = useState(null);
+  const [actionModalItemFallback, setActionModalItemFallback] = useState(null);
+  const detailItem = (items || []).find((it) => it.id === detailItemId) || detailItemFallback;
+  const actionModalItem = (items || []).find((it) => it.id === actionModalItemId) || actionModalItemFallback;
   const isMobile = useMatchMedia('(max-width: 320px)');
   const isClickableLayout = useMatchMedia('(max-width: 767px)');
   const now = useNow([]);
@@ -146,7 +151,12 @@ export default function InterruptionWorkflowView({
                     const bodyOrCause = hasBody ? item.body : item.cause || '—';
                     const bodyShort = truncate(bodyOrCause, 80);
                     const handleCardClick = isClickableLayout
-                      ? (isMobile ? () => setActionModalItem(item) : () => openDetail(item))
+                      ? (isMobile
+                        ? () => {
+                            setActionModalItemId(item?.id ?? null);
+                            setActionModalItemFallback(item || null);
+                          }
+                        : () => openDetail(item))
                       : undefined;
                     return (
                       <div
@@ -292,13 +302,18 @@ export default function InterruptionWorkflowView({
       {detailItem && (
         <InterruptionAdvisoryDetailModal
           item={detailItem}
-          onClose={() => setDetailItem(null)}
+          onClose={() => {
+            setDetailItemId(null);
+            setDetailItemFallback(null);
+          }}
           onEdit={(it) => {
-            setDetailItem(null);
+            setDetailItemId(null);
+            setDetailItemFallback(null);
             onEdit(it);
           }}
           onUpdate={onUpdate ? (it) => {
-            setDetailItem(null);
+            setDetailItemId(null);
+            setDetailItemFallback(null);
             onUpdate(it);
           } : undefined}
           onPullFromFeed={onPullFromFeed}
@@ -307,7 +322,10 @@ export default function InterruptionWorkflowView({
             onRestoreAdvisory
               ? async (id) => {
                   const ok = await onRestoreAdvisory(id);
-                  if (ok) setDetailItem(null);
+                  if (ok) {
+                    setDetailItemId(null);
+                    setDetailItemFallback(null);
+                  }
                 }
               : undefined
           }
@@ -319,22 +337,29 @@ export default function InterruptionWorkflowView({
       {actionModalItem && (
         <InterruptionCardActionModal
           item={actionModalItem}
-          onClose={() => setActionModalItem(null)}
+          onClose={() => {
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
+          }}
           onViewFull={() => {
             const it = actionModalItem;
-            setActionModalItem(null);
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
             openDetail(it);
           }}
           onEdit={(it) => {
-            setActionModalItem(null);
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
             onEdit(it);
           }}
           onUpdate={onUpdate ? (it) => {
-            setActionModalItem(null);
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
             onUpdate(it);
           } : undefined}
           onArchive={(id) => {
-            setActionModalItem(null);
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
             onDelete(id);
           }}
           onPermanentDelete={onPermanentDelete || undefined}

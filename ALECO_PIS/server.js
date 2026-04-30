@@ -86,7 +86,8 @@ io.on('connection', (socket) => {
 
 function moduleFromApiPath(pathname) {
     const p = String(pathname || '').toLowerCase();
-    if (p.includes('/tickets') || p.includes('/crews') || p.includes('/pool')) return 'tickets';
+    if (p.includes('/crews') || p.includes('/pool')) return 'personnel';
+    if (p.includes('/tickets')) return 'tickets';
     if (p.includes('/interruptions')) return 'interruptions';
     if (p.includes('/service-memos') || p.includes('/memo')) return 'service-memos';
     if (p.includes('/b2b-mail')) return 'b2b-mail';

@@ -9,7 +9,7 @@ const router = express.Router();
  */
 router.get('/feeders', async (req, res) => {
     try {
-        const [rows] = await pool.query(
+        const [rows] = await pool.execute(
             `SELECT
                 a.id AS area_id,
                 a.area_code,
@@ -48,6 +48,13 @@ router.get('/feeders', async (req, res) => {
         });
     } catch (err) {
         console.error('❌ GET /feeders:', err);
+        if (err?.code === 'ETIMEDOUT') {
+            return res.status(503).json({
+                success: false,
+                message: 'Database connection timeout while loading feeder catalog.',
+                code: 'DB_TIMEOUT',
+            });
+        }
         return res.status(500).json({ success: false, message: 'Failed to load feeder catalog' });
     }
 });

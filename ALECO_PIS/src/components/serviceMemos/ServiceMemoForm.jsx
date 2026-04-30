@@ -482,8 +482,6 @@ const ServiceMemoForm = ({
 
   const canDeleteMemo =
     Boolean(memo?.id) &&
-    currentUserEmail &&
-    memo.owner_email === currentUserEmail &&
     (mode === 'view' || mode === 'update');
 
   const handleConfirmDeleteMemo = async () => {

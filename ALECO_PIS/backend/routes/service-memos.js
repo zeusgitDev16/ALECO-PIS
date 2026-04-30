@@ -478,10 +478,6 @@ router.put('/service-memos/:id', requireStaff, async (req, res) => {
 
     const memo = memoRows[0];
 
-    if (memo.owner_email !== currentUserEmail) {
-      return res.status(403).json({ success: false, message: 'You do not have permission to edit this service memo.' });
-    }
-
     if (memo.memo_status === 'closed') {
       return res.status(400).json({ success: false, message: 'Cannot edit a closed service memo.' });
     }
@@ -583,10 +579,6 @@ router.put('/service-memos/:id/close', requireStaff, async (req, res) => {
 
     const memo = memoRows[0];
 
-    if (memo.owner_email !== currentUserEmail) {
-      return res.status(403).json({ success: false, message: 'You do not have permission to close this service memo.' });
-    }
-
     if (memo.memo_status !== 'saved') {
       return res.status(400).json({ success: false, message: 'Can only close a saved service memo.' });
     }
@@ -621,10 +613,6 @@ router.delete('/service-memos/:id', requireStaff, async (req, res) => {
     }
 
     const memo = memoRows[0];
-
-    if (memo.owner_email !== currentUserEmail) {
-      return res.status(403).json({ success: false, message: 'You do not have permission to delete this service memo.' });
-    }
 
     await pool.execute(`UPDATE aleco_tickets SET service_memo_id = NULL WHERE ticket_id = ?`, [memo.ticket_id]);
 

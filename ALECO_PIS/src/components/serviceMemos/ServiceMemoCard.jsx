@@ -70,7 +70,6 @@ const ServiceMemoCard = ({
   selected = false,
   onToggleSelect,
 }) => {
-  const isOwner = memo.owner_email === currentUserEmail;
   const fullName =
     memo.first_name && memo.last_name
       ? `${memo.first_name} ${memo.middle_name ? memo.middle_name + ' ' : ''}${memo.last_name}`.replace(/\s+/g, ' ').trim()
@@ -141,7 +140,7 @@ const ServiceMemoCard = ({
           >
             <IconView />
           </button>
-          {isOwner && memo.memo_status !== 'closed' && (
+          {memo.memo_status !== 'closed' && (
             <button
               type="button"
               className="service-memo-list-action-btn service-memo-list-action-btn--icon"
@@ -161,7 +160,7 @@ const ServiceMemoCard = ({
           >
             <IconPrint />
           </button>
-          {isOwner && memo.memo_status === 'saved' && (
+          {memo.memo_status === 'saved' && (
             <button
               type="button"
               className="service-memo-list-action-btn service-memo-list-action-btn--icon service-memo-list-action-btn--warn"
@@ -172,7 +171,7 @@ const ServiceMemoCard = ({
               <IconCloseMemo />
             </button>
           )}
-          {isOwner && typeof onRequestDelete === 'function' && (
+          {typeof onRequestDelete === 'function' && (
             <button
               type="button"
               className="service-memo-list-action-btn service-memo-list-action-btn--icon service-memo-list-action-btn--danger"

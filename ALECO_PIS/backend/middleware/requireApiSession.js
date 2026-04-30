@@ -177,6 +177,12 @@ export async function requireApiSession(req, res, next) {
     return next();
   } catch (e) {
     console.error('[requireApiSession]', e.message);
+    if (e?.code === 'ETIMEDOUT') {
+      return res.status(503).json({
+        error: 'Database timeout during authentication check.',
+        code: 'DB_TIMEOUT',
+      });
+    }
     return res.status(500).json({ error: 'Authentication check failed.' });
   }
 }

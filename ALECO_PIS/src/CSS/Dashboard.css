@@ -146,7 +146,7 @@ body.admin-app-scroll-lock {
 
 .header-title {
     margin: 0;
-    font-size: var(--fs-xl);
+    font-size: var(--fs-lg);
     font-weight: 800;
     color: var(--text-header);
     letter-spacing: -0.04em;
@@ -165,21 +165,21 @@ body.admin-app-scroll-lock {
 /* --- QUICK NAVIGATION BUTTONS --- */
 .dashboard-nav-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px; /* Further tightened gap for ultra-compact navigation */
 }
 
 .dash-nav-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    font-size: 0.7rem;
+    gap: 3px; /* Minimal gap between icon and text label */
+    padding: 2px 8px; /* Ultra-compact padding footprint */
+    font-size: 0.58rem; /* Further shrunk font for micro-UI density */
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    border-radius: 8px;
+    border-radius: 4px; /* Sharper radius to match the tiny scale */
     background: var(--bg-card);
-    border: 1.5px solid var(--border-color);
+    border: 1px solid var(--border-color); /* Slimmed border width to match smaller size */
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -389,7 +389,7 @@ body.admin-app-scroll-lock {
 #ticket-overview-section .chart-card,
 #b2b-mail-section .chart-card,
 #personnel-section .chart-card {
-    padding: 20px 24px; /* Expanded internal breathing room to fit charts and legends perfectly */
+    padding: 20px 24px 36px; /* Increased bottom padding to add space below chart content */
     overflow: hidden; /* Hard boundary to prevent any content from exceeding the container box */
 }
 
@@ -903,7 +903,7 @@ body.admin-app-scroll-lock {
 
 /* Re-enable internal padding for chart cards to ensure legends and bottom axis labels are fully visible and not "cut" */
 .charts-grid-main .chart-card {
-    padding-bottom: 24px !important; 
+    padding-bottom: 36px !important; /* Enhanced bottom clearance for main grid charts */
 }
 
 /* Force the main charts to a larger height to fill the container boxes perfectly */

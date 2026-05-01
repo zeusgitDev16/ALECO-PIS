@@ -110,7 +110,8 @@ const ServiceMemos = () => {
   };
 
   const handleCloseMemoFromCard = async (memoId) => {
-    const result = await closeMemo(memoId);
+    const snapshot = memos.find((m) => m.id === memoId);
+    const result = await closeMemo(memoId, snapshot?.updated_at ?? null);
     if (result.closed) {
       setMessage({ type: 'ok', text: 'Service memo closed successfully.' });
     }
@@ -174,9 +175,10 @@ const ServiceMemos = () => {
           currentUserEmail={userEmail}
           currentUserName={userName}
           onDeleted={handleBackFromDetail}
-          showCloseMemoFinalize={formMode === 'update' && detailMemo.memo_status === 'saved'}
+          showCloseMemoFinalize={detailMemo.memo_status === 'saved'}
+          onSwitchToEdit={() => setDetailMode('update')}
           onCloseMemoFinalize={async () => {
-            const r = await closeMemo(detailMemo.id);
+            const r = await closeMemo(detailMemo.id, detailMemo.updated_at ?? null);
             if (r.closed) {
               setMessage({ type: 'ok', text: 'Memo closed.' });
               handleBackFromDetail();

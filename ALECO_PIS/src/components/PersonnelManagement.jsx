@@ -136,6 +136,9 @@ const PersonnelManagement = () => {
             : apiUrl('/api/crews/add');
         const method = isEdit ? 'PUT' : 'POST';
 
+        const snapshot = isEdit ? crews.find((c) => String(c.id) === String(crewData.id)) : null;
+        const expectedUpdatedAt = snapshot?.updated_at ?? null;
+
         try {
             const result = await authMutation(url, {
                 method,
@@ -144,9 +147,15 @@ const PersonnelManagement = () => {
                     actor_email: localStorage.getItem('userEmail') || '',
                     actor_name: localStorage.getItem('userName') || '',
                 },
+                ...(isEdit ? { expectedUpdatedAt, expectedUpdatedAtField: 'expected_updated_at' } : {}),
                 emitRealtime: { module: REALTIME_MODULES.PERSONNEL },
             });
             
+            if (result.conflict) {
+                alert('This crew was updated by someone else. The latest data will be reloaded.');
+                await fetchAllData();
+                return;
+            }
             if (result.ok) {
                 if (isEdit) {
                     const updatedCrew = {
@@ -181,6 +190,9 @@ const PersonnelManagement = () => {
             : apiUrl('/api/pool/add');
         const method = isEdit ? 'PUT' : 'POST';
 
+        const snapshot = isEdit ? linemenPool.find((m) => String(m.id) === String(linemanData.id)) : null;
+        const expectedUpdatedAt = snapshot?.updated_at ?? null;
+
         try {
             const result = await authMutation(url, {
                 method,
@@ -189,9 +201,15 @@ const PersonnelManagement = () => {
                     actor_email: localStorage.getItem('userEmail') || '',
                     actor_name: localStorage.getItem('userName') || '',
                 },
+                ...(isEdit ? { expectedUpdatedAt, expectedUpdatedAtField: 'expected_updated_at' } : {}),
                 emitRealtime: { module: REALTIME_MODULES.PERSONNEL },
             });
             
+            if (result.conflict) {
+                alert('This lineman was updated by someone else. The latest data will be reloaded.');
+                await fetchAllData();
+                return;
+            }
             if (result.ok) {
                 if (isEdit) {
                     const updatedLineman = {

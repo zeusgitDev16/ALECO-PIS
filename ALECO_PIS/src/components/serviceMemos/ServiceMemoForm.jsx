@@ -112,6 +112,7 @@ const ServiceMemoForm = ({
   showCloseMemoFinalize,
   onCloseMemoFinalize,
   onDeleted,
+  onSwitchToEdit,
 }) => {
   const readOnly = mode === 'view';
   const stripVariant = mode === 'create' ? 'input' : mode === 'update' ? 'update' : 'display';
@@ -416,9 +417,13 @@ const ServiceMemoForm = ({
         toast.success('Service memo saved.');
         onSaved?.(r.data);
       } else if (mode === 'update' && memo?.id) {
-        const r = await updateServiceMemo(memo.id, {
-          ...payload,
-        });
+        const r = await updateServiceMemo(memo.id, { ...payload }, memo?.updated_at ?? null);
+        if (r.conflict) {
+          const msg = 'This memo was updated by someone else. Please go back and reload.';
+          toast.error(msg);
+          setSaveError(msg);
+          return;
+        }
         if (!r.success) {
           const msg = r.message || 'Could not save.';
           toast.error(msg);
@@ -706,6 +711,16 @@ const ServiceMemoForm = ({
             {saving ? 'Saving…' : 'Save'}
           </button>
         )}
+        {mode === 'view' && memo?.memo_status !== 'closed' && typeof onSwitchToEdit === 'function' && (
+          <button type="button" className="service-memo-btn service-memo-btn--primary" onClick={onSwitchToEdit}>
+            Edit
+          </button>
+        )}
+        {mode === 'view' && showCloseMemoFinalize && typeof onCloseMemoFinalize === 'function' && (
+          <button type="button" className="service-memo-btn service-memo-btn--close" onClick={onCloseMemoFinalize}>
+            Close Memo
+          </button>
+        )}
         {mode === 'view' && (
           <button type="button" className="service-memo-btn service-memo-btn--print" onClick={() => window.print()}>
             Print
@@ -768,6 +783,7 @@ ServiceMemoForm.propTypes = {
   showCloseMemoFinalize: PropTypes.bool,
   onCloseMemoFinalize: PropTypes.func,
   onDeleted: PropTypes.func,
+  onSwitchToEdit: PropTypes.func,
 };
 
 export default ServiceMemoForm;

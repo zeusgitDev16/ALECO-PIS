@@ -5,6 +5,7 @@ import { insertTicketLog } from '../utils/ticketLogHelper.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
 import { requireStaff } from '../middleware/requireRole.js';
+import { normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
 
 const router = express.Router();
 
@@ -256,7 +257,7 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireStaff, async (req, res
 
         // Read master's current status and children's current statuses for audit log
         const [masterRows] = await connection.execute(
-            `SELECT status FROM aleco_tickets WHERE ticket_id = ?`,
+            `SELECT status, updated_at FROM aleco_tickets WHERE ticket_id = ?`,
             [mainTicketId]
         );
         if (masterRows.length === 0) {
@@ -264,6 +265,23 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireStaff, async (req, res
             return res.status(404).json({ success: false, message: 'Group not found.' });
         }
         const masterStatus = masterRows[0].status;
+        const masterUpdatedAt = masterRows[0].updated_at;
+
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+        if (expectedUpdatedAt) {
+            const dbIso = masterUpdatedAt ? new Date(masterUpdatedAt).toISOString() : '';
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (!dbIso || dbIso !== clientIso) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_TICKET',
+                    message: 'This group was updated by someone else. Reload and try again.',
+                    latest: { ticket_id: mainTicketId, updated_at: masterUpdatedAt },
+                });
+            }
+        }
 
         const [childRows] = await connection.execute(
             `SELECT ticket_id, status FROM aleco_tickets WHERE parent_ticket_id = ?`,
@@ -336,10 +354,26 @@ router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, re
 
     try {
         const [masterRows] = await pool.execute(
-            `SELECT group_type FROM aleco_tickets WHERE ticket_id = ?`,
+            `SELECT group_type, updated_at FROM aleco_tickets WHERE ticket_id = ?`,
             [mainTicketId]
         );
         const groupType = masterRows[0]?.group_type || 'similar_incident';
+
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+        if (expectedUpdatedAt && masterRows[0]) {
+            const masterUpdatedAt = masterRows[0].updated_at;
+            const dbIso = masterUpdatedAt ? new Date(masterUpdatedAt).toISOString() : '';
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (!dbIso || dbIso !== clientIso) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_TICKET',
+                    message: 'This group was updated by someone else. Reload and try again.',
+                    latest: { ticket_id: mainTicketId, updated_at: masterUpdatedAt },
+                });
+            }
+        }
 
         const [members] = await pool.execute(
             `SELECT ticket_id, phone_number, visit_order FROM aleco_tickets WHERE parent_ticket_id = ? AND status IN ('Pending', 'Unresolved')`,
@@ -504,10 +538,27 @@ router.put('/tickets/group/:mainTicketId/status', requireStaff, async (req, res)
 
         // Get current statuses before update
         const [statusRows] = await connection.execute(
-            `SELECT ticket_id, status FROM aleco_tickets WHERE ticket_id = ? OR parent_ticket_id = ?`,
+            `SELECT ticket_id, status, updated_at FROM aleco_tickets WHERE ticket_id = ? OR parent_ticket_id = ?`,
             [mainTicketId, mainTicketId]
         );
         const statusMap = Object.fromEntries(statusRows.map(r => [r.ticket_id, r.status]));
+
+        const masterRow = statusRows.find(r => r.ticket_id === mainTicketId);
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+        if (expectedUpdatedAt && masterRow) {
+            const dbIso = masterRow.updated_at ? new Date(masterRow.updated_at).toISOString() : '';
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (!dbIso || dbIso !== clientIso) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_TICKET',
+                    message: 'This group was updated by someone else. Reload and try again.',
+                    latest: { ticket_id: mainTicketId, updated_at: masterRow.updated_at },
+                });
+            }
+        }
 
         // Update the master ticket status
         await connection.execute(

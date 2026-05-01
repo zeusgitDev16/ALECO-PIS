@@ -72,21 +72,26 @@ export function useServiceMemos() {
    * @returns {Promise<{ saved: boolean }>}
    */
   const updateMemo = useCallback(
-    async (id, body) => {
+    async (id, body, expectedUpdatedAt = null) => {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await updateServiceMemo(id, body);
+        const r = await updateServiceMemo(id, body, expectedUpdatedAt);
+        if (r.conflict) {
+          setMessage({ type: 'err', text: 'This memo was updated by someone else. Reloading latest data.' });
+          await fetchList();
+          return { saved: false, conflict: true };
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Update failed.' });
-          return { saved: false };
+          return { saved: false, conflict: false };
         }
         setMessage({ type: 'ok', text: 'Saved.' });
         await fetchList();
-        return { saved: true };
+        return { saved: true, conflict: false };
       } catch {
         setMessage({ type: 'err', text: 'Network error.' });
-        return { saved: false };
+        return { saved: false, conflict: false };
       } finally {
         setSaving(false);
       }
@@ -99,21 +104,26 @@ export function useServiceMemos() {
    * @returns {Promise<{ closed: boolean }>}
    */
   const closeMemo = useCallback(
-    async (id) => {
+    async (id, expectedUpdatedAt = null) => {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await closeServiceMemo(id);
+        const r = await closeServiceMemo(id, expectedUpdatedAt);
+        if (r.conflict) {
+          setMessage({ type: 'err', text: 'This memo was updated by someone else. Reloading latest data.' });
+          await fetchList();
+          return { closed: false, conflict: true };
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Close failed.' });
-          return { closed: false };
+          return { closed: false, conflict: false };
         }
         setMessage({ type: 'ok', text: 'Service memo closed.' });
         await fetchList();
-        return { closed: true };
+        return { closed: true, conflict: false };
       } catch {
         setMessage({ type: 'err', text: 'Network error.' });
-        return { closed: false };
+        return { closed: false, conflict: false };
       } finally {
         setSaving(false);
       }

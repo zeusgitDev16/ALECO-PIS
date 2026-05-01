@@ -352,20 +352,30 @@ router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, re
         });
     }
 
+    const connection = await pool.getConnection();
+
     try {
-        const [masterRows] = await pool.execute(
-            `SELECT group_type, updated_at FROM aleco_tickets WHERE ticket_id = ?`,
+        await connection.beginTransaction();
+
+        const [masterRows] = await connection.execute(
+            `SELECT group_type, status, updated_at FROM aleco_tickets WHERE ticket_id = ?`,
             [mainTicketId]
         );
+        if (masterRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Group not found.' });
+        }
         const groupType = masterRows[0]?.group_type || 'similar_incident';
+        const masterStatusBefore = masterRows[0]?.status || 'Pending';
+        const masterUpdatedAt = masterRows[0]?.updated_at;
 
         const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
-        if (expectedUpdatedAt && masterRows[0]) {
-            const masterUpdatedAt = masterRows[0].updated_at;
+        if (expectedUpdatedAt) {
             const dbIso = masterUpdatedAt ? new Date(masterUpdatedAt).toISOString() : '';
             let clientIso = '';
             try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
             if (!dbIso || dbIso !== clientIso) {
+                await connection.rollback();
                 return res.status(409).json({
                     success: false,
                     code: 'CONFLICT_STALE_TICKET',
@@ -375,12 +385,13 @@ router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, re
             }
         }
 
-        const [members] = await pool.execute(
+        const [members] = await connection.execute(
             `SELECT ticket_id, phone_number, visit_order FROM aleco_tickets WHERE parent_ticket_id = ? AND status IN ('Pending', 'Unresolved')`,
             [mainTicketId]
         );
 
         if (members.length === 0) {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: 'No Pending or Unresolved tickets in this group'
@@ -393,6 +404,7 @@ router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, re
         );
 
         if (contactData.length === 0 || !contactData[0].phone_number) {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: `Crew ${assigned_crew} has no registered phone number.`
@@ -419,6 +431,7 @@ or bulk: all fixed | all unfixed | all nofault | all nores
 keep safe!`;
         const linemanSmsResult = await sendPhilSMS(linemanPhone, linemanMsg);
         if (!linemanSmsResult.success) {
+            await connection.rollback();
             console.log(`❌ Group lineman SMS failed for ${mainTicketId}; no tickets updated.`);
             return res.status(502).json({
                 success: false,
@@ -429,6 +442,40 @@ keep safe!`;
         }
 
         const consumerSmsResults = [];
+        const phNow = nowPhilippineForMysql();
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+
+        // Update master ticket status to Ongoing (with optimistic locking if expectedUpdatedAt provided)
+        const masterWhereClause = expectedUpdatedAt && masterUpdatedAt ? 'ticket_id = ? AND updated_at = ?' : 'ticket_id = ?';
+        const masterWhereParams = expectedUpdatedAt && masterUpdatedAt ? [mainTicketId, masterUpdatedAt] : [mainTicketId];
+        const [masterUpdateResult] = await connection.execute(
+            `UPDATE aleco_tickets
+             SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, concern_resolution_notes = NULL, dispatched_at = ?
+             WHERE ${masterWhereClause}`,
+            [assigned_crew, eta, is_consumer_notified ? 1 : 0, dispatch_notes || '', phNow, ...masterWhereParams]
+        );
+        if (masterUpdateResult.affectedRows === 0 && expectedUpdatedAt) {
+            await connection.rollback();
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_TICKET',
+                message: 'This group was updated by someone else. Reload and try again.',
+                latest: { ticket_id: mainTicketId, updated_at: masterUpdatedAt },
+            });
+        }
+
+        // Log master ticket status change
+        await insertTicketLog(pool, {
+            ticket_id: mainTicketId,
+            action: 'group_dispatch',
+            from_status: masterStatusBefore,
+            to_status: 'Ongoing',
+            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+            actor_email: actorEmail || null,
+            actor_name: actorName || 'System',
+            metadata: { assigned_crew, eta, dispatch_notes: dispatch_notes || null, group_dispatch: true }
+        });
 
         for (const member of sortedMembers) {
             if (is_consumer_notified && member.phone_number) {
@@ -451,15 +498,12 @@ ${mainTicketId}`;
                 });
             }
 
-            const phNow = nowPhilippineForMysql();
-            await pool.execute(
+            await connection.execute(
                 `UPDATE aleco_tickets
                  SET status = 'Ongoing', assigned_crew = ?, eta = ?, is_consumer_notified = ?, dispatch_notes = ?, concern_resolution_notes = NULL, dispatched_at = ?
                  WHERE ticket_id = ?`,
                 [assigned_crew, eta, is_consumer_notified ? 1 : 0, dispatch_notes || '', phNow, member.ticket_id]
             );
-            const actorEmail = req.body.actor_email || req.headers['x-user-email'];
-            const actorName = req.body.actor_name || req.headers['x-user-name'];
             await insertTicketLog(pool, {
                 ticket_id: member.ticket_id,
                 action: 'group_dispatch',
@@ -472,7 +516,9 @@ ${mainTicketId}`;
             });
         }
 
-        console.log(`✅ GROUP DISPATCH: ${mainTicketId} - ${members.length} tickets dispatched to ${assigned_crew}`);
+        await connection.commit();
+
+        console.log(`✅ GROUP DISPATCH: ${mainTicketId} - ${members.length} tickets + master dispatched to ${assigned_crew}`);
         const total = consumerSmsResults.length;
         const attempted = consumerSmsResults.filter(r => r.attempted).length;
         const successCount = consumerSmsResults.filter(r => r.attempted && r.success).length;
@@ -511,6 +557,8 @@ ${mainTicketId}`;
     } catch (error) {
         console.error('❌ Group dispatch error:', error);
         res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
     }
 });
 

@@ -3,6 +3,7 @@ import '../CSS/AdminPageLayout.css';
 import '../CSS/ServiceMemos.css';
 import '../CSS/ServiceMemoUIScale.css';
 import { useServiceMemos } from '../hooks/useServiceMemos';
+import { useServiceMemoPrint } from '../hooks/useServiceMemoPrint';
 import MemoHeader from './serviceMemos/memoHeader';
 import MemoBody from './serviceMemos/memoBody';
 import ServiceMemoFilters from './serviceMemos/ServiceMemoFilters';
@@ -38,6 +39,8 @@ const ServiceMemos = () => {
 
   const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
   const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
+
+  const { printMemo, isLoading: isPrinting, error: printError } = useServiceMemoPrint();
 
   useEffect(() => {
     const handleServiceMemoDeleted = () => {
@@ -184,6 +187,7 @@ const ServiceMemos = () => {
               handleBackFromDetail();
             }
           }}
+          onPrint={() => printMemo(detailMemo)}
         />
       </div>
     );
@@ -236,7 +240,7 @@ const ServiceMemos = () => {
           onEdit={handleEditMemo}
           onClose={handleCloseMemoFromCard}
           onRequestDelete={handleRequestDeleteFromList}
-          onPrint={() => window.print()}
+          onPrint={printMemo}
           currentUserEmail={userEmail}
         />
       </div>

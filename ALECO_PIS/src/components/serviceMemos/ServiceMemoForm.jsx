@@ -722,7 +722,17 @@ const ServiceMemoForm = ({
           </button>
         )}
         {mode === 'view' && (
-          <button type="button" className="service-memo-btn service-memo-btn--print" onClick={() => window.print()}>
+          <button
+            type="button"
+            className="service-memo-btn service-memo-btn--print"
+            onClick={() => {
+              if (typeof onPrint === 'function') {
+                onPrint();
+              } else {
+                window.print();
+              }
+            }}
+          >
             Print
           </button>
         )}
@@ -777,6 +787,7 @@ ServiceMemoForm.propTypes = {
   mode: PropTypes.oneOf(['create', 'update', 'view']).isRequired,
   memo: PropTypes.object,
   onBack: PropTypes.func.isRequired,
+  onPrint: PropTypes.func,
   onSaved: PropTypes.func,
   currentUserEmail: PropTypes.string,
   currentUserName: PropTypes.string,

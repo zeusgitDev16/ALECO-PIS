@@ -221,6 +221,12 @@ const ServiceMemos = () => {
         </p>
       )}
 
+      {printError && (
+        <p className="widget-text service-memos-msg" data-variant="err" role="alert">
+          Print failed: {printError}
+        </p>
+      )}
+
       {fetchError && !loading && (
         <p className="widget-text service-memos-fetch-err" role="alert">
           {fetchError}{' '}

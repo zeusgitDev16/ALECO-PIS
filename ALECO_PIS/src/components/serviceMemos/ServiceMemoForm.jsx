@@ -113,6 +113,7 @@ const ServiceMemoForm = ({
   onCloseMemoFinalize,
   onDeleted,
   onSwitchToEdit,
+  onPrint,
 }) => {
   const readOnly = mode === 'view';
   const stripVariant = mode === 'create' ? 'input' : mode === 'update' ? 'update' : 'display';
@@ -721,17 +722,11 @@ const ServiceMemoForm = ({
             Close Memo
           </button>
         )}
-        {mode === 'view' && (
+        {mode === 'view' && typeof onPrint === 'function' && (
           <button
             type="button"
             className="service-memo-btn service-memo-btn--print"
-            onClick={() => {
-              if (typeof onPrint === 'function') {
-                onPrint();
-              } else {
-                window.print();
-              }
-            }}
+            onClick={() => onPrint()}
           >
             Print
           </button>

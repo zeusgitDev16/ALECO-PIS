@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
+import { useServiceMemoPrint } from '../../hooks/useServiceMemoPrint';
 
 const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentUserEmail }) => {
+  const { printMemo } = useServiceMemoPrint();
+
   const [formData, setFormData] = useState({
     work_performed: '',
     resolution_details: '',
@@ -64,7 +67,7 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
   };
 
   const handlePrint = () => {
-    window.print();
+    if (memo) printMemo(memo);
   };
 
   if (!isOpen || !memo) return null;

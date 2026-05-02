@@ -45,16 +45,11 @@ export function useServiceMemoPrint() {
 
       return { success: true };
     } catch (err) {
-      console.error('[useServiceMemoPrint] Error:', err);
-      setError(err.message || 'Failed to print service memo');
+      console.error('[useServiceMemoPrint] PDF generation failed:', err);
+      console.error('[useServiceMemoPrint] Check: (1) template file exists at /templates/, (2) no encoding errors in console above.');
+      setError(err.message || 'Failed to generate PDF. Check browser console for details.');
 
-      // Fallback to browser print if PDF generation fails
-      if (typeof window !== 'undefined') {
-        console.warn('[useServiceMemoPrint] Falling back to browser print');
-        window.print();
-      }
-
-      return { success: false, error: err.message, fallback: true };
+      return { success: false, error: err.message };
     } finally {
       setIsLoading(false);
     }

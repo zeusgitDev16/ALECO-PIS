@@ -59,8 +59,20 @@ export function useServiceMemos() {
   }, [fetchList]);
 
   useEffect(() => {
+    // Only refetch when the user truly returns to the tab after being away.
+    // A brief visibility change (e.g. print dialog, file picker, alert) must
+    // NOT trigger a refetch — that wipes the list under a loading spinner and
+    // forces the user to manually refresh. Threshold: 30 seconds hidden.
+    let hiddenAt = null;
+    const HIDDEN_REFETCH_THRESHOLD_MS = 30_000;
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') fetchList();
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        const wasHiddenFor = hiddenAt ? Date.now() - hiddenAt : 0;
+        hiddenAt = null;
+        if (wasHiddenFor > HIDDEN_REFETCH_THRESHOLD_MS) fetchList();
+      }
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);

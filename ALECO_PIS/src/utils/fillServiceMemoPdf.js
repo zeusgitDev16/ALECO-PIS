@@ -56,21 +56,21 @@ const COORDS = {
 
   // ── Checkboxes — LEFT column — PARENT rows ─────────────────────────────
   CB_NO_LIGHT:       { x: 22.5,  y: 105 },   // □ NO LIGHT/POWER
-  CB_POWER_QUALITY:  { x: 41,  y: 172 },   // □ POWER Quality Complaint
-  CB_SERVICE_DROP:   { x: 41,  y: 230 },   // □ Complaints/Services on Service Drop
+  CB_POWER_QUALITY:  { x: 22.5,  y: 172 },   // □ POWER Quality Complaint
+  CB_SERVICE_DROP:   { x: 22.5,  y: 230 },   // □ Complaints/Services on Service Drop
 
   // ── Checkboxes — LEFT column — SUB-ITEMS (indented, x≈57) ─────────────
   // Sub-items of NO LIGHT/POWER
-  CB_SUB_PRIMARY_LINE:   { x: 57, y: 122 },   // □ Primary Line
+  CB_SUB_PRIMARY_LINE:   { x: 44.2, y: 122 },   // □ Primary Line
   CB_SUB_XFORMER_LINE:   { x: 44.2, y: 136 },   // □ Distribution XFormer/Secondary Line
-  CB_SUB_RESIDENCE:      { x: 57, y: 150 },   // □ Residence No Power
+  CB_SUB_RESIDENCE:      { x: 44.2, y: 150 },   // □ Residence No Power
   // Sub-items of POWER Quality Complaint
-  CB_SUB_LOW_VOLTAGE:    { x: 57, y: 187 },   // □ Low voltage
-  CB_SUB_FLUCTUATING:    { x: 57, y: 201 },   // □ Fluctuating Voltage
-  CB_SUB_LOOSE:          { x: 57, y: 215 },   // □ Loose
+  CB_SUB_LOW_VOLTAGE:    { x: 44.2, y: 187 },   // □ Low voltage
+  CB_SUB_FLUCTUATING:    { x: 44.2, y: 201 },   // □ Fluctuating Voltage
+  CB_SUB_LOOSE:          { x: 44.2, y: 215 },   // □ Loose
   // Sub-items of Complaints/Services on Service Drop
-  CB_SUB_REROUTE:        { x: 57, y: 245 },   // □ Reroute Service Drop
-  CB_SUB_CHANGE_UPGRADE: { x: 57, y: 258 },   // □ Change Upgrade Service
+  CB_SUB_REROUTE:        { x: 44.2, y: 245 },   // □ Reroute Service Drop
+  CB_SUB_CHANGE_UPGRADE: { x: 44.2, y: 258 },   // □ Change Upgrade Service
 
   // ── Checkboxes — RIGHT column — PARENT rows ────────────────────────────
   CB_POLE:           { x: 310, y: 107 },   // □ Dist. Pole Complaint and Others
@@ -90,18 +90,25 @@ const COORDS = {
   CB_SUB_TRANSFER:       { x: 326, y: 213 },  // □ Transfer of KWHM
 
   // ── Form fields (data lines below each label) ──────────────────────────
-  REQUESTED_BY:      { x: 110, y: 283 },   // Requested by
-  LOCATION:          { x: 400, y: 283 },   // Location
-  ADDRESS:           { x: 65,  y: 297 },   // Address  (uses same value as Location)
-  ACTION_TAKEN:      { x: 400, y: 297 },   // ACTION Taken/Remarks
-  CONTACT_NO:        { x: 110, y: 318 },   // Contact no.
-  REFERRED_TO:       { x: 400, y: 345 },   // Reffered to / Name of Regular Lineman
-  RECEIVED_BY:       { x: 90,  y: 372 },   // Received by
-  DATE_RECEIVED:     { x: 90,  y: 385 },   // Date/Time Received (intake date+time)
-  DATE_ARRIVED:      { x: 305, y: 372 },   // Date Arrived on Site
-  TIME_ON_SITE:      { x: 420, y: 372 },   // Time on Site
-  DATE_ACCOMPLISHED: { x: 305, y: 385 },   // Date/Time Accomplished
-  REF_DATE_RECEIVED: { x: 90,  y: 396 },   // Referral Date/Time Received
+  REQUESTED_BY:      { x: 85, y: 283 },   // Requested by
+  LOCATION:          { x: 354, y: 283 },   // Location
+  ADDRESS:           { x: 85,  y: 295.6 },   // Address  (uses same value as Location)
+  ACTION_TAKEN:      { x: 427.8, y: 302.1 },   // ACTION Taken/Remarks (line 1 — starts after label)
+  // Lines 2 & 3 of ACTION Taken/Remarks: no label is in the way, so they can
+  // start much further LEFT and use the full underline width. Calibrate these
+  // independently from the line-1 x.
+  ACTION_TAKEN_CONT_X:     313.1, // x for lines 2 and 3 (left edge of long underline)
+  ACTION_TAKEN_CONT_WIDTH: 288,   // line width for lines 2 and 3
+  ACTION_TAKEN_L2_Y:       318,   // y for line 2 of ACTION Taken/Remarks (calibrate)
+  ACTION_TAKEN_L3_Y:       334,   // y for line 3 of ACTION Taken/Remarks (calibrate)
+  CONTACT_NO:        { x: 85, y: 336.8 },   // Contact no.
+  REFERRED_TO:       { x: 383, y: 359.8 },   // Reffered to / Name of Regular Lineman
+  RECEIVED_BY:       { x: 99.2,  y: 420},   // Received by
+  DATE_RECEIVED:     { x: 116.8,  y: 448 },   // Date/Time Received (intake date+time)
+  DATE_ARRIVED:      { x: 410, y: 417 },   // Date Arrived on Site
+  TIME_ON_SITE:      { x: 540, y: 417.9 },   // Time on Site
+  DATE_ACCOMPLISHED: { x: 445, y: 443.5},   // Date/Time Accomplished
+  REF_DATE_RECEIVED: { x: 425,  y: 393 },   // Referral Date/Time Received
 };
 
 // ─── CATEGORY → CHECKBOX MAPPING ─────────────────────────────────────────────
@@ -201,6 +208,101 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
       size,
       font: selectedFont,
       color,
+    });
+  };
+
+  /**
+   * Draw text that wraps across multiple lines at word boundaries.
+   * Stops after `maxLines` — the last line is truncated with "…" if overflow remains.
+   *
+   * @param {string} text          raw text to draw
+   * @param {number} x             left x (pt)
+   * @param {number} y             top-measured y of the FIRST line (pt)
+   * @param {object} options
+   * @param {number} options.size        font size (default 9)
+   * @param {number} options.maxWidth    line width in pt (required)
+   * @param {number} options.maxLines    how many lines are allowed (default 3)
+   * @param {number} options.lineHeight  vertical gap between line baselines in pt (default 13)
+   * @param {boolean} options.bold
+   */
+  const drawWrappedText = (text, x, y, options = {}) => {
+    const {
+      size = 9,
+      maxWidth,
+      maxLines = 3,
+      lineHeight = 13,
+      bold = false,
+      color = rgb(0, 0, 0),
+      // Lines 2+ may start further left (no label in the way) and use a wider
+      // line width. If omitted, continuation lines use the same x / maxWidth
+      // as the first line.
+      continuationX = null,
+      continuationMaxWidth = null,
+    } = options;
+    const selectedFont = bold ? fontBold : font;
+    const raw = String(text || '').trim();
+    if (!raw || !maxWidth) return;
+
+    // Per-line y override: if options.lineYs[i] is a number, use it directly
+    // (top-measured y for that line). Otherwise fall back to y + i*lineHeight.
+    const { lineYs = null } = options;
+    const lineX     = (i) => (i === 0 ? x        : (continuationX        ?? x));
+    const lineWidth = (i) => (i === 0 ? maxWidth : (continuationMaxWidth ?? maxWidth));
+    const lineY     = (i) => {
+      if (lineYs && typeof lineYs[i] === 'number') return lineYs[i];
+      return y + i * lineHeight;
+    };
+
+    // Pack words greedily, but the available width depends on which line we're
+    // currently filling (line 0 may be narrower because of a label to its left).
+    const words = raw.split(/\s+/);
+    const lines = [];
+    let current = '';
+
+    for (let i = 0; i < words.length; i += 1) {
+      const word = words[i];
+      const widthForCurrent = lineWidth(lines.length);
+      const candidate = current ? `${current} ${word}` : word;
+      if (selectedFont.widthOfTextAtSize(candidate, size) <= widthForCurrent) {
+        current = candidate;
+      } else {
+        if (current) lines.push(current);
+        if (lines.length >= maxLines) { current = ''; break; }
+        // Word alone wider than the next line's width — hard-truncate it
+        const widthForNext = lineWidth(lines.length);
+        let w = word;
+        while (w.length > 1 && selectedFont.widthOfTextAtSize(w, size) > widthForNext) {
+          w = w.slice(0, -1);
+        }
+        current = w;
+      }
+    }
+    if (current && lines.length < maxLines) lines.push(current);
+
+    // If text remains beyond the line cap, suffix "…" on the last line
+    const totalPacked = lines.join(' ').length;
+    if (totalPacked < raw.length && lines.length > 0) {
+      const lastIdx = lines.length - 1;
+      const widthForLast = lineWidth(lastIdx);
+      let last = lines[lastIdx];
+      const ellipsis = '…';
+      while (
+        last.length > 0 &&
+        selectedFont.widthOfTextAtSize(last + ellipsis, size) > widthForLast
+      ) {
+        last = last.slice(0, -1);
+      }
+      lines[lastIdx] = last + ellipsis;
+    }
+
+    lines.forEach((line, i) => {
+      page.drawText(line, {
+        x: lineX(i),
+        y: height - lineY(i),
+        size,
+        font: selectedFont,
+        color,
+      });
     });
   };
 
@@ -325,8 +427,24 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     { size: 9, maxWidth: 170 });
   drawText(memo.location     || '', COORDS.ADDRESS.x,      COORDS.ADDRESS.y,
     { size: 9, maxWidth: 230 });
-  drawText(memo.action_taken || '', COORDS.ACTION_TAKEN.x, COORDS.ACTION_TAKEN.y,
-    { size: 9, maxWidth: 170 });
+  // ACTION Taken/Remarks — template provides 3 underlined rows; wrap long input
+  // across them. Line 1 starts after the "ACTION Taken/Remarks:" label, but
+  // lines 2 & 3 have no label in the way and can use the full underline width
+  // starting much further left.
+  drawWrappedText(memo.action_taken || '', COORDS.ACTION_TAKEN.x, COORDS.ACTION_TAKEN.y, {
+    size: 9,
+    maxWidth: 170,
+    maxLines: 3,
+    continuationX:        COORDS.ACTION_TAKEN_CONT_X,
+    continuationMaxWidth: COORDS.ACTION_TAKEN_CONT_WIDTH,
+    // Per-line y override: line 1 stays at ACTION_TAKEN.y, lines 2 & 3 use
+    // their own calibration constants.
+    lineYs: [
+      COORDS.ACTION_TAKEN.y,
+      COORDS.ACTION_TAKEN_L2_Y,
+      COORDS.ACTION_TAKEN_L3_Y,
+    ],
+  });
   drawText(memo.contact_no   || '', COORDS.CONTACT_NO.x,   COORDS.CONTACT_NO.y,
     { size: 9, maxWidth: 185 });
   drawText(memo.referred_to  || '', COORDS.REFERRED_TO.x,  COORDS.REFERRED_TO.y,

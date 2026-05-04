@@ -29,6 +29,7 @@ const ServiceMemoFilters = ({ filters, onFilterChange, onClose }) => {
       searchAddress: '',
       searchMemo: '',
       status: '',
+      municipality: '',
       startDate: '',
       endDate: '',
       owner: '',
@@ -42,6 +43,7 @@ const ServiceMemoFilters = ({ filters, onFilterChange, onClose }) => {
     filters.searchAddress ||
     filters.searchMemo ||
     filters.status ||
+    filters.municipality ||
     filters.startDate ||
     filters.endDate ||
     filters.owner;

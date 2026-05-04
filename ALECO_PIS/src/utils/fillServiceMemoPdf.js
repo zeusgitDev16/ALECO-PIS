@@ -70,25 +70,25 @@ const COORDS = {
   CB_SUB_LOOSE:          { x: 44.2, y: 204.8 },   // □ Loose
   // Sub-items of Complaints/Services on Service Drop
   CB_SUB_REROUTE:        { x: 44.2, y: 231.8 },   // □ Reroute Service Drop
-  CB_SUB_CHANGE_UPGRADE: { x: 44.2, y: 244 },   // □ Change Upgrade Service
+  CB_SUB_CHANGE_UPGRADE: { x: 44.2, y: 246 },   // □ Change Upgrade Service
 
 
   // ── Checkboxes — RIGHT column — PARENT rows ────────────────────────────
-  CB_POLE:           { x: 310, y: 107 },   // □ Dist. Pole Complaint and Others
-  CB_METER:          { x: 310, y: 172 },   // □ Complaints on KWHR Meter
+  CB_POLE:           { x: 239.5, y: 89.5 },   // □ Dist. Pole Complaint and Others
+  CB_METER:          { x: 239.5, y: 147.5 },   // □ Complaints on KWHR Meter
   CB_OTHERS:         { x: 262, y: 236.8 },   // □ Others
   CB_OTHERS_TEXT:    { x: 307, y: 236 },   // text on the "Others: ____" line
 
   // ── Checkboxes — RIGHT column — SUB-ITEMS (indented, x≈326) ───────────
   // Sub-items of Dist. Pole Complaint and Others
-  CB_SUB_ROTTEN_POLE:    { x: 326, y: 121 },  // □ Rotten Pole
-  CB_SUB_LEANING_POLE:   { x: 380, y: 121 },  // □ Leaning Pole  (same row, further right)
-  CB_SUB_RELOCATION:     { x: 326, y: 135 },  // □ Relocation of
-  CB_SUB_XFORMER_REPL:   { x: 326, y: 149 },  // □ Distribution Xformer Replacement
+  CB_SUB_ROTTEN_POLE:    { x: 261.8, y: 103},  // □ Rotten Pole
+  CB_SUB_LEANING_POLE:   { x: 341.2, y: 103 },  // □ Leaning Pole  (same row, further right)
+  CB_SUB_RELOCATION:     { x: 261.8, y: 119 },  // □ Relocation of
+  CB_SUB_XFORMER_REPL:   { x: 261.8, y: 132.5 },  // □ Distribution Xformer Replacement
   // Sub-items of Complaints on KWHR Meter
-  CB_SUB_CHECKUP:        { x: 326, y: 187 },  // □ Check-up of KWHM
-  CB_SUB_CALIBRATION:    { x: 326, y: 200 },  // □ Meter Calibration/Testing
-  CB_SUB_TRANSFER:       { x: 326, y: 213 },  // □ Transfer of KWHM
+  CB_SUB_CHECKUP:        { x: 261.8, y: 164.4 },  // □ Check-up of KWHM
+  CB_SUB_CALIBRATION:    { x: 261.8, y: 178.8},  // □ Meter Calibration/Testing
+  CB_SUB_TRANSFER:       { x: 261.8, y: 192.5 },  // □ Transfer of KWHM
 
   // ── Form fields (data lines below each label) ──────────────────────────
   REQUESTED_BY:      { x: 85, y: 283 },   // Requested by
@@ -537,15 +537,13 @@ export function downloadPdf(pdfBytes, filename = 'ALECO_Service_Memo.pdf') {
 }
 
 /**
- * Print the filled PDF in-place by rendering it inside a hidden iframe and
- * triggering the browser's native print dialog directly on that iframe.
+ * Print the filled PDF by opening it in a new browser tab.
+ * The browser's native PDF viewer renders the document correctly, and the
+ * user can print from there using Ctrl+P or the viewer's print button.
  *
- * Behaviour:
- *   - No new browser tab is opened.
- *   - The iframe is full-viewport-sized (so the PDF plugin initialises) but
- *     invisible (opacity:0, pointer-events:none, behind everything).
- *   - After the PDF finishes loading, `iframe.contentWindow.print()` opens the
- *     browser's print dialog showing the PDF content (NOT the parent app UI).
+ * This is more reliable than an iframe approach: embedded PDF plugins are
+ * not guaranteed to be available in all browsers/configurations, which causes
+ * raw bytes to be sent to the printer (printing as symbols).
  *
  * @param {Uint8Array} pdfBytes
  */
@@ -553,50 +551,18 @@ export function printPdf(pdfBytes) {
   const blob = new Blob([pdfBytes], { type: 'application/pdf' });
   const url  = URL.createObjectURL(blob);
 
-  // Remove any prior print iframe (in case of rapid repeated clicks)
-  const existing = document.getElementById('aleco-pdf-print-iframe');
-  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+  const tab = window.open(url, '_blank');
 
-  const iframe = document.createElement('iframe');
-  iframe.id = 'aleco-pdf-print-iframe';
-  // Position the iframe completely OFF-SCREEN with a real size so the PDF
-  // plugin can initialise. Avoid full-viewport overlays — even invisible ones
-  // disturb modal layout / focus when the print dialog closes.
-  iframe.style.cssText = [
-    'position:fixed',
-    'top:-10000px',
-    'left:-10000px',
-    'width:800px',
-    'height:1000px',
-    'border:0',
-  ].join(';');
-  iframe.src = url;
-  document.body.appendChild(iframe);
+  // Revoke the blob URL after a generous delay so the new tab has time to load
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 
-  let cleaned = false;
-  const cleanup = () => {
-    if (cleaned) return;
-    cleaned = true;
-    URL.revokeObjectURL(url);
-    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-  };
-
-  iframe.addEventListener('load', () => {
-    // Allow the PDF plugin a moment to finish rendering before printing
-    setTimeout(() => {
-      try {
-        const cw = iframe.contentWindow;
-        // Clean up as soon as the print dialog is dismissed (printed or cancelled)
-        cw.addEventListener('afterprint', cleanup);
-        cw.focus();
-        cw.print();
-      } catch (err) {
-        console.error('[printPdf] iframe print failed:', err);
-        cleanup();
-      }
-    }, 600);
-  });
-
-  // Safety net: cleanup after 2 minutes if afterprint never fires
-  setTimeout(cleanup, 120_000);
+  if (!tab) {
+    // Fallback if popup was blocked: trigger a download instead
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ALECO_Service_Memo.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }

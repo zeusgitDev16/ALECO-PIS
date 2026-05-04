@@ -132,6 +132,7 @@ const ServiceMemoForm = ({
   const [photoFile, setPhotoFile] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [closeMemoConfirmOpen, setCloseMemoConfirmOpen] = useState(false);
 
   /** Invalidates in-flight debounced / manual ticket lookups when the input changes or Load runs. */
   const ticketVerifyGenRef = useRef(0);
@@ -694,8 +695,7 @@ const ServiceMemoForm = ({
 
         {memo?.created_at && (
           <p className="service-memo-meta-line">
-            Created {formatToPhilippineTime(memo.created_at)} · Received by {memo.owner_email || '—'}
-            {currentUserEmail && memo.owner_email !== currentUserEmail ? ' · View only — not recorded as received by you' : ''}
+            Created {formatToPhilippineTime(memo.created_at)} · Created by {memo.owner_email || '—'}
           </p>
         )}
     </div>
@@ -718,7 +718,7 @@ const ServiceMemoForm = ({
           </button>
         )}
         {mode === 'view' && showCloseMemoFinalize && typeof onCloseMemoFinalize === 'function' && (
-          <button type="button" className="service-memo-btn service-memo-btn--close" onClick={onCloseMemoFinalize}>
+          <button type="button" className="service-memo-btn service-memo-btn--close" onClick={() => setCloseMemoConfirmOpen(true)}>
             Close Memo
           </button>
         )}
@@ -752,13 +752,24 @@ const ServiceMemoForm = ({
           {renderFormGrid()}
           {mode === 'update' && showCloseMemoFinalize && typeof onCloseMemoFinalize === 'function' && (
             <div className="service-memo-close-row">
-              <button type="button" className="service-memo-btn service-memo-btn--close" onClick={() => onCloseMemoFinalize()}>
+              <button type="button" className="service-memo-btn service-memo-btn--close" onClick={() => setCloseMemoConfirmOpen(true)}>
                 Close memo (finalize)
               </button>
             </div>
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={closeMemoConfirmOpen}
+        onClose={() => setCloseMemoConfirmOpen(false)}
+        onConfirm={() => { setCloseMemoConfirmOpen(false); onCloseMemoFinalize(); }}
+        title="Close this service memo?"
+        message={`Memo ${memo?.control_number || memo?.id} will be marked as closed. This cannot be undone.`}
+        confirmLabel="Close Memo"
+        cancelLabel="Cancel"
+        variant="danger"
+      />
 
       <ConfirmModal
         isOpen={deleteModalOpen}

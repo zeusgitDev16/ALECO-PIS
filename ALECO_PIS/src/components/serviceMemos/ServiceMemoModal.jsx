@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import { useServiceMemoPrint } from '../../hooks/useServiceMemoPrint';
+import ConfirmModal from '../tickets/ConfirmModal';
+import '../../CSS/TicketTableView.css';
 
 const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentUserEmail }) => {
   const { printMemo } = useServiceMemoPrint();
@@ -15,10 +17,10 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
     referred_to: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
 
-  const isOwner = memo?.owner_email === currentUserEmail;
   const isClosed = memo?.memo_status === 'closed';
-  const isEditable = isOwner && !isClosed;
+  const isEditable = !isClosed;
 
   useEffect(() => {
     if (memo && isOpen) {
@@ -115,7 +117,11 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
               </div>
               <div className="service-memo-info-item">
                 <label>Ticket Status:</label>
-                <p>{memo.ticket_status || '—'}</p>
+                <p>
+                  {memo.ticket_status
+                    ? <span className={`status-badge ${(memo.ticket_status).toLowerCase().replace(/\s/g, '')}`}>{memo.ticket_status}</span>
+                    : '—'}
+                </p>
               </div>
               {memo.assigned_crew && (
                 <div className="service-memo-info-item">
@@ -242,7 +248,11 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
               </div>
               <div className="service-memo-info-item">
                 <label>Memo Status:</label>
-                <p>{memo.memo_status}</p>
+                <p>
+                  {memo.memo_status
+                    ? <span className={`status-badge ${memo.memo_status.toLowerCase()}`}>{memo.memo_status}</span>
+                    : '—'}
+                </p>
               </div>
               {memo.closed_at && (
                 <div className="service-memo-info-item">
@@ -279,10 +289,10 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
                 <button
                   type="button"
                   className="service-memo-btn service-memo-btn--close"
-                  onClick={handleCloseMemo}
+                  onClick={() => setCloseConfirmOpen(true)}
                   disabled={isSaving}
                 >
-                  {isSaving ? 'Closing...' : 'Close Memo'}
+                  Close Memo
                 </button>
               )}
               
@@ -308,6 +318,17 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={closeConfirmOpen}
+        onClose={() => setCloseConfirmOpen(false)}
+        onConfirm={() => { setCloseConfirmOpen(false); handleCloseMemo(); }}
+        title="Close this service memo?"
+        message={`Memo ${memo?.control_number || memo?.id} will be marked as closed. This cannot be undone.`}
+        confirmLabel="Close Memo"
+        cancelLabel="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

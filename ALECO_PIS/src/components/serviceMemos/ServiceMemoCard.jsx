@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
+import ConfirmModal from '../tickets/ConfirmModal';
 
 function IconView() {
   return (
@@ -84,6 +86,8 @@ const ServiceMemoCard = ({
     onView(memo.id);
   };
 
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+
   const stop = (e) => {
     e.stopPropagation();
   };
@@ -94,15 +98,6 @@ const ServiceMemoCard = ({
       onClick={handleRowClick}
       role="row"
     >
-      <td className="service-memo-list-col service-memo-list-col--check" onClick={stop}>
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={() => onToggleSelect(memo.id)}
-          onClick={stop}
-          aria-label={`Select memo ${controlNumber}`}
-        />
-      </td>
       <td className="service-memo-list-col service-memo-list-col--memo-id">
         <span className="service-memo-list-primary">{controlNumber}</span>
         <span className="service-memo-list-sub">{memo.ticket_id}</span>
@@ -118,13 +113,13 @@ const ServiceMemoCard = ({
         {truncate(memo.category, 28)}
       </td>
       <td className="service-memo-list-col service-memo-list-col--memo-st">
-        <span className={`service-memo-status-badge service-memo-status-badge--${memoStatusClass}`}>{memo.memo_status}</span>
+        <span className={`status-badge ${memoStatusClass}`}>{memo.memo_status}</span>
       </td>
       <td className="service-memo-list-col service-memo-list-col--ticket-st">
-        <span className={`ticket-status-badge ticket-status-badge--${ticketStatusClass}`}>{memo.ticket_status}</span>
+        <span className={`status-badge ${ticketStatusClass}`}>{memo.ticket_status || '—'}</span>
       </td>
-      <td className="service-memo-list-col service-memo-list-col--owner" title={memo.owner_name || ''}>
-        {truncate(memo.owner_name, 18)}
+      <td className="service-memo-list-col service-memo-list-col--owner" title={memo.received_by || memo.owner_name || ''}>
+        {truncate(memo.received_by || memo.owner_name, 22)}
       </td>
       <td className="service-memo-list-col service-memo-list-col--created">
         {formatToPhilippineTime(memo.created_at)}
@@ -164,7 +159,7 @@ const ServiceMemoCard = ({
             <button
               type="button"
               className="service-memo-list-action-btn service-memo-list-action-btn--icon service-memo-list-action-btn--warn"
-              onClick={() => onClose(memo.id)}
+              onClick={() => setCloseConfirmOpen(true)}
               title="Close memo (finalize)"
               aria-label="Close memo (finalize)"
             >
@@ -184,6 +179,19 @@ const ServiceMemoCard = ({
           )}
         </div>
       </td>
+      {closeConfirmOpen && ReactDOM.createPortal(
+        <ConfirmModal
+          isOpen={closeConfirmOpen}
+          onClose={() => setCloseConfirmOpen(false)}
+          onConfirm={() => { setCloseConfirmOpen(false); onClose(memo.id); }}
+          title="Close this service memo?"
+          message={`Memo ${memo.control_number || `#${memo.id}`} will be marked as closed. This cannot be undone.`}
+          confirmLabel="Close Memo"
+          cancelLabel="Cancel"
+          variant="danger"
+        />,
+        document.body
+      )}
     </tr>
   );
 };

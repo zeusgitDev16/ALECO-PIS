@@ -47,7 +47,8 @@ const MEMO_JOIN_SQL = `
         t.action_desired,
         t.status as ticket_live_status,
         t.assigned_crew,
-        t.dispatched_at
+        t.dispatched_at,
+        t.created_at AS ticket_created_at
     FROM aleco_service_memos sm
     LEFT JOIN aleco_tickets t ON sm.ticket_id = t.ticket_id
 `;
@@ -70,6 +71,7 @@ function rowToMemoDto(row) {
     status: row.ticket_live_status,
     assigned_crew: row.assigned_crew,
     dispatched_at: row.dispatched_at,
+    ticket_created_at: row.ticket_created_at ?? null,
   };
   return mergeMemoForResponse(row, ticket);
 }
@@ -102,16 +104,8 @@ router.get('/service-memos', requireStaff, async (req, res) => {
 
     if (tab === 'saved') {
       query += ` AND sm.memo_status = 'saved'`;
-      if (currentUserEmail) {
-        query += ` AND sm.owner_email = ?`;
-        params.push(currentUserEmail);
-      }
     } else if (tab === 'closed') {
       query += ` AND sm.memo_status = 'closed'`;
-      if (currentUserEmail) {
-        query += ` AND sm.owner_email = ?`;
-        params.push(currentUserEmail);
-      }
     }
 
     const qMemo = trimQuery(searchMemo);

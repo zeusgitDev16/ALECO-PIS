@@ -228,8 +228,9 @@ const AdminHistory = () => {
                 </div>
 
                 <div className="main-content-card history-main-content">
-                    <div className="history-sticky-top-guard" aria-hidden="true" />
-                    <div className="history-sticky-controls">
+
+                    {/* TOP PANEL — filters & controls, never scrolls away */}
+                    <div className="history-top-panel">
                         <div className="history-summary-grid">
                             {ALL_MODULES.map((module) => (
                                 <button
@@ -280,7 +281,7 @@ const AdminHistory = () => {
                         </div>
 
                         {viewMode === 'table' && rows.length > 0 && (
-                            <div className="history-floating-table-header" role="rowgroup" aria-label="History table headers">
+                            <div className="history-table-col-header" role="rowgroup" aria-label="History table headers">
                                 <span className="history-col-date">Date</span>
                                 <span className="history-col-module">Module</span>
                                 <span className="history-col-action">Action</span>
@@ -289,22 +290,22 @@ const AdminHistory = () => {
                                 <span className="history-col-entity">Entity</span>
                             </div>
                         )}
+
+                        {error && <div className="error-banner history-error-banner">{error}</div>}
                     </div>
 
-                    {error && <div className="error-banner" style={{ marginBottom: '16px' }}>{error}</div>}
-
-                    <div className="history-content-region">
+                    {/* MIDDLE — scrollable list */}
+                    <div className="history-list-region">
                         {loading ? (
                             <p className="widget-text">Loading history...</p>
                         ) : rows.length === 0 ? (
                             <p className="widget-text">No history logs found.</p>
                         ) : (
-                            <div className="history-scroll-content">
-                                {viewMode === 'timeline' ? renderTimeline() : renderTable()}
-                            </div>
+                            viewMode === 'timeline' ? renderTimeline() : renderTable()
                         )}
                     </div>
 
+                    {/* FOOTER — pagination, always at the bottom */}
                     {totalPages > 1 && (
                         <div className="history-pagination-footer">
                             <div className="history-pagination">

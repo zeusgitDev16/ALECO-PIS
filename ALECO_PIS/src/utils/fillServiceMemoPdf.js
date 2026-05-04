@@ -56,8 +56,8 @@ const COORDS = {
 
   // ── Checkboxes — LEFT column — PARENT rows ─────────────────────────────
   CB_NO_LIGHT:       { x: 22.5,  y: 105 },   // □ NO LIGHT/POWER
-  CB_POWER_QUALITY:  { x: 22.5,  y: 172 },   // □ POWER Quality Complaint
-  CB_SERVICE_DROP:   { x: 22.5,  y: 230 },   // □ Complaints/Services on Service Drop
+  CB_POWER_QUALITY:  { x: 22.5,  y: 165},   // □ POWER Quality Complaint
+  CB_SERVICE_DROP:   { x: 22.5,  y: 217 },   // □ Complaints/Services on Service Drop
 
   // ── Checkboxes — LEFT column — SUB-ITEMS (indented, x≈57) ─────────────
   // Sub-items of NO LIGHT/POWER
@@ -65,18 +65,19 @@ const COORDS = {
   CB_SUB_XFORMER_LINE:   { x: 44.2, y: 136 },   // □ Distribution XFormer/Secondary Line
   CB_SUB_RESIDENCE:      { x: 44.2, y: 150 },   // □ Residence No Power
   // Sub-items of POWER Quality Complaint
-  CB_SUB_LOW_VOLTAGE:    { x: 44.2, y: 187 },   // □ Low voltage
-  CB_SUB_FLUCTUATING:    { x: 44.2, y: 201 },   // □ Fluctuating Voltage
-  CB_SUB_LOOSE:          { x: 44.2, y: 215 },   // □ Loose
+  CB_SUB_LOW_VOLTAGE:    { x: 44.2, y: 179 },   // □ Low voltage
+  CB_SUB_FLUCTUATING:    { x: 44.2, y: 191.8},   // □ Fluctuating Voltage
+  CB_SUB_LOOSE:          { x: 44.2, y: 204.8 },   // □ Loose
   // Sub-items of Complaints/Services on Service Drop
-  CB_SUB_REROUTE:        { x: 44.2, y: 245 },   // □ Reroute Service Drop
-  CB_SUB_CHANGE_UPGRADE: { x: 44.2, y: 258 },   // □ Change Upgrade Service
+  CB_SUB_REROUTE:        { x: 44.2, y: 231.8 },   // □ Reroute Service Drop
+  CB_SUB_CHANGE_UPGRADE: { x: 44.2, y: 244 },   // □ Change Upgrade Service
+
 
   // ── Checkboxes — RIGHT column — PARENT rows ────────────────────────────
   CB_POLE:           { x: 310, y: 107 },   // □ Dist. Pole Complaint and Others
   CB_METER:          { x: 310, y: 172 },   // □ Complaints on KWHR Meter
-  CB_OTHERS:         { x: 310, y: 236 },   // □ Others
-  CB_OTHERS_TEXT:    { x: 342, y: 236 },   // text on the "Others: ____" line
+  CB_OTHERS:         { x: 262, y: 236.8 },   // □ Others
+  CB_OTHERS_TEXT:    { x: 307, y: 236 },   // text on the "Others: ____" line
 
   // ── Checkboxes — RIGHT column — SUB-ITEMS (indented, x≈326) ───────────
   // Sub-items of Dist. Pole Complaint and Others
@@ -93,7 +94,7 @@ const COORDS = {
   REQUESTED_BY:      { x: 85, y: 283 },   // Requested by
   LOCATION:          { x: 354, y: 283 },   // Location
   ADDRESS:           { x: 85,  y: 295.6 },   // Address  (uses same value as Location)
-  ACTION_TAKEN:      { x: 427.8, y: 302.1 },   // ACTION Taken/Remarks (line 1 — starts after label)
+  ACTION_TAKEN:      { x: 427.8, y: 302.2 },   // ACTION Taken/Remarks (line 1 — starts after label)
   // Lines 2 & 3 of ACTION Taken/Remarks: no label is in the way, so they can
   // start much further LEFT and use the full underline width. Calibrate these
   // independently from the line-1 x.
@@ -104,8 +105,9 @@ const COORDS = {
   CONTACT_NO:        { x: 85, y: 336.8 },   // Contact no.
   REFERRED_TO:       { x: 383, y: 359.8 },   // Reffered to / Name of Regular Lineman
   RECEIVED_BY:       { x: 99.2,  y: 420},   // Received by
-  DATE_RECEIVED:     { x: 116.8,  y: 448 },   // Date/Time Received (intake date+time)
-  DATE_ARRIVED:      { x: 410, y: 417 },   // Date Arrived on Site
+  DATE_RECEIVED:     { x: 116.8,  y: 448 },   // Date/Time Received — ticket reported datetime
+  DATE_RECEIVED_MEMO: { x: 116.8,  y: 461 },   // Date/Time Received — memo created datetime (calibrate y)
+  DATE_ARRIVED:      { x: 397, y: 417 },   // Date Arrived on Site
   TIME_ON_SITE:      { x: 540, y: 417.9 },   // Time on Site
   DATE_ACCOMPLISHED: { x: 445, y: 443.5},   // Date/Time Accomplished
   REF_DATE_RECEIVED: { x: 425,  y: 393 },   // Referral Date/Time Received
@@ -117,7 +119,7 @@ const COORDS = {
 
 const NO_LIGHT_POWER_CATS = new Set([
   'residence no power',
-  'distribution xformer / 1 block no light',
+  'distribution xformer/secondary line',
   'primary line no power',
 ]);
 
@@ -125,8 +127,6 @@ const POWER_QUALITY_CATS = new Set([
   'low voltage',
   'fluctuating voltage',
   'loose connection',
-  'cutoff live wire',
-  'sagging wire',
 ]);
 
 const SERVICE_DROP_CATS = new Set([
@@ -137,15 +137,27 @@ const SERVICE_DROP_CATS = new Set([
 const POLE_CATS = new Set([
   'rotten pole',
   'leaning pole',
-  'clearing of distribution line',
   'relocation of pole/line',
   'distribution xformer replacement',
+  // Note: 'clearing of distribution line' is routed to Others — absent from template.
 ]);
 
 const METER_CATS = new Set([
   'check-up of kwhm',
   'meter calibration / testing',
   'transfer of kwhm',
+]);
+
+// Categories that have no matching checkbox/sub-item on the physical template.
+// These are printed under the "Others" checkbox with the category name written
+// on the Others text line instead of ticking a non-existent box.
+const OTHERS_ROUTED_CATS = new Set([
+  'cutoff live wire',
+  'sagging wire',
+  'clearing of distribution line',
+  'temporary disconnection',
+  'temporary lighting',
+  'other / unlisted concern',
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -320,13 +332,34 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
   // service_date / site_arrived_date / finished_date / referral_received_date
   // are plain "YYYY-MM-DD" strings — NO timezone conversion needed.
   // intake_time / site_arrived_time / etc. are plain "HH:MM" strings.
+  // ticket_created_at / memo.created_at are full MySQL datetime strings (UTC).
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const s = String(dateStr).slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
     const [y, m, d] = s.split('-');
-    return `${m}/${d}/${y}`;
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthName = MONTHS[parseInt(m, 10) - 1] || m;
+    return `${monthName} ${d}, ${y}`;
+  };
+
+  // Format a MySQL datetime string into "May 04, 2026 8:23 AM".
+  // The pool uses dateStrings: true + timezone: '+08:00', so the value arrives as
+  // a plain "YYYY-MM-DD HH:MM:SS" string already in PHT — parse it directly to
+  // avoid any UTC shift that new Date() would introduce.
+  const formatFullDateTime = (datetimeStr) => {
+    if (!datetimeStr) return '';
+    const s = String(datetimeStr);
+    const match = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (!match) return s.slice(0, 19);
+    const [, y, m, d, hh, mm] = match;
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const mon = MONTHS[parseInt(m, 10) - 1];
+    const hour = parseInt(hh, 10);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const h12 = hour % 12 === 0 ? 12 : hour % 12;
+    return `${mon} ${d}, ${y} ${h12}:${mm} ${period}`;
   };
 
   const formatTime = (timeStr) => {
@@ -353,8 +386,10 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
   const isServiceDrop    = SERVICE_DROP_CATS.has(catLower);
   const isPoleComplaint  = POLE_CATS.has(catLower);
   const isMeterComplaint = METER_CATS.has(catLower);
-  const isOthers         = !isNoLightPower && !isPowerQuality && !isServiceDrop &&
-                           !isPoleComplaint && !isMeterComplaint;
+  const isOthersRouted   = OTHERS_ROUTED_CATS.has(catLower);
+  const isOthers         = isOthersRouted || (
+                           !isNoLightPower && !isPowerQuality && !isServiceDrop &&
+                           !isPoleComplaint && !isMeterComplaint);
 
   const intakeDate = memo.service_date ?? memo.intake_date ?? null;
 
@@ -371,7 +406,7 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
   drawCheckmark(COORDS.CB_SUB_PRIMARY_LINE.x, COORDS.CB_SUB_PRIMARY_LINE.y,
     catLower === 'primary line no power');
   drawCheckmark(COORDS.CB_SUB_XFORMER_LINE.x, COORDS.CB_SUB_XFORMER_LINE.y,
-    catLower === 'distribution xformer / 1 block no light');
+    catLower === 'distribution xformer/secondary line');
   drawCheckmark(COORDS.CB_SUB_RESIDENCE.x,    COORDS.CB_SUB_RESIDENCE.y,
     catLower === 'residence no power');
 
@@ -383,7 +418,7 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     catLower === 'fluctuating voltage');
   drawCheckmark(COORDS.CB_SUB_LOOSE.x,         COORDS.CB_SUB_LOOSE.y,
     catLower === 'loose connection');
-  // Note: 'cutoff live wire' and 'sagging wire' have no matching sub-item on the form
+  // Note: 'cutoff live wire' and 'sagging wire' are routed to Others (no template box)
 
   // ── Complaints/Services on Service Drop parent + sub-items ─────────────
   drawCheckmark(COORDS.CB_SERVICE_DROP.x,    COORDS.CB_SERVICE_DROP.y,    isServiceDrop);
@@ -402,7 +437,7 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     catLower === 'relocation of pole/line');
   drawCheckmark(COORDS.CB_SUB_XFORMER_REPL.x, COORDS.CB_SUB_XFORMER_REPL.y,
     catLower === 'distribution xformer replacement');
-  // Note: 'clearing of distribution line' has no matching sub-item on the form
+  // Note: 'clearing of distribution line' is routed to Others (no template box)
 
   // ── Complaints on KWHR Meter parent + sub-items ────────────────────────
   drawCheckmark(COORDS.CB_METER.x,           COORDS.CB_METER.y,           isMeterComplaint);
@@ -414,6 +449,9 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     catLower === 'transfer of kwhm');
 
   // ── Others ─────────────────────────────────────────────────────────────
+  // isOthers is true for: (a) OTHERS_ROUTED_CATS (categories with no template box)
+  // and (b) any category not matched by any known set.
+  // In both cases, tick the Others checkbox and write the category name on the text line.
   drawCheckmark(COORDS.CB_OTHERS.x, COORDS.CB_OTHERS.y, isOthers);
   if (isOthers && memo.category) {
     drawText(memo.category, COORDS.CB_OTHERS_TEXT.x, COORDS.CB_OTHERS_TEXT.y,
@@ -452,9 +490,10 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
   drawText(memo.received_by  || '', COORDS.RECEIVED_BY.x,  COORDS.RECEIVED_BY.y,
     { size: 9, maxWidth: 145 });
 
+  // DATE_RECEIVED = when the ticket was reported (ticket_created_at)
   drawText(
-    formatDateTimeField(intakeDate, memo.intake_time),
-    COORDS.DATE_RECEIVED.x, COORDS.DATE_RECEIVED.y, { size: 8, maxWidth: 130 }
+    formatFullDateTime(memo.ticket_created_at),
+    COORDS.DATE_RECEIVED.x, COORDS.DATE_RECEIVED.y, { size: 8, maxWidth: 200 }
   );
   drawText(
     formatDate(memo.site_arrived_date),

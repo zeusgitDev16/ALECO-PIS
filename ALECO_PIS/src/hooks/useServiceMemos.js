@@ -59,8 +59,20 @@ export function useServiceMemos() {
   }, [fetchList]);
 
   useEffect(() => {
+    // Only refetch when the user truly returns to the tab after being away.
+    // A brief visibility change (e.g. print dialog, file picker, alert) must
+    // NOT trigger a refetch — that wipes the list under a loading spinner and
+    // forces the user to manually refresh. Threshold: 30 seconds hidden.
+    let hiddenAt = null;
+    const HIDDEN_REFETCH_THRESHOLD_MS = 30_000;
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') fetchList();
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        const wasHiddenFor = hiddenAt ? Date.now() - hiddenAt : 0;
+        hiddenAt = null;
+        if (wasHiddenFor > HIDDEN_REFETCH_THRESHOLD_MS) fetchList();
+      }
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
@@ -72,21 +84,26 @@ export function useServiceMemos() {
    * @returns {Promise<{ saved: boolean }>}
    */
   const updateMemo = useCallback(
-    async (id, body) => {
+    async (id, body, expectedUpdatedAt = null) => {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await updateServiceMemo(id, body);
+        const r = await updateServiceMemo(id, body, expectedUpdatedAt);
+        if (r.conflict) {
+          setMessage({ type: 'err', text: 'This memo was updated by someone else. Reloading latest data.' });
+          await fetchList();
+          return { saved: false, conflict: true };
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Update failed.' });
-          return { saved: false };
+          return { saved: false, conflict: false };
         }
         setMessage({ type: 'ok', text: 'Saved.' });
         await fetchList();
-        return { saved: true };
+        return { saved: true, conflict: false };
       } catch {
         setMessage({ type: 'err', text: 'Network error.' });
-        return { saved: false };
+        return { saved: false, conflict: false };
       } finally {
         setSaving(false);
       }
@@ -99,21 +116,26 @@ export function useServiceMemos() {
    * @returns {Promise<{ closed: boolean }>}
    */
   const closeMemo = useCallback(
-    async (id) => {
+    async (id, expectedUpdatedAt = null) => {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await closeServiceMemo(id);
+        const r = await closeServiceMemo(id, expectedUpdatedAt);
+        if (r.conflict) {
+          setMessage({ type: 'err', text: 'This memo was updated by someone else. Reloading latest data.' });
+          await fetchList();
+          return { closed: false, conflict: true };
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Close failed.' });
-          return { closed: false };
+          return { closed: false, conflict: false };
         }
         setMessage({ type: 'ok', text: 'Service memo closed.' });
         await fetchList();
-        return { closed: true };
+        return { closed: true, conflict: false };
       } catch {
         setMessage({ type: 'err', text: 'Network error.' });
-        return { closed: false };
+        return { closed: false, conflict: false };
       } finally {
         setSaving(false);
       }

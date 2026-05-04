@@ -3,6 +3,7 @@ import '../CSS/AdminPageLayout.css';
 import '../CSS/ServiceMemos.css';
 import '../CSS/ServiceMemoUIScale.css';
 import { useServiceMemos } from '../hooks/useServiceMemos';
+import { useServiceMemoPrint } from '../hooks/useServiceMemoPrint';
 import MemoHeader from './serviceMemos/memoHeader';
 import MemoBody from './serviceMemos/memoBody';
 import ServiceMemoFilters from './serviceMemos/ServiceMemoFilters';
@@ -38,6 +39,8 @@ const ServiceMemos = () => {
 
   const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
   const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
+
+  const { printMemo, isLoading: isPrinting, error: printError } = useServiceMemoPrint();
 
   useEffect(() => {
     const handleServiceMemoDeleted = () => {
@@ -110,7 +113,8 @@ const ServiceMemos = () => {
   };
 
   const handleCloseMemoFromCard = async (memoId) => {
-    const result = await closeMemo(memoId);
+    const snapshot = memos.find((m) => m.id === memoId);
+    const result = await closeMemo(memoId, snapshot?.updated_at ?? null);
     if (result.closed) {
       setMessage({ type: 'ok', text: 'Service memo closed successfully.' });
     }
@@ -174,14 +178,16 @@ const ServiceMemos = () => {
           currentUserEmail={userEmail}
           currentUserName={userName}
           onDeleted={handleBackFromDetail}
-          showCloseMemoFinalize={formMode === 'update' && detailMemo.memo_status === 'saved'}
+          showCloseMemoFinalize={detailMemo.memo_status === 'saved'}
+          onSwitchToEdit={() => setDetailMode('update')}
           onCloseMemoFinalize={async () => {
-            const r = await closeMemo(detailMemo.id);
+            const r = await closeMemo(detailMemo.id, detailMemo.updated_at ?? null);
             if (r.closed) {
               setMessage({ type: 'ok', text: 'Memo closed.' });
               handleBackFromDetail();
             }
           }}
+          onPrint={() => printMemo(detailMemo)}
         />
       </div>
     );
@@ -215,6 +221,12 @@ const ServiceMemos = () => {
         </p>
       )}
 
+      {printError && (
+        <p className="widget-text service-memos-msg" data-variant="err" role="alert">
+          Print failed: {printError}
+        </p>
+      )}
+
       {fetchError && !loading && (
         <p className="widget-text service-memos-fetch-err" role="alert">
           {fetchError}{' '}
@@ -234,7 +246,7 @@ const ServiceMemos = () => {
           onEdit={handleEditMemo}
           onClose={handleCloseMemoFromCard}
           onRequestDelete={handleRequestDeleteFromList}
-          onPrint={() => window.print()}
+          onPrint={printMemo}
           currentUserEmail={userEmail}
         />
       </div>

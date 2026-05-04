@@ -25,6 +25,7 @@ const PERSONNEL_CREW_COLUMNS = ['id', 'crew_name', 'lead_lineman', 'phone_number
 const PERSONNEL_CREW_MEMBER_COLUMNS = ['crew_id', 'lineman_id'];
 const PERSONNEL_LINEMEN_COLUMNS = ['id', 'full_name', 'designation', 'contact_no', 'status', 'leave_start', 'leave_end', 'leave_reason'];
 const HISTORY_COLUMNS = ['createdAt', 'module', 'action', 'title', 'detail', 'actorEmail', 'actorName', 'entityId', 'entityLabel', 'severityTag'];
+const MEMO_COLUMNS = ['id', 'control_number', 'ticket_id', 'category', 'service_date', 'work_performed', 'resolution_details', 'received_by', 'referred_to', 'owner_email', 'owner_name', 'memo_status', 'user_notes', 'photo_url', 'created_at', 'closed_at'];
 
 const formatDate = (d) => {
     if (!d) return '—';
@@ -36,6 +37,7 @@ function defaultTabForEntity(entity) {
     if (entity === 'interruptions') return 'interruptions';
     if (entity === 'users') return 'users';
     if (entity === 'personnel') return 'crews';
+    if (entity === 'service_memos') return 'memos';
     return 'tickets';
 }
 
@@ -51,6 +53,9 @@ function previewSubtitle(entity, metadata) {
     }
     if (entity === 'personnel') {
         return `${metadata.crewCount ?? 0} crews, ${metadata.crewMemberCount ?? 0} member rows, ${metadata.linemanCount ?? 0} linemen`;
+    }
+    if (entity === 'service_memos') {
+        return `${metadata.memoCount ?? 0} memos`;
     }
     return `${metadata.ticketCount} tickets, ${metadata.logCount} logs`;
 }
@@ -74,6 +79,7 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets', title =
     const crewMembers = data?.crewMembers || [];
     const linemen = data?.linemen || [];
     const history = data?.history || [];
+    const memos = data?.memos || [];
 
     return (
         <div className="dispatch-modal-overlay" onClick={onClose}>
@@ -143,6 +149,15 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets', title =
                             onClick={() => setActiveTab('history')}
                         >
                             History ({history.length})
+                        </button>
+                    )}
+                    {entity === 'service_memos' && (
+                        <button
+                            type="button"
+                            className={`export-preview-tab ${activeTab === 'memos' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('memos')}
+                        >
+                            Memos ({memos.length})
                         </button>
                     )}
                     {entity === 'personnel' && (
@@ -332,6 +347,36 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets', title =
                                                 {HISTORY_COLUMNS.map((col) => (
                                                     <td key={col}>
                                                         {col === 'createdAt' ? formatDate(row[col]) : (row[col] ?? '—')}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
+                    )}
+                    {entity === 'service_memos' && activeTab === 'memos' && (
+                        memos.length === 0 ? (
+                            <p className="export-preview-empty">No service memos in this date range.</p>
+                        ) : (
+                            <div className="export-preview-scroll">
+                                <table className="ticket-table">
+                                    <thead>
+                                        <tr>
+                                            {MEMO_COLUMNS.map((c) => (
+                                                <th key={c}>{c.replace(/_/g, ' ')}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {memos.map((row, i) => (
+                                            <tr key={row.id || i}>
+                                                {MEMO_COLUMNS.map((col) => (
+                                                    <td key={col}>
+                                                        {(col === 'created_at' || col === 'closed_at' || col === 'service_date')
+                                                            ? formatDate(row[col])
+                                                            : (row[col] ?? '—')}
                                                     </td>
                                                 ))}
                                             </tr>

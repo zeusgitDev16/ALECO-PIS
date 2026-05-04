@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 // Removed mysql, nodemailer, bcrypt, and cloudinary - they are all handled by the bricks now!
 
 import { buildAllowedCorsOrigins, normalizeOrigin, hasExplicitPublicCorsEnv } from './backend/config/corsOrigins.js';
@@ -99,9 +101,19 @@ function moduleFromApiPath(pathname) {
     return 'system';
 }
 
+// ES module equivalent of __dirname (not available natively in ESM)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
+
 // 2. Middleware (The Guards)
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Serve static assets from the Vite production build (dist/) and the public/ folder.
+// dist/ contains the compiled frontend + all public/ files copied by Vite at build time.
+// public/ is a fallback for running Express directly without a prior build.
+app.use(express.static(join(__dirname, 'dist')));
+app.use(express.static(join(__dirname, 'public')));
 
 // Global realtime broadcaster for successful write operations.
 app.use('/api', (req, res, next) => {

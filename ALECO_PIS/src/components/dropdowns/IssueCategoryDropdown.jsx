@@ -28,7 +28,7 @@ const IssueCategoryDropdown = ({ value, onChange, isFilter = false, layoutMode =
 
                 <optgroup label="1. No Light / Power Outage">
                     <option value="Residence No Power">Residence No Power</option>
-                    <option value="Distribution XFormer / 1 Block No Light">Distribution XFormer / 1 Block No Light</option>
+                    <option value="Distribution XFormer/Secondary Line">Distribution XFormer/Secondary Line</option>
                     <option value="Primary Line No Power">Primary Line No Power</option>
                 </optgroup>
 

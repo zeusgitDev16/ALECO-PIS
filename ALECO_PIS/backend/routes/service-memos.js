@@ -630,9 +630,10 @@ router.put('/service-memos/:id/close', requireStaff, async (req, res) => {
 
     const closeWhereSql = expectedUpdatedAt && memo.updated_at ? 'id = ? AND updated_at = ?' : 'id = ?';
     const closeWhereParams = expectedUpdatedAt && memo.updated_at ? [id, memo.updated_at] : [id];
+    const currentUserName = getActorName(req) || '';
     const [closeResult] = await pool.execute(
-      `UPDATE aleco_service_memos SET memo_status = 'closed', closed_at = NOW() WHERE ${closeWhereSql}`,
-      closeWhereParams
+      `UPDATE aleco_service_memos SET memo_status = 'closed', closed_at = NOW(), closed_by = ? WHERE ${closeWhereSql}`,
+      [currentUserName, ...closeWhereParams]
     );
 
     if (closeResult.affectedRows === 0 && expectedUpdatedAt) {

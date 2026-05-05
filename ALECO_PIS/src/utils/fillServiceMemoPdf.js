@@ -50,9 +50,21 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 //   Each 1 pt = 1/72 inch ≈ 0.35 mm.  A typical row gap is 13–18 pt.
 
 const COORDS = {
+  // ── ACCOMPLISHED BY (compact 3-line layout above copy labels) ────────
+  // Layout:   Accomplished by:
+  //              (user name)
+  //           __________________
+  // Y spacing: 9pt between lines (tight but readable)
+  MSD_ACCOMPLISHED_BY_LABEL: { x: 495, y: 229 },   // "Accomplished by:" text
+  MSD_ACCOMPLISHED_BY_NAME:  { x: 485, y: 248 },   // User name (indented)
+  MSD_ACCOMPLISHED_BY_LINE:  { x: 450, y: 250 },   // Signature line __________
+  LINEMEN_ACCOMPLISHED_BY_LABEL: { x: 495, y: 697}, // "Accomplished by:" text
+  LINEMEN_ACCOMPLISHED_BY_NAME:  { x: 485, y: 716 }, // User name (indented)
+  LINEMEN_ACCOMPLISHED_BY_LINE:  { x: 450, y: 720 }, // Signature line __________
+
   // ── COPY LABELS (user calibrate position) ─────────────────────────────
-  MSD_COPY_LABEL:    { x: 535, y: 260 },   // "MSD COPY" label - calibrate as needed
-  LINEMEN_COPY_LABEL:{ x: 513, y: 730 },  // "LINEMEN COPY" label - calibrate as needed
+  MSD_COPY_LABEL:    { x: 492, y: 262 },   // "MSD COPY" label - calibrate as needed
+  LINEMEN_COPY_LABEL:{ x: 481.8, y: 732 },  // "LINEMEN COPY" label - calibrate as needed
   CUT_LINE:          { x: 30, y: 470},   // Cut/fold here dashed line - calibrate y as needed
 
   // ── Header (top-right corner) ──────────────────────────────────────────
@@ -60,40 +72,40 @@ const COORDS = {
   MEMO_NO:           { x: 480, y: 38.2  },   // "MEMO No." field value
 
   // ── Checkboxes — LEFT column — PARENT rows ─────────────────────────────
-  CB_NO_LIGHT:       { x: 22.5,  y: 105 },   // □ NO LIGHT/POWER
-  CB_POWER_QUALITY:  { x: 22.5,  y: 165},   // □ POWER Quality Complaint
-  CB_SERVICE_DROP:   { x: 22.5,  y: 217 },   // □ Complaints/Services on Service Drop
+  CB_NO_LIGHT:       { x: 21.8,  y: 106 },   // □ NO LIGHT/POWER
+  CB_POWER_QUALITY:  { x: 21.8,  y: 165},   // □ POWER Quality Complaint
+  CB_SERVICE_DROP:   { x: 21.8,  y: 217 },   // □ Complaints/Services on Service Drop
 
   // ── Checkboxes — LEFT column — SUB-ITEMS (indented, x≈57) ─────────────
   // Sub-items of NO LIGHT/POWER
-  CB_SUB_PRIMARY_LINE:   { x: 44.2, y: 122 },   // □ Primary Line
-  CB_SUB_XFORMER_LINE:   { x: 44.2, y: 136 },   // □ Distribution XFormer/Secondary Line
-  CB_SUB_RESIDENCE:      { x: 44.2, y: 150 },   // □ Residence No Power
+  CB_SUB_PRIMARY_LINE:   { x: 43.8, y: 122 },   // □ Primary Line
+  CB_SUB_XFORMER_LINE:   { x: 43.8, y: 136 },   // □ Distribution XFormer/Secondary Line
+  CB_SUB_RESIDENCE:      { x: 43.8, y: 150 },   // □ Residence No Power
   // Sub-items of POWER Quality Complaint
-  CB_SUB_LOW_VOLTAGE:    { x: 44.2, y: 179 },   // □ Low voltage
-  CB_SUB_FLUCTUATING:    { x: 44.2, y: 191.8},   // □ Fluctuating Voltage
-  CB_SUB_LOOSE:          { x: 44.2, y: 204.8 },   // □ Loose
+  CB_SUB_LOW_VOLTAGE:    { x: 43.8, y: 179 },   // □ Low voltage
+  CB_SUB_FLUCTUATING:    { x: 43.8, y: 191.8},   // □ Fluctuating Voltage
+  CB_SUB_LOOSE:          { x: 43.8, y: 204.8 },   // □ Loose
   // Sub-items of Complaints/Services on Service Drop
-  CB_SUB_REROUTE:        { x: 44.2, y: 231.8 },   // □ Reroute Service Drop
-  CB_SUB_CHANGE_UPGRADE: { x: 44.2, y: 246 },   // □ Change Upgrade Service
+  CB_SUB_REROUTE:        { x: 43.8, y: 231.8 },   // □ Reroute Service Drop
+  CB_SUB_CHANGE_UPGRADE: { x: 43.8, y: 246 },   // □ Change Upgrade Service
 
 
   // ── Checkboxes — RIGHT column — PARENT rows ────────────────────────────
-  CB_POLE:           { x: 239.5, y: 89.5 },   // □ Dist. Pole Complaint and Others
-  CB_METER:          { x: 239.5, y: 147.5 },   // □ Complaints on KWHR Meter
+  CB_POLE:           { x: 238.8, y: 89.5 },   // □ Dist. Pole Complaint and Others
+  CB_METER:          { x: 238.8, y: 147.5 },   // □ Complaints on KWHR Meter
   CB_OTHERS:         { x: 261.8, y: 236.8 },   // □ Others
   CB_OTHERS_TEXT:    { x: 307, y: 236 },   // text on the "Others: ____" line
 
   // ── Checkboxes — RIGHT column — SUB-ITEMS (indented, x≈326) ───────────
   // Sub-items of Dist. Pole Complaint and Others
-  CB_SUB_ROTTEN_POLE:    { x: 261.8, y: 103},  // □ Rotten Pole
+  CB_SUB_ROTTEN_POLE:    { x: 260.8, y: 103},  // □ Rotten Pole
   CB_SUB_LEANING_POLE:   { x: 341.2, y: 103 },  // □ Leaning Pole  (same row, further right)
-  CB_SUB_RELOCATION:     { x: 261.8, y: 119 },  // □ Relocation of
-  CB_SUB_XFORMER_REPL:   { x: 261.8, y: 132.5 },  // □ Distribution Xformer Replacement
+  CB_SUB_RELOCATION:     { x: 260.8, y: 119 },  // □ Relocation of
+  CB_SUB_XFORMER_REPL:   { x: 260.8, y: 132.5 },  // □ Distribution Xformer Replacement
   // Sub-items of Complaints on KWHR Meter
-  CB_SUB_CHECKUP:        { x: 261.8, y: 164.4 },  // □ Check-up of KWHM
-  CB_SUB_CALIBRATION:    { x: 261.8, y: 178.8},  // □ Meter Calibration/Testing
-  CB_SUB_TRANSFER:       { x: 261.8, y: 192.5 },  // □ Transfer of KWHM
+  CB_SUB_CHECKUP:        { x: 260.8, y: 164.4 },  // □ Check-up of KWHM
+  CB_SUB_CALIBRATION:    { x: 260.8, y: 178.8},  // □ Meter Calibration/Testing
+  CB_SUB_TRANSFER:       { x: 260.8, y: 192.5 },  // □ Transfer of KWHM
 
   // ── Form fields (data lines below each label) ──────────────────────────
   REQUESTED_BY:      { x: 85, y: 283 },   // Requested by
@@ -108,7 +120,7 @@ const COORDS = {
   ACTION_TAKEN_L2_Y:       318,   // y for line 2 of ACTION Taken/Remarks (calibrate)
   ACTION_TAKEN_L3_Y:       334,   // y for line 3 of ACTION Taken/Remarks (calibrate)
   CONTACT_NO:        { x: 85, y: 336.8 },   // Contact no.
-  REFERRED_TO:       { x: 383, y: 359.8 },   // Reffered to / Name of Regular Lineman
+  REFERRED_TO:       { x: 383, y: 356.9 },   // Reffered to / Name of Regular Lineman
   RECEIVED_BY:       { x: 99.2,  y: 420},   // Received by
   DATE_RECEIVED:     { x: 116.8,  y: 448 },   // Date/Time Received — ticket reported datetime
   DATE_RECEIVED_MEMO: { x: 116.8,  y: 461 },   // Date/Time Received — memo created datetime (calibrate y)
@@ -124,39 +136,39 @@ const COORDS = {
   LINEMEN_MEMO_NO:           { x: 486.5, y: 507.9  },   // "MEMO No." field value
 
   // Checkboxes — LEFT column — PARENT rows ─────────────────────────────
-  LINEMEN_CB_NO_LIGHT:       { x: 22.5,  y: 505 },   // □ NO LIGHT/POWER
-  LINEMEN_CB_POWER_QUALITY:  { x: 22.5,  y: 565},   // □ POWER Quality Complaint
-  LINEMEN_CB_SERVICE_DROP:   { x: 22.5,  y: 617 },   // □ Complaints/Services on Service Drop
+  LINEMEN_CB_NO_LIGHT:       { x: 21.8,  y: 574 },   // □ NO LIGHT/POWER
+  LINEMEN_CB_POWER_QUALITY:  { x: 21.8,  y: 565},   // □ POWER Quality Complaint
+  LINEMEN_CB_SERVICE_DROP:   { x: 21.8,  y: 617 },   // □ Complaints/Services on Service Drop
 
   // Checkboxes — LEFT column — SUB-ITEMS (indented, x≈57) ─────────────
   // Sub-items of NO LIGHT/POWER
-  LINEMEN_CB_SUB_PRIMARY_LINE:   { x: 44.2, y: 522 },   // □ Primary Line
-  LINEMEN_CB_SUB_XFORMER_LINE:   { x: 44.2, y: 536 },   // □ Distribution XFormer/Secondary Line
-  LINEMEN_CB_SUB_RESIDENCE:      { x: 44.2, y: 550 },   // □ Residence No Power
+  LINEMEN_CB_SUB_PRIMARY_LINE:   { x: 43.8, y: 590.4},   // □ Primary Line
+  LINEMEN_CB_SUB_XFORMER_LINE:   { x: 43.8, y: 604.5 },   // □ Distribution XFormer/Secondary Line
+  LINEMEN_CB_SUB_RESIDENCE:      { x: 43.8, y: 619 },   // □ Residence No Power
   // Sub-items of POWER Quality Complaint
-  LINEMEN_CB_SUB_LOW_VOLTAGE:    { x: 44.2, y: 579 },   // □ Low voltage
-  LINEMEN_CB_SUB_FLUCTUATING:    { x: 44.2, y: 591.8},   // □ Fluctuating Voltage
-  LINEMEN_CB_SUB_LOOSE:          { x: 44.2, y: 604.8 },   // □ Loose
+  LINEMEN_CB_SUB_LOW_VOLTAGE:    { x: 43.8, y: 579 },   // □ Low voltage
+  LINEMEN_CB_SUB_FLUCTUATING:    { x: 43.8, y: 591.8},   // □ Fluctuating Voltage
+  LINEMEN_CB_SUB_LOOSE:          { x: 43.8, y: 604.8 },   // □ Loose
   // Sub-items of Complaints/Services on Service Drop
-  LINEMEN_CB_SUB_REROUTE:        { x: 44.2, y: 631.8 },   // □ Reroute Service Drop
-  LINEMEN_CB_SUB_CHANGE_UPGRADE: { x: 44.2, y: 646 },   // □ Change Upgrade Service
+  LINEMEN_CB_SUB_REROUTE:        { x: 43.8, y: 631.8 },   // □ Reroute Service Drop
+  LINEMEN_CB_SUB_CHANGE_UPGRADE: { x: 43.8, y: 646 },   // □ Change Upgrade Service
 
   // Checkboxes — RIGHT column — PARENT rows ────────────────────────────
-  LINEMEN_CB_POLE:           { x: 239.5, y: 489.5 },   // □ Dist. Pole Complaint and Others
-  LINEMEN_CB_METER:          { x: 239.5, y: 547.5 },   // □ Complaints on KWHR Meter
+  LINEMEN_CB_POLE:           { x: 238.8, y: 489.5 },   // □ Dist. Pole Complaint and Others
+  LINEMEN_CB_METER:          { x: 238.8, y: 616.8 },   // □ Complaints on KWHR Meter
   LINEMEN_CB_OTHERS:         { x: 261.8, y: 707.8 },   // □ Others
   LINEMEN_CB_OTHERS_TEXT:    { x: 307, y: 704.4 },   // text on the "Others: ____" line
 
   // Checkboxes — RIGHT column — SUB-ITEMS (indented, x≈326) ───────────
   // Sub-items of Dist. Pole Complaint and Others
-  LINEMEN_CB_SUB_ROTTEN_POLE:    { x: 261.8, y: 503},  // □ Rotten Pole
+  LINEMEN_CB_SUB_ROTTEN_POLE:    { x: 260.8, y: 503},  // □ Rotten Pole
   LINEMEN_CB_SUB_LEANING_POLE:   { x: 341.2, y: 503 },  // □ Leaning Pole  (same row, further right)
-  LINEMEN_CB_SUB_RELOCATION:     { x: 261.8, y: 519 },  // □ Relocation of
-  LINEMEN_CB_SUB_XFORMER_REPL:   { x: 261.8, y: 532.5 },  // □ Distribution Xformer Replacement
+  LINEMEN_CB_SUB_RELOCATION:     { x: 260.8, y: 519 },  // □ Relocation of
+  LINEMEN_CB_SUB_XFORMER_REPL:   { x: 260.8, y: 532.5 },  // □ Distribution Xformer Replacement
   // Sub-items of Complaints on KWHR Meter
-  LINEMEN_CB_SUB_CHECKUP:        { x: 261.8, y: 564.4 },  // □ Check-up of KWHM
-  LINEMEN_CB_SUB_CALIBRATION:    { x: 261.8, y: 578.8},  // □ Meter Calibration/Testing
-  LINEMEN_CB_SUB_TRANSFER:       { x: 261.8, y: 592.5 },  // □ Transfer of KWHM
+  LINEMEN_CB_SUB_CHECKUP:        { x: 260.8, y: 564.4 },  // □ Check-up of KWHM
+  LINEMEN_CB_SUB_CALIBRATION:    { x: 260.8, y: 578.8},  // □ Meter Calibration/Testing
+  LINEMEN_CB_SUB_TRANSFER:       { x: 260.8, y: 662.9 },  // □ Transfer of KWHM
 
   // Form fields (data lines below each label) ──────────────────────────
   LINEMEN_REQUESTED_BY:      { x: 85, y: 752.5 },   // Requested by
@@ -171,11 +183,11 @@ const COORDS = {
   LINEMEN_ACTION_TAKEN_L2_Y:       792.8, // y for line 2 of ACTION Taken/Remarks (16pt below line 1)
   LINEMEN_ACTION_TAKEN_L3_Y:       808.8, // y for line 3 of ACTION Taken/Remarks (16pt below line 2)
   LINEMEN_CONTACT_NO:        { x: 85, y: 808 },   // Contact no.
-  LINEMEN_REFERRED_TO:       { x: 383, y: 832.8 },   // Reffered to / Name of Regular Lineman
+  LINEMEN_REFERRED_TO:       { x: 383, y: 830 },   // Reffered to / Name of Regular Lineman
   LINEMEN_RECEIVED_BY:       { x: 99.2,  y: 894.5},   // Received by
   LINEMEN_DATE_RECEIVED:     { x: 116.8,  y: 923},   // Date/Time Received — ticket reported datetime
-  LINEMEN_DATE_ARRIVED:      { x: 397, y: 817 },   // Date Arrived on Site
-  LINEMEN_TIME_ON_SITE:      { x: 540, y: 817.9 },   // Time on Site
+  LINEMEN_DATE_ARRIVED:      { x: 397, y: 891 },   // Date Arrived on Site
+  LINEMEN_TIME_ON_SITE:      { x: 540, y: 891 },   // Time on Site
   LINEMEN_DATE_ACCOMPLISHED: { x: 445, y: 918},   // Date/Time Accomplished
   LINEMEN_DATE_RECEIVED_MEMO: { x: 425, y: 867 },   // Date/Time when memo was created
 };
@@ -392,7 +404,7 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
    * 'X' is a safe Latin-1 character that is universally supported.
    */
   const drawCheckmark = (x, y, checked) => {
-    if (checked) drawText('X', x, y, { size: 9, bold: true });
+    if (checked) drawText('X', x, y, { size: 11, bold: true });
   };
 
   // ─── DATE / TIME FORMATTERS ─────────────────────────────────────────────────
@@ -406,7 +418,7 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     const s = String(dateStr).slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
     const [y, m, d] = s.split('-');
-    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const MONTHS = ['Jan','Feb','March','April','May','June','July','Aug','Sept','Oct','Nov','Dec'];
     const monthName = MONTHS[parseInt(m, 10) - 1] || m;
     return `${monthName} ${d}, ${y}`;
   };
@@ -421,7 +433,7 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     const match = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
     if (!match) return s.slice(0, 19);
     const [, y, m, d, hh, mm] = match;
-    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const MONTHS = ['Jan','Feb','March','April','May','June','July','Aug','Sept','Oct','Nov','Dec'];
     const mon = MONTHS[parseInt(m, 10) - 1];
     const hour = parseInt(hh, 10);
     const period = hour >= 12 ? 'PM' : 'AM';
@@ -462,8 +474,8 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
 
   // ─── HEADER ─────────────────────────────────────────────────────────────────
   // Light/semi-bold: regular weight at slightly larger size (less harsh than full bold)
-  drawText(formatDate(intakeDate),    COORDS.DATE.x,    COORDS.DATE.y,    { size: 9.5 });
-  drawText(memo.control_number || '', COORDS.MEMO_NO.x, COORDS.MEMO_NO.y, { size: 9.5 });
+  drawText(formatDate(intakeDate),    COORDS.DATE.x,    COORDS.DATE.y,    { size: 11.5 });
+  drawText(memo.control_number || '', COORDS.MEMO_NO.x, COORDS.MEMO_NO.y, { size: 11.5 });
 
   // ─── CHECKBOXES — parent group + matching sub-item ────────────────────────
   // Each category marks its PARENT checkbox and its specific sub-item checkbox.
@@ -523,22 +535,22 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
   drawCheckmark(COORDS.CB_OTHERS.x, COORDS.CB_OTHERS.y, isOthers);
   if (isOthers && memo.category) {
     drawText(memo.category, COORDS.CB_OTHERS_TEXT.x, COORDS.CB_OTHERS_TEXT.y,
-      { size: 8, maxWidth: 210 });
+      { size: 10, maxWidth: 210 });
   }
 
   // ─── FORM FIELDS ────────────────────────────────────────────────────────────
   drawText(memo.requested_by || '', COORDS.REQUESTED_BY.x, COORDS.REQUESTED_BY.y,
-    { size: 9, maxWidth: 185 });
+    { size: 11, maxWidth: 185 });
   drawText(memo.location     || '', COORDS.LOCATION.x,     COORDS.LOCATION.y,
-    { size: 9, maxWidth: 170 });
+    { size: 11, maxWidth: 170 });
   drawText(memo.location     || '', COORDS.ADDRESS.x,      COORDS.ADDRESS.y,
-    { size: 9, maxWidth: 230 });
+    { size: 11, maxWidth: 230 });
   // ACTION Taken/Remarks — template provides 3 underlined rows; wrap long input
   // across them. Line 1 starts after the "ACTION Taken/Remarks:" label, but
   // lines 2 & 3 have no label in the way and can use the full underline width
   // starting much further left.
   drawWrappedText(memo.action_taken || '', COORDS.ACTION_TAKEN.x, COORDS.ACTION_TAKEN.y, {
-    size: 9,
+    size: 11,
     maxWidth: 170,
     maxLines: 3,
     continuationX:        COORDS.ACTION_TAKEN_CONT_X,
@@ -552,46 +564,75 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     ],
   });
   drawText(memo.contact_no   || '', COORDS.CONTACT_NO.x,   COORDS.CONTACT_NO.y,
-    { size: 9, maxWidth: 185 });
+    { size: 11, maxWidth: 185 });
   drawText(memo.referred_to  || '', COORDS.REFERRED_TO.x,  COORDS.REFERRED_TO.y,
-    { size: 9, maxWidth: 170 });
+    { size: 11, maxWidth: 170 });
   drawText(memo.received_by  || '', COORDS.RECEIVED_BY.x,  COORDS.RECEIVED_BY.y,
-    { size: 9, maxWidth: 145 });
+    { size: 11, maxWidth: 145 });
 
   // DATE_RECEIVED = when the ticket was reported (ticket_created_at)
   drawText(
     formatFullDateTime(memo.ticket_created_at),
-    COORDS.DATE_RECEIVED.x, COORDS.DATE_RECEIVED.y, { size: 8, maxWidth: 200 }
+    COORDS.DATE_RECEIVED.x, COORDS.DATE_RECEIVED.y, { size: 10, maxWidth: 200 }
   );
   drawText(
     formatDate(memo.site_arrived_date),
-    COORDS.DATE_ARRIVED.x, COORDS.DATE_ARRIVED.y, { size: 8, maxWidth: 90 }
+    COORDS.DATE_ARRIVED.x, COORDS.DATE_ARRIVED.y, { size: 10, maxWidth: 90 }
   );
   drawText(
     formatTime(memo.site_arrived_time),
-    COORDS.TIME_ON_SITE.x, COORDS.TIME_ON_SITE.y, { size: 8, maxWidth: 75 }
+    COORDS.TIME_ON_SITE.x, COORDS.TIME_ON_SITE.y, { size: 10, maxWidth: 75 }
   );
   drawText(
     formatDateTimeField(memo.finished_date, memo.finished_time),
-    COORDS.DATE_ACCOMPLISHED.x, COORDS.DATE_ACCOMPLISHED.y, { size: 8, maxWidth: 175 }
+    COORDS.DATE_ACCOMPLISHED.x, COORDS.DATE_ACCOMPLISHED.y, { size: 10, maxWidth: 175 }
   );
   drawText(
     formatDateTimeField(memo.referral_received_date, memo.referral_received_time),
-    COORDS.REF_DATE_RECEIVED.x, COORDS.REF_DATE_RECEIVED.y, { size: 8, maxWidth: 200 }
+    COORDS.REF_DATE_RECEIVED.x, COORDS.REF_DATE_RECEIVED.y, { size: 10, maxWidth: 200 }
   );
 
+  // ─── ACCOMPLISHED BY ───────────────────────────────────────────────────────
+  // Compact 3-line layout: "Accomplished by:" / (name) / ________________
+  // COORDINATES: Adjust these to move the text up/down/left/right
+  //   MSD: label(450, 232), name(470, 241), line(450, 250)
+  //   LINEMEN: label(450, 702), name(470, 711), line(450, 720)
+  
+  // Use closed_by if available, fallback to owner_name (memo creator), or empty
+  const closedByName = memo.closed_by || memo.owner_name || '';
+  
+  // MSD COPY - Compact 3-line layout (original smaller size)
+  drawText('Accomplished by:', COORDS.MSD_ACCOMPLISHED_BY_LABEL.x, COORDS.MSD_ACCOMPLISHED_BY_LABEL.y, 
+    { size: 7 });
+  if (closedByName) {
+    drawText(closedByName, COORDS.MSD_ACCOMPLISHED_BY_NAME.x, COORDS.MSD_ACCOMPLISHED_BY_NAME.y, 
+      { size: 7, maxWidth: 100 });
+  }
+  drawText('________________________________________', COORDS.MSD_ACCOMPLISHED_BY_LINE.x, 
+    COORDS.MSD_ACCOMPLISHED_BY_LINE.y, { size: 7, maxWidth: 140 });
+  
+  // LINEMEN COPY - Compact 3-line layout (original smaller size)
+  drawText('Accomplished by:', COORDS.LINEMEN_ACCOMPLISHED_BY_LABEL.x, COORDS.LINEMEN_ACCOMPLISHED_BY_LABEL.y, 
+    { size: 7 });
+  if (closedByName) {
+    drawText(closedByName, COORDS.LINEMEN_ACCOMPLISHED_BY_NAME.x, COORDS.LINEMEN_ACCOMPLISHED_BY_NAME.y, 
+      { size: 7, maxWidth: 100 });
+  }
+  drawText('________________________________________', COORDS.LINEMEN_ACCOMPLISHED_BY_LINE.x, 
+    COORDS.LINEMEN_ACCOMPLISHED_BY_LINE.y, { size: 7, maxWidth: 140 });
+
   // ─── COPY LABELS ────────────────────────────────────────────────────────────
-  drawText('MSD COPY', COORDS.MSD_COPY_LABEL.x, COORDS.MSD_COPY_LABEL.y, { size: 10, bold: true });
-  drawText('LINEMEN COPY', COORDS.LINEMEN_COPY_LABEL.x, COORDS.LINEMEN_COPY_LABEL.y, { size: 10, bold: true });
+  drawText('MSD COPY', COORDS.MSD_COPY_LABEL.x, COORDS.MSD_COPY_LABEL.y, { size: 12, bold: true });
+  drawText('LINEMEN COPY', COORDS.LINEMEN_COPY_LABEL.x, COORDS.LINEMEN_COPY_LABEL.y, { size: 12, bold: true });
 
   // ─── CUT/FOLD LINE ──────────────────────────────────────────────────────────
-  drawText('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -', COORDS.CUT_LINE.x, COORDS.CUT_LINE.y, { size: 10, bold: true, maxWidth: 550 });
+  drawText('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -', COORDS.CUT_LINE.x, COORDS.CUT_LINE.y, { size: 12, bold: true, maxWidth: 550 });
 
   // ─── LINEMEN COPY ───────────────────────────────────────────────────────────
   // ── Header ─────────────────────────────────────────────────────────────────
   // Light/semi-bold: regular weight at slightly larger size (less harsh than full bold)
-  drawText(formatDate(intakeDate),    COORDS.LINEMEN_DATE.x,    COORDS.LINEMEN_DATE.y,    { size: 9.5 });
-  drawText(memo.control_number || '', COORDS.LINEMEN_MEMO_NO.x, COORDS.LINEMEN_MEMO_NO.y, { size: 9.5 });
+  drawText(formatDate(intakeDate),    COORDS.LINEMEN_DATE.x,    COORDS.LINEMEN_DATE.y,    { size: 11.5 });
+  drawText(memo.control_number || '', COORDS.LINEMEN_MEMO_NO.x, COORDS.LINEMEN_MEMO_NO.y, { size: 11.5 });
 
   // ── Checkboxes — parent group + matching sub-item ────────────────────────
   // NO LIGHT/POWER parent + sub-items
@@ -643,18 +684,18 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
   drawCheckmark(COORDS.LINEMEN_CB_OTHERS.x, COORDS.LINEMEN_CB_OTHERS.y, isOthers);
   if (isOthers && memo.category) {
     drawText(memo.category, COORDS.LINEMEN_CB_OTHERS_TEXT.x, COORDS.LINEMEN_CB_OTHERS_TEXT.y,
-      { size: 8, maxWidth: 210 });
+      { size: 10, maxWidth: 210 });
   }
 
   // ── Form Fields ────────────────────────────────────────────────────────────
   drawText(memo.requested_by || '', COORDS.LINEMEN_REQUESTED_BY.x, COORDS.LINEMEN_REQUESTED_BY.y,
-    { size: 9, maxWidth: 185 });
+    { size: 11, maxWidth: 185 });
   drawText(memo.location     || '', COORDS.LINEMEN_LOCATION.x,     COORDS.LINEMEN_LOCATION.y,
-    { size: 9, maxWidth: 170 });
+    { size: 11, maxWidth: 170 });
   drawText(memo.location     || '', COORDS.LINEMEN_ADDRESS.x,      COORDS.LINEMEN_ADDRESS.y,
-    { size: 9, maxWidth: 230 });
+    { size: 11, maxWidth: 230 });
   drawWrappedText(memo.action_taken || '', COORDS.LINEMEN_ACTION_TAKEN.x, COORDS.LINEMEN_ACTION_TAKEN.y, {
-    size: 9,
+    size: 11,
     maxWidth: 170,
     maxLines: 3,
     continuationX:        COORDS.LINEMEN_ACTION_TAKEN_CONT_X,
@@ -666,33 +707,33 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     ],
   });
   drawText(memo.contact_no   || '', COORDS.LINEMEN_CONTACT_NO.x,   COORDS.LINEMEN_CONTACT_NO.y,
-    { size: 9, maxWidth: 185 });
+    { size: 11, maxWidth: 185 });
   drawText(memo.referred_to  || '', COORDS.LINEMEN_REFERRED_TO.x,  COORDS.LINEMEN_REFERRED_TO.y,
-    { size: 9, maxWidth: 170 });
+    { size: 11, maxWidth: 170 });
   drawText(memo.received_by  || '', COORDS.LINEMEN_RECEIVED_BY.x,  COORDS.LINEMEN_RECEIVED_BY.y,
-    { size: 9, maxWidth: 145 });
+    { size: 11, maxWidth: 145 });
 
   // DATE_RECEIVED = when the ticket was reported (ticket_created_at)
   drawText(
     formatFullDateTime(memo.ticket_created_at),
-    COORDS.LINEMEN_DATE_RECEIVED.x, COORDS.LINEMEN_DATE_RECEIVED.y, { size: 8, maxWidth: 200 }
+    COORDS.LINEMEN_DATE_RECEIVED.x, COORDS.LINEMEN_DATE_RECEIVED.y, { size: 10, maxWidth: 200 }
   );
   drawText(
     formatDate(memo.site_arrived_date),
-    COORDS.LINEMEN_DATE_ARRIVED.x, COORDS.LINEMEN_DATE_ARRIVED.y, { size: 8, maxWidth: 90 }
+    COORDS.LINEMEN_DATE_ARRIVED.x, COORDS.LINEMEN_DATE_ARRIVED.y, { size: 10, maxWidth: 90 }
   );
   drawText(
     formatTime(memo.site_arrived_time),
-    COORDS.LINEMEN_TIME_ON_SITE.x, COORDS.LINEMEN_TIME_ON_SITE.y, { size: 8, maxWidth: 75 }
+    COORDS.LINEMEN_TIME_ON_SITE.x, COORDS.LINEMEN_TIME_ON_SITE.y, { size: 10, maxWidth: 75 }
   );
   drawText(
     formatDateTimeField(memo.finished_date, memo.finished_time),
-    COORDS.LINEMEN_DATE_ACCOMPLISHED.x, COORDS.LINEMEN_DATE_ACCOMPLISHED.y, { size: 8, maxWidth: 175 }
+    COORDS.LINEMEN_DATE_ACCOMPLISHED.x, COORDS.LINEMEN_DATE_ACCOMPLISHED.y, { size: 10, maxWidth: 175 }
   );
   // Memo created date (when service memo was created) at position 425, 793
   drawText(
     formatFullDateTime(memo.created_at),
-    COORDS.LINEMEN_DATE_RECEIVED_MEMO.x, COORDS.LINEMEN_DATE_RECEIVED_MEMO.y, { size: 8, maxWidth: 200 }
+    COORDS.LINEMEN_DATE_RECEIVED_MEMO.x, COORDS.LINEMEN_DATE_RECEIVED_MEMO.y, { size: 10, maxWidth: 200 }
   );
 
   const pdfBytes = await pdfDoc.save();

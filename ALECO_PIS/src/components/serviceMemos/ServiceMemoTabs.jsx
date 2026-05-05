@@ -48,6 +48,40 @@ const ServiceMemoTabs = ({ filters, setFilters, activeTab, setActiveTab }) => {
               <option value="AccessDenied">Access Denied</option>
             </select>
           </div>
+          <div className="service-memo-search-field service-memo-inline-desktop-field">
+            <label className="service-memo-search-label">Municipality</label>
+            <select
+              className="service-memo-search-input service-memo-search-select"
+              value={filters.municipality || ''}
+              onChange={(e) => setFilters((p) => ({ ...p, municipality: e.target.value }))}
+            >
+              <option value="">All municipalities</option>
+              <optgroup label="1st District (North Albay)">
+                <option value="Bacacay">Bacacay</option>
+                <option value="Malilipot">Malilipot</option>
+                <option value="Malinao">Malinao</option>
+                <option value="Santo Domingo">Santo Domingo</option>
+                <option value="Tabaco City">Tabaco City</option>
+                <option value="Tiwi">Tiwi</option>
+              </optgroup>
+              <optgroup label="2nd District (Central Albay)">
+                <option value="Camalig">Camalig</option>
+                <option value="Daraga">Daraga</option>
+                <option value="Legazpi City">Legazpi City</option>
+                <option value="Manito">Manito</option>
+                <option value="Rapu-Rapu">Rapu-Rapu</option>
+              </optgroup>
+              <optgroup label="3rd District (South Albay)">
+                <option value="Guinobatan">Guinobatan</option>
+                <option value="Jovellar">Jovellar</option>
+                <option value="Libon">Libon</option>
+                <option value="Ligao City">Ligao City</option>
+                <option value="Oas">Oas</option>
+                <option value="Pio Duran">Pio Duran</option>
+                <option value="Polangui">Polangui</option>
+              </optgroup>
+            </select>
+          </div>
         </div>
 
         {/* Row 2: Acc# + Memo# always; Name injected on desktop */}

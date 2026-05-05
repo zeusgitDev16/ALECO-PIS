@@ -85,6 +85,7 @@ export async function listServiceMemos({
   searchCustomer = '',
   searchAddress = '',
   status = '',
+  municipality = '',
   startDate = '',
   endDate = '',
   owner = '',
@@ -98,6 +99,7 @@ export async function listServiceMemos({
   if (searchCustomer) qs.set('searchCustomer', searchCustomer);
   if (searchAddress) qs.set('searchAddress', searchAddress);
   if (status) qs.set('status', status);
+  if (municipality) qs.set('municipality', municipality);
   if (startDate) qs.set('startDate', startDate);
   if (endDate) qs.set('endDate', endDate);
   if (owner) qs.set('owner', owner);

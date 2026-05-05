@@ -92,6 +92,7 @@ router.get('/service-memos', requireStaff, async (req, res) => {
       searchCustomer,
       searchAddress,
       status,
+      municipality,
       startDate,
       endDate,
       owner,
@@ -173,6 +174,11 @@ router.get('/service-memos', requireStaff, async (req, res) => {
     if (status && status.trim()) {
       query += ` AND sm.ticket_status = ?`;
       params.push(status.trim());
+    }
+
+    if (municipality && municipality.trim()) {
+      query += ` AND t.municipality = ?`;
+      params.push(municipality.trim());
     }
 
     if (tab === 'all' && owner && owner.trim()) {

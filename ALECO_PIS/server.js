@@ -24,7 +24,7 @@ import b2bMailRoutes from './backend/routes/b2b-mail.js';
 import serviceMemosRoutes from './backend/routes/service-memos.js';
 import notificationsRoutes from './backend/routes/notifications.js';
 import historyRoutes from './backend/routes/history.js';
-import pool from './backend/config/db.js';
+import pool, { getHeartbeatStats } from './backend/config/db.js';
 import {
   transitionScheduledStarts,
   autoArchiveResolvedInterruptions,
@@ -143,6 +143,20 @@ app.use('/api', (req, res, next) => {
 app.get('/api/health', (req, res) => {
     res.set('Cache-Control', 'no-store');
     res.json({ ok: true, service: 'aleco-pis-api', ts: new Date().toISOString() });
+});
+
+/** DB connectivity diagnostic — shows heartbeat, circuit breaker, and queue status.
+ *  Intentionally public (no auth) so Oracle VM monitoring scripts / uptime checkers
+ *  can hit it without credentials. Returns 503 if the DB is considered unhealthy. */
+app.get('/api/db-health', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const stats = getHeartbeatStats();
+    const ok = stats.heartbeat.healthy && stats.circuitState === 'closed';
+    res.status(ok ? 200 : 503).json({
+        ok,
+        ts: new Date().toISOString(),
+        ...stats,
+    });
 });
 
 // Protected API routes require X-User-Email + X-Token-Version (see requireApiSession.js public allowlist).

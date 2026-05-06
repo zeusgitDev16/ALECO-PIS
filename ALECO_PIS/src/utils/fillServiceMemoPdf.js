@@ -123,7 +123,7 @@ const COORDS = {
   REFERRED_TO:       { x: 383, y: 356.9 },   // Reffered to / Name of Regular Lineman
   RECEIVED_BY:       { x: 99.2,  y: 420},   // Received by
   DATE_RECEIVED:     { x: 116.8,  y: 448 },   // Date/Time Received — ticket reported datetime
-  DATE_RECEIVED_MEMO: { x: 116.8,  y: 461 },   // Date/Time Received — memo created datetime (calibrate y)
+  DATE_RECEIVED_MEMO: { x: 494,  y: 393 },   // Date/Time Received — memo created datetime (right-side field, same line as REF_DATE_RECEIVED)
   DATE_ARRIVED:      { x: 397, y: 417 },   // Date Arrived on Site
   TIME_ON_SITE:      { x: 540, y: 417.9 },   // Time on Site
   DATE_ACCOMPLISHED: { x: 445, y: 443.5},   // Date/Time Accomplished
@@ -137,8 +137,8 @@ const COORDS = {
 
   // Checkboxes — LEFT column — PARENT rows ─────────────────────────────
   LINEMEN_CB_NO_LIGHT:       { x: 21.8,  y: 574 },   // □ NO LIGHT/POWER
-  LINEMEN_CB_POWER_QUALITY:  { x: 21.8,  y: 565},   // □ POWER Quality Complaint
-  LINEMEN_CB_SERVICE_DROP:   { x: 21.8,  y: 617 },   // □ Complaints/Services on Service Drop
+  LINEMEN_CB_POWER_QUALITY:  { x: 21.8,  y: 635.8},   // □ POWER Quality Complaint
+  LINEMEN_CB_SERVICE_DROP:   { x: 21.8,  y: 688.8 },   // □ Complaints/Services on Service Drop
 
   // Checkboxes — LEFT column — SUB-ITEMS (indented, x≈57) ─────────────
   // Sub-items of NO LIGHT/POWER
@@ -146,28 +146,28 @@ const COORDS = {
   LINEMEN_CB_SUB_XFORMER_LINE:   { x: 43.8, y: 604.5 },   // □ Distribution XFormer/Secondary Line
   LINEMEN_CB_SUB_RESIDENCE:      { x: 43.8, y: 619 },   // □ Residence No Power
   // Sub-items of POWER Quality Complaint
-  LINEMEN_CB_SUB_LOW_VOLTAGE:    { x: 43.8, y: 579 },   // □ Low voltage
-  LINEMEN_CB_SUB_FLUCTUATING:    { x: 43.8, y: 591.8},   // □ Fluctuating Voltage
-  LINEMEN_CB_SUB_LOOSE:          { x: 43.8, y: 604.8 },   // □ Loose
+  LINEMEN_CB_SUB_LOW_VOLTAGE:    { x: 43.8, y: 649.2 },   // □ Low voltage
+  LINEMEN_CB_SUB_FLUCTUATING:    { x: 43.8, y: 661.8},   // □ Fluctuating Voltage
+  LINEMEN_CB_SUB_LOOSE:          { x: 43.8, y: 674.8 },   // □ Loose
   // Sub-items of Complaints/Services on Service Drop
-  LINEMEN_CB_SUB_REROUTE:        { x: 43.8, y: 631.8 },   // □ Reroute Service Drop
-  LINEMEN_CB_SUB_CHANGE_UPGRADE: { x: 43.8, y: 646 },   // □ Change Upgrade Service
+  LINEMEN_CB_SUB_REROUTE:        { x: 43.8, y: 702.8 },   // □ Reroute Service Drop
+  LINEMEN_CB_SUB_CHANGE_UPGRADE: { x: 43.8, y: 717.4 },   // □ Change Upgrade Service
 
   // Checkboxes — RIGHT column — PARENT rows ────────────────────────────
-  LINEMEN_CB_POLE:           { x: 238.8, y: 489.5 },   // □ Dist. Pole Complaint and Others
+  LINEMEN_CB_POLE:           { x: 238.8, y: 558.5 },   // □ Dist. Pole Complaint and Others
   LINEMEN_CB_METER:          { x: 238.8, y: 616.8 },   // □ Complaints on KWHR Meter
   LINEMEN_CB_OTHERS:         { x: 261.8, y: 707.8 },   // □ Others
   LINEMEN_CB_OTHERS_TEXT:    { x: 307, y: 704.4 },   // text on the "Others: ____" line
 
   // Checkboxes — RIGHT column — SUB-ITEMS (indented, x≈326) ───────────
   // Sub-items of Dist. Pole Complaint and Others
-  LINEMEN_CB_SUB_ROTTEN_POLE:    { x: 260.8, y: 503},  // □ Rotten Pole
-  LINEMEN_CB_SUB_LEANING_POLE:   { x: 341.2, y: 503 },  // □ Leaning Pole  (same row, further right)
-  LINEMEN_CB_SUB_RELOCATION:     { x: 260.8, y: 519 },  // □ Relocation of
-  LINEMEN_CB_SUB_XFORMER_REPL:   { x: 260.8, y: 532.5 },  // □ Distribution Xformer Replacement
+  LINEMEN_CB_SUB_ROTTEN_POLE:    { x: 260.8, y: 572.8},  // □ Rotten Pole
+  LINEMEN_CB_SUB_LEANING_POLE:   { x: 341.2, y: 572.8 },  // □ Leaning Pole  (same row, further right)
+  LINEMEN_CB_SUB_RELOCATION:     { x: 260.8, y: 586.8 },  // □ Relocation of
+  LINEMEN_CB_SUB_XFORMER_REPL:   { x: 260.8, y: 601.5 },  // □ Distribution Xformer Replacement
   // Sub-items of Complaints on KWHR Meter
-  LINEMEN_CB_SUB_CHECKUP:        { x: 260.8, y: 564.4 },  // □ Check-up of KWHM
-  LINEMEN_CB_SUB_CALIBRATION:    { x: 260.8, y: 578.8},  // □ Meter Calibration/Testing
+  LINEMEN_CB_SUB_CHECKUP:        { x: 260.8, y: 634.4 },  // □ Check-up of KWHM
+  LINEMEN_CB_SUB_CALIBRATION:    { x: 260.8, y: 648.8},  // □ Meter Calibration/Testing
   LINEMEN_CB_SUB_TRANSFER:       { x: 260.8, y: 662.9 },  // □ Transfer of KWHM
 
   // Form fields (data lines below each label) ──────────────────────────
@@ -423,21 +423,33 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     return `${monthName} ${d}, ${y}`;
   };
 
-  // Format a MySQL datetime string into "May 04, 2026 8:23 AM".
-  // The pool uses dateStrings: true + timezone: '+08:00', so the value arrives as
-  // a plain "YYYY-MM-DD HH:MM:SS" string already in PHT — parse it directly to
-  // avoid any UTC shift that new Date() would introduce.
+  // Format a datetime string into "May 04, 2026 8:23 AM" in Philippine Time (PHT, UTC+8).
+  // ALL datetime values from the DB (created_at, ticket_created_at) are stored as UTC.
+  // The pool's dateStrings:true returns them as plain "YYYY-MM-DD HH:MM:SS" UTC strings —
+  // no Z suffix, no timezone info — identical to how dateUtils.js treats them with dayjs.utc().add(8).
+  // So we always add +8 hours regardless of format.
   const formatFullDateTime = (datetimeStr) => {
     if (!datetimeStr) return '';
     const s = String(datetimeStr);
-    const match = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
-    if (!match) return s.slice(0, 19);
-    const [, y, m, d, hh, mm] = match;
     const MONTHS = ['Jan','Feb','March','April','May','June','July','Aug','Sept','Oct','Nov','Dec'];
-    const mon = MONTHS[parseInt(m, 10) - 1];
-    const hour = parseInt(hh, 10);
+
+    // Normalise: replace space separator with T so new Date() can parse it,
+    // then append Z to force UTC interpretation.
+    const normalised = s.slice(0, 19).replace(' ', 'T') + 'Z';
+    const utcMs = new Date(normalised).getTime();
+    if (isNaN(utcMs)) return s.slice(0, 19);
+
+    // Add +8 hours to get PHT
+    const phtMs = utcMs + 8 * 60 * 60 * 1000;
+    const pht   = new Date(phtMs);
+
+    const mon    = MONTHS[pht.getUTCMonth()];
+    const d      = String(pht.getUTCDate()).padStart(2, '0');
+    const y      = pht.getUTCFullYear();
+    const hour   = pht.getUTCHours();
+    const mm     = String(pht.getUTCMinutes()).padStart(2, '0');
     const period = hour >= 12 ? 'PM' : 'AM';
-    const h12 = hour % 12 === 0 ? 12 : hour % 12;
+    const h12    = hour % 12 === 0 ? 12 : hour % 12;
     return `${mon} ${d}, ${y} ${h12}:${mm} ${period}`;
   };
 
@@ -587,9 +599,10 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     formatDateTimeField(memo.finished_date, memo.finished_time),
     COORDS.DATE_ACCOMPLISHED.x, COORDS.DATE_ACCOMPLISHED.y, { size: 10, maxWidth: 175 }
   );
+  // DATE_RECEIVED_MEMO = when the service memo was created — right-side Date/Time Received field
   drawText(
-    formatDateTimeField(memo.referral_received_date, memo.referral_received_time),
-    COORDS.REF_DATE_RECEIVED.x, COORDS.REF_DATE_RECEIVED.y, { size: 10, maxWidth: 200 }
+    formatFullDateTime(memo.created_at),
+    COORDS.DATE_RECEIVED_MEMO.x, COORDS.DATE_RECEIVED_MEMO.y, { size: 10, maxWidth: 200 }
   );
 
   // ─── ACCOMPLISHED BY ───────────────────────────────────────────────────────

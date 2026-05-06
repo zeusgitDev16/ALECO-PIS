@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import AdminLayout from './components/AdminLayout';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -7,16 +7,28 @@ import {
 import { 
     FaTicketAlt, FaClock, FaCheckCircle, FaExclamationTriangle, 
     FaMapMarkerAlt, FaChartPie, FaChartLine, FaListUl,
-    FaTools, FaExclamationCircle, FaSearch, FaLock, FaBolt, FaCalendarAlt, FaUsers
+    FaTools, FaExclamationCircle, FaSearch, FaLock, FaBolt, FaCalendarAlt, FaUsers,
+    FaFileAlt, FaUserShield, FaUserTie, FaArrowRight
 } from 'react-icons/fa';
 import axios from 'axios';
 import { apiUrl } from './utils/api';
 import useTickets from './utils/useTickets';
-import { FaEnvelope, FaPaperPlane, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa'; // New B2B icons
+import { FaEnvelope, FaPaperPlane, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa';
+import { authFetch } from './utils/authFetch';
 import './CSS/AdminPageLayout.css';
 import './CSS/Dashboard.css';
 
 const AdminDashboard = () => {
+    /* Mark admin-content as the dashboard scroll host's positioning anchor.
+       Cannot rely on :has() in all browsers — this guarantees the rule
+       applies and the internal scroll container fills it. */
+    useEffect(() => {
+        const el = document.querySelector('.admin-content');
+        if (!el) return;
+        el.classList.add('has-dashboard-scroll');
+        return () => el.classList.remove('has-dashboard-scroll');
+    }, []);
+
     const [greeting, setGreeting] = useState('');
     const [userName, setUserName] = useState('');
     const [currentDate, setCurrentDate] = useState('');
@@ -24,6 +36,74 @@ const AdminDashboard = () => {
     const [loadingAdvisories, setLoadingAdvisories] = useState(true);
 
     const { tickets = [], loading } = useTickets();
+
+    // ── Real data state ──
+    const [b2bMessages,    setB2bMessages]    = useState([]);
+    const [b2bContacts,    setB2bContacts]    = useState([]);
+    const [b2bLoading,     setB2bLoading]     = useState(true);
+    const [crews,          setCrews]          = useState([]);
+    const [linemen,        setLinemen]        = useState([]);
+    const [personnelLoading, setPersonnelLoading] = useState(true);
+    const [memos,          setMemos]          = useState([]);
+    const [memosLoading,   setMemosLoading]   = useState(true);
+    const [users,          setUsers]          = useState([]);
+    const [usersLoading,   setUsersLoading]   = useState(true);
+
+    const fetchRealData = useCallback(async () => {
+        try {
+            const [b2bMsgRes, b2bCtcRes, crewsRes, linemanRes, memosRes, usersRes] = await Promise.allSettled([
+                authFetch(apiUrl('/api/b2b-mail/messages')),
+                authFetch(apiUrl('/api/b2b-mail/contacts')),
+                authFetch(apiUrl('/api/crews/list')),
+                authFetch(apiUrl('/api/pool/list')),
+                authFetch(apiUrl('/api/service-memos')),
+                authFetch(apiUrl('/api/users')),
+            ]);
+
+            if (b2bMsgRes.status === 'fulfilled' && b2bMsgRes.value.ok) {
+                const d = await b2bMsgRes.value.json();
+                setB2bMessages(Array.isArray(d.data) ? d.data : []);
+            }
+            setB2bLoading(false);
+
+            if (b2bCtcRes.status === 'fulfilled' && b2bCtcRes.value.ok) {
+                const d = await b2bCtcRes.value.json();
+                setB2bContacts(Array.isArray(d) ? d : (Array.isArray(d.data) ? d.data : []));
+            }
+
+            if (crewsRes.status === 'fulfilled' && crewsRes.value.ok) {
+                const d = await crewsRes.value.json();
+                setCrews(Array.isArray(d) ? d : []);
+            }
+            if (linemanRes.status === 'fulfilled' && linemanRes.value.ok) {
+                const d = await linemanRes.value.json();
+                setLinemen(Array.isArray(d) ? d : []);
+            }
+            setPersonnelLoading(false);
+
+            if (memosRes.status === 'fulfilled' && memosRes.value.ok) {
+                const d = await memosRes.value.json();
+                setMemos(Array.isArray(d) ? d : (Array.isArray(d.data) ? d.data : []));
+            }
+            setMemosLoading(false);
+
+            if (usersRes.status === 'fulfilled' && usersRes.value.ok) {
+                const d = await usersRes.value.json();
+                setUsers(Array.isArray(d) ? d : (Array.isArray(d.users) ? d.users : []));
+            }
+            setUsersLoading(false);
+        } catch (err) {
+            console.error('Dashboard: real data fetch error', err);
+            setB2bLoading(false);
+            setPersonnelLoading(false);
+            setMemosLoading(false);
+            setUsersLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchRealData();
+    }, [fetchRealData]);
 
     useEffect(() => {
         // 1. Calculate greeting based on system time
@@ -259,74 +339,88 @@ const AdminDashboard = () => {
         return { total, pending, ongoing, resolved, unresolved, nofault, denied, urgent, memoLinked, trendData, categoryData, topLocations };
     }, [tickets]);
 
-    // Dynamic calculations for B2B Mail features
+    // Dynamic calculations for B2B Mail — real data
     const b2bMailStats = useMemo(() => {
-        // Mock data for B2B Mail
-        const totalSent = 1250;
-        const delivered = 1180;
-        const failed = 50;
-        const pending = 20;
+        const sent    = b2bMessages.filter(m => m.status === 'sent').length;
+        const failed  = b2bMessages.filter(m => m.status === 'failed').length;
+        const draft   = b2bMessages.filter(m => m.status === 'draft').length;
+        const queued  = b2bMessages.filter(m => ['queued','sending'].includes(m.status)).length;
+        const totalContacts = b2bContacts.length;
+        const verified   = b2bContacts.filter(c => c.is_verified === 1 || c.is_verified === true).length;
+        const unverified = totalContacts - verified;
 
         const deliveryData = [
-            { name: 'Sent', value: totalSent, fill: 'var(--accent-primary)' },
-            { name: 'Delivered', value: delivered, fill: 'var(--accent-success)' },
+            { name: 'Sent',   value: sent,   fill: 'var(--accent-success)' },
             { name: 'Failed', value: failed, fill: 'var(--accent-danger)' },
-            { name: 'Pending', value: pending, fill: 'var(--accent-warning)' },
+            { name: 'Draft',  value: draft,  fill: 'var(--text-secondary)' },
+            { name: 'Queued', value: queued, fill: 'var(--accent-warning)' },
         ];
 
-        const recentActivity = [
-            { id: 1, subject: 'Advisory: Scheduled Maintenance', recipient: 'ABC Corp', status: 'Sent', time: '2 min ago' },
-            { id: 2, subject: 'Invoice: Q1 2024', recipient: 'XYZ Ltd', status: 'Failed', time: '15 min ago' },
-            { id: 3, subject: 'Notification: Power Restoration', recipient: 'PQR Inc', status: 'Delivered', time: '1 hour ago' },
-            { id: 4, subject: 'Advisory: Unscheduled Outage', recipient: 'LMN Co', status: 'Pending', time: '3 hours ago' },
-            { id: 5, subject: 'Report: Monthly Consumption', recipient: 'DEF Group', status: 'Sent', time: 'Yesterday' },
+        const verificationData = [
+            { name: 'Verified',   value: verified   || 0, fill: 'var(--accent-success)' },
+            { name: 'Unverified', value: unverified || 0, fill: 'var(--accent-warning)' },
         ];
 
-        // NEW: Mock data for Daily Mail Activity (last 7 days)
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const dailyTrendData = days.map((day, index) => ({
-            name: day,
-            sent: 100 + index * 10 + Math.floor(Math.random() * 20),
-            delivered: 90 + index * 10 + Math.floor(Math.random() * 15),
-            failed: 5 + Math.floor(Math.random() * 5),
+        const recentActivity = b2bMessages.slice(0, 5).map(m => ({
+            id:        m.id,
+            subject:   m.subject || '(No subject)',
+            recipient: m.created_by_email || '—',
+            status:    m.status,
+            time:      m.updated_at ? new Date(m.updated_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : '—',
         }));
 
-        // NEW: Mock data for Contact Verification Insights
-        const verificationData = [
-            { name: 'Verified', value: 94, fill: 'var(--accent-success)' },
-            { name: 'Unverified', value: 6, fill: 'var(--accent-warning)' }
-        ];
+        return { totalSent: sent, delivered: sent, failed, pending: queued, draft, totalContacts, deliveryData, verificationData, recentActivity };
+    }, [b2bMessages, b2bContacts]);
 
-        return { totalSent, delivered, failed, pending, deliveryData, recentActivity, dailyTrendData, verificationData };
-    }, []);
-
-    // Dynamic calculations for Personnel Overview
+    // Dynamic calculations for Personnel — real data
     const personnelStats = useMemo(() => {
-        // Mock data for Personnel Overview
-        const totalLinemen = 45;
-        const availableCrews = 8;
-        const activeDeployments = 12;
-        const onLeave = 3;
+        const totalLinemen      = linemen.length;
+        const activeLinemen     = linemen.filter(l => (l.status || 'Active').toLowerCase() === 'active').length;
+        const onLeave           = linemen.filter(l => (l.status || '').toLowerCase() === 'on leave').length;
+
+        const totalCrews        = crews.length;
+        const availableCrews    = crews.filter(c => (c.status || 'Available').toLowerCase() === 'available').length;
+        const deployedCrews     = crews.filter(c => (c.status || '').toLowerCase() === 'deployed').length;
+        const offlineCrews      = crews.filter(c => (c.status || '').toLowerCase() === 'offline').length;
 
         const crewStatusData = [
             { name: 'Available', value: availableCrews, fill: 'var(--accent-success)' },
-            { name: 'On-Task', value: activeDeployments, fill: 'var(--accent-primary)' },
-            { name: 'Offline', value: 2, fill: 'var(--text-secondary)' },
+            { name: 'Deployed',  value: deployedCrews,  fill: 'var(--accent-primary)' },
+            { name: 'Offline',   value: offlineCrews,   fill: 'var(--text-secondary)' },
         ];
 
-        const recentDeployments = [
-            { id: 1, crew: 'Crew Alpha', location: 'Brgy. Rawis', task: 'Line Maintenance', status: 'Deployed', time: 'Started: 08:30 AM' },
-            { id: 2, crew: 'Crew Bravo', location: 'Legazpi Port', task: 'Fault Clearing', status: 'Standby', time: 'Awaiting dispatch' },
-            { id: 3, crew: 'Crew Charlie', location: 'Daraga Proper', task: 'Transformer Check', status: 'Deployed', time: 'Started: 09:15 AM' },
-            { id: 4, crew: 'Crew Delta', location: 'Brgy. Bitano', task: 'Service Connection', status: 'Deployed', time: 'Started: 10:00 AM' },
-        ];
+        const recentDeployments = crews.slice(0, 5).map(c => ({
+            id:     c.id,
+            crew:   c.crew_name,
+            status: c.status || 'Available',
+            members: c.member_count || 0,
+            lead:   c.lead_lineman_name || '—',
+        }));
 
-        return { totalLinemen, availableCrews, activeDeployments, onLeave, crewStatusData, recentDeployments };
-    }, []);
+        return { totalLinemen, activeLinemen, onLeave, totalCrews, availableCrews, deployedCrews, crewStatusData, recentDeployments };
+    }, [crews, linemen]);
+
+    // Service memo stats — real data
+    const memoStats = useMemo(() => {
+        const total  = memos.length;
+        const saved  = memos.filter(m => m.memo_status === 'saved').length;
+        const closed = memos.filter(m => m.memo_status === 'closed').length;
+        return { total, saved, closed };
+    }, [memos]);
+
+    // Users stats — real data
+    const userStats = useMemo(() => {
+        const total    = users.length;
+        const admins   = users.filter(u => (u.role || '').toLowerCase() === 'admin').length;
+        const employees = users.filter(u => (u.role || '').toLowerCase() === 'employee').length;
+        const others   = total - admins - employees;
+        return { total, admins, employees, others };
+    }, [users]);
 
 
     return (
         <AdminLayout activePage="home">
+            <div className="dashboard-scroll-host">
             <div className="admin-page-container dashboard-page-container">
                 {/* Page Header */}
                 <div className="dashboard-header">
@@ -335,30 +429,56 @@ const AdminDashboard = () => {
                         <p className="header-subtitle">{currentDate}</p>
                     </div>
                     <div className="dashboard-nav-actions">
-                        <button 
-                            className="dash-nav-btn"
-                            onClick={() => document.getElementById('power-grid-section')?.scrollIntoView({ behavior: 'smooth' })}
-                        >
-                            <FaBolt /> Advisories
-                        </button>
-                        <button 
-                            className="dash-nav-btn"
-                            onClick={() => document.getElementById('ticket-overview-section')?.scrollIntoView({ behavior: 'smooth' })}
-                        >
-                            <FaChartPie /> Analytics
-                        </button>
-                        <button 
-                            className="dash-nav-btn"
-                            onClick={() => document.getElementById('b2b-mail-section')?.scrollIntoView({ behavior: 'smooth' })}
-                        >
-                            <FaListUl /> B2B Mail
-                        </button>
-                        <button 
-                            className="dash-nav-btn"
-                            onClick={() => document.getElementById('personnel-section')?.scrollIntoView({ behavior: 'smooth' })}
-                        >
-                            <FaUsers /> Personnel
-                        </button>
+                        <button className="dash-nav-btn" onClick={() => document.getElementById('power-grid-section')?.scrollIntoView({ behavior: 'smooth' })}><FaBolt /> Advisories</button>
+                        <button className="dash-nav-btn" onClick={() => document.getElementById('ticket-overview-section')?.scrollIntoView({ behavior: 'smooth' })}><FaTicketAlt /> Tickets</button>
+                        <button className="dash-nav-btn" onClick={() => document.getElementById('memo-users-section')?.scrollIntoView({ behavior: 'smooth' })}><FaFileAlt /> Memos</button>
+                        <button className="dash-nav-btn" onClick={() => document.getElementById('b2b-personnel-section')?.scrollIntoView({ behavior: 'smooth' })}><FaEnvelope /> B2B & Crew</button>
+                    </div>
+                </div>
+
+                {/* ── KPI Ribbon ── */}
+                <div className="dash-kpi-ribbon">
+                    <div className="dash-kpi-card">
+                        <div className="dash-kpi-icon dash-kpi-icon--tickets"><FaTicketAlt /></div>
+                        <div className="dash-kpi-body">
+                            <span className="dash-kpi-label">Total Tickets</span>
+                            <span className="dash-kpi-value">{loading ? '—' : ticketStats.total}</span>
+                        </div>
+                    </div>
+                    <div className="dash-kpi-card">
+                        <div className="dash-kpi-icon dash-kpi-icon--outage"><FaBolt /></div>
+                        <div className="dash-kpi-body">
+                            <span className="dash-kpi-label">Active Outages</span>
+                            <span className="dash-kpi-value">{loadingAdvisories ? '—' : interruptionStats.active}</span>
+                        </div>
+                    </div>
+                    <div className="dash-kpi-card">
+                        <div className="dash-kpi-icon dash-kpi-icon--memo"><FaFileAlt /></div>
+                        <div className="dash-kpi-body">
+                            <span className="dash-kpi-label">Service Memos</span>
+                            <span className="dash-kpi-value">{memosLoading ? '—' : memoStats.total}</span>
+                        </div>
+                    </div>
+                    <div className="dash-kpi-card">
+                        <div className="dash-kpi-icon dash-kpi-icon--users"><FaUsers /></div>
+                        <div className="dash-kpi-body">
+                            <span className="dash-kpi-label">System Users</span>
+                            <span className="dash-kpi-value">{usersLoading ? '—' : userStats.total}</span>
+                        </div>
+                    </div>
+                    <div className="dash-kpi-card">
+                        <div className="dash-kpi-icon dash-kpi-icon--b2b"><FaEnvelope /></div>
+                        <div className="dash-kpi-body">
+                            <span className="dash-kpi-label">B2B Sent</span>
+                            <span className="dash-kpi-value">{b2bLoading ? '—' : b2bMailStats.totalSent}</span>
+                        </div>
+                    </div>
+                    <div className="dash-kpi-card">
+                        <div className="dash-kpi-icon dash-kpi-icon--crew"><FaTools /></div>
+                        <div className="dash-kpi-body">
+                            <span className="dash-kpi-label">Active Crews</span>
+                            <span className="dash-kpi-value">{personnelLoading ? '—' : personnelStats.totalCrews}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -704,8 +824,8 @@ const AdminDashboard = () => {
                     </div>
                     </div> {/* End of Ticket Overview & Analytics Wrapper */}
 
-                    {/* Dedicated parent container for B2B and Personnel modules */}
-                    <div className="dashboard-auxiliary-container">
+                    {/* ── B2B Mail + Personnel side-by-side ── */}
+                    <div id="b2b-personnel-section" className="dashboard-auxiliary-grid">
                         {/* 3. B2B Mail Overview Container */}
                     <div id="b2b-mail-section" className="dashboard-b2b-mail-wrapper">
                         <div className="section-label-group">
@@ -837,9 +957,9 @@ const AdminDashboard = () => {
                                 <div className="stat-card ongoing">
                                     <div className="stat-icon-box"><FaTools /></div>
                                     <div className="stat-content">
-                                        <span className="stat-label">Active Tasks</span>
-                                        <h3 className="stat-number">{personnelStats.activeDeployments}</h3>
-                                        <span className="stat-trend">Crews deployed</span>
+                                        <span className="stat-label">Deployed Crews</span>
+                                        <h3 className="stat-number">{personnelStats.deployedCrews}</h3>
+                                        <span className="stat-trend">Crews on field</span>
                                     </div>
                                 </div>
                                 <div className="stat-card pending">
@@ -875,15 +995,17 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Recent Personnel/Crew Activity List */}
+                            {/* Recent Crews List */}
                             <div className="personnel-activity-list">
-                                {personnelStats.recentDeployments.map(deployment => (
+                                {personnelStats.recentDeployments.length === 0 ? (
+                                    <p className="placeholder-desc" style={{ textAlign: 'center', padding: '12px 0' }}>No crews found.</p>
+                                ) : personnelStats.recentDeployments.map(deployment => (
                                     <div key={deployment.id} className="personnel-activity-item">
                                         <div className="personnel-activity-content">
-                                            <span className="personnel-activity-label">{deployment.crew} - {deployment.task}</span>
-                                            <span className="personnel-activity-time">{deployment.location} • {deployment.time}</span>
+                                            <span className="personnel-activity-label">{deployment.crew}</span>
+                                            <span className="personnel-activity-time">Lead: {deployment.lead} &bull; {deployment.members} member{deployment.members !== 1 ? 's' : ''}</span>
                                         </div>
-                                        <span className={`feeder-status-tag ${deployment.status === 'Deployed' ? 'critical' : 'scheduled'}`}>
+                                        <span className={`feeder-status-tag ${deployment.status.toLowerCase() === 'deployed' ? 'critical' : deployment.status.toLowerCase() === 'offline' ? 'failed' : 'scheduled'}`}>
                                             {deployment.status}
                                         </span>
                                     </div>
@@ -891,10 +1013,151 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                     </div>
-                    </div> {/* End of Auxiliary Container (B2B & Personnel) */}
+                    </div> {/* End of b2b-personnel-section */}
+
+                    {/* ── Service Memos + Users side-by-side ── */}
+                    <div id="memo-users-section" className="dashboard-auxiliary-grid">
+
+                        {/* Service Memos Mini-Section */}
+                        <div className="dashboard-mini-wrapper">
+                            <div className="section-label-group">
+                                <h3 className="column-section-title">Service Memos</h3>
+                                <p className="widget-text">Summary of field service memo records.</p>
+                            </div>
+                            {memosLoading ? (
+                                <div className="analytics-loading-overlay analytics-pulse"><FaFileAlt /> Loading memos…</div>
+                            ) : (
+                            <>
+                            <div className="stats-grid">
+                                <div className="stat-card total">
+                                    <div className="stat-icon-box"><FaFileAlt /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Total Memos</span>
+                                        <h3 className="stat-number">{memoStats.total}</h3>
+                                        <span className="stat-trend">All records</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card pending">
+                                    <div className="stat-icon-box"><FaClock /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Saved / Open</span>
+                                        <h3 className="stat-number">{memoStats.saved}</h3>
+                                        <span className="stat-trend">In progress</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card resolved">
+                                    <div className="stat-icon-box"><FaCheckCircle /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Closed</span>
+                                        <h3 className="stat-number">{memoStats.closed}</h3>
+                                        <span className="stat-trend positive">Completed</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="charts-grid-main">
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaChartPie className="chart-icon" />
+                                        <h4>Memo Status Split</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        <ResponsiveContainer width="100%" height={180}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={[
+                                                        { name: 'Saved', value: memoStats.saved },
+                                                        { name: 'Closed', value: memoStats.closed },
+                                                    ]}
+                                                    cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value"
+                                                >
+                                                    <Cell fill="#f59e0b" />
+                                                    <Cell fill="#22c55e" />
+                                                </Pie>
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Legend verticalAlign="bottom" align="center" iconSize={8} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+                            </>
+                            )}
+                        </div>
+
+                        {/* Users Mini-Section */}
+                        <div className="dashboard-mini-wrapper">
+                            <div className="section-label-group">
+                                <h3 className="column-section-title">System Users</h3>
+                                <p className="widget-text">Registered accounts and role distribution.</p>
+                            </div>
+                            {usersLoading ? (
+                                <div className="analytics-loading-overlay analytics-pulse"><FaUsers /> Loading users…</div>
+                            ) : (
+                            <>
+                            <div className="stats-grid">
+                                <div className="stat-card total">
+                                    <div className="stat-icon-box"><FaUsers /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Total Users</span>
+                                        <h3 className="stat-number">{userStats.total}</h3>
+                                        <span className="stat-trend">All accounts</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card urgent">
+                                    <div className="stat-icon-box"><FaUserShield /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Admins</span>
+                                        <h3 className="stat-number">{userStats.admins}</h3>
+                                        <span className="stat-trend">Full access</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card ongoing">
+                                    <div className="stat-icon-box"><FaUserTie /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label">Employees</span>
+                                        <h3 className="stat-number">{userStats.employees}</h3>
+                                        <span className="stat-trend">Staff access</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="charts-grid-main">
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaChartPie className="chart-icon" />
+                                        <h4>Role Distribution</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        <ResponsiveContainer width="100%" height={180}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={[
+                                                        { name: 'Admin', value: userStats.admins },
+                                                        { name: 'Employee', value: userStats.employees },
+                                                        { name: 'Other', value: userStats.others },
+                                                    ]}
+                                                    cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value"
+                                                >
+                                                    <Cell fill="#a855f7" />
+                                                    <Cell fill="#22c55e" />
+                                                    <Cell fill="#64748b" />
+                                                </Pie>
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Legend verticalAlign="bottom" align="center" iconSize={8} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+                            </>
+                            )}
+                        </div>
+
+                    </div> {/* End of memo-users-section */}
+
                     </div> {/* End of Analytics Container */}
                 </div>
-            </div>
+            </div> {/* End of dashboard-page-container */}
+            </div> {/* End of dashboard-scroll-host */}
         </AdminLayout>
     );
 };

@@ -389,7 +389,7 @@ router.get('/history/export', requireAdmin, async (req, res) => {
     if (fmt === 'excel') {
       const workbook = new ExcelJS.Workbook();
       const ws = workbook.addWorksheet('History');
-      ws.columns = HISTORY_COLUMNS.map((col) => ({ header: col.header, key: col.key, width: 24 }));
+      ws.columns = HISTORY_COLUMNS.map((col) => ({ header: col.header, key: col.key, width: 10 }));
       ws.getRow(1).font = { bold: true };
       ws.getRow(1).alignment = { vertical: 'middle' };
 
@@ -408,6 +408,16 @@ router.get('/history/export', requireAdmin, async (req, res) => {
         });
       });
       ws.getColumn('createdAt').numFmt = 'yyyy-mm-dd hh:mm:ss';
+
+      // Auto-fit column widths based on header + cell content length
+      ws.columns.forEach((col) => {
+        let maxLen = String(col.header || '').length;
+        col.eachCell({ includeEmpty: true }, (cell) => {
+          const cellLen = String(cell.value ?? '').length;
+          if (cellLen > maxLen) maxLen = cellLen;
+        });
+        col.width = Math.min(Math.max(maxLen + 2, 10), 60);
+      });
 
       const buffer = await workbook.xlsx.writeBuffer();
       const filename = `aleco_history_export_${fileStamp}.xlsx`;

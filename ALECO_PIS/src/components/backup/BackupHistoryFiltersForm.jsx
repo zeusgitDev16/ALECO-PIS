@@ -50,7 +50,7 @@ const BackupHistoryFiltersForm = ({ filters, setFilters }) => {
 
     return (
         <>
-            <div className="aleco-scope-inline">
+            <div className="backup-module-pills">
                 {MODULE_OPTIONS.map((option) => (
                     <button
                         key={option.value}

@@ -8,6 +8,7 @@ import { clearLocalStoragePreservingPreferences } from '../../utils/clearLocalSt
 import { useTheme } from '../../context/ThemeContext';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
 import ThemeIconButton from '../buttons/ThemeIconButton';
+import UserProfileViewModal from '../users/UserProfileViewModal';
 import '../../CSS/SearchBarGlobal.css';
 
 const NOTIFICATION_TABS = [
@@ -134,7 +135,76 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   
   // Secure feature state for global logout
   const [logoutAllDevices, setLogoutAllDevices] = useState(false);
+
+  // ── Global search state ──
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchActiveIdx, setSearchActiveIdx] = useState(-1);
+  const [viewEmail, setViewEmail] = useState(null);
+  const searchRef = useRef(null);
+  const searchDebounceRef = useRef(null);
   const canUseNotifications = role === 'admin' || role === 'employee';
+
+  // ── Search handlers ──
+  const handleSearchInput = useCallback((e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    setSearchActiveIdx(-1);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    if (!val.trim()) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    setSearchOpen(true);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const r = await authFetch(apiUrl(`/api/search/users?q=${encodeURIComponent(val.trim())}`));
+        const j = await r.json();
+        setSearchResults(Array.isArray(j.data) ? j.data : []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 280);
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchActiveIdx(-1);
+  }, []);
+
+  const handleSearchKeyDown = useCallback((e) => {
+    if (!searchOpen || searchResults.length === 0) {
+      if (e.key === 'Escape') { closeSearch(); setSearchQuery(''); }
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSearchActiveIdx((i) => Math.min(i + 1, searchResults.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSearchActiveIdx((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Escape') {
+      closeSearch();
+      setSearchQuery('');
+    }
+  }, [searchOpen, searchResults.length, closeSearch]);
+
+  useEffect(() => {
+    if (!searchOpen) return undefined;
+    const onDown = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) closeSearch();
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [searchOpen, closeSearch]);
   
   const navigate = useNavigate();
 
@@ -435,7 +505,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
         </svg>
       </button>
 
-      <div className="search-container admin-nav-search">
+      <div className="search-container admin-nav-search" ref={searchRef}>
         <svg className="search-icon admin-nav-search__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -444,9 +514,70 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
           id="aleco-admin-header-search"
           type="text"
           className="admin-nav-search__input"
-          placeholder="Search..."
+          placeholder="Search users…"
           autoComplete="off"
+          value={searchQuery}
+          onChange={handleSearchInput}
+          onKeyDown={handleSearchKeyDown}
+          onFocus={() => { setSearchFocused(true); if (searchQuery.trim() && searchResults.length > 0) setSearchOpen(true); }}
+          onBlur={() => setSearchFocused(false)}
+          aria-label="Search users"
+          aria-autocomplete="list"
+          aria-expanded={searchOpen}
+          role="combobox"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            className="gsb-clear-btn"
+            onClick={() => { setSearchQuery(''); setSearchResults([]); setSearchOpen(false); }}
+            aria-label="Clear search"
+            tabIndex={-1}
+          >
+            &times;
+          </button>
+        )}
+        {searchOpen && (
+          <div className="gsb-dropdown" role="listbox" aria-label="Search results">
+            {searchLoading ? (
+              <div className="gsb-dropdown__loading">
+                <span className="gsb-spinner" aria-hidden="true" />
+                Searching…
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="gsb-dropdown__empty">No users found for &ldquo;{searchQuery}&rdquo;</div>
+            ) : (
+              searchResults.map((u, idx) => (
+                <div
+                  key={u.id}
+                  role="option"
+                  aria-selected={idx === searchActiveIdx}
+                  className={`gsb-result-item${idx === searchActiveIdx ? ' gsb-result-item--active' : ''}`}
+                  onMouseEnter={() => setSearchActiveIdx(idx)}
+                  onClick={() => {
+                    setViewEmail(u.email);
+                    setSearchQuery('');
+                    setSearchResults([]);
+                    closeSearch();
+                  }}
+                >
+                  <img
+                    className="gsb-result-item__avatar"
+                    src={u.profile_pic || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'}
+                    alt=""
+                    aria-hidden="true"
+                    onError={(e) => { e.target.src = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'; }}
+                  />
+                  <div className="gsb-result-item__info">
+                    <span className="gsb-result-item__name">{u.name || '—'}</span>
+                    <span className="gsb-result-item__email">{u.email}</span>
+                  </div>
+                  <span className={`gsb-result-item__role gsb-role--${(u.role || '').toLowerCase()}`}>{u.role}</span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
       
       <div className="action-icons">
@@ -803,13 +934,6 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
           )}
         </div>
         
-        <button className="icon-btn" title="Inbox">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-            <polyline points="22,6 12,13 2,6"></polyline>
-          </svg>
-        </button>
-        
         <ThemeIconButton theme={theme} toggleTheme={toggleTheme} />
         
         <div className="profile-menu-wrapper">
@@ -977,6 +1101,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
         </div>
       </div>
     ) : null}
+
+    {viewEmail && (
+      <UserProfileViewModal
+        email={viewEmail}
+        onClose={() => setViewEmail(null)}
+      />
+    )}
     </>
   );
 };

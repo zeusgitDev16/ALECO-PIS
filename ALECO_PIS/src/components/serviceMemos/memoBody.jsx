@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import '../../CSS/ServiceMemos.css';
+import '../../CSS/TicketTableView.css';
 import ServiceMemoCard from './ServiceMemoCard';
 
 const MemoBody = ({ memos, loading, activeTab, onView, onEdit, onClose, onRequestDelete, onPrint, currentUserEmail }) => {
@@ -45,15 +46,6 @@ const MemoBody = ({ memos, loading, activeTab, onView, onEdit, onClose, onReques
             <table className="service-memo-table" role="grid">
               <thead className="service-memo-table-head">
                 <tr>
-                  <th className="service-memo-table-th service-memo-table-th--check" scope="col">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={selectAll}
-                      title="Select all in this list"
-                      aria-label="Select all service memos"
-                    />
-                  </th>
                   <th className="service-memo-table-th" scope="col">
                     Memo # / Ticket
                   </th>

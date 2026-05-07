@@ -94,6 +94,7 @@ const AdminBackup = () => {
     const isUsersEntity = entity === 'users';
     const isHistoryEntity = entity === 'history';
     const isPersonnelEntity = entity === 'personnel';
+    const isServiceMemosEntity = entity === 'service_memos';
     const currentRole = String(localStorage.getItem('userRole') || USER_ROLES.EMPLOYEE).toLowerCase();
     const canDeleteTickets = currentRole === USER_ROLES.ADMIN;
     const canViewHistory = currentRole === USER_ROLES.ADMIN;
@@ -102,7 +103,7 @@ const AdminBackup = () => {
         [canViewHistory]
     );
     const hasDataFilters =
-        isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity || isHistoryEntity;
+        isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity || isHistoryEntity || isServiceMemosEntity;
     const showFilterButton = isTicketsEntity || isInterruptionsEntity || isHistoryEntity;
 
     useEffect(() => {
@@ -125,6 +126,7 @@ const AdminBackup = () => {
         if (isUsersEntity) return '/api/users/export';
         if (isHistoryEntity) return '/api/history/export';
         if (isPersonnelEntity) return '/api/personnel/export';
+        if (isServiceMemosEntity) return '/api/service-memos/export';
         return '/api/tickets/export';
     };
 
@@ -133,6 +135,7 @@ const AdminBackup = () => {
         if (isUsersEntity) return '/api/users/export/preview';
         if (isHistoryEntity) return '/api/history/export/preview';
         if (isPersonnelEntity) return '/api/personnel/export/preview';
+        if (isServiceMemosEntity) return '/api/service-memos/export/preview';
         return '/api/tickets/export/preview';
     };
 
@@ -148,7 +151,7 @@ const AdminBackup = () => {
             return base;
         }
 
-        if (isUsersEntity || isPersonnelEntity) {
+        if (isUsersEntity || isPersonnelEntity || isServiceMemosEntity) {
             return base;
         }
 
@@ -223,7 +226,9 @@ const AdminBackup = () => {
                         ? `aleco_history_export.${format === 'excel' ? 'xlsx' : 'csv'}`
                     : isPersonnelEntity
                         ? `aleco_personnel_export.${format === 'excel' ? 'xlsx' : 'csv'}`
-                        : `aleco_tickets_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
+                        : isServiceMemosEntity
+                            ? `aleco_service_memos_export.${format === 'excel' ? 'xlsx' : 'csv'}`
+                            : `aleco_tickets_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
             if (contentDisposition) {
                 const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
                 if (match) filename = match[1];
@@ -250,7 +255,9 @@ const AdminBackup = () => {
                     ? 'aleco_history_export'
                 : isPersonnelEntity
                     ? 'aleco_personnel_export'
-                    : 'aleco_tickets_export';
+                    : isServiceMemosEntity
+                        ? 'aleco_service_memos_export'
+                        : 'aleco_tickets_export';
         setExportFileName(suggestedBase);
         setExportConfirmOpen(true);
     };

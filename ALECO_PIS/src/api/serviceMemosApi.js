@@ -85,6 +85,7 @@ export async function listServiceMemos({
   searchCustomer = '',
   searchAddress = '',
   status = '',
+  municipality = '',
   startDate = '',
   endDate = '',
   owner = '',
@@ -98,6 +99,7 @@ export async function listServiceMemos({
   if (searchCustomer) qs.set('searchCustomer', searchCustomer);
   if (searchAddress) qs.set('searchAddress', searchAddress);
   if (status) qs.set('status', status);
+  if (municipality) qs.set('municipality', municipality);
   if (startDate) qs.set('startDate', startDate);
   if (endDate) qs.set('endDate', endDate);
   if (owner) qs.set('owner', owner);
@@ -234,20 +236,24 @@ export async function allocateControlNumber(ticketId) {
  * @param {object} body
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
-export async function updateServiceMemo(id, body) {
+export async function updateServiceMemo(id, body, expectedUpdatedAt = null) {
   try {
     const result = await authMutation(apiUrl(`/api/service-memos/${id}`), {
       method: 'PUT',
       body,
+      expectedUpdatedAt,
+      expectedUpdatedAtField: 'expected_updated_at',
       emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
     return {
       ok: result.ok,
       success: result.success,
+      conflict: result.conflict,
+      latest: result.data?.latest ?? null,
       message: typeof result.data?.message === 'string' ? result.data.message : null,
     };
   } catch {
-    return { ok: false, success: false, message: 'Network error.' };
+    return { ok: false, success: false, conflict: false, latest: null, message: 'Network error.' };
   }
 }
 
@@ -255,20 +261,24 @@ export async function updateServiceMemo(id, body) {
  * @param {number} id
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
-export async function closeServiceMemo(id) {
+export async function closeServiceMemo(id, expectedUpdatedAt = null) {
   try {
     const result = await authMutation(apiUrl(`/api/service-memos/${id}/close`), {
       method: 'PUT',
       body: {},
+      expectedUpdatedAt,
+      expectedUpdatedAtField: 'expected_updated_at',
       emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
     return {
       ok: result.ok,
       success: result.success,
+      conflict: result.conflict,
+      latest: result.data?.latest ?? null,
       message: typeof result.data?.message === 'string' ? result.data.message : null,
     };
   } catch {
-    return { ok: false, success: false, message: 'Network error.' };
+    return { ok: false, success: false, conflict: false, latest: null, message: 'Network error.' };
   }
 }
 

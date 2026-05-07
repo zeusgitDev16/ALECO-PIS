@@ -3,7 +3,7 @@ import { clearLocalStoragePreservingPreferences } from './clearLocalStoragePrese
 /**
  * Authenticated fetch wrapper — drop-in replacement for window.fetch().
  *
- * Reads JWT (Bearer token) and legacy session headers (X-User-Email, X-Token-Version)
+ * Reads JWT (Bearer token) and legacy session headers (X-User-Email, X-User-Name, X-Token-Version)
  * from localStorage and attaches them to every outgoing request, mirroring the Axios
  * request interceptor in axiosConfig.js.
  *
@@ -23,6 +23,7 @@ export async function authFetch(url, options = {}) {
   if (typeof localStorage !== 'undefined') {
     const accessToken = localStorage.getItem('accessToken');
     const email = localStorage.getItem('userEmail');
+    const userName = localStorage.getItem('userName');
     const tokenVersion = localStorage.getItem('tokenVersion');
 
     if (accessToken && !headers.has('Authorization')) {
@@ -30,6 +31,9 @@ export async function authFetch(url, options = {}) {
     }
     if (email && !headers.has('X-User-Email')) {
       headers.set('X-User-Email', email);
+    }
+    if (userName && !headers.has('X-User-Name')) {
+      headers.set('X-User-Name', userName);
     }
     if (tokenVersion !== null && tokenVersion !== undefined && !headers.has('X-Token-Version')) {
       headers.set('X-Token-Version', String(tokenVersion));

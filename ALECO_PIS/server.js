@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 // Removed mysql, nodemailer, bcrypt, and cloudinary - they are all handled by the bricks now!
 
 import { buildAllowedCorsOrigins, normalizeOrigin, hasExplicitPublicCorsEnv } from './backend/config/corsOrigins.js';
@@ -22,7 +24,7 @@ import b2bMailRoutes from './backend/routes/b2b-mail.js';
 import serviceMemosRoutes from './backend/routes/service-memos.js';
 import notificationsRoutes from './backend/routes/notifications.js';
 import historyRoutes from './backend/routes/history.js';
-import pool from './backend/config/db.js';
+import pool, { getHeartbeatStats } from './backend/config/db.js';
 import {
   transitionScheduledStarts,
   autoArchiveResolvedInterruptions,
@@ -99,9 +101,19 @@ function moduleFromApiPath(pathname) {
     return 'system';
 }
 
+// ES module equivalent of __dirname (not available natively in ESM)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
+
 // 2. Middleware (The Guards)
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Serve static assets from the Vite production build (dist/) and the public/ folder.
+// dist/ contains the compiled frontend + all public/ files copied by Vite at build time.
+// public/ is a fallback for running Express directly without a prior build.
+app.use(express.static(join(__dirname, 'dist')));
+app.use(express.static(join(__dirname, 'public')));
 
 // Global realtime broadcaster for successful write operations.
 app.use('/api', (req, res, next) => {
@@ -131,6 +143,20 @@ app.use('/api', (req, res, next) => {
 app.get('/api/health', (req, res) => {
     res.set('Cache-Control', 'no-store');
     res.json({ ok: true, service: 'aleco-pis-api', ts: new Date().toISOString() });
+});
+
+/** DB connectivity diagnostic — shows heartbeat, circuit breaker, and queue status.
+ *  Intentionally public (no auth) so Oracle VM monitoring scripts / uptime checkers
+ *  can hit it without credentials. Returns 503 if the DB is considered unhealthy. */
+app.get('/api/db-health', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const stats = getHeartbeatStats();
+    const ok = stats.heartbeat.healthy && stats.circuitState === 'closed';
+    res.status(ok ? 200 : 503).json({
+        ok,
+        ts: new Date().toISOString(),
+        ...stats,
+    });
 });
 
 // Protected API routes require X-User-Email + X-Token-Version (see requireApiSession.js public allowlist).

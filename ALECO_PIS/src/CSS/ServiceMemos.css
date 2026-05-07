@@ -180,6 +180,7 @@
 
 .service-memo-table-th--actions {
   min-width: 120px;
+  text-align: center;
 }
 
 .service-memo-list-row {
@@ -244,11 +245,12 @@
   margin-top: 2px;
 }
 
-.service-memo-list-col .service-memo-status-badge,
-.service-memo-list-col .ticket-status-badge {
-  font-size: 9px;
-  padding: 2px 6px;
+.service-memo-list-col .status-badge {
+  font-size: 0.55rem;
+  padding: 1px 4px;
+  border-radius: 4px;
   white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 .service-memo-list-col--created {
@@ -346,67 +348,7 @@
   gap: 8px;
 }
 
-/* Status badges */
-.service-memo-status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.service-memo-status-badge--saved {
-  background: rgba(25, 118, 210, 0.1);
-  color: #1976d2;
-}
-
-.service-memo-status-badge--closed {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4caf50;
-}
-
-.ticket-status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.ticket-status-badge--restored {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4caf50;
-}
-
-.ticket-status-badge--unresolved {
-  background: rgba(244, 67, 54, 0.1);
-  color: #f44336;
-}
-
-.ticket-status-badge--nofaultfound {
-  background: rgba(158, 158, 158, 0.1);
-  color: #9e9e9e;
-}
-
-.ticket-status-badge--accessdenied {
-  background: rgba(255, 87, 34, 0.1);
-  color: #ff5722;
-}
-
-.ticket-status-badge--pending {
-  background: rgba(255, 152, 0, 0.1);
-  color: #ff9800;
-}
-
-.ticket-status-badge--ongoing {
-  background: rgba(33, 150, 243, 0.1);
-  color: #2196f3;
-}
-
-.ticket-status-badge--onhold {
-  background: rgba(156, 39, 176, 0.1);
-  color: #9c27b0;
-}
+/* Status badges — now handled by status-badge system in TicketTableView.css */
 
 /* Card body */
 .service-memo-card-body {
@@ -666,6 +608,15 @@
   margin: 0;
   font-size: 0.9rem;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.service-memo-info-item .status-badge {
+  font-size: 0.55rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
 }
 
 .service-memo-text-box {
@@ -1087,8 +1038,48 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 10px 20px 16px;
   flex-shrink: 0;
+}
+
+.memo-header-container--collapsed {
+  padding-bottom: 10px;
+}
+
+.memo-header-toggle-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.memo-header-container--collapsed .memo-header-toggle-bar {
+  margin-bottom: 0;
+}
+
+.memo-header-toggle-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.memo-header-toggle-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 8px;
+  line-height: 1.6;
+  transition: background 0.15s, color 0.15s;
+}
+
+.memo-header-toggle-btn:hover {
+  background: var(--bg-hover, rgba(0,0,0,0.06));
+  color: var(--text-primary);
 }
 
 .memo-header-content {

@@ -96,6 +96,7 @@ export function mergeMemoForResponse(row, ticket) {
     out.location = ticket.address ?? '';
     out.contact_no = ticket.phone_number ?? '';
     out.action_desired = ticket.action_desired ?? '';
+    out.ticket_created_at = ticket.ticket_created_at ?? null;
     const savedCat = row.category != null ? String(row.category).trim() : '';
     const ticketCat = ticket.category != null ? String(ticket.category).trim() : '';
     out.category = savedCat !== '' ? savedCat : ticketCat;

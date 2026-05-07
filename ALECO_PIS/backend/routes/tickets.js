@@ -1575,6 +1575,31 @@ router.put('/crews/update/:id', requireStaff, async (req, res) => {
     const { id } = req.params;
     const { crew_name, lead_id, phone_number, status, members } = req.body;
 
+    // Optimistic concurrency pre-check (outside transaction, consistent with other pre-flight validations)
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+    let crewCurrentUpdatedAt = null;
+    if (expectedUpdatedAt) {
+        const [crewRows] = await pool.execute(
+            `SELECT updated_at FROM aleco_personnel WHERE id = ? LIMIT 1`,
+            [id]
+        );
+        if (crewRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Crew not found.' });
+        }
+        crewCurrentUpdatedAt = crewRows[0].updated_at;
+        const dbIso = crewCurrentUpdatedAt ? new Date(crewCurrentUpdatedAt).toISOString() : '';
+        let clientIso = '';
+        try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+        if (!dbIso || dbIso !== clientIso) {
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_CREW',
+                message: 'This crew was updated by someone else. Reload and try again.',
+                latest: { id, updated_at: crewCurrentUpdatedAt },
+            });
+        }
+    }
+
     // P1 Conflict validation: Orphaned crew - must have at least one member
     const memberList = Array.isArray(members) ? members : [];
     if (memberList.length === 0) {
@@ -1622,10 +1647,21 @@ router.put('/crews/update/:id', requireStaff, async (req, res) => {
         }
 
         // 1. Update the main crew table
-        await connection.execute(
-            `UPDATE aleco_personnel SET crew_name = ?, lead_lineman = ?, phone_number = ?, status = ? WHERE id = ?`,
-            [crew_name, lead_id || null, formattedPhone, status || 'Available', id]
+        const crewWhereClause = expectedUpdatedAt && crewCurrentUpdatedAt ? 'id = ? AND updated_at = ?' : 'id = ?';
+        const crewWhereParams = expectedUpdatedAt && crewCurrentUpdatedAt ? [id, crewCurrentUpdatedAt] : [id];
+        const [crewUpdateResult] = await connection.execute(
+            `UPDATE aleco_personnel SET crew_name = ?, lead_lineman = ?, phone_number = ?, status = ? WHERE ${crewWhereClause}`,
+            [crew_name, lead_id || null, formattedPhone, status || 'Available', ...crewWhereParams]
         );
+        if (crewUpdateResult.affectedRows === 0 && expectedUpdatedAt) {
+            await connection.rollback();
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_CREW',
+                message: 'This crew was updated by someone else. Reload and try again.',
+                latest: { id, updated_at: crewCurrentUpdatedAt },
+            });
+        }
 
         // 2. Wipe existing members for this crew
         await connection.execute(`DELETE FROM aleco_crew_members WHERE crew_id = ?`, [id]);
@@ -1748,11 +1784,45 @@ router.put('/pool/update/:id', requireStaff, async (req, res) => {
             });
         }
 
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+        let linemanCurrentUpdatedAt = null;
+        if (expectedUpdatedAt) {
+            const [linemanRows] = await pool.execute(
+                `SELECT updated_at FROM aleco_linemen_pool WHERE id = ? LIMIT 1`,
+                [id]
+            );
+            if (linemanRows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Lineman not found.' });
+            }
+            linemanCurrentUpdatedAt = linemanRows[0].updated_at;
+            const dbIso = linemanCurrentUpdatedAt ? new Date(linemanCurrentUpdatedAt).toISOString() : '';
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (!dbIso || dbIso !== clientIso) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_LINEMAN',
+                    message: 'This lineman was updated by someone else. Reload and try again.',
+                    latest: { id, updated_at: linemanCurrentUpdatedAt },
+                });
+            }
+        }
+
         const finalStatus = status || 'Active';
-        await pool.execute(
-            `UPDATE aleco_linemen_pool SET full_name = ?, designation = ?, contact_no = ?, status = ?, leave_start = ?, leave_end = ?, leave_reason = ? WHERE id = ?`,
-            [full_name, designation, formattedPhone, finalStatus, leave_start || null, leave_end || null, leave_reason || null, id]
+        const linemanWhereClause = expectedUpdatedAt && linemanCurrentUpdatedAt ? 'id = ? AND updated_at = ?' : 'id = ?';
+        const linemanWhereParams = expectedUpdatedAt && linemanCurrentUpdatedAt ? [id, linemanCurrentUpdatedAt] : [id];
+        const [linemanUpdateResult] = await pool.execute(
+            `UPDATE aleco_linemen_pool SET full_name = ?, designation = ?, contact_no = ?, status = ?, leave_start = ?, leave_end = ?, leave_reason = ? WHERE ${linemanWhereClause}`,
+            [full_name, designation, formattedPhone, finalStatus, leave_start || null, leave_end || null, leave_reason || null, ...linemanWhereParams]
         );
+        if (linemanUpdateResult.affectedRows === 0 && expectedUpdatedAt) {
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_LINEMAN',
+                message: 'This lineman was updated by someone else. Reload and try again.',
+                latest: { id, updated_at: linemanCurrentUpdatedAt },
+            });
+        }
         const actorEmail = req.headers['x-user-email'] || null;
         const actorName  = req.headers['x-user-name']  || null;
         await logPersonnelAction(pool, actorEmail, actorName, 'update_lineman', full_name);

@@ -205,13 +205,19 @@ const AdminTickets = () => {
 
     const handleDispatchGroup = async (mainTicketId, dispatchData) => {
         try {
-            const body = { ...dispatchData, ...getActor() };
+            const snapshot = (tickets || []).find((t) => t.ticket_id === mainTicketId);
+            const body = { ...dispatchData, ...getActor(), expected_updated_at: snapshot?.updated_at ?? null };
             const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/dispatch`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
             const data = await response.json();
+            if (response.status === 409) {
+                toast.warning(data.message || 'This group was updated by someone else. Reloading latest data.');
+                refetch();
+                return;
+            }
             if (response.ok && data.success) {
                 const msg = data.message || 'Group dispatched.';
                 if (Array.isArray(data.warnings) && data.warnings.includes('consumer_sms_failed')) {
@@ -231,11 +237,18 @@ const AdminTickets = () => {
 
     const executeUngroup = async (mainTicketId) => {
         try {
+            const snapshot = (tickets || []).find((t) => t.ticket_id === mainTicketId);
             const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/ungroup`), {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...getActor(), expected_updated_at: snapshot?.updated_at ?? null })
             });
             const data = await response.json();
+            if (response.status === 409) {
+                toast.warning(data.message || 'This group was updated by someone else. Reloading latest data.');
+                refetch();
+                return;
+            }
             if (response.ok && data.success) {
                 toast.success(`ALECO System: ${data.message}`);
                 setSelectedTicket(null);
@@ -402,18 +415,15 @@ const AdminTickets = () => {
                 const payload = {
                         status: newStatus,
                         ...getActor(),
-                        ...(isGroupMaster ? {} : withExpectedUpdatedAt({}, expectedUpdatedAt, 'expected_updated_at'))
                     };
 
-                const result = isGroupMaster
-                    ? await authMutation(url, { method: 'PUT', body: payload, emitRealtime: { module: REALTIME_MODULES.TICKETS } })
-                    : await authMutation(url, {
-                        method: 'PUT',
-                        body: payload,
-                        expectedUpdatedAt,
-                        expectedUpdatedAtField: 'expected_updated_at',
-                        emitRealtime: { module: REALTIME_MODULES.TICKETS },
-                    });
+                const result = await authMutation(url, {
+                    method: 'PUT',
+                    body: payload,
+                    expectedUpdatedAt,
+                    expectedUpdatedAtField: 'expected_updated_at',
+                    emitRealtime: { module: REALTIME_MODULES.TICKETS },
+                });
                 const data = result.data || {};
 
                 if (result.success) {
@@ -458,12 +468,18 @@ const AdminTickets = () => {
             const regularTickets = selectedIds.filter(id => !id?.startsWith('GROUP-'));
 
             for (const mainTicketId of groupMasters) {
+                const snapshot = (tickets || []).find((t) => t.ticket_id === mainTicketId);
                 const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/status`), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'Restored', ...getActor() })
+                    body: JSON.stringify({ status: 'Restored', ...getActor(), expected_updated_at: snapshot?.updated_at ?? null })
                 });
                 const data = await response.json();
+                if (response.status === 409) {
+                    toast.warning(data.message || `Group ${mainTicketId} was updated by someone else. Reloading latest data.`);
+                    refetch();
+                    return;
+                }
                 if (!response.ok || !data.success) {
                     toast.error(`Failed to restore group ${mainTicketId}: ${data.message}`);
                     return;

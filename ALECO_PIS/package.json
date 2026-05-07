@@ -39,6 +39,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "mysql2": "^3.17.2",
     "nodemailer": "^8.0.1",
+    "pdf-lib": "^1.17.1",
     "prop-types": "^15.8.1",
     "puppeteer": "^24.42.0",
     "react": "^19.2.0",

@@ -1093,6 +1093,138 @@ router.get('/personnel/export', requireStaff, async (req, res) => {
     }
 });
 
+// --- SERVICE MEMOS HELPERS ---
+function buildServiceMemoQuery(ds, de, filters = {}) {
+    let query = `SELECT id, control_number, ticket_id, category, service_date, work_performed, resolution_details,
+                        received_by, referred_to, owner_email, owner_name, memo_status, internal_notes, photo_url,
+                        created_at, updated_at, closed_at
+                 FROM aleco_service_memos
+                 WHERE DATE(service_date) BETWEEN ? AND ?`;
+    const params = [ds, de];
+    if (filters.status && String(filters.status).trim()) {
+        query += ` AND memo_status = ?`;
+        params.push(filters.status.trim());
+    }
+    if (filters.category && String(filters.category).trim()) {
+        query += ` AND category = ?`;
+        params.push(filters.category.trim());
+    }
+    query += ` ORDER BY service_date ASC, created_at ASC`;
+    return { query, params };
+}
+
+function flattenMemoRow(row) {
+    const { internal_notes, ...rest } = row;
+    let user_notes = '';
+    if (internal_notes) {
+        try {
+            const parsed = typeof internal_notes === 'string' ? JSON.parse(internal_notes) : internal_notes;
+            user_notes = String(parsed?.user_notes || '');
+        } catch { /* ignore */ }
+    }
+    return { ...rest, user_notes };
+}
+
+// --- SERVICE MEMOS EXPORT PREVIEW ---
+router.get('/service-memos/export/preview', requireStaff, async (req, res) => {
+    try {
+        const { preset, startDate, endDate, status, category } = req.query;
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const { query, params } = buildServiceMemoQuery(ds, de, { status, category });
+        const [memoRows] = await pool.execute(query, params);
+        const memos = memoRows.map(flattenMemoRow);
+        const metadata = { dateStart: ds, dateEnd: de, memoCount: memos.length };
+        res.json({ success: true, metadata, memos });
+    } catch (error) {
+        console.error('❌ Service memos export preview error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Preview failed' });
+    }
+});
+
+// --- SERVICE MEMOS EXPORT ---
+router.get('/service-memos/export', requireStaff, async (req, res) => {
+    try {
+        const { preset, startDate, endDate, format, status, category } = req.query;
+        const fmt = (format || 'excel').toLowerCase();
+        if (fmt !== 'excel' && fmt !== 'csv') {
+            return res.status(400).json({ success: false, message: 'Format must be excel or csv' });
+        }
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const { query, params } = buildServiceMemoQuery(ds, de, { status, category });
+        const [memoRows] = await pool.execute(query, params);
+        const memos = memoRows.map(flattenMemoRow);
+
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
+        const baseFilename = `aleco_service_memos_${ds}_to_${de}_${timestamp}`;
+        const ext = fmt === 'excel' ? 'xlsx' : 'csv';
+        const filename = `${baseFilename}.${ext}`;
+        const exportedBy = req.headers['x-user-email'] || req.headers['x-user-name'] || null;
+
+        await pool.execute(
+            `INSERT INTO aleco_export_log (export_date, date_start, date_end, ticket_count, log_count, format, exported_by)
+             VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
+            [ds, de, memos.length, 0, fmt, exportedBy]
+        );
+
+        if (fmt === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'ALECO PIS';
+            workbook.created = new Date();
+
+            const metaSheet = workbook.addWorksheet('Metadata', { properties: { tabColor: { argb: 'FF4472C4' } } });
+            metaSheet.addRow(['Export Info']);
+            metaSheet.addRow(['Schema Version', '1']);
+            metaSheet.addRow(['Export Date', new Date().toISOString()]);
+            metaSheet.addRow(['Date Range', `${ds} to ${de}`]);
+            metaSheet.addRow(['Memo Count', memos.length]);
+            metaSheet.addRow(['Format', 'excel']);
+            metaSheet.addRow(['Exported By', exportedBy || '']);
+
+            const memoCols = memos.length > 0 ? Object.keys(memos[0]) : [];
+            const memoSheet = workbook.addWorksheet('ServiceMemos', { properties: { tabColor: { argb: 'FF70AD47' } } });
+            const memoHeaderRow = memoSheet.addRow(memoCols);
+            memoHeaderRow.font = { bold: true };
+            memos.forEach((row) => {
+                memoSheet.addRow(memoCols.map((c) => {
+                    const v = row[c];
+                    if (v instanceof Date) return v;
+                    if (Buffer.isBuffer(v)) return v.toString();
+                    return v;
+                }));
+            });
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            await workbook.xlsx.write(res);
+        } else {
+            const memoCols = memos.length > 0 ? Object.keys(memos[0]) : [];
+            const memoCsv = stringify(
+                memos.map((r) => memoCols.map((c) => {
+                    const v = r[c];
+                    if (v instanceof Date) return v.toISOString();
+                    if (Buffer.isBuffer(v)) return v.toString();
+                    return v ?? '';
+                })),
+                { header: true, columns: memoCols }
+            );
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.send(memoCsv);
+        }
+    } catch (error) {
+        console.error('❌ Service memos export error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Export failed' });
+    }
+});
+
 router.post('/tickets/archive/preview', requireStaff, async (req, res) => {
     try {
         const { startDate, endDate, preset, category, district, municipality, status, groupFilter, isNew, isUrgent, hasMemo } = req.body;

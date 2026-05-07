@@ -13,6 +13,7 @@ import {
 } from '../utils/memoControlNumber.js';
 import { recordMemoNotification, MEMO_EVENT } from '../utils/adminNotifications.js';
 import { requireStaff } from '../middleware/requireRole.js';
+import { normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
 
 const router = express.Router();
 
@@ -46,7 +47,8 @@ const MEMO_JOIN_SQL = `
         t.action_desired,
         t.status as ticket_live_status,
         t.assigned_crew,
-        t.dispatched_at
+        t.dispatched_at,
+        t.created_at AS ticket_created_at
     FROM aleco_service_memos sm
     LEFT JOIN aleco_tickets t ON sm.ticket_id = t.ticket_id
 `;
@@ -69,6 +71,7 @@ function rowToMemoDto(row) {
     status: row.ticket_live_status,
     assigned_crew: row.assigned_crew,
     dispatched_at: row.dispatched_at,
+    ticket_created_at: row.ticket_created_at ?? null,
   };
   return mergeMemoForResponse(row, ticket);
 }
@@ -89,6 +92,7 @@ router.get('/service-memos', requireStaff, async (req, res) => {
       searchCustomer,
       searchAddress,
       status,
+      municipality,
       startDate,
       endDate,
       owner,
@@ -101,16 +105,8 @@ router.get('/service-memos', requireStaff, async (req, res) => {
 
     if (tab === 'saved') {
       query += ` AND sm.memo_status = 'saved'`;
-      if (currentUserEmail) {
-        query += ` AND sm.owner_email = ?`;
-        params.push(currentUserEmail);
-      }
     } else if (tab === 'closed') {
       query += ` AND sm.memo_status = 'closed'`;
-      if (currentUserEmail) {
-        query += ` AND sm.owner_email = ?`;
-        params.push(currentUserEmail);
-      }
     }
 
     const qMemo = trimQuery(searchMemo);
@@ -178,6 +174,11 @@ router.get('/service-memos', requireStaff, async (req, res) => {
     if (status && status.trim()) {
       query += ` AND sm.ticket_status = ?`;
       params.push(status.trim());
+    }
+
+    if (municipality && municipality.trim()) {
+      query += ` AND t.municipality = ?`;
+      params.push(municipality.trim());
     }
 
     if (tab === 'all' && owner && owner.trim()) {
@@ -478,6 +479,21 @@ router.put('/service-memos/:id', requireStaff, async (req, res) => {
 
     const memo = memoRows[0];
 
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(body.expected_updated_at ?? body.expectedUpdatedAt);
+    if (expectedUpdatedAt) {
+      const dbIso = memo.updated_at ? new Date(memo.updated_at).toISOString() : '';
+      let clientIso = '';
+      try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+      if (!dbIso || dbIso !== clientIso) {
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_MEMO',
+          message: 'This memo was updated by someone else. Reload it and try again.',
+          latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+        });
+      }
+    }
+
     if (memo.memo_status === 'closed') {
       return res.status(400).json({ success: false, message: 'Cannot edit a closed service memo.' });
     }
@@ -546,9 +562,23 @@ router.put('/service-memos/:id', requireStaff, async (req, res) => {
     }
 
     updateParams.push(id);
+    let memoWhereClause = 'id = ?';
+    if (expectedUpdatedAt && memo.updated_at) {
+      updateParams.push(memo.updated_at);
+      memoWhereClause += ' AND updated_at = ?';
+    }
 
-    const query = `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE id = ?`;
-    await pool.execute(query, updateParams);
+    const query = `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE ${memoWhereClause}`;
+    const [updateResult] = await pool.execute(query, updateParams);
+
+    if (updateResult.affectedRows === 0 && expectedUpdatedAt) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_MEMO',
+        message: 'This memo was updated by someone else. Reload it and try again.',
+        latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+      });
+    }
 
     await recordMemoNotification(pool, {
       eventType: MEMO_EVENT.UPDATED,
@@ -579,11 +609,41 @@ router.put('/service-memos/:id/close', requireStaff, async (req, res) => {
 
     const memo = memoRows[0];
 
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+    if (expectedUpdatedAt) {
+      const dbIso = memo.updated_at ? new Date(memo.updated_at).toISOString() : '';
+      let clientIso = '';
+      try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+      if (!dbIso || dbIso !== clientIso) {
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_MEMO',
+          message: 'This memo was updated by someone else. Reload it and try again.',
+          latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+        });
+      }
+    }
+
     if (memo.memo_status !== 'saved') {
       return res.status(400).json({ success: false, message: 'Can only close a saved service memo.' });
     }
 
-    await pool.execute(`UPDATE aleco_service_memos SET memo_status = 'closed', closed_at = NOW() WHERE id = ?`, [id]);
+    const closeWhereSql = expectedUpdatedAt && memo.updated_at ? 'id = ? AND updated_at = ?' : 'id = ?';
+    const closeWhereParams = expectedUpdatedAt && memo.updated_at ? [id, memo.updated_at] : [id];
+    const currentUserName = getActorName(req) || '';
+    const [closeResult] = await pool.execute(
+      `UPDATE aleco_service_memos SET memo_status = 'closed', closed_at = NOW(), closed_by = ? WHERE ${closeWhereSql}`,
+      [currentUserName, ...closeWhereParams]
+    );
+
+    if (closeResult.affectedRows === 0 && expectedUpdatedAt) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_MEMO',
+        message: 'This memo was updated by someone else. Reload it and try again.',
+        latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+      });
+    }
 
     await recordMemoNotification(pool, {
       eventType: MEMO_EVENT.CLOSED,

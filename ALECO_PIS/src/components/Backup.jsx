@@ -17,6 +17,7 @@ import BackupHistoryFiltersBar from './backup/BackupHistoryFiltersBar';
 import BackupTicketFiltersForm, { getActiveTicketFiltersCount } from './backup/BackupTicketFiltersForm';
 import BackupInterruptionFiltersForm, { getActiveInterruptionFiltersCount } from './backup/BackupInterruptionFiltersForm';
 import BackupHistoryFiltersForm, { getActiveHistoryFiltersCount } from './backup/BackupHistoryFiltersForm';
+import BackupMemoFiltersForm, { getActiveMemoFiltersCount } from './backup/BackupMemoFiltersForm';
 import EntityPicker from './backup/EntityPicker';
 import ComingSoonPlaceholder from './backup/ComingSoonPlaceholder';
 import TicketFilterDrawer from './tickets/TicketFilterDrawer';
@@ -78,6 +79,13 @@ const AdminBackup = () => {
         q: '',
         actor: ''
     });
+    const [memoFilters, setMemoFilters] = useState({
+        status: '',
+        category: '',
+        district: '',
+        municipality: '',
+        receivedBy: '',
+    });
 
     const ticketFilterActiveCount = useMemo(() => getActiveTicketFiltersCount(filters), [filters]);
     const interruptionFilterActiveCount = useMemo(
@@ -87,6 +95,10 @@ const AdminBackup = () => {
     const historyFilterActiveCount = useMemo(
         () => getActiveHistoryFiltersCount(historyFilters),
         [historyFilters]
+    );
+    const memoFilterActiveCount = useMemo(
+        () => getActiveMemoFiltersCount(memoFilters),
+        [memoFilters]
     );
 
     const isTicketsEntity = entity === 'tickets';
@@ -104,7 +116,7 @@ const AdminBackup = () => {
     );
     const hasDataFilters =
         isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity || isHistoryEntity || isServiceMemosEntity;
-    const showFilterButton = isTicketsEntity || isInterruptionsEntity || isHistoryEntity;
+    const showFilterButton = isTicketsEntity || isInterruptionsEntity || isHistoryEntity || isServiceMemosEntity;
 
     useEffect(() => {
         if (!canViewHistory && entity === 'history') {
@@ -119,6 +131,8 @@ const AdminBackup = () => {
             ? interruptionFilterActiveCount
             : isHistoryEntity
                 ? historyFilterActiveCount
+            : isServiceMemosEntity
+                ? memoFilterActiveCount
             : 0;
 
     const getExportBasePath = () => {
@@ -151,7 +165,16 @@ const AdminBackup = () => {
             return base;
         }
 
-        if (isUsersEntity || isPersonnelEntity || isServiceMemosEntity) {
+        if (isUsersEntity || isPersonnelEntity) {
+            return base;
+        }
+
+        if (isServiceMemosEntity) {
+            if (memoFilters.status) base.status = memoFilters.status;
+            if (memoFilters.category) base.category = memoFilters.category;
+            if (memoFilters.district) base.district = memoFilters.district;
+            if (memoFilters.municipality) base.municipality = memoFilters.municipality;
+            if (memoFilters.receivedBy) base.receivedBy = memoFilters.receivedBy;
             return base;
         }
 
@@ -618,6 +641,13 @@ const AdminBackup = () => {
             {isHistoryEntity && (
                 <BackupHistoryFiltersBar filters={historyFilters} setFilters={setHistoryFilters} />
             )}
+            {isServiceMemosEntity && (
+                <div className="backup-filters-wrapper backup-filters-desktop">
+                    <div className="backup-filters-content">
+                        <BackupMemoFiltersForm filters={memoFilters} setFilters={setMemoFilters} />
+                    </div>
+                </div>
+            )}
 
             <div
                 className={
@@ -677,6 +707,11 @@ const AdminBackup = () => {
                                         filters={historyFilters}
                                         setFilters={setHistoryFilters}
                                     />
+                                </div>
+                            )}
+                            {isServiceMemosEntity && (
+                                <div className="backup-filters-content backup-filters-content--drawer">
+                                    <BackupMemoFiltersForm filters={memoFilters} setFilters={setMemoFilters} />
                                 </div>
                             )}
                         </div>

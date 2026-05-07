@@ -123,11 +123,11 @@ const COORDS = {
   REFERRED_TO:       { x: 383, y: 356.9 },   // Reffered to / Name of Regular Lineman
   RECEIVED_BY:       { x: 99.2,  y: 420},   // Received by
   DATE_RECEIVED:     { x: 116.8,  y: 448 },   // Date/Time Received — ticket reported datetime
-  DATE_RECEIVED_MEMO: { x: 494,  y: 393 },   // Date/Time Received — memo created datetime (right-side field, same line as REF_DATE_RECEIVED)
+  DATE_RECEIVED_MEMO: { x: 425,  y: 393 },   // Date/Time Received — memo created datetime (right-side field, same line as REF_DATE_RECEIVED)
   DATE_ARRIVED:      { x: 397, y: 417 },   // Date Arrived on Site
   TIME_ON_SITE:      { x: 540, y: 417.9 },   // Time on Site
   DATE_ACCOMPLISHED: { x: 445, y: 443.5},   // Date/Time Accomplished
-  REF_DATE_RECEIVED: { x: 425,  y: 393 },   // Referral Date/Time Received
+  REF_DATE_RECEIVED: { x: 415,  y: 393 },   // Referral Date/Time Received
 
   // ── LINEMEN COPY coordinates ───────────────────────────────────────────
   // Same x-coordinates, y + 400 offset for bottom half of page
@@ -423,35 +423,45 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
     return `${monthName} ${d}, ${y}`;
   };
 
-  // Format a datetime string into "May 04, 2026 8:23 AM" in Philippine Time (PHT, UTC+8).
-  // ALL datetime values from the DB (created_at, ticket_created_at) are stored as UTC.
-  // The pool's dateStrings:true returns them as plain "YYYY-MM-DD HH:MM:SS" UTC strings —
-  // no Z suffix, no timezone info — identical to how dateUtils.js treats them with dayjs.utc().add(8).
-  // So we always add +8 hours regardless of format.
-  const formatFullDateTime = (datetimeStr) => {
-    if (!datetimeStr) return '';
-    const s = String(datetimeStr);
-    const MONTHS = ['Jan','Feb','March','April','May','June','July','Aug','Sept','Oct','Nov','Dec'];
+  const DT_MONTHS = ['Jan','Feb','March','April','May','June','July','Aug','Sept','Oct','Nov','Dec'];
 
-    // Normalise: replace space separator with T so new Date() can parse it,
-    // then append Z to force UTC interpretation.
-    const normalised = s.slice(0, 19).replace(' ', 'T') + 'Z';
-    const utcMs = new Date(normalised).getTime();
-    if (isNaN(utcMs)) return s.slice(0, 19);
-
-    // Add +8 hours to get PHT
-    const phtMs = utcMs + 8 * 60 * 60 * 1000;
-    const pht   = new Date(phtMs);
-
-    const mon    = MONTHS[pht.getUTCMonth()];
-    const d      = String(pht.getUTCDate()).padStart(2, '0');
-    const y      = pht.getUTCFullYear();
-    const hour   = pht.getUTCHours();
-    const mm     = String(pht.getUTCMinutes()).padStart(2, '0');
+  // Shared formatter core — takes a Date object already normalised to display time.
+  const _formatDateObj = (dt) => {
+    const mon    = DT_MONTHS[dt.getUTCMonth()];
+    const d      = String(dt.getUTCDate()).padStart(2, '0');
+    const y      = dt.getUTCFullYear();
+    const hour   = dt.getUTCHours();
+    const mm     = String(dt.getUTCMinutes()).padStart(2, '0');
     const period = hour >= 12 ? 'PM' : 'AM';
     const h12    = hour % 12 === 0 ? 12 : hour % 12;
     return `${mon} ${d}, ${y} ${h12}:${mm} ${period}`;
   };
+
+  // For sm.created_at — arrives as a plain UTC string "YYYY-MM-DD HH:MM:SS" (no timezone marker).
+  // Must add +8h to convert to PHT. Mirrors dateUtils.js: dayjs.utc(s).add(8, 'hour').
+  const formatUtcDateTime = (datetimeStr) => {
+    if (!datetimeStr) return '';
+    const s = String(datetimeStr);
+    const normalised = s.slice(0, 19).replace(' ', 'T') + 'Z';
+    const utcMs = new Date(normalised).getTime();
+    if (isNaN(utcMs)) return s.slice(0, 19);
+    return _formatDateObj(new Date(utcMs + 8 * 60 * 60 * 1000));
+  };
+
+  // For ticket_created_at — pool's timezone:'+08:00' + dateStrings:true already shifts
+  // TIMESTAMP columns from the JOIN query to PHT before stringifying, so parse as-is.
+  const formatPhtDateTime = (datetimeStr) => {
+    if (!datetimeStr) return '';
+    const s = String(datetimeStr);
+    // Strip any trailing timezone info and treat as a wall-clock PHT time
+    const normalised = s.slice(0, 19).replace(' ', 'T') + 'Z';
+    const ms = new Date(normalised).getTime();
+    if (isNaN(ms)) return s.slice(0, 19);
+    return _formatDateObj(new Date(ms)); // no +8 — already PHT
+  };
+
+  // Keep the name for any callers that haven't been updated yet — defaults to UTC path.
+  const formatFullDateTime = formatUtcDateTime;
 
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
@@ -584,7 +594,7 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
 
   // DATE_RECEIVED = when the ticket was reported (ticket_created_at)
   drawText(
-    formatFullDateTime(memo.ticket_created_at),
+    formatPhtDateTime(memo.ticket_created_at),
     COORDS.DATE_RECEIVED.x, COORDS.DATE_RECEIVED.y, { size: 10, maxWidth: 200 }
   );
   drawText(
@@ -728,7 +738,7 @@ export async function fillServiceMemoPdf(pdfTemplateBytes, memo) {
 
   // DATE_RECEIVED = when the ticket was reported (ticket_created_at)
   drawText(
-    formatFullDateTime(memo.ticket_created_at),
+    formatPhtDateTime(memo.ticket_created_at),
     COORDS.LINEMEN_DATE_RECEIVED.x, COORDS.LINEMEN_DATE_RECEIVED.y, { size: 10, maxWidth: 200 }
   );
   drawText(

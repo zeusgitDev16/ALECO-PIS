@@ -624,6 +624,10 @@ router.get('/tickets/export', requireStaff, async (req, res) => {
                     return v;
                 }));
             });
+            ticketCols.forEach((col, i) => {
+                const vals = [col, ...ticketRows.map((r) => String(r[col] ?? ''))];
+                ticketSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
+            });
 
             const logSheet = workbook.addWorksheet('TicketLogs', { properties: { tabColor: { argb: 'FFFFC000' } } });
             const logCols = logRows.length > 0 ? Object.keys(logRows[0]) : [];
@@ -637,6 +641,10 @@ router.get('/tickets/export', requireStaff, async (req, res) => {
                     if (c === 'metadata' && typeof v === 'object') return v ? JSON.stringify(v) : '';
                     return v;
                 }));
+            });
+            logCols.forEach((col, i) => {
+                const vals = [col, ...logRows.map((r) => String(r[col] ?? ''))];
+                logSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
             });
 
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -789,6 +797,10 @@ router.get('/interruptions/export', requireStaff, async (req, res) => {
                     })
                 );
             });
+            intCols.forEach((col, i) => {
+                const vals = [col, ...interruptionRows.map((r) => String(r[col] ?? ''))];
+                intSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
+            });
 
             const updCols = updateRows.length > 0 ? Object.keys(updateRows[0]) : [];
             const updSheet = workbook.addWorksheet('InterruptionUpdates', {
@@ -806,6 +818,10 @@ router.get('/interruptions/export', requireStaff, async (req, res) => {
                     })
                 );
             });
+            updCols.forEach((col, i) => {
+                const vals = [col, ...updateRows.map((r) => String(r[col] ?? ''))];
+                updSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
+            });
 
             const alecoSheet = workbook.addWorksheet('ALECO_Interruptions', {
                 properties: { tabColor: { argb: 'FF9BC2E6' } },
@@ -814,6 +830,10 @@ router.get('/interruptions/export', requireStaff, async (req, res) => {
             alecoHeaderRow.font = { bold: true };
             alecoInterruptions.forEach((row) => {
                 alecoSheet.addRow(ALECO_INTERRUPTION_EXPORT_COLUMNS.map((col) => row[col] ?? ''));
+            });
+            ALECO_INTERRUPTION_EXPORT_COLUMNS.forEach((col, i) => {
+                const vals = [col, ...alecoInterruptions.map((r) => String(r[col] ?? ''))];
+                alecoSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
             });
 
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -928,6 +948,10 @@ router.get('/users/export', requireStaff, async (req, res) => {
                     })
                 );
             });
+            userCols.forEach((col, i) => {
+                const vals = [col, ...userRows.map((r) => String(r[col] ?? ''))];
+                userSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
+            });
 
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -1036,6 +1060,10 @@ router.get('/personnel/export', requireStaff, async (req, res) => {
                     })
                 );
             });
+            crewCols.forEach((col, i) => {
+                const vals = [col, ...crews.map((r) => String(r[col] ?? ''))];
+                crewSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
+            });
 
             const cmCols = crewMembers.length > 0 ? Object.keys(crewMembers[0]) : ['crew_id', 'lineman_id'];
             const cmSheet = workbook.addWorksheet('CrewMembers', { properties: { tabColor: { argb: 'FFFFC000' } } });
@@ -1051,6 +1079,10 @@ router.get('/personnel/export', requireStaff, async (req, res) => {
                     })
                 );
             });
+            cmCols.forEach((col, i) => {
+                const vals = [col, ...crewMembers.map((r) => String(r[col] ?? ''))];
+                cmSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
+            });
 
             const lmCols = linemen.length > 0 ? Object.keys(linemen[0]) : [];
             const lmSheet = workbook.addWorksheet('Linemen', { properties: { tabColor: { argb: 'FF9BC2E6' } } });
@@ -1065,6 +1097,10 @@ router.get('/personnel/export', requireStaff, async (req, res) => {
                         return v;
                     })
                 );
+            });
+            lmCols.forEach((col, i) => {
+                const vals = [col, ...linemen.map((r) => String(r[col] ?? ''))];
+                lmSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
             });
 
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -1095,46 +1131,71 @@ router.get('/personnel/export', requireStaff, async (req, res) => {
 
 // --- SERVICE MEMOS HELPERS ---
 function buildServiceMemoQuery(ds, de, filters = {}) {
-    let query = `SELECT id, control_number, ticket_id, category, service_date, work_performed, resolution_details,
-                        received_by, referred_to, owner_email, owner_name, memo_status, internal_notes, photo_url,
-                        created_at, updated_at, closed_at
-                 FROM aleco_service_memos
-                 WHERE DATE(service_date) BETWEEN ? AND ?`;
+    const needsTicketJoin = filters.municipality || filters.district;
+    let query = needsTicketJoin
+        ? `SELECT sm.id, sm.control_number, sm.ticket_id, sm.category, sm.service_date, sm.work_performed,
+                  sm.received_by, sm.referred_to, sm.owner_email, sm.memo_status, sm.internal_notes, sm.photo_url,
+                  sm.created_at, sm.updated_at, sm.closed_at
+           FROM aleco_service_memos sm
+           LEFT JOIN aleco_tickets t ON sm.ticket_id = t.ticket_id
+           WHERE DATE(sm.service_date) BETWEEN ? AND ?`
+        : `SELECT id, control_number, ticket_id, category, service_date, work_performed,
+                  received_by, referred_to, owner_email, memo_status, internal_notes, photo_url,
+                  created_at, updated_at, closed_at
+           FROM aleco_service_memos
+           WHERE DATE(service_date) BETWEEN ? AND ?`;
     const params = [ds, de];
+    const p = (col) => needsTicketJoin ? `sm.${col}` : col;
     if (filters.status && String(filters.status).trim()) {
-        query += ` AND memo_status = ?`;
+        query += ` AND ${p('memo_status')} = ?`;
         params.push(filters.status.trim());
     }
     if (filters.category && String(filters.category).trim()) {
-        query += ` AND category = ?`;
+        query += ` AND ${p('category')} = ?`;
         params.push(filters.category.trim());
     }
-    query += ` ORDER BY service_date ASC, created_at ASC`;
+    if (filters.municipality && String(filters.municipality).trim()) {
+        query += ` AND t.municipality = ?`;
+        params.push(filters.municipality.trim());
+    }
+    if (filters.district && String(filters.district).trim()) {
+        query += ` AND t.district = ?`;
+        params.push(filters.district.trim());
+    }
+    if (filters.receivedBy && String(filters.receivedBy).trim()) {
+        query += ` AND ${p('received_by')} LIKE ?`;
+        params.push(`%${filters.receivedBy.trim()}%`);
+    }
+    query += ` ORDER BY ${p('service_date')} ASC, ${p('created_at')} ASC`;
     return { query, params };
 }
 
 function flattenMemoRow(row) {
-    const { internal_notes, ...rest } = row;
-    let user_notes = '';
-    if (internal_notes) {
-        try {
-            const parsed = typeof internal_notes === 'string' ? JSON.parse(internal_notes) : internal_notes;
-            user_notes = String(parsed?.user_notes || '');
-        } catch { /* ignore */ }
-    }
-    return { ...rest, user_notes };
+    // Excluded: id, owner_email, owner_name, user_notes, photo_url
+    const {
+        id: _id,
+        internal_notes,
+        owner_email: _oe,
+        owner_name: _on,
+        photo_url: _pu,
+        work_performed,
+        ...rest
+    } = row;
+    // Rename control_number -> 'Memo#', work_performed -> 'Action Taken'
+    const { control_number, ...remaining } = rest;
+    return { 'Memo#': control_number, ...remaining, 'Action Taken': work_performed ?? '' };
 }
 
 // --- SERVICE MEMOS EXPORT PREVIEW ---
 router.get('/service-memos/export/preview', requireStaff, async (req, res) => {
     try {
-        const { preset, startDate, endDate, status, category } = req.query;
+        const { preset, startDate, endDate, status, category, municipality, district, receivedBy } = req.query;
         const dateFilter = buildDateFilter(preset, startDate, endDate);
         if (!dateFilter) {
             return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
         }
         const { startDate: ds, endDate: de } = dateFilter;
-        const { query, params } = buildServiceMemoQuery(ds, de, { status, category });
+        const { query, params } = buildServiceMemoQuery(ds, de, { status, category, municipality, district, receivedBy });
         const [memoRows] = await pool.execute(query, params);
         const memos = memoRows.map(flattenMemoRow);
         const metadata = { dateStart: ds, dateEnd: de, memoCount: memos.length };
@@ -1148,7 +1209,7 @@ router.get('/service-memos/export/preview', requireStaff, async (req, res) => {
 // --- SERVICE MEMOS EXPORT ---
 router.get('/service-memos/export', requireStaff, async (req, res) => {
     try {
-        const { preset, startDate, endDate, format, status, category } = req.query;
+        const { preset, startDate, endDate, format, status, category, municipality, district, receivedBy } = req.query;
         const fmt = (format || 'excel').toLowerCase();
         if (fmt !== 'excel' && fmt !== 'csv') {
             return res.status(400).json({ success: false, message: 'Format must be excel or csv' });
@@ -1158,7 +1219,7 @@ router.get('/service-memos/export', requireStaff, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
         }
         const { startDate: ds, endDate: de } = dateFilter;
-        const { query, params } = buildServiceMemoQuery(ds, de, { status, category });
+        const { query, params } = buildServiceMemoQuery(ds, de, { status, category, municipality, district, receivedBy });
         const [memoRows] = await pool.execute(query, params);
         const memos = memoRows.map(flattenMemoRow);
 
@@ -1199,6 +1260,13 @@ router.get('/service-memos/export', requireStaff, async (req, res) => {
                     if (Buffer.isBuffer(v)) return v.toString();
                     return v;
                 }));
+            });
+
+            // Auto-fit column widths: measure header + all cell values, clamp 10–60
+            memoCols.forEach((col, i) => {
+                const colValues = [col, ...memos.map((r) => String(r[col] ?? ''))];
+                const maxLen = Math.max(...colValues.map((v) => String(v).length));
+                memoSheet.getColumn(i + 1).width = Math.min(Math.max(maxLen + 2, 10), 60);
             });
 
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

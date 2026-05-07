@@ -56,10 +56,9 @@
 
 /* Global admin search (beside menu): --ns mirrors --nav-scale so the field always picks up tiers */
 .admin-top-nav .search-container.admin-nav-search {
-    /* Cap so wide viewports (≥1024, --nav-scale: 1) stay aligned with modular tiers; same DevTools vs full-width issue as advisories */
     --ns: min(var(--nav-scale, 1), 0.88);
     position: relative;
-    width: calc(300px * var(--ns));
+    width: calc(240px * var(--ns));
     min-width: 0;
     flex-shrink: 1;
     transition: width 0.3s ease;
@@ -68,16 +67,17 @@
 
 .admin-top-nav .admin-nav-search__icon.search-icon {
     position: absolute;
-    left: calc(15px * var(--ns));
+    left: calc(11px * var(--ns));
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-secondary);
-    width: calc(20px * var(--ns));
-    height: calc(20px * var(--ns));
+    width: calc(15px * var(--ns));
+    height: calc(15px * var(--ns));
     pointer-events: none;
     display: block;
     overflow: visible;
     box-sizing: border-box;
+    opacity: 0.65;
 }
 
 .admin-top-nav .admin-nav-search__icon circle,
@@ -98,27 +98,216 @@
     margin: 0;
     width: 100%;
     min-width: 0;
-    padding: calc(10px * var(--ns, var(--nav-scale, 1))) calc(20px * var(--ns, var(--nav-scale, 1)))
-        calc(10px * var(--ns, var(--nav-scale, 1))) calc(45px * var(--ns, var(--nav-scale, 1))) !important;
-    border-radius: calc(25px * var(--ns, var(--nav-scale, 1))) !important;
-    border: 1px solid var(--text-secondary) !important;
-    background-color: rgba(128, 128, 128, 0.1) !important;
+    padding: calc(6px * var(--ns, var(--nav-scale, 1))) calc(14px * var(--ns, var(--nav-scale, 1)))
+        calc(6px * var(--ns, var(--nav-scale, 1))) calc(32px * var(--ns, var(--nav-scale, 1))) !important;
+    border-radius: calc(999px * var(--ns, var(--nav-scale, 1))) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    backdrop-filter: blur(12px) saturate(160%);
     color: var(--text-header) !important;
     outline: none;
     box-sizing: border-box !important;
-    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-    min-height: calc(44px * var(--ns, var(--nav-scale, 1))) !important;
+    transition: border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease, width 0.3s ease;
+    min-height: calc(34px * var(--ns, var(--nav-scale, 1))) !important;
     line-height: 1.3 !important;
     font-style: normal !important;
     font-variant: normal !important;
     font-weight: 400 !important;
     font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif !important;
-    font-size: calc(1rem * var(--ns, var(--nav-scale, 1))) !important;
+    font-size: calc(0.8rem * var(--ns, var(--nav-scale, 1))) !important;
+    letter-spacing: 0.01em !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.06) !important;
 }
 
 #aleco-admin-header-search.admin-nav-search__input::placeholder {
     color: var(--text-secondary);
-    opacity: 0.85;
+    opacity: 0.6;
+    font-size: calc(0.78rem * var(--ns, var(--nav-scale, 1))) !important;
+}
+
+#aleco-admin-header-search.admin-nav-search__input:focus {
+    border-color: rgba(var(--accent-primary-rgb, 99, 102, 241), 0.55) !important;
+    background: rgba(255, 255, 255, 0.11) !important;
+    box-shadow:
+        inset 0 1px 2px rgba(0,0,0,0.06),
+        0 0 0 3px rgba(var(--accent-primary-rgb, 99, 102, 241), 0.15),
+        0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+/* Expand width slightly on focus for a polished feel */
+.admin-top-nav .search-container.admin-nav-search:focus-within {
+    width: calc(280px * var(--ns));
+}
+
+/* Icon brightens when input is focused */
+.admin-top-nav .search-container.admin-nav-search:focus-within .admin-nav-search__icon {
+    opacity: 0.9;
+    color: var(--accent-primary);
+}
+
+/* Light mode: slightly more opaque glass so it's readable on light bg */
+[data-theme='light'] #aleco-admin-header-search.admin-nav-search__input {
+    background: rgba(255, 255, 255, 0.55) !important;
+    border-color: rgba(100, 116, 139, 0.3) !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.05) !important;
+}
+
+[data-theme='light'] #aleco-admin-header-search.admin-nav-search__input:focus {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-color: rgba(var(--accent-primary-rgb, 99, 102, 241), 0.5) !important;
+    box-shadow:
+        inset 0 1px 2px rgba(0,0,0,0.05),
+        0 0 0 3px rgba(var(--accent-primary-rgb, 99, 102, 241), 0.12),
+        0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Clear button ── */
+.admin-top-nav .gsb-clear-btn {
+    position: absolute;
+    right: calc(10px * var(--ns, 1));
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(128,128,128,0.18);
+    border: none;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+    z-index: 2;
+}
+.admin-top-nav .gsb-clear-btn:hover {
+    background: rgba(128,128,128,0.35);
+    color: var(--text-main);
+}
+
+/* ── Dropdown panel ── */
+.admin-top-nav .gsb-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: max(100%, 320px);
+    background: var(--bg-card);
+    border: 1px solid rgba(148,163,184,0.18);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    overflow: hidden;
+    z-index: 1100;
+    animation: gsbDropIn 0.15s ease;
+}
+
+@keyframes gsbDropIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.admin-top-nav .gsb-dropdown__loading,
+.admin-top-nav .gsb-dropdown__empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* ── Spinner ── */
+.admin-top-nav .gsb-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(128,128,128,0.25);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: gsbSpin 0.6s linear infinite;
+    flex-shrink: 0;
+}
+@keyframes gsbSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Result rows ── */
+.admin-top-nav .gsb-result-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background 0.13s ease;
+    border-bottom: 1px solid rgba(148,163,184,0.08);
+}
+.admin-top-nav .gsb-result-item:last-child {
+    border-bottom: none;
+}
+.admin-top-nav .gsb-result-item:hover,
+.admin-top-nav .gsb-result-item--active {
+    background: rgba(var(--accent-primary-rgb, 99,102,241), 0.08);
+}
+
+.admin-top-nav .gsb-result-item__avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid rgba(148,163,184,0.15);
+}
+
+.admin-top-nav .gsb-result-item__info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+}
+.admin-top-nav .gsb-result-item__name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.admin-top-nav .gsb-result-item__email {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Role badge ── */
+.admin-top-nav .gsb-result-item__role {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    background: rgba(148,163,184,0.15);
+    color: var(--text-secondary);
+}
+.admin-top-nav .gsb-role--admin {
+    background: rgba(168,85,247,0.1);
+    color: #a855f7;
+}
+.admin-top-nav .gsb-role--employee {
+    background: rgba(34,197,94,0.1);
+    color: #22c55e;
+}
+.admin-top-nav .gsb-role--staff {
+    background: rgba(34,197,94,0.1);
+    color: #22c55e;
 }
 
 .action-icons {

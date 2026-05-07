@@ -199,6 +199,28 @@ router.post('/check-email', async (req, res) => {
     res.status(500).json({ status: 'error' });
   }
 });
+// Global search: users by name or email
+router.get('/search/users', requireStaff, async (req, res) => {
+  const { q } = req.query;
+  const term = String(q || '').trim();
+  if (!term) return res.json({ success: true, data: [] });
+  const wild = `%${term}%`;
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, name, email, role, status, profile_pic
+       FROM users
+       WHERE (name LIKE ? OR email LIKE ?) AND status != 'Disabled'
+       ORDER BY name ASC
+       LIMIT 8`,
+      [wild, wild]
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Search users error:', error.message);
+    res.status(500).json({ success: false, error: 'Search failed.' });
+  }
+});
+
 // Fetch all registered users
 router.get('/users', requireStaff, async (req, res) => {
   try {

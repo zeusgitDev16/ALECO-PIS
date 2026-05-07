@@ -7,6 +7,8 @@ import { matchesRealtimeModule } from '../../utils/realtimeModules';
 import { USER_ROLES } from '../../constants/userRoles';
 import UserAvatar from './UserAvatar';
 import UserAccountActionModal from '../users/UserAccountActionModal';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import '../../CSS/AllUsers.css';
 
 const isActiveStatus = (user) => user.status === 'Active';
@@ -308,9 +310,162 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
 
   if (loading) {
     return (
-      <div className="dashboard-widget users-all-widget users-all-widget--loading">
-        <p className="loading-text">Loading ALECO PIS Users...</p>
+      <>
+      <div className="dashboard-widget users-all-widget">
+        <div className="users-widget-header">
+          <h4 className="users-widget-title">All Registered Users</h4>
+          <div className="table-search-container">
+            <Skeleton width={200} height={36} />
+          </div>
+        </div>
+        <div className="widget-text">
+          {layout === 'compact' && (
+            <div className="users-table-container users-table-container--compact">
+              <table className="users-table">
+                <thead>
+                  <tr>
+                    <th className="users-th-avatar" scope="col" aria-label="Profile" />
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Account Status</th>
+                    {canManageUsers ? <th>Actions</th> : null}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i}>
+                      <td className="users-td-avatar"><Skeleton width={40} height={40} circle /></td>
+                      <td><Skeleton width={120} height={16} /></td>
+                      <td><Skeleton width={180} height={16} /></td>
+                      <td><Skeleton width={80} height={20} /></td>
+                      <td><Skeleton width={80} height={16} /></td>
+                      {canManageUsers ? <td><Skeleton width={70} height={32} /></td> : null}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {layout === 'card' && (
+            <div className="users-card-grid">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <article key={i} className="users-user-card">
+                  <div className="users-user-card-top">
+                    <div className="users-user-card-avatar-wrap">
+                      <Skeleton width={48} height={48} circle />
+                    </div>
+                    <div className="users-user-card-text">
+                      <div className="users-user-card-name"><Skeleton width={120} height={18} /></div>
+                      <div className="users-user-card-email"><Skeleton width={180} height={14} /></div>
+                    </div>
+                  </div>
+                  <div className="users-user-card-meta">
+                    <Skeleton width={80} height={20} />
+                    <Skeleton width={70} height={20} />
+                  </div>
+                  {canManageUsers && (
+                    <div className="users-user-card-actions">
+                      <Skeleton width={70} height={32} />
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+          {layout === 'workflow' && (
+            <div className="users-workflow-board">
+              <div className="users-workflow-column">
+                <h5 className="users-workflow-column-title">Active</h5>
+                <div className="users-workflow-column-scroll">
+                  {[1, 2, 3].map((i) => (
+                    <article key={i} className="users-user-card">
+                      <div className="users-user-card-top">
+                        <div className="users-user-card-avatar-wrap">
+                          <Skeleton width={48} height={48} circle />
+                        </div>
+                        <div className="users-user-card-text">
+                          <div className="users-user-card-name"><Skeleton width={120} height={18} /></div>
+                          <div className="users-user-card-email"><Skeleton width={180} height={14} /></div>
+                        </div>
+                      </div>
+                      <div className="users-user-card-meta">
+                        <Skeleton width={80} height={20} />
+                        <Skeleton width={70} height={20} />
+                      </div>
+                      {canManageUsers && (
+                        <div className="users-user-card-actions">
+                          <Skeleton width={70} height={32} />
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </div>
+              <div className="users-workflow-column">
+                <h5 className="users-workflow-column-title">Inactive</h5>
+                <div className="users-workflow-column-scroll">
+                  {[1, 2].map((i) => (
+                    <article key={i} className="users-user-card">
+                      <div className="users-user-card-top">
+                        <div className="users-user-card-avatar-wrap">
+                          <Skeleton width={48} height={48} circle />
+                        </div>
+                        <div className="users-user-card-text">
+                          <div className="users-user-card-name"><Skeleton width={120} height={18} /></div>
+                          <div className="users-user-card-email"><Skeleton width={180} height={14} /></div>
+                        </div>
+                      </div>
+                      <div className="users-user-card-meta">
+                        <Skeleton width={80} height={20} />
+                        <Skeleton width={70} height={20} />
+                      </div>
+                      {canManageUsers && (
+                        <div className="users-user-card-actions">
+                          <Skeleton width={70} height={32} />
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {showPendingInvites && (
+        <div className="dashboard-widget users-pending-widget">
+          <div className="users-widget-header">
+            <h4 className="users-widget-title">Pending Account Invitations</h4>
+          </div>
+          <div className="widget-text">
+            <div className="users-table-container users-table-container--compact">
+              <table className="users-table">
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Role Assigned</th>
+                    <th>Invitation Code</th>
+                    <th>Sent At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3].map((i) => (
+                    <tr key={i}>
+                      <td className="user-email"><Skeleton width={180} height={16} /></td>
+                      <td><Skeleton width={80} height={20} /></td>
+                      <td className="user-code"><Skeleton width={120} height={20} /></td>
+                      <td className="sent-at"><Skeleton width={150} height={14} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 

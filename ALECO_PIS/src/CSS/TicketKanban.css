@@ -295,6 +295,13 @@ body.modal-open .kanban-column-header {
     background: rgba(239, 68, 68, 0.03);
 }
 
+/* Remove borders and shadows from skeleton loading cards */
+.kanban-ticket-card.skeleton-loading {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
 /* Card Header */
 .kanban-card-header {
     display: flex;

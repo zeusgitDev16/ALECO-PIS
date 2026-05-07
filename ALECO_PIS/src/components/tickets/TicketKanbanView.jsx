@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import KanbanColumn from './kanban/KanbanColumn';
 import KanbanTicketCard from './kanban/KanbanTicketCard';
@@ -10,7 +12,7 @@ import '../../CSS/TicketKanban.css';
  * TicketKanbanView - Main Kanban board component
  * Handles drag-and-drop, status updates, and 10,000+ ticket performance
  */
-const TicketKanbanView = ({ tickets, selectedTicket, onSelectTicket, onUpdateTicket, selectedIds, onToggleSelect }) => {
+const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, onUpdateTicket, selectedIds, onToggleSelect }) => {
     const [activeId, setActiveId] = useState(null);
 
     // Configure drag sensors (mouse/touch)
@@ -21,6 +23,255 @@ const TicketKanbanView = ({ tickets, selectedTicket, onSelectTicket, onUpdateTic
             },
         })
     );
+
+    if (isLoading) {
+        const columnConfig = getColumnConfig();
+        return (
+            <div className="kanban-view-container">
+                <div className="kanban-board">
+                    {/* Pending Column Skeleton */}
+                    <div className="kanban-column">
+                        <div className="kanban-column-header">
+                            <span className="kanban-column-icon">{columnConfig.pending.icon}</span>
+                            <h3 className="kanban-column-title">{columnConfig.pending.title} <Skeleton width={30} height={20} inline /></h3>
+                        </div>
+                        <div className="kanban-column-scroll">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="kanban-ticket-card skeleton-loading">
+                                    <div className="kanban-card-header">
+                                        <div className="kanban-card-id">
+                                            <input type="checkbox" className="kanban-bulk-checkbox" disabled />
+                                            <span><Skeleton width={80} height={16} /></span>
+                                        </div>
+                                        <div className="kanban-card-category">
+                                            <Skeleton width={60} height={14} />
+                                        </div>
+                                    </div>
+                                    <div className="kanban-card-body">
+                                        <div className="kanban-card-name"><Skeleton width={100} height={16} /></div>
+                                        <div className="kanban-card-concern"><Skeleton width="100%" height={24} /></div>
+                                    </div>
+                                    <div className="kanban-card-footer">
+                                        <div className="kanban-card-location">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span><Skeleton width={80} height={14} /></span>
+                                        </div>
+                                        <div className="kanban-card-footer-right">
+                                            <span className="status-badge"><Skeleton width={60} height={16} /></span>
+                                            <span className="kanban-card-time"><Skeleton width={40} height={14} /></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Ongoing Column Skeleton */}
+                    <div className="kanban-column">
+                        <div className="kanban-column-header">
+                            <span className="kanban-column-icon">{columnConfig.ongoing.icon}</span>
+                            <h3 className="kanban-column-title">{columnConfig.ongoing.title} <Skeleton width={30} height={20} inline /></h3>
+                        </div>
+                        <div className="kanban-column-scroll">
+                            {[1, 2].map((i) => (
+                                <div key={i} className="kanban-ticket-card">
+                                    <div className="kanban-card-header">
+                                        <div className="kanban-card-id">
+                                            <input type="checkbox" className="kanban-bulk-checkbox" disabled />
+                                            <span><Skeleton width={80} height={16} /></span>
+                                        </div>
+                                        <div className="kanban-card-category">
+                                            <Skeleton width={60} height={14} />
+                                        </div>
+                                    </div>
+                                    <div className="kanban-card-body">
+                                        <div className="kanban-card-name"><Skeleton width={100} height={16} /></div>
+                                        <div className="kanban-card-concern"><Skeleton width="100%" height={24} /></div>
+                                    </div>
+                                    <div className="kanban-card-footer">
+                                        <div className="kanban-card-location">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span><Skeleton width={80} height={14} /></span>
+                                        </div>
+                                        <div className="kanban-card-footer-right">
+                                            <span className="status-badge"><Skeleton width={60} height={16} /></span>
+                                            <span className="kanban-card-time"><Skeleton width={40} height={14} /></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Restored Column Skeleton */}
+                    <div className="kanban-column">
+                        <div className="kanban-column-header">
+                            <span className="kanban-column-icon">{columnConfig.restored.icon}</span>
+                            <h3 className="kanban-column-title">{columnConfig.restored.title} <Skeleton width={30} height={20} inline /></h3>
+                        </div>
+                        <div className="kanban-column-scroll">
+                            {[1, 2].map((i) => (
+                                <div key={i} className="kanban-ticket-card">
+                                    <div className="kanban-card-header">
+                                        <div className="kanban-card-id">
+                                            <input type="checkbox" className="kanban-bulk-checkbox" disabled />
+                                            <span><Skeleton width={80} height={16} /></span>
+                                        </div>
+                                        <div className="kanban-card-category">
+                                            <Skeleton width={60} height={14} />
+                                        </div>
+                                    </div>
+                                    <div className="kanban-card-body">
+                                        <div className="kanban-card-name"><Skeleton width={100} height={16} /></div>
+                                        <div className="kanban-card-concern"><Skeleton width="100%" height={24} /></div>
+                                    </div>
+                                    <div className="kanban-card-footer">
+                                        <div className="kanban-card-location">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span><Skeleton width={80} height={14} /></span>
+                                        </div>
+                                        <div className="kanban-card-footer-right">
+                                            <span className="status-badge"><Skeleton width={60} height={16} /></span>
+                                            <span className="kanban-card-time"><Skeleton width={40} height={14} /></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Unresolved Column Skeleton */}
+                    <div className="kanban-column">
+                        <div className="kanban-column-header">
+                            <span className="kanban-column-icon">{columnConfig.unresolved.icon}</span>
+                            <h3 className="kanban-column-title">{columnConfig.unresolved.title} <Skeleton width={30} height={20} inline /></h3>
+                        </div>
+                        <div className="kanban-column-scroll">
+                            {[1].map((i) => (
+                                <div key={i} className="kanban-ticket-card">
+                                    <div className="kanban-card-header">
+                                        <div className="kanban-card-id">
+                                            <input type="checkbox" className="kanban-bulk-checkbox" disabled />
+                                            <span><Skeleton width={80} height={16} /></span>
+                                        </div>
+                                        <div className="kanban-card-category">
+                                            <Skeleton width={60} height={14} />
+                                        </div>
+                                    </div>
+                                    <div className="kanban-card-body">
+                                        <div className="kanban-card-name"><Skeleton width={100} height={16} /></div>
+                                        <div className="kanban-card-concern"><Skeleton width="100%" height={24} /></div>
+                                    </div>
+                                    <div className="kanban-card-footer">
+                                        <div className="kanban-card-location">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span><Skeleton width={80} height={14} /></span>
+                                        </div>
+                                        <div className="kanban-card-footer-right">
+                                            <span className="status-badge"><Skeleton width={60} height={16} /></span>
+                                            <span className="kanban-card-time"><Skeleton width={40} height={14} /></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* No Fault Found Column Skeleton */}
+                    <div className="kanban-column">
+                        <div className="kanban-column-header">
+                            <span className="kanban-column-icon">{columnConfig.nofaultfound.icon}</span>
+                            <h3 className="kanban-column-title">{columnConfig.nofaultfound.title} <Skeleton width={30} height={20} inline /></h3>
+                        </div>
+                        <div className="kanban-column-scroll">
+                            {[1].map((i) => (
+                                <div key={i} className="kanban-ticket-card">
+                                    <div className="kanban-card-header">
+                                        <div className="kanban-card-id">
+                                            <input type="checkbox" className="kanban-bulk-checkbox" disabled />
+                                            <span><Skeleton width={80} height={16} /></span>
+                                        </div>
+                                        <div className="kanban-card-category">
+                                            <Skeleton width={60} height={14} />
+                                        </div>
+                                    </div>
+                                    <div className="kanban-card-body">
+                                        <div className="kanban-card-name"><Skeleton width={100} height={16} /></div>
+                                        <div className="kanban-card-concern"><Skeleton width="100%" height={24} /></div>
+                                    </div>
+                                    <div className="kanban-card-footer">
+                                        <div className="kanban-card-location">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span><Skeleton width={80} height={14} /></span>
+                                        </div>
+                                        <div className="kanban-card-footer-right">
+                                            <span className="status-badge"><Skeleton width={60} height={16} /></span>
+                                            <span className="kanban-card-time"><Skeleton width={40} height={14} /></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Access Denied Column Skeleton */}
+                    <div className="kanban-column">
+                        <div className="kanban-column-header">
+                            <span className="kanban-column-icon">{columnConfig.accessdenied.icon}</span>
+                            <h3 className="kanban-column-title">{columnConfig.accessdenied.title} <Skeleton width={30} height={20} inline /></h3>
+                        </div>
+                        <div className="kanban-column-scroll">
+                            {[1].map((i) => (
+                                <div key={i} className="kanban-ticket-card">
+                                    <div className="kanban-card-header">
+                                        <div className="kanban-card-id">
+                                            <input type="checkbox" className="kanban-bulk-checkbox" disabled />
+                                            <span><Skeleton width={80} height={16} /></span>
+                                        </div>
+                                        <div className="kanban-card-category">
+                                            <Skeleton width={60} height={14} />
+                                        </div>
+                                    </div>
+                                    <div className="kanban-card-body">
+                                        <div className="kanban-card-name"><Skeleton width={100} height={16} /></div>
+                                        <div className="kanban-card-concern"><Skeleton width="100%" height={24} /></div>
+                                    </div>
+                                    <div className="kanban-card-footer">
+                                        <div className="kanban-card-location">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span><Skeleton width={80} height={14} /></span>
+                                        </div>
+                                        <div className="kanban-card-footer-right">
+                                            <span className="status-badge"><Skeleton width={60} height={16} /></span>
+                                            <span className="kanban-card-time"><Skeleton width={40} height={14} /></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Group tickets by status (memoized for performance)
     const groupedTickets = useMemo(() => groupTicketsByStatus(tickets), [tickets]);

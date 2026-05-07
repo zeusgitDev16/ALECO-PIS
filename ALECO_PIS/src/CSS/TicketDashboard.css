@@ -72,6 +72,13 @@
     box-shadow: inset 3px 0 0 #ec4899;
 }
 
+/* Remove borders and shadows from skeleton loading cards */
+.ticket-card-container.skeleton-loading {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
 .group-badge-parent {
     background: rgba(124, 58, 237, 0.2);
     color: var(--accent-primary);

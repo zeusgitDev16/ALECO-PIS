@@ -22,12 +22,6 @@ export const LoadingProvider = ({ children }) => {
     return (
         <LoadingContext.Provider value={{ isLoading }}>
             {children}
-            {isLoading && (
-                <div className="global-loader-overlay">
-                    <div className="loader-spinner"></div>
-                    <p className="loader-text">Loading, Please wait...</p>
-                </div>
-            )}
         </LoadingContext.Provider>
     );
 };

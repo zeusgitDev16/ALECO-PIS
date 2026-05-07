@@ -37,6 +37,8 @@ import TicketTableView from './tickets/TicketTableView';
 import TicketKanbanView from './tickets/TicketKanbanView';
 import ConfirmModal from './tickets/ConfirmModal';
 import UrgentKeywordsPanel from './tickets/UrgentKeywordsPanel';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const AdminTickets = () => {
     const { tickets, loading: isLoading, error, filters, setFilters, refetch } = useTickets();
@@ -614,6 +616,7 @@ const AdminTickets = () => {
                         ) : (
                             <UrgentTickets
                                 tickets={tickets}
+                                isLoading={isLoading}
                                 onSelectTicket={handleSelectTicket}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleTicketSelection}
@@ -628,6 +631,7 @@ const AdminTickets = () => {
                         ) : (
                             <TicketTableView
                                 tickets={urgentTickets}
+                                isLoading={isLoading}
                                 selectedTicket={selectedTicket}
                                 onSelectTicket={handleSelectTicket}
                                 selectedIds={selectedIds}
@@ -643,6 +647,7 @@ const AdminTickets = () => {
                         ) : (
                             <TicketKanbanView
                                 tickets={urgentTickets}
+                                isLoading={isLoading}
                                 selectedTicket={selectedTicket}
                                 onSelectTicket={handleSelectTicket}
                                 onUpdateTicket={handleUpdateTicket}
@@ -668,6 +673,7 @@ const AdminTickets = () => {
                     {ticketScope === 'regular' && viewMode === 'compact' && (
                         <TicketTableView
                             tickets={regularTickets}
+                            isLoading={isLoading}
                             selectedTicket={selectedTicket}
                             onSelectTicket={handleSelectTicket}
                             selectedIds={selectedIds}
@@ -677,6 +683,7 @@ const AdminTickets = () => {
                     {ticketScope === 'regular' && viewMode === 'workflow' && (
                         <TicketKanbanView
                             tickets={regularTickets}
+                            isLoading={isLoading}
                             selectedTicket={selectedTicket}
                             onSelectTicket={handleSelectTicket}
                             onUpdateTicket={handleUpdateTicket}
@@ -701,6 +708,7 @@ const AdminTickets = () => {
                     {ticketScope === 'memo' && viewMode === 'compact' && (
                         <TicketTableView
                             tickets={memoLinkedTickets}
+                            isLoading={isLoading}
                             selectedTicket={selectedTicket}
                             onSelectTicket={handleSelectTicket}
                             selectedIds={selectedIds}
@@ -710,6 +718,7 @@ const AdminTickets = () => {
                     {ticketScope === 'memo' && viewMode === 'workflow' && (
                         <TicketKanbanView
                             tickets={memoLinkedTickets}
+                            isLoading={isLoading}
                             selectedTicket={selectedTicket}
                             onSelectTicket={handleSelectTicket}
                             onUpdateTicket={handleUpdateTicket}

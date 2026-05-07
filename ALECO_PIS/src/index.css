@@ -211,6 +211,85 @@ h4, h5, h6 {
     100% { transform: rotate(360deg); }
 }
 
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton-block {
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--border-color) 30%, transparent) 25%,
+        color-mix(in srgb, var(--border-color) 50%, transparent) 50%,
+        color-mix(in srgb, var(--border-color) 30%, transparent) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--border-radius-md);
+}
+
+/* Dark mode skeleton colors for react-loading-skeleton */
+[data-theme="dark"] .react-loading-skeleton {
+    --base-color: color-mix(in srgb, var(--bg-card) 40%, var(--border-color));
+    --highlight-color: color-mix(in srgb, var(--bg-card) 60%, var(--border-color));
+}
+
+/* Remove borders from skeleton elements */
+.react-loading-skeleton {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+/* Remove borders from card containers during skeleton loading */
+.ticket-card-container .react-loading-skeleton {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+/* Remove borders from card containers when showing skeleton */
+.ticket-card-container:has(.react-loading-skeleton),
+.kanban-ticket-card:has(.react-loading-skeleton) {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* More aggressive removal of borders during skeleton loading */
+.ticket-card-container:has(.react-loading-skeleton) {
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+}
+
+.kanban-ticket-card:has(.react-loading-skeleton) {
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+}
+
+/* Remove borders from cards with skeleton-loading class */
+.ticket-card-container.skeleton-loading,
+.kanban-ticket-card.skeleton-loading {
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* High specificity override for skeleton cards */
+.ticket-card-container.skeleton-loading,
+.kanban-ticket-card.skeleton-loading {
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+}
+
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;

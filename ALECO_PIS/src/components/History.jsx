@@ -1,4 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import { apiUrl } from '../utils/api';
 import { authFetch } from '../utils/authFetch';
 import { formatPhilippineWallClock } from '../utils/dateUtils';
@@ -165,30 +167,30 @@ const AdminHistory = () => {
                         <tr key={row.id} className={`ticket-table-row ${index % 2 === 0 ? 'even' : 'odd'}`}>
                             <td className="history-col-date">
                                 <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, formatDate(row.createdAt))}>
-                                    {formatDate(row.createdAt)}
+                                    {loading ? <Skeleton width={75} height={14} /> : formatDate(row.createdAt)}
                                 </button>
                             </td>
                             <td className="history-col-module">
-                                <span className={`history-module-badge module-${row.module}`}>{MODULE_META[row.module]?.label || row.module}</span>
+                                <span className={`history-module-badge module-${row.module}`}>{loading ? <Skeleton width={55} height={14} /> : MODULE_META[row.module]?.label || row.module}</span>
                             </td>
                             <td className="history-col-action">
                                 <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.title || row.action || '—')}>
-                                    {row.title || row.action || '—'}
+                                    {loading ? <Skeleton width={90} height={14} /> : row.title || row.action || '—'}
                                 </button>
                             </td>
                             <td className="history-col-details">
                                 <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.detail || '—')}>
-                                    {row.detail || '—'}
+                                    {loading ? <Skeleton width={110} height={14} /> : row.detail || '—'}
                                 </button>
                             </td>
                             <td className="history-col-actor">
                                 <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.actorName || row.actorEmail || 'System')}>
-                                    {row.actorName || row.actorEmail || 'System'}
+                                    {loading ? <Skeleton width={95} height={14} /> : row.actorName || row.actorEmail || 'System'}
                                 </button>
                             </td>
                             <td className="history-col-entity">
                                 <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.entityLabel || row.entityId || '—')}>
-                                    {row.entityLabel || row.entityId || '—'}
+                                    {loading ? <Skeleton width={75} height={14} /> : row.entityLabel || row.entityId || '—'}
                                 </button>
                             </td>
                         </tr>
@@ -203,19 +205,20 @@ const AdminHistory = () => {
             {rows.map((row) => (
                 <article key={row.id} className="history-event-card">
                     <div className="history-event-header">
-                        <span className={`history-module-badge module-${row.module}`}>{MODULE_META[row.module]?.label || row.module}</span>
-                        <time>{formatDate(row.createdAt)}</time>
+                        <span className={`history-module-badge module-${row.module}`}>{loading ? <Skeleton width={55} height={14} /> : MODULE_META[row.module]?.label || row.module}</span>
+                        <time>{loading ? <Skeleton width={95} height={11} /> : formatDate(row.createdAt)}</time>
                     </div>
-                    <h4>{row.title || row.action || 'Activity'}</h4>
-                    <p>{row.detail || 'No extra details.'}</p>
+                    <h4>{loading ? <Skeleton width="50%" height={15} /> : row.title || row.action || 'Activity'}</h4>
+                    <p>{loading ? <Skeleton width="85%" height={12} count={2} /> : row.detail || 'No extra details.'}</p>
                     <div className="history-event-meta">
-                        <span>Actor: {row.actorName || row.actorEmail || 'System'}</span>
-                        <span>Entity: {row.entityLabel || row.entityId || '—'}</span>
+                        <span>{loading ? <Skeleton width={100} height={11} /> : `Actor: ${row.actorName || row.actorEmail || 'System'}`}</span>
+                        <span>{loading ? <Skeleton width={80} height={11} /> : `Entity: ${row.entityLabel || row.entityId || '—'}`}</span>
                     </div>
                 </article>
             ))}
         </div>
     );
+
 
     return (
         <AdminLayout activePage="history">
@@ -239,10 +242,10 @@ const AdminHistory = () => {
                                     className={`history-summary-card module-${module} ${filters.modules.includes(module) ? 'active' : ''} ${highestModule === module ? 'is-top-module' : ''}`}
                                     onClick={() => toggleModule(module)}
                                 >
-                                    <div className="history-summary-title">{MODULE_META[module].label}</div>
-                                    <div className="history-summary-count">{countsByModule[module] || 0}</div>
+                                    <div className="history-summary-title">{loading ? <Skeleton width={70} height={10} /> : MODULE_META[module].label}</div>
+                                    <div className="history-summary-count">{loading ? <Skeleton width={30} height={16} /> : countsByModule[module] || 0}</div>
                                     <div className="history-summary-trend">
-                                        {highestModule === module ? 'Most active module' : 'Recent activity'}
+                                        {loading ? <Skeleton width={100} height={9} /> : (highestModule === module ? 'Most active module' : 'Recent activity')}
                                     </div>
                                 </button>
                             ))}
@@ -296,10 +299,10 @@ const AdminHistory = () => {
 
                     {/* MIDDLE — scrollable list */}
                     <div className="history-list-region">
-                        {loading ? (
-                            <p className="widget-text">Loading history...</p>
-                        ) : rows.length === 0 ? (
+                        {rows.length === 0 && !loading ? (
                             <p className="widget-text">No history logs found.</p>
+                        ) : rows.length === 0 && loading ? (
+                            <p className="widget-text">Loading history...</p>
                         ) : (
                             viewMode === 'timeline' ? renderTimeline() : renderTable()
                         )}

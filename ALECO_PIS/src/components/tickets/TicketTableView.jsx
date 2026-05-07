@@ -22,6 +22,44 @@ const TicketTableView = ({
     // Idempotent guard - ensure tickets is always an array
     const safeTickets = Array.isArray(tickets) ? tickets : [];
 
+    // Memoized sorting for performance - MUST be before any early returns (Rules of Hooks)
+    const sortedTickets = useMemo(() => {
+        const sorted = [...safeTickets];
+        
+        sorted.sort((a, b) => {
+            let aValue = a[sortConfig.key];
+            let bValue = b[sortConfig.key];
+
+            // Handle date sorting
+            if (sortConfig.key === 'created_at') {
+                aValue = new Date(aValue).getTime();
+                bValue = new Date(bValue).getTime();
+            }
+            
+            // Handle boolean sorting (is_urgent)
+            if (sortConfig.key === 'is_urgent') {
+                aValue = aValue ? 1 : 0;
+                bValue = bValue ? 1 : 0;
+            }
+
+            // Handle string sorting (case-insensitive)
+            if (typeof aValue === 'string') {
+                aValue = aValue.toLowerCase();
+                bValue = bValue.toLowerCase();
+            }
+
+            // Null safety
+            if (aValue == null) return 1;
+            if (bValue == null) return -1;
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return sorted;
+    }, [safeTickets, sortConfig]);
+
     if (isLoading) {
         return (
             <div className="ticket-table-container">
@@ -84,44 +122,6 @@ const TicketTableView = ({
             </div>
         );
     }
-
-    // Memoized sorting for performance
-    const sortedTickets = useMemo(() => {
-        const sorted = [...safeTickets];
-        
-        sorted.sort((a, b) => {
-            let aValue = a[sortConfig.key];
-            let bValue = b[sortConfig.key];
-
-            // Handle date sorting
-            if (sortConfig.key === 'created_at') {
-                aValue = new Date(aValue).getTime();
-                bValue = new Date(bValue).getTime();
-            }
-            
-            // Handle boolean sorting (is_urgent)
-            if (sortConfig.key === 'is_urgent') {
-                aValue = aValue ? 1 : 0;
-                bValue = bValue ? 1 : 0;
-            }
-
-            // Handle string sorting (case-insensitive)
-            if (typeof aValue === 'string') {
-                aValue = aValue.toLowerCase();
-                bValue = bValue.toLowerCase();
-            }
-
-            // Null safety
-            if (aValue == null) return 1;
-            if (bValue == null) return -1;
-
-            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
-
-        return sorted;
-    }, [safeTickets, sortConfig]);
 
     const handleSort = (key) => {
         setSortConfig(prev => ({

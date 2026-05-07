@@ -132,6 +132,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   const [markOneReadLoadingId, setMarkOneReadLoadingId] = useState(null);
   const notificationsRef = useRef(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showManageSiteModal, setShowManageSiteModal] = useState(false);
   
   // Secure feature state for global logout
   const [logoutAllDevices, setLogoutAllDevices] = useState(false);
@@ -959,6 +960,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
               </div>
               <div className="dropdown-divider"></div>
               <button className="dropdown-link" onClick={() => navigate('/admin-profile')}>View Profile</button>
+              {role === 'admin' && <button className="dropdown-link" onClick={() => setShowManageSiteModal(true)}>Manage Site</button>}
               
               <button 
                 className="dropdown-link logout-red" 
@@ -996,6 +998,17 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                     setLogoutAllDevices(false);
                   }}>Cancel</button>
                   <button className="confirm-btn" onClick={handleLogout}>Logout</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showManageSiteModal && (
+            <div className="logout-modal-overlay">
+              <div className="logout-modal">
+                <h3>Manage Site</h3>
+                <div className="modal-actions">
+                  <button className="cancel-btn" onClick={() => setShowManageSiteModal(false)}>Close</button>
                 </div>
               </div>
             </div>

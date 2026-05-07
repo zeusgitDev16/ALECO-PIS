@@ -24,8 +24,16 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
         })
     );
 
+    // All useMemo hooks MUST be before any early returns (Rules of Hooks)
+    const groupedTickets = useMemo(() => groupTicketsByStatus(tickets || []), [tickets]);
+    const columnStats = useMemo(() => getColumnStats(tickets || []), [tickets]);
+    const columnConfig = getColumnConfig();
+    const activeTicket = useMemo(() => {
+        if (!activeId) return null;
+        return (tickets || []).find(t => t.ticket_id === activeId);
+    }, [activeId, tickets]);
+
     if (isLoading) {
-        const columnConfig = getColumnConfig();
         return (
             <div className="kanban-view-container">
                 <div className="kanban-board">
@@ -77,7 +85,7 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
                         </div>
                         <div className="kanban-column-scroll">
                             {[1, 2].map((i) => (
-                                <div key={i} className="kanban-ticket-card">
+                                <div key={i} className="kanban-ticket-card skeleton-loading">
                                     <div className="kanban-card-header">
                                         <div className="kanban-card-id">
                                             <input type="checkbox" className="kanban-bulk-checkbox" disabled />
@@ -117,7 +125,7 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
                         </div>
                         <div className="kanban-column-scroll">
                             {[1, 2].map((i) => (
-                                <div key={i} className="kanban-ticket-card">
+                                <div key={i} className="kanban-ticket-card skeleton-loading">
                                     <div className="kanban-card-header">
                                         <div className="kanban-card-id">
                                             <input type="checkbox" className="kanban-bulk-checkbox" disabled />
@@ -157,7 +165,7 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
                         </div>
                         <div className="kanban-column-scroll">
                             {[1].map((i) => (
-                                <div key={i} className="kanban-ticket-card">
+                                <div key={i} className="kanban-ticket-card skeleton-loading">
                                     <div className="kanban-card-header">
                                         <div className="kanban-card-id">
                                             <input type="checkbox" className="kanban-bulk-checkbox" disabled />
@@ -197,7 +205,7 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
                         </div>
                         <div className="kanban-column-scroll">
                             {[1].map((i) => (
-                                <div key={i} className="kanban-ticket-card">
+                                <div key={i} className="kanban-ticket-card skeleton-loading">
                                     <div className="kanban-card-header">
                                         <div className="kanban-card-id">
                                             <input type="checkbox" className="kanban-bulk-checkbox" disabled />
@@ -237,7 +245,7 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
                         </div>
                         <div className="kanban-column-scroll">
                             {[1].map((i) => (
-                                <div key={i} className="kanban-ticket-card">
+                                <div key={i} className="kanban-ticket-card skeleton-loading">
                                     <div className="kanban-card-header">
                                         <div className="kanban-card-id">
                                             <input type="checkbox" className="kanban-bulk-checkbox" disabled />
@@ -272,17 +280,6 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
             </div>
         );
     }
-
-    // Group tickets by status (memoized for performance)
-    const groupedTickets = useMemo(() => groupTicketsByStatus(tickets), [tickets]);
-    const columnStats = useMemo(() => getColumnStats(tickets), [tickets]);
-    const columnConfig = getColumnConfig();
-
-    // Get the active ticket being dragged
-    const activeTicket = useMemo(() => {
-        if (!activeId) return null;
-        return tickets.find(t => t.ticket_id === activeId);
-    }, [activeId, tickets]);
 
     /**
      * Handle drag start

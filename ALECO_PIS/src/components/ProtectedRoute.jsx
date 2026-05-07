@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import API from '../api/axiosConfig.js';
 import { clearLocalStoragePreservingPreferences } from '../utils/clearLocalStoragePreservingPreferences.js';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 /**
  * Admin routes: server-validated session check prevents browser back/forward bypass.
@@ -105,22 +107,32 @@ export default function ProtectedRoute({ children }) {
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh',
-        backgroundColor: '#1a1a2e'
+        backgroundColor: 'var(--bg-body)'
       }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '3px solid rgba(255,255,255,0.1)',
-          borderTop: '3px solid #3498db',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }} />
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+        <div style={{ width: '100%', maxWidth: '1200px', padding: '20px' }}>
+          {/* Skeleton of admin dashboard layout */}
+          <div style={{ display: 'flex', gap: '20px' }}>
+            {/* Skeleton sidebar */}
+            <div style={{ width: '250px', flexShrink: 0 }}>
+              <Skeleton height={40} width={200} style={{ marginBottom: '20px' }} />
+              <Skeleton height={36} width="100%" style={{ marginBottom: '10px' }} />
+              <Skeleton height={36} width="100%" style={{ marginBottom: '10px' }} />
+              <Skeleton height={36} width="100%" style={{ marginBottom: '10px' }} />
+              <Skeleton height={36} width="100%" style={{ marginBottom: '10px' }} />
+              <Skeleton height={36} width="100%" style={{ marginBottom: '10px' }} />
+            </div>
+            {/* Skeleton main content */}
+            <div style={{ flex: 1 }}>
+              <Skeleton height={50} width="100%" style={{ marginBottom: '20px' }} />
+              <Skeleton height={150} width="100%" style={{ marginBottom: '20px' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+                <Skeleton height={120} width="100%" />
+                <Skeleton height={120} width="100%" />
+                <Skeleton height={120} width="100%" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

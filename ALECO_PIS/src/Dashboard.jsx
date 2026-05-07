@@ -15,6 +15,8 @@ import { apiUrl } from './utils/api';
 import useTickets from './utils/useTickets';
 import { FaEnvelope, FaPaperPlane, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa';
 import { authFetch } from './utils/authFetch';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import './CSS/AdminPageLayout.css';
 import './CSS/Dashboard.css';
 
@@ -439,45 +441,57 @@ const AdminDashboard = () => {
                 {/* ── KPI Ribbon ── */}
                 <div className="dash-kpi-ribbon">
                     <div className="dash-kpi-card">
-                        <div className="dash-kpi-icon dash-kpi-icon--tickets"><FaTicketAlt /></div>
+                        <div className="dash-kpi-icon dash-kpi-icon--tickets">
+                            {loading ? <Skeleton width={32} height={32} circle /> : <FaTicketAlt />}
+                        </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">Total Tickets</span>
-                            <span className="dash-kpi-value">{loading ? '—' : ticketStats.total}</span>
+                            <span className="dash-kpi-label">{loading ? <Skeleton width={80} height={14} /> : 'Total Tickets'}</span>
+                            <span className="dash-kpi-value">{loading ? <Skeleton width={60} height={24} /> : ticketStats.total}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
-                        <div className="dash-kpi-icon dash-kpi-icon--outage"><FaBolt /></div>
+                        <div className="dash-kpi-icon dash-kpi-icon--outage">
+                            {loadingAdvisories ? <Skeleton width={32} height={32} circle /> : <FaBolt />}
+                        </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">Active Outages</span>
-                            <span className="dash-kpi-value">{loadingAdvisories ? '—' : interruptionStats.active}</span>
+                            <span className="dash-kpi-label">{loadingAdvisories ? <Skeleton width={80} height={14} /> : 'Active Outages'}</span>
+                            <span className="dash-kpi-value">{loadingAdvisories ? <Skeleton width={60} height={24} /> : interruptionStats.active}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
-                        <div className="dash-kpi-icon dash-kpi-icon--memo"><FaFileAlt /></div>
+                        <div className="dash-kpi-icon dash-kpi-icon--memo">
+                            {memosLoading ? <Skeleton width={32} height={32} circle /> : <FaFileAlt />}
+                        </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">Service Memos</span>
-                            <span className="dash-kpi-value">{memosLoading ? '—' : memoStats.total}</span>
+                            <span className="dash-kpi-label">{memosLoading ? <Skeleton width={80} height={14} /> : 'Service Memos'}</span>
+                            <span className="dash-kpi-value">{memosLoading ? <Skeleton width={60} height={24} /> : memoStats.total}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
-                        <div className="dash-kpi-icon dash-kpi-icon--users"><FaUsers /></div>
+                        <div className="dash-kpi-icon dash-kpi-icon--users">
+                            {usersLoading ? <Skeleton width={32} height={32} circle /> : <FaUsers />}
+                        </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">System Users</span>
-                            <span className="dash-kpi-value">{usersLoading ? '—' : userStats.total}</span>
+                            <span className="dash-kpi-label">{usersLoading ? <Skeleton width={80} height={14} /> : 'System Users'}</span>
+                            <span className="dash-kpi-value">{usersLoading ? <Skeleton width={60} height={24} /> : userStats.total}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
-                        <div className="dash-kpi-icon dash-kpi-icon--b2b"><FaEnvelope /></div>
+                        <div className="dash-kpi-icon dash-kpi-icon--b2b">
+                            {b2bLoading ? <Skeleton width={32} height={32} circle /> : <FaEnvelope />}
+                        </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">B2B Sent</span>
-                            <span className="dash-kpi-value">{b2bLoading ? '—' : b2bMailStats.totalSent}</span>
+                            <span className="dash-kpi-label">{b2bLoading ? <Skeleton width={80} height={14} /> : 'B2B Sent'}</span>
+                            <span className="dash-kpi-value">{b2bLoading ? <Skeleton width={60} height={24} /> : b2bMailStats.totalSent}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
-                        <div className="dash-kpi-icon dash-kpi-icon--crew"><FaTools /></div>
+                        <div className="dash-kpi-icon dash-kpi-icon--crew">
+                            {personnelLoading ? <Skeleton width={32} height={32} circle /> : <FaTools />}
+                        </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">Active Crews</span>
-                            <span className="dash-kpi-value">{personnelLoading ? '—' : personnelStats.totalCrews}</span>
+                            <span className="dash-kpi-label">{personnelLoading ? <Skeleton width={80} height={14} /> : 'Active Crews'}</span>
+                            <span className="dash-kpi-value">{personnelLoading ? <Skeleton width={60} height={24} /> : personnelStats.totalCrews}</span>
                         </div>
                     </div>
                 </div>
@@ -493,8 +507,17 @@ const AdminDashboard = () => {
                         </div>
                         
                         {loadingAdvisories && interruptions.length === 0 ? (
-                            <div className="analytics-loading-overlay analytics-pulse">
-                                <FaBolt /> Synchronizing Power Grid Intelligence...
+                            <div className="stats-grid">
+                                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                                    <div key={i} className="stat-card">
+                                        <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
+                                        <div className="stat-content">
+                                            <span className="stat-label"><Skeleton width={100} height={16} /></span>
+                                            <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
+                                            <span className="stat-trend"><Skeleton width={80} height={14} /></span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
                         <>
@@ -654,6 +677,77 @@ const AdminDashboard = () => {
                             <p className="widget-text">Real-time performance metrics and distribution.</p>
                         </div>
 
+                    {loading ? (
+                        <>
+                        {/* 1. Top Summary Cards Skeleton */}
+                        <div className="stats-grid">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                                <div key={i} className="stat-card">
+                                    <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
+                                    <div className="stat-content">
+                                        <span className="stat-label"><Skeleton width={100} height={16} /></span>
+                                        <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
+                                        <span className="stat-trend"><Skeleton width={80} height={14} /></span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Charts Grid Skeleton */}
+                        <div className="charts-grid-main">
+                            <div className="chart-card">
+                                <div className="chart-header-group">
+                                    <Skeleton width={24} height={24} circle />
+                                    <h4><Skeleton width={200} height={20} /></h4>
+                                </div>
+                                <div className="chart-wrapper">
+                                    <Skeleton width="100%" height={170} />
+                                </div>
+                            </div>
+                            <div className="chart-card">
+                                <div className="chart-header-group">
+                                    <Skeleton width={24} height={24} circle />
+                                    <h4><Skeleton width={200} height={20} /></h4>
+                                </div>
+                                <div className="chart-wrapper">
+                                    <Skeleton width="100%" height={170} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="charts-grid-secondary">
+                            <div className="chart-card">
+                                <div className="chart-header-group">
+                                    <Skeleton width={24} height={24} circle />
+                                    <h4><Skeleton width={200} height={20} /></h4>
+                                </div>
+                                <div className="chart-wrapper">
+                                    <Skeleton width="100%" height={150} />
+                                </div>
+                            </div>
+                            <div className="chart-card">
+                                <div className="chart-header-group">
+                                    <Skeleton width={24} height={24} circle />
+                                    <h4><Skeleton width={200} height={20} /></h4>
+                                </div>
+                                <div className="location-insight-list">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <div key={i} className="location-row">
+                                            <div className="loc-info">
+                                                <span><Skeleton width={80} height={14} /></span>
+                                                <span><Skeleton width={40} height={14} /></span>
+                                            </div>
+                                            <div className="loc-bar-bg">
+                                                <Skeleton width="100%" height={8} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        </>
+                    ) : (
+                    <>
                     {/* 1. Top Summary Cards */}
                     <div className="stats-grid">
                         <div className="stat-card total">
@@ -822,6 +916,8 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                     </div>
+                    </>
+                    )}
                     </div> {/* End of Ticket Overview & Analytics Wrapper */}
 
                     {/* ── B2B Mail + Personnel side-by-side ── */}
@@ -833,7 +929,59 @@ const AdminDashboard = () => {
                             <p className="widget-text">Tracking of outgoing business notifications and partner communications.</p>
                         </div>
                         
-                        <div className="b2b-analytics-layout">
+                        {b2bLoading ? (
+                            <div className="b2b-analytics-layout">
+                                {/* B2B Mail Summary Stats Skeleton */}
+                                <div className="stats-grid">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <div key={i} className="stat-card">
+                                            <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
+                                            <div className="stat-content">
+                                                <span className="stat-label"><Skeleton width={100} height={16} /></span>
+                                                <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
+                                                <span className="stat-trend"><Skeleton width={80} height={14} /></span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Charts Grid Skeleton */}
+                                <div className="charts-grid-main">
+                                    <div className="chart-card">
+                                        <div className="chart-header-group">
+                                            <Skeleton width={24} height={24} circle />
+                                            <h4><Skeleton width={200} height={20} /></h4>
+                                        </div>
+                                        <div className="chart-wrapper">
+                                            <Skeleton width="100%" height={180} />
+                                        </div>
+                                    </div>
+                                    <div className="chart-card">
+                                        <div className="chart-header-group">
+                                            <Skeleton width={24} height={24} circle />
+                                            <h4><Skeleton width={200} height={20} /></h4>
+                                        </div>
+                                        <div className="chart-wrapper">
+                                            <Skeleton width="100%" height={180} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Activity List Skeleton */}
+                                <div className="b2b-activity-list">
+                                    {[1, 2, 3, 4, 5].map((i) => (
+                                        <div key={i} className="b2b-activity-item">
+                                            <div className="b2b-activity-content">
+                                                <span className="b2b-activity-label"><Skeleton width={150} height={14} /></span>
+                                                <span className="b2b-activity-time"><Skeleton width={120} height={12} /></span>
+                                            </div>
+                                            <span className="feeder-status-tag"><Skeleton width={60} height={20} /></span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="b2b-analytics-layout">
                             {/* B2B Mail Summary Stats */}
                             <div className="stats-grid">
                                 <div className="stat-card total">
@@ -926,6 +1074,7 @@ const AdminDashboard = () => {
                                 ))}
                             </div>
                         </div>
+                        )}
                     </div>
 
                     {/* 4. Personnel Section Container */}
@@ -936,8 +1085,52 @@ const AdminDashboard = () => {
                         </div>
                         
                         <div className="personnel-analytics-layout">
-                            {/* Personnel Summary Stats */}
-                            <div className="stats-grid">
+                            {personnelLoading ? (
+                                <>
+                                {/* Personnel Summary Stats Skeleton */}
+                                <div className="stats-grid">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <div key={i} className="stat-card">
+                                            <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
+                                            <div className="stat-content">
+                                                <span className="stat-label"><Skeleton width={100} height={16} /></span>
+                                                <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
+                                                <span className="stat-trend"><Skeleton width={80} height={14} /></span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Chart Skeleton */}
+                                <div className="charts-grid-main">
+                                    <div className="chart-card">
+                                        <div className="chart-header-group">
+                                            <Skeleton width={24} height={24} circle />
+                                            <h4><Skeleton width={200} height={20} /></h4>
+                                        </div>
+                                        <div className="chart-wrapper">
+                                            <Skeleton width="100%" height={180} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Activity List Skeleton */}
+                                <div className="personnel-activity-list">
+                                    {[1, 2, 3, 4, 5].map((i) => (
+                                        <div key={i} className="personnel-activity-item">
+                                            <div className="personnel-activity-content">
+                                                <span className="personnel-activity-label"><Skeleton width={120} height={14} /></span>
+                                                <span className="personnel-activity-time"><Skeleton width={150} height={12} /></span>
+                                            </div>
+                                            <span className="feeder-status-tag"><Skeleton width={60} height={20} /></span>
+                                        </div>
+                                    ))}
+                                </div>
+                                </>
+                            ) : (
+                                <>
+                                {/* Personnel Summary Stats */}
+                                <div className="stats-grid">
                                 <div className="stat-card total">
                                     <div className="stat-icon-box"><FaUsers /></div>
                                     <div className="stat-content">
@@ -1011,6 +1204,8 @@ const AdminDashboard = () => {
                                     </div>
                                 ))}
                             </div>
+                        </>
+                        )}
                         </div>
                     </div>
                     </div> {/* End of b2b-personnel-section */}
@@ -1025,7 +1220,31 @@ const AdminDashboard = () => {
                                 <p className="widget-text">Summary of field service memo records.</p>
                             </div>
                             {memosLoading ? (
-                                <div className="analytics-loading-overlay analytics-pulse"><FaFileAlt /> Loading memos…</div>
+                                <>
+                                <div className="stats-grid">
+                                    {[1, 2, 3].map((i) => (
+                                        <div key={i} className="stat-card">
+                                            <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
+                                            <div className="stat-content">
+                                                <span className="stat-label"><Skeleton width={100} height={16} /></span>
+                                                <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
+                                                <span className="stat-trend"><Skeleton width={80} height={14} /></span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="charts-grid-main">
+                                    <div className="chart-card">
+                                        <div className="chart-header-group">
+                                            <Skeleton width={24} height={24} circle />
+                                            <h4><Skeleton width={200} height={20} /></h4>
+                                        </div>
+                                        <div className="chart-wrapper">
+                                            <Skeleton width="100%" height={180} />
+                                        </div>
+                                    </div>
+                                </div>
+                                </>
                             ) : (
                             <>
                             <div className="stats-grid">
@@ -1091,7 +1310,31 @@ const AdminDashboard = () => {
                                 <p className="widget-text">Registered accounts and role distribution.</p>
                             </div>
                             {usersLoading ? (
-                                <div className="analytics-loading-overlay analytics-pulse"><FaUsers /> Loading users…</div>
+                                <>
+                                <div className="stats-grid">
+                                    {[1, 2, 3].map((i) => (
+                                        <div key={i} className="stat-card">
+                                            <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
+                                            <div className="stat-content">
+                                                <span className="stat-label"><Skeleton width={100} height={16} /></span>
+                                                <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
+                                                <span className="stat-trend"><Skeleton width={80} height={14} /></span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="charts-grid-main">
+                                    <div className="chart-card">
+                                        <div className="chart-header-group">
+                                            <Skeleton width={24} height={24} circle />
+                                            <h4><Skeleton width={200} height={20} /></h4>
+                                        </div>
+                                        <div className="chart-wrapper">
+                                            <Skeleton width="100%" height={180} />
+                                        </div>
+                                    </div>
+                                </div>
+                                </>
                             ) : (
                             <>
                             <div className="stats-grid">

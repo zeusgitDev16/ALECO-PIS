@@ -31,3 +31,9 @@ mysql-aiven-url.txt
 # Security: Ignore Aiven SSL Certificates
 *.pem
 ca.pem
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example

@@ -9,7 +9,8 @@
     "server": "nodemon server.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -59,6 +60,7 @@
     "twilio": "^5.12.2"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.36.3",
     "@eslint/js": "^9.39.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -68,6 +70,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "nodemon": "^3.1.14",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "wrangler": "^4.90.0"
   }
 }

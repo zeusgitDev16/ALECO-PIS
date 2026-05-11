@@ -142,6 +142,13 @@ body.admin-app-scroll-lock {
     padding-top: 2px;
 }
 
+@media (max-width: 600px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
 .header-title {
     margin: 0;
     font-size: var(--fs-lg);
@@ -163,35 +170,32 @@ body.admin-app-scroll-lock {
 /* --- KPI RIBBON --- */
 .dash-kpi-ribbon {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(calc(120px * var(--dashboard-ui-scale, 1)), 1fr));
+    gap: calc(8px * var(--dashboard-ui-scale, 1));
     margin-bottom: 16px;
 }
-
-@media (max-width: 1200px) { .dash-kpi-ribbon { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 700px)  { .dash-kpi-ribbon { grid-template-columns: repeat(2, 1fr); } }
 
 .dash-kpi-card {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
+    gap: calc(10px * var(--dashboard-ui-scale, 1));
+    padding: calc(10px * var(--dashboard-ui-scale, 1)) calc(14px * var(--dashboard-ui-scale, 1));
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 14px;
+    border-radius: calc(14px * var(--dashboard-ui-scale, 1));
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .dash-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
 
 .dash-kpi-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: calc(36px * var(--dashboard-ui-scale, 1));
+    height: calc(36px * var(--dashboard-ui-scale, 1));
+    border-radius: calc(10px * var(--dashboard-ui-scale, 1));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: calc(1rem * var(--dashboard-ui-scale, 1));
     flex-shrink: 0;
 }
 .dash-kpi-icon--tickets  { background: rgba(37,99,235,0.1);   color: #2563eb; }
@@ -203,7 +207,7 @@ body.admin-app-scroll-lock {
 
 .dash-kpi-body { display: flex; flex-direction: column; min-width: 0; }
 .dash-kpi-label {
-    font-size: 0.6rem;
+    font-size: calc(0.6rem * var(--dashboard-ui-scale, 1));
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -211,7 +215,7 @@ body.admin-app-scroll-lock {
     white-space: nowrap;
 }
 .dash-kpi-value {
-    font-size: 1.35rem;
+    font-size: calc(1.35rem * var(--dashboard-ui-scale, 1));
     font-weight: 900;
     color: var(--text-header);
     line-height: 1.1;
@@ -230,12 +234,12 @@ body.admin-app-scroll-lock {
 .dashboard-mini-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 20px 20px 24px;
+    gap: calc(12px * var(--dashboard-ui-scale, 1));
+    padding: calc(20px * var(--dashboard-ui-scale, 1)) calc(20px * var(--dashboard-ui-scale, 1)) calc(24px * var(--dashboard-ui-scale, 1));
     background-color: var(--bg-glass, var(--bg-card));
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
-    border-radius: 20px;
+    border-radius: calc(20px * var(--dashboard-ui-scale, 1));
     box-shadow: 0 4px 24px rgba(0,0,0,0.06);
     box-sizing: border-box;
     scroll-margin-top: 80px;
@@ -276,6 +280,23 @@ body.admin-app-scroll-lock {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
     transform: translateY(-2px);
+}
+
+@media (max-width: 480px) {
+    .dash-nav-btn {
+        padding: 2px 6px;
+    }
+    .dash-nav-btn span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
 }
 
 /* === DASHBOARD INTERNAL SCROLL CONTAINER ===
@@ -387,14 +408,14 @@ body.admin-app-scroll-lock {
 
 .dashboard-power-advisories-wrapper .column-section-title {
     margin: 0 !important;
-    font-size: 0.9rem !important; /* Shrunk further for unified density */
+    font-size: calc(0.9rem * var(--dashboard-ui-scale, 1)) !important; /* Shrunk further for unified density */
     letter-spacing: -0.01em;
     color: var(--text-header);
 }
 
 .dashboard-power-advisories-wrapper .widget-text {
     margin: 0 !important;
-    font-size: 0.7rem !important; /* Scaled down section description */
+    font-size: calc(0.7rem * var(--dashboard-ui-scale, 1)) !important; /* Scaled down section description */
 }
 
 .dashboard-power-advisories-wrapper,
@@ -403,13 +424,13 @@ body.admin-app-scroll-lock {
 .dashboard-personnel-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: calc(12px * var(--dashboard-ui-scale, 1));
     width: 100%;
-    padding: 20px 20px 28px;
+    padding: calc(20px * var(--dashboard-ui-scale, 1)) calc(20px * var(--dashboard-ui-scale, 1)) calc(28px * var(--dashboard-ui-scale, 1));
     background-color: var(--bg-glass, var(--bg-card));
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
-    border-radius: 20px;
+    border-radius: calc(20px * var(--dashboard-ui-scale, 1));
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
     box-sizing: border-box;
     scroll-margin-top: 60px;
@@ -788,18 +809,18 @@ body.admin-app-scroll-lock {
 /* Summary Cards Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(auto-fit, minmax(calc(140px * var(--dashboard-ui-scale, 1)), 1fr));
+    gap: calc(4px * var(--dashboard-ui-scale, 1));
 }
 
 .stat-card {
     background: var(--bg-card);
-    padding: 5px 8px;
-    border-radius: 12px;
+    padding: calc(5px * var(--dashboard-ui-scale, 1)) calc(8px * var(--dashboard-ui-scale, 1));
+    border-radius: calc(12px * var(--dashboard-ui-scale, 1));
     border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: calc(10px * var(--dashboard-ui-scale, 1));
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease;
 }
@@ -807,13 +828,13 @@ body.admin-app-scroll-lock {
 .stat-card:hover { transform: translateY(-4px); }
 
 .stat-icon-box {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: calc(32px * var(--dashboard-ui-scale, 1));
+    height: calc(32px * var(--dashboard-ui-scale, 1));
+    border-radius: calc(10px * var(--dashboard-ui-scale, 1));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: calc(1.1rem * var(--dashboard-ui-scale, 1));
 }
 
 .total .stat-icon-box { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
@@ -830,9 +851,9 @@ body.admin-app-scroll-lock {
 .rescheduled .stat-icon-box { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
 
 .stat-content { display: flex; flex-direction: column; min-width: 0; }
-.stat-label { font-size: 0.65rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
-.stat-number { font-size: 1.4rem; font-weight: 900; margin: 2px 0; color: var(--text-header); line-height: 1.1; }
-.stat-trend { font-size: 0.68rem; font-weight: 600; opacity: 0.8; }
+.stat-label { font-size: calc(0.65rem * var(--dashboard-ui-scale, 1)); font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
+.stat-number { font-size: calc(1.5rem * var(--dashboard-ui-scale, 1)); font-weight: 900; margin: 2px 0; color: var(--text-header); line-height: 1.1; }
+.stat-trend { font-size: calc(0.68rem * var(--dashboard-ui-scale, 1)); font-weight: 600; opacity: 0.8; }
 .stat-trend.positive { color: #22c55e; }
 .stat-trend.negative { color: #ef4444; }
 
@@ -889,6 +910,7 @@ body.admin-app-scroll-lock {
     width: 100%;
     display: flex;
     justify-content: center;
+    height: calc(180px * var(--dashboard-ui-scale, 1));
 }
 
 /* Location Insight Styling */

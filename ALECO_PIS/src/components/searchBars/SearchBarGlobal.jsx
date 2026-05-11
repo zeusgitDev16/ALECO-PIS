@@ -133,6 +133,19 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   const notificationsRef = useRef(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showManageSiteModal, setShowManageSiteModal] = useState(false);
+  const [manageSiteTab, setManageSiteTab] = useState('settings');
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [navItems, setNavItems] = useState([
+    { id: 'home', label: 'Home' },
+    { id: 'users', label: 'Users' },
+    { id: 'personnel', label: 'Personnel' },
+    { id: 'b2b-mail', label: 'B2B Mail' },
+    { id: 'tickets', label: 'Tickets' },
+    { id: 'interruptions', label: 'Interruptions' },
+    { id: 'history', label: 'History' },
+    { id: 'backup', label: 'Data Management' },
+  ]);
   
   // Secure feature state for global logout
   const [logoutAllDevices, setLogoutAllDevices] = useState(false);
@@ -1004,11 +1017,119 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
           )}
 
           {showManageSiteModal && (
-            <div className="logout-modal-overlay">
-              <div className="logout-modal">
-                <h3>Manage Site</h3>
-                <div className="modal-actions">
-                  <button className="cancel-btn" onClick={() => setShowManageSiteModal(false)}>Close</button>
+            <div className="manage-site-modal-overlay">
+              <div className="manage-site-modal">
+                <div className="manage-site-modal-header">
+                  <span className="manage-site-modal-title">Manage Site</span>
+                  <button type="button" className="manage-site-close-btn" onClick={() => setShowManageSiteModal(false)} aria-label="Close">×</button>
+                </div>
+                <div className="manage-site-modal-tabs">
+                  <button
+                    type="button"
+                    className={`manage-site-tab ${manageSiteTab === 'settings' ? 'manage-site-tab--active' : ''}`}
+                    onClick={() => setManageSiteTab('settings')}
+                  >
+                    Site Settings
+                  </button>
+                  <button
+                    type="button"
+                    className={`manage-site-tab ${manageSiteTab === 'flush' ? 'manage-site-tab--active' : ''}`}
+                    onClick={() => setManageSiteTab('flush')}
+                  >
+                    Flush
+                  </button>
+                </div>
+                <div className="manage-site-modal-body">
+                  {manageSiteTab === 'settings' && (
+                    <div className="manage-site-tab-panel">
+                      <div className="settings-section">
+                        <h4 className="settings-section-title">Main Logo</h4>
+                        <div className="logo-upload-container">
+                          <div className="logo-preview">
+                            <img
+                              src={logoPreview || '/src/assets/Aleco-logo-modified.png'}
+                              alt="Site Logo"
+                              className="logo-image"
+                            />
+                          </div>
+                          <div className="logo-upload-actions">
+                            <label htmlFor="logo-upload" className="settings-btn settings-btn--primary">
+                              <span>Change Logo</span>
+                            </label>
+                            <input
+                              id="logo-upload"
+                              type="file"
+                              accept="image/*"
+                              className="logo-upload-input"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  setLogoFile(file);
+                                  setLogoPreview(URL.createObjectURL(file));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="settings-section">
+                        <h4 className="settings-section-title">Navigation Labels</h4>
+                        <p className="settings-section-description">
+                          Customize the display names for navigation menu items.
+                        </p>
+                        <div className="nav-items-list">
+                          {navItems.map((item) => (
+                            <div key={item.id} className="nav-item-row">
+                              <label className="nav-item-label" htmlFor={`nav-${item.id}`}>
+                                {item.id.charAt(0).toUpperCase() + item.id.slice(1)}
+                              </label>
+                              <input
+                                id={`nav-${item.id}`}
+                                type="text"
+                                className="nav-item-input"
+                                value={item.label}
+                                onChange={(e) => {
+                                  setNavItems(navItems.map(nav =>
+                                    nav.id === item.id ? { ...nav, label: e.target.value } : nav
+                                  ));
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {manageSiteTab === 'flush' && (
+                    <div className="manage-site-tab-panel">
+                      <div className="flush-section">
+                        <h4 className="flush-section-title">Notification Flush</h4>
+                        <p className="flush-section-description">
+                          This feature clears notification records from the database to free up storage space and optimize performance.
+                        </p>
+                        <button type="button" className="flush-btn flush-btn--notification">
+                          Flush Notifications
+                        </button>
+                      </div>
+
+                      <div className="flush-section">
+                        <h4 className="flush-section-title">History Flush</h4>
+                        <p className="flush-section-description">
+                          This feature deletes all history logs from the database to reduce storage usage and maintain system efficiency.
+                        </p>
+                        <button type="button" className="flush-btn flush-btn--history">
+                          Flush History
+                        </button>
+                      </div>
+
+                      <div className="flush-footer">
+                        <p className="flush-footer-text">
+                          Use these features every 2–3 months to save space. Export your data first if needed before flushing.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

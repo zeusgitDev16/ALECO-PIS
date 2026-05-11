@@ -19,6 +19,7 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import './CSS/AdminPageLayout.css';
 import './CSS/Dashboard.css';
+import './CSS/DashboardUIScale.css';
 
 const AdminDashboard = () => {
     /* Mark admin-content as the dashboard scroll host's positioning anchor.
@@ -505,78 +506,119 @@ const AdminDashboard = () => {
                             <h3 className="column-section-title">Power Advisories & Status</h3>
                             <p className="widget-text">Real-time monitoring of power distribution and service advisories.</p>
                         </div>
-                        
-                        {loadingAdvisories && interruptions.length === 0 ? (
-                            <div className="stats-grid">
-                                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                                    <div key={i} className="stat-card">
-                                        <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
-                                        <div className="stat-content">
-                                            <span className="stat-label"><Skeleton width={100} height={16} /></span>
-                                            <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
-                                            <span className="stat-trend"><Skeleton width={80} height={14} /></span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                        <>
+
                         {/* Interruption Summary Stats */}
                         <div className="stats-grid">
                             <div className="stat-card urgent">
-                                <div className="stat-icon-box"><FaBolt /></div>
+                                <div className="stat-icon-box">
+                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaBolt />}
+                                </div>
                                 <div className="stat-content">
-                                    <span className="stat-label">Active Outages</span>
-                                    <h3 className="stat-number">{interruptionStats.active}</h3>
-                                    <span className="stat-trend negative">Unscheduled</span>
+                                    <span className="stat-label">
+                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Active Outages'}
+                                    </span>
+                                    <h3 className="stat-number">
+                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.active}
+                                    </h3>
+                                    <span className="stat-trend negative">
+                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Unscheduled'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="stat-card pending">
-                                <div className="stat-icon-box"><FaCalendarAlt /></div>
+                                <div className="stat-icon-box">
+                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaCalendarAlt />}
+                                </div>
                                 <div className="stat-content">
-                                    <span className="stat-label">Upcoming</span>
-                                    <h3 className="stat-number">{interruptionStats.upcoming}</h3>
-                                    <span className="stat-trend">Scheduled Maint.</span>
+                                    <span className="stat-label">
+                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Upcoming'}
+                                    </span>
+                                    <h3 className="stat-number">
+                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.upcoming}
+                                    </h3>
+                                    <span className="stat-trend">
+                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Scheduled Maint.'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="stat-card resolved">
-                                <div className="stat-icon-box"><FaCheckCircle /></div>
+                                <div className="stat-icon-box">
+                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaCheckCircle />}
+                                </div>
                                 <div className="stat-content">
-                                    <span className="stat-label">Restored (24h)</span>
-                                    <h3 className="stat-number">{interruptionStats.restored24h}</h3>
-                                    <span className="stat-trend positive">Normal Ops</span>
+                                    <span className="stat-label">
+                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Restored (24h)'}
+                                    </span>
+                                    <h3 className="stat-number">
+                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.restored24h}
+                                    </h3>
+                                    <span className="stat-trend positive">
+                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Normal Ops'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="stat-card total">
-                                <div className="stat-icon-box"><FaListUl /></div>
+                                <div className="stat-icon-box">
+                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaListUl />}
+                                </div>
                                 <div className="stat-content">
-                                    <span className="stat-label">Total Recorded</span>
-                                    <h3 className="stat-number">{interruptionStats.total}</h3>
-                                    <span className="stat-trend">Advisory Logs</span>
+                                    <span className="stat-label">
+                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Total Recorded'}
+                                    </span>
+                                    <h3 className="stat-number">
+                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.total}
+                                    </h3>
+                                    <span className="stat-trend">
+                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Advisory Logs'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="stat-card scheduled">
-                                <div className="stat-icon-box"><FaCalendarAlt /></div>
+                                <div className="stat-icon-box">
+                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaCalendarAlt />}
+                                </div>
                                 <div className="stat-content">
-                                    <span className="stat-label">Total Scheduled</span>
-                                    <h3 className="stat-number">{interruptionStats.scheduledTotal}</h3>
-                                    <span className="stat-trend">Planned Events</span>
+                                    <span className="stat-label">
+                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Total Scheduled'}
+                                    </span>
+                                    <h3 className="stat-number">
+                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.scheduledTotal}
+                                    </h3>
+                                    <span className="stat-trend">
+                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Planned Events'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="stat-card cancelled">
-                                <div className="stat-icon-box"><FaTimesCircle /></div>
+                                <div className="stat-icon-box">
+                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaTimesCircle />}
+                                </div>
                                 <div className="stat-content">
-                                    <span className="stat-label">Cancelled</span>
-                                    <h3 className="stat-number">{interruptionStats.cancelled}</h3>
-                                    <span className="stat-trend">No longer active</span>
+                                    <span className="stat-label">
+                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Cancelled'}
+                                    </span>
+                                    <h3 className="stat-number">
+                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.cancelled}
+                                    </h3>
+                                    <span className="stat-trend">
+                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'No longer active'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="stat-card rescheduled">
-                                <div className="stat-icon-box"><FaClock /></div>
+                                <div className="stat-icon-box">
+                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaClock />}
+                                </div>
                                 <div className="stat-content">
-                                    <span className="stat-label">Rescheduled</span>
-                                    <h3 className="stat-number">{interruptionStats.rescheduled}</h3>
-                                    <span className="stat-trend">Adjusted dates</span>
+                                    <span className="stat-label">
+                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Rescheduled'}
+                                    </span>
+                                    <h3 className="stat-number">
+                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.rescheduled}
+                                    </h3>
+                                    <span className="stat-trend">
+                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Adjusted dates'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -589,15 +631,18 @@ const AdminDashboard = () => {
                                     <h4>Daily Outage Trends</h4>
                                 </div>
                                 <div className="chart-wrapper">
-                                    <ResponsiveContainer width="100%" height={180}>
-                                        <LineChart data={interruptionStats.trendData}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} />
-                                            <YAxis axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} />
-                                            <Tooltip contentStyle={{ background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-color)' }} />
-                                            <Line type="monotone" dataKey="count" stroke="var(--accent-primary)" strokeWidth={3} dot={{ r: 4 }} />
-                                        </LineChart>
-                                    </ResponsiveContainer>
+                                    {loadingAdvisories
+                                        ? <Skeleton height="100%" borderRadius={8} />
+                                        : <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={interruptionStats.trendData}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                                <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} />
+                                                <YAxis axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} />
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-color)' }} />
+                                                <Line type="monotone" dataKey="count" stroke="var(--accent-primary)" strokeWidth={3} dot={{ r: 4 }} />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    }
                                 </div>
                             </div>
 
@@ -607,16 +652,19 @@ const AdminDashboard = () => {
                                     <h4>Interruption Types</h4>
                                 </div>
                                 <div className="chart-wrapper">
-                                    <ResponsiveContainer width="100%" height={180}>
-                                        <PieChart>
-                                            <Pie data={interruptionStats.typeData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
-                                                <Cell fill="#2563eb" />
-                                                <Cell fill="#facc15" />
-                                            </Pie>
-                                            <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                            <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
+                                    {loadingAdvisories
+                                        ? <Skeleton height="100%" borderRadius={8} />
+                                        : <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={interruptionStats.typeData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                    <Cell fill="#2563eb" />
+                                                    <Cell fill="#facc15" />
+                                                </Pie>
+                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -646,7 +694,19 @@ const AdminDashboard = () => {
                                     <h4>Top Impacted Areas</h4>
                                 </div>
                                 <div className="location-insight-list">
-                                    {interruptionStats.topAreas.length > 0 ? (
+                                    {loadingAdvisories ? (
+                                        Array.from({ length: 4 }).map((_, i) => (
+                                            <div key={i} className="location-row">
+                                                <div className="loc-info">
+                                                    <span><Skeleton width={100} height={11} /></span>
+                                                    <span><Skeleton width={20} height={11} /></span>
+                                                </div>
+                                                <div className="loc-bar-bg">
+                                                    <div className="loc-bar-fill" style={{ width: 0 }}></div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : interruptionStats.topAreas.length > 0 ? (
                                         interruptionStats.topAreas.map((area, index) => (
                                             <div key={index} className="location-row">
                                                 <div className="loc-info">
@@ -664,8 +724,6 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         </div>
-                        </>
-                        )}
                     </div>
 
                     <div id="ticket-overview-section" className="dashboard-ticket-features-wrapper">
@@ -1061,7 +1119,17 @@ const AdminDashboard = () => {
 
                             {/* Recent Mail Activity List */}
                             <div className="b2b-activity-list">
-                                {b2bMailStats.recentActivity.map(activity => (
+                                {loading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={i} className="b2b-activity-item">
+                                            <div className="b2b-activity-content">
+                                                <span className="b2b-activity-label"><Skeleton width={150} height={14} /></span>
+                                                <span className="b2b-activity-time"><Skeleton width={120} height={12} /></span>
+                                            </div>
+                                            <span className="feeder-status-tag"><Skeleton width={60} height={20} /></span>
+                                        </div>
+                                    ))
+                                ) : b2bMailStats.recentActivity.map(activity => (
                                     <div key={activity.id} className="b2b-activity-item">
                                         <div className="b2b-activity-content">
                                             <span className="b2b-activity-label">{activity.subject}</span>
@@ -1219,57 +1287,53 @@ const AdminDashboard = () => {
                                 <h3 className="column-section-title">Service Memos</h3>
                                 <p className="widget-text">Summary of field service memo records.</p>
                             </div>
-                            {memosLoading ? (
-                                <>
-                                <div className="stats-grid">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className="stat-card">
-                                            <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
-                                            <div className="stat-content">
-                                                <span className="stat-label"><Skeleton width={100} height={16} /></span>
-                                                <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
-                                                <span className="stat-trend"><Skeleton width={80} height={14} /></span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="charts-grid-main">
-                                    <div className="chart-card">
-                                        <div className="chart-header-group">
-                                            <Skeleton width={24} height={24} circle />
-                                            <h4><Skeleton width={200} height={20} /></h4>
-                                        </div>
-                                        <div className="chart-wrapper">
-                                            <Skeleton width="100%" height={180} />
-                                        </div>
-                                    </div>
-                                </div>
-                                </>
-                            ) : (
-                            <>
                             <div className="stats-grid">
                                 <div className="stat-card total">
-                                    <div className="stat-icon-box"><FaFileAlt /></div>
+                                    <div className="stat-icon-box">
+                                        {memosLoading ? <Skeleton circle width={32} height={32} /> : <FaFileAlt />}
+                                    </div>
                                     <div className="stat-content">
-                                        <span className="stat-label">Total Memos</span>
-                                        <h3 className="stat-number">{memoStats.total}</h3>
-                                        <span className="stat-trend">All records</span>
+                                        <span className="stat-label">
+                                            {memosLoading ? <Skeleton width={100} height={12} /> : 'Total Memos'}
+                                        </span>
+                                        <h3 className="stat-number">
+                                            {memosLoading ? <Skeleton width={60} height={28} /> : memoStats.total}
+                                        </h3>
+                                        <span className="stat-trend">
+                                            {memosLoading ? <Skeleton width={80} height={10} /> : 'All records'}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="stat-card pending">
-                                    <div className="stat-icon-box"><FaClock /></div>
+                                    <div className="stat-icon-box">
+                                        {memosLoading ? <Skeleton circle width={32} height={32} /> : <FaClock />}
+                                    </div>
                                     <div className="stat-content">
-                                        <span className="stat-label">Saved / Open</span>
-                                        <h3 className="stat-number">{memoStats.saved}</h3>
-                                        <span className="stat-trend">In progress</span>
+                                        <span className="stat-label">
+                                            {memosLoading ? <Skeleton width={100} height={12} /> : 'Saved / Open'}
+                                        </span>
+                                        <h3 className="stat-number">
+                                            {memosLoading ? <Skeleton width={60} height={28} /> : memoStats.saved}
+                                        </h3>
+                                        <span className="stat-trend">
+                                            {memosLoading ? <Skeleton width={80} height={10} /> : 'In progress'}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="stat-card resolved">
-                                    <div className="stat-icon-box"><FaCheckCircle /></div>
+                                    <div className="stat-icon-box">
+                                        {memosLoading ? <Skeleton circle width={32} height={32} /> : <FaCheckCircle />}
+                                    </div>
                                     <div className="stat-content">
-                                        <span className="stat-label">Closed</span>
-                                        <h3 className="stat-number">{memoStats.closed}</h3>
-                                        <span className="stat-trend positive">Completed</span>
+                                        <span className="stat-label">
+                                            {memosLoading ? <Skeleton width={100} height={12} /> : 'Closed'}
+                                        </span>
+                                        <h3 className="stat-number">
+                                            {memosLoading ? <Skeleton width={60} height={28} /> : memoStats.closed}
+                                        </h3>
+                                        <span className="stat-trend positive">
+                                            {memosLoading ? <Skeleton width={80} height={10} /> : 'Completed'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -1280,7 +1344,9 @@ const AdminDashboard = () => {
                                         <h4>Memo Status Split</h4>
                                     </div>
                                     <div className="chart-wrapper">
-                                        <ResponsiveContainer width="100%" height={180}>
+                                        {memosLoading
+                                            ? <Skeleton height="100%" borderRadius={8} />
+                                            : <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie
                                                     data={[
@@ -1296,11 +1362,10 @@ const AdminDashboard = () => {
                                                 <Legend verticalAlign="bottom" align="center" iconSize={8} />
                                             </PieChart>
                                         </ResponsiveContainer>
+                                        }
                                     </div>
                                 </div>
                             </div>
-                            </>
-                            )}
                         </div>
 
                         {/* Users Mini-Section */}
@@ -1309,57 +1374,53 @@ const AdminDashboard = () => {
                                 <h3 className="column-section-title">System Users</h3>
                                 <p className="widget-text">Registered accounts and role distribution.</p>
                             </div>
-                            {usersLoading ? (
-                                <>
-                                <div className="stats-grid">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className="stat-card">
-                                            <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
-                                            <div className="stat-content">
-                                                <span className="stat-label"><Skeleton width={100} height={16} /></span>
-                                                <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
-                                                <span className="stat-trend"><Skeleton width={80} height={14} /></span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="charts-grid-main">
-                                    <div className="chart-card">
-                                        <div className="chart-header-group">
-                                            <Skeleton width={24} height={24} circle />
-                                            <h4><Skeleton width={200} height={20} /></h4>
-                                        </div>
-                                        <div className="chart-wrapper">
-                                            <Skeleton width="100%" height={180} />
-                                        </div>
-                                    </div>
-                                </div>
-                                </>
-                            ) : (
-                            <>
                             <div className="stats-grid">
                                 <div className="stat-card total">
-                                    <div className="stat-icon-box"><FaUsers /></div>
+                                    <div className="stat-icon-box">
+                                        {usersLoading ? <Skeleton circle width={32} height={32} /> : <FaUsers />}
+                                    </div>
                                     <div className="stat-content">
-                                        <span className="stat-label">Total Users</span>
-                                        <h3 className="stat-number">{userStats.total}</h3>
-                                        <span className="stat-trend">All accounts</span>
+                                        <span className="stat-label">
+                                            {usersLoading ? <Skeleton width={100} height={12} /> : 'Total Users'}
+                                        </span>
+                                        <h3 className="stat-number">
+                                            {usersLoading ? <Skeleton width={60} height={28} /> : userStats.total}
+                                        </h3>
+                                        <span className="stat-trend">
+                                            {usersLoading ? <Skeleton width={80} height={10} /> : 'All accounts'}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="stat-card urgent">
-                                    <div className="stat-icon-box"><FaUserShield /></div>
+                                    <div className="stat-icon-box">
+                                        {usersLoading ? <Skeleton circle width={32} height={32} /> : <FaUserShield />}
+                                    </div>
                                     <div className="stat-content">
-                                        <span className="stat-label">Admins</span>
-                                        <h3 className="stat-number">{userStats.admins}</h3>
-                                        <span className="stat-trend">Full access</span>
+                                        <span className="stat-label">
+                                            {usersLoading ? <Skeleton width={100} height={12} /> : 'Admins'}
+                                        </span>
+                                        <h3 className="stat-number">
+                                            {usersLoading ? <Skeleton width={60} height={28} /> : userStats.admins}
+                                        </h3>
+                                        <span className="stat-trend">
+                                            {usersLoading ? <Skeleton width={80} height={10} /> : 'Full access'}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="stat-card ongoing">
-                                    <div className="stat-icon-box"><FaUserTie /></div>
+                                    <div className="stat-icon-box">
+                                        {usersLoading ? <Skeleton circle width={32} height={32} /> : <FaUserTie />}
+                                    </div>
                                     <div className="stat-content">
-                                        <span className="stat-label">Employees</span>
-                                        <h3 className="stat-number">{userStats.employees}</h3>
-                                        <span className="stat-trend">Staff access</span>
+                                        <span className="stat-label">
+                                            {usersLoading ? <Skeleton width={100} height={12} /> : 'Employees'}
+                                        </span>
+                                        <h3 className="stat-number">
+                                            {usersLoading ? <Skeleton width={60} height={28} /> : userStats.employees}
+                                        </h3>
+                                        <span className="stat-trend">
+                                            {usersLoading ? <Skeleton width={80} height={10} /> : 'Staff access'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -1370,7 +1431,9 @@ const AdminDashboard = () => {
                                         <h4>Role Distribution</h4>
                                     </div>
                                     <div className="chart-wrapper">
-                                        <ResponsiveContainer width="100%" height={180}>
+                                        {usersLoading
+                                            ? <Skeleton height="100%" borderRadius={8} />
+                                            : <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie
                                                     data={[
@@ -1388,11 +1451,10 @@ const AdminDashboard = () => {
                                                 <Legend verticalAlign="bottom" align="center" iconSize={8} />
                                             </PieChart>
                                         </ResponsiveContainer>
+                                        }
                                     </div>
                                 </div>
                             </div>
-                            </>
-                            )}
                         </div>
 
                     </div> {/* End of memo-users-section */}

@@ -72,11 +72,33 @@
     box-shadow: inset 3px 0 0 #ec4899;
 }
 
-/* Remove borders and shadows from skeleton loading cards */
-.ticket-card-container.skeleton-loading {
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
+/* =========================================
+   TICKET VIEWS — SIMPLE LOADING STATE
+   Consistent across Card, Table, Kanban, and Urgent views.
+   ========================================= */
+.ticket-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 16px;
+    width: 100%;
+}
+
+.ticket-loading-state .chaotic-orbit {
+    --uib-color: black;
+    --uib-size: 28px;
+}
+
+[data-theme="dark"] .ticket-loading-state .chaotic-orbit {
+    --uib-color: var(--accent-primary, #7c3aed);
+}
+
+.ticket-loading-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
 }
 
 .group-badge-parent {

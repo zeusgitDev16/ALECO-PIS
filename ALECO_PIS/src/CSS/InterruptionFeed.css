@@ -1,3 +1,29 @@
+/* --- Feed loading state (uses global chaotic-orbit) --- */
+.interruption-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 24px;
+  width: 100%;
+}
+
+.interruption-loading-state .chaotic-orbit {
+  --uib-color: black;
+  --uib-size: 30px;
+}
+
+[data-theme="dark"] .interruption-loading-state .chaotic-orbit {
+  --uib-color: var(--accent-primary, #7c3aed);
+}
+
+.interruption-loading-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
 /* --- Interruption Feed (Horizontal Scroll) --- */
 .interruption-feed {
   display: flex;

@@ -37,6 +37,14 @@
     background: linear-gradient(to right, rgba(239, 68, 68, 0.05), transparent) !important;
 }
 
+/* Preserve urgent red border on skeleton cards.
+   .skeleton-loading is specificity 0,2,0 with !important.
+   This rule is 0,3,0 — wins back the urgent styling. */
+.ticket-card-container.skeleton-loading.urgent-card {
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    background: linear-gradient(to right, rgba(239, 68, 68, 0.05), transparent) !important;
+}
+
 .urgent-card:hover {
     border-color: #ef4444 !important;
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;

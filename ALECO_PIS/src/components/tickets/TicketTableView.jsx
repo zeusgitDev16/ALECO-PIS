@@ -1,6 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 import { formatToPhilippineDate } from '../../utils/dateUtils';
 import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
 import '../../CSS/TicketTableView.css';
@@ -63,62 +61,10 @@ const TicketTableView = ({
     if (isLoading) {
         return (
             <div className="ticket-table-container">
-                <table className="ticket-table">
-                    <thead className="ticket-table-header">
-                        <tr>
-                            <th className="col-checkbox">
-                                <input
-                                    type="checkbox"
-                                    disabled
-                                />
-                            </th>
-                            <th className="col-id">Ticket ID</th>
-                            <th className="col-name">Name</th>
-                            <th className="col-phone">Phone</th>
-                            <th className="col-category">Category</th>
-                            <th className="col-concern">Concern</th>
-                            <th className="col-location">Location</th>
-                            <th className="col-status">Status</th>
-                            <th className="col-date">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody className="ticket-table-body">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                            <tr key={i}>
-                                <td className="col-checkbox">
-                                    <input
-                                        type="checkbox"
-                                        disabled
-                                    />
-                                </td>
-                                <td className="col-id">
-                                    <Skeleton width={100} height={16} />
-                                </td>
-                                <td className="col-name">
-                                    <Skeleton width={120} height={16} />
-                                </td>
-                                <td className="col-phone">
-                                    <Skeleton width={100} height={16} />
-                                </td>
-                                <td className="col-category">
-                                    <Skeleton width={80} height={16} />
-                                </td>
-                                <td className="col-concern">
-                                    <Skeleton width={150} height={16} />
-                                </td>
-                                <td className="col-location">
-                                    <Skeleton width={120} height={16} />
-                                </td>
-                                <td className="col-status">
-                                    <span className="status-badge"><Skeleton width={80} height={20} /></span>
-                                </td>
-                                <td className="col-date">
-                                    <Skeleton width={100} height={14} />
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <div className="ticket-loading-state">
+                    <div className="chaotic-orbit" aria-hidden="true"></div>
+                    <span className="ticket-loading-label">Loading tickets…</span>
+                </div>
             </div>
         );
     }

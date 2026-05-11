@@ -84,19 +84,14 @@ function InterruptionList() {
       </div>
 
       {/* ── Advisory cards feed ───────────────────────────────────────── */}
-      <div className="interruption-feed" ref={feedRef} onScroll={updateScrollState}>
-          {loading && (
-            <div className="interruption-card interruption-card--bulletin interruption-card--feed" aria-busy="true">
-              <div className="blob blob-pending" aria-hidden />
-              <div className="bg">
-                <h3 className="status-header status-pending">One moment…</h3>
-                <div className="card-details card-details--bulletin">
-                  <p>We&apos;re checking for the latest brownout updates from ALECO.</p>
-                </div>
-              </div>
-            </div>
-          )}
+      {loading && (
+        <div className="interruption-loading-state" aria-busy="true">
+          <div className="chaotic-orbit" aria-hidden="true"></div>
+          <span className="interruption-loading-label">Checking for latest advisories…</span>
+        </div>
+      )}
 
+      <div className="interruption-feed" ref={feedRef} onScroll={updateScrollState}>
           {!loading && listUnavailable && (
             <div className="interruption-card interruption-card--bulletin interruption-card--feed" role="status">
               <div className="blob blob-pending" aria-hidden />

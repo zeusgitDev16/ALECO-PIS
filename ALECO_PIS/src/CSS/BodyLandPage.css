@@ -152,7 +152,7 @@ html.public-home-smooth-scroll {
   max-width: 1400px;
   margin: 0 auto calc(60px * var(--public-section-scale, 1)) auto;
   padding: 0 calc(20px * var(--public-section-scale, 1));
-  overflow: hidden; /* Prevents full page horizontal scroll */
+  /* overflow: hidden removed - was hiding the loading spinner */
 }
 
 .section-separator {

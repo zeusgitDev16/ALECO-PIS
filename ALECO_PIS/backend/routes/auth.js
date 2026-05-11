@@ -329,7 +329,7 @@ router.post('/forgot-password', async (req, res) => {
     );
 
     // 5. EMAIL: Send using functional Nodemailer template (optional PUBLIC_APP_URL = public SPA link for users)
-    const publicApp = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_ORIGIN || '').trim().replace(/\/$/, '');
+    const publicApp = (process.env.PUBLIC_APP_URL_PRODUCTION || process.env.PUBLIC_APP_URL || process.env.FRONTEND_ORIGIN || '').trim().replace(/\/$/, '');
     const appLinkHtml = publicApp
       ? `<p style="font-size: 14px; color: #555;">Open the app to enter this code: <a href="${publicApp}">${publicApp}</a></p>`
       : '';

@@ -2,8 +2,8 @@
  * CORS allowlist for Express (local dev + optional env).
  * Idempotent: same inputs → same Set of origins. Trailing slashes normalized.
  *
- * Production browser clients: set at least one of PUBLIC_APP_URL, FRONTEND_ORIGIN,
- * or CORS_ALLOWED_ORIGINS on the API host (no vendor-specific defaults in code).
+ * Production browser clients: set PUBLIC_APP_URL_PRODUCTION (highest priority),
+ * or PUBLIC_APP_URL / FRONTEND_ORIGIN, or CORS_ALLOWED_ORIGINS on the API host.
  */
 
 export function normalizeOrigin(origin) {
@@ -29,9 +29,12 @@ export function buildAllowedCorsOrigins() {
         .map((s) => normalizeOrigin(s))
         .filter(Boolean);
 
-    // Optional: primary public SPA URL (custom domain or second Vercel project)
+    // Priority: PUBLIC_APP_URL_PRODUCTION > PUBLIC_APP_URL > FRONTEND_ORIGIN
     const primary = normalizeOrigin(
-        process.env.PUBLIC_APP_URL || process.env.FRONTEND_ORIGIN || ''
+        process.env.PUBLIC_APP_URL_PRODUCTION ||
+        process.env.PUBLIC_APP_URL ||
+        process.env.FRONTEND_ORIGIN ||
+        ''
     );
     const primaryList = primary ? [primary] : [];
 
@@ -41,6 +44,7 @@ export function buildAllowedCorsOrigins() {
 /** True if any production SPA origin was supplied via env (not only localhost defaults). */
 export function hasExplicitPublicCorsEnv() {
     return Boolean(
+        (process.env.PUBLIC_APP_URL_PRODUCTION || '').trim() ||
         (process.env.PUBLIC_APP_URL || '').trim() ||
         (process.env.FRONTEND_ORIGIN || '').trim() ||
         (process.env.CORS_ALLOWED_ORIGINS || '').trim()

@@ -5,7 +5,7 @@
 
 export function getPublicAppBaseUrl() {
   const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
-  const base = (env.PUBLIC_APP_URL || env.FRONTEND_ORIGIN || '').trim();
+  const base = (env.PUBLIC_APP_URL_PRODUCTION || env.PUBLIC_APP_URL || env.FRONTEND_ORIGIN || '').trim();
   return base ? base.replace(/\/$/, '') : '';
 }
 

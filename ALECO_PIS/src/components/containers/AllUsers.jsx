@@ -335,12 +335,12 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
                 <tbody>
                   {[1, 2, 3, 4, 5].map((i) => (
                     <tr key={i}>
-                      <td className="users-td-avatar"><Skeleton width={40} height={40} circle /></td>
-                      <td><Skeleton width={120} height={16} /></td>
-                      <td><Skeleton width={180} height={16} /></td>
-                      <td><Skeleton width={80} height={20} /></td>
-                      <td><Skeleton width={80} height={16} /></td>
-                      {canManageUsers ? <td><Skeleton width={70} height={32} /></td> : null}
+                      <td className="users-td-avatar"><span className="users-skeleton-table-avatar"><Skeleton circle /></span></td>
+                      <td><span className="users-skeleton-table-name"><Skeleton /></span></td>
+                      <td><span className="users-skeleton-table-email"><Skeleton /></span></td>
+                      <td><span className="users-skeleton-table-role"><Skeleton /></span></td>
+                      <td><span className="users-skeleton-table-status"><Skeleton /></span></td>
+                      {canManageUsers ? <td><span className="users-skeleton-table-action"><Skeleton /></span></td> : null}
                     </tr>
                   ))}
                 </tbody>
@@ -353,20 +353,20 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
                 <article key={i} className="users-user-card">
                   <div className="users-user-card-top">
                     <div className="users-user-card-avatar-wrap">
-                      <Skeleton width={48} height={48} circle />
+                      <span className="users-skeleton-card-avatar"><Skeleton circle /></span>
                     </div>
                     <div className="users-user-card-text">
-                      <div className="users-user-card-name"><Skeleton width={120} height={18} /></div>
-                      <div className="users-user-card-email"><Skeleton width={180} height={14} /></div>
+                      <div className="users-user-card-name"><span className="users-skeleton-card-name"><Skeleton /></span></div>
+                      <div className="users-user-card-email"><span className="users-skeleton-card-email"><Skeleton /></span></div>
                     </div>
                   </div>
                   <div className="users-user-card-meta">
-                    <Skeleton width={80} height={20} />
-                    <Skeleton width={70} height={20} />
+                    <span className="users-skeleton-card-badge"><Skeleton /></span>
+                    <span className="users-skeleton-card-badge"><Skeleton /></span>
                   </div>
                   {canManageUsers && (
                     <div className="users-user-card-actions">
-                      <Skeleton width={70} height={32} />
+                      <span className="users-skeleton-card-action"><Skeleton /></span>
                     </div>
                   )}
                 </article>
@@ -382,20 +382,20 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
                     <article key={i} className="users-user-card">
                       <div className="users-user-card-top">
                         <div className="users-user-card-avatar-wrap">
-                          <Skeleton width={48} height={48} circle />
+                          <span className="users-skeleton-card-avatar"><Skeleton circle /></span>
                         </div>
                         <div className="users-user-card-text">
-                          <div className="users-user-card-name"><Skeleton width={120} height={18} /></div>
-                          <div className="users-user-card-email"><Skeleton width={180} height={14} /></div>
+                          <div className="users-user-card-name"><span className="users-skeleton-card-name"><Skeleton /></span></div>
+                          <div className="users-user-card-email"><span className="users-skeleton-card-email"><Skeleton /></span></div>
                         </div>
                       </div>
                       <div className="users-user-card-meta">
-                        <Skeleton width={80} height={20} />
-                        <Skeleton width={70} height={20} />
+                        <span className="users-skeleton-card-badge"><Skeleton /></span>
+                        <span className="users-skeleton-card-badge"><Skeleton /></span>
                       </div>
                       {canManageUsers && (
                         <div className="users-user-card-actions">
-                          <Skeleton width={70} height={32} />
+                          <span className="users-skeleton-card-action"><Skeleton /></span>
                         </div>
                       )}
                     </article>
@@ -409,20 +409,20 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
                     <article key={i} className="users-user-card">
                       <div className="users-user-card-top">
                         <div className="users-user-card-avatar-wrap">
-                          <Skeleton width={48} height={48} circle />
+                          <span className="users-skeleton-card-avatar"><Skeleton circle /></span>
                         </div>
                         <div className="users-user-card-text">
-                          <div className="users-user-card-name"><Skeleton width={120} height={18} /></div>
-                          <div className="users-user-card-email"><Skeleton width={180} height={14} /></div>
+                          <div className="users-user-card-name"><span className="users-skeleton-card-name"><Skeleton /></span></div>
+                          <div className="users-user-card-email"><span className="users-skeleton-card-email"><Skeleton /></span></div>
                         </div>
                       </div>
                       <div className="users-user-card-meta">
-                        <Skeleton width={80} height={20} />
-                        <Skeleton width={70} height={20} />
+                        <span className="users-skeleton-card-badge"><Skeleton /></span>
+                        <span className="users-skeleton-card-badge"><Skeleton /></span>
                       </div>
                       {canManageUsers && (
                         <div className="users-user-card-actions">
-                          <Skeleton width={70} height={32} />
+                          <span className="users-skeleton-card-action"><Skeleton /></span>
                         </div>
                       )}
                     </article>
@@ -453,10 +453,10 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
                 <tbody>
                   {[1, 2, 3].map((i) => (
                     <tr key={i}>
-                      <td className="user-email"><Skeleton width={180} height={16} /></td>
-                      <td><Skeleton width={80} height={20} /></td>
-                      <td className="user-code"><Skeleton width={120} height={20} /></td>
-                      <td className="sent-at"><Skeleton width={150} height={14} /></td>
+                      <td className="user-email"><span className="users-skeleton-pending-email"><Skeleton /></span></td>
+                      <td><span className="users-skeleton-pending-role"><Skeleton /></span></td>
+                      <td className="user-code"><span className="users-skeleton-pending-code"><Skeleton /></span></td>
+                      <td className="sent-at"><span className="users-skeleton-pending-date"><Skeleton /></span></td>
                     </tr>
                   ))}
                 </tbody>

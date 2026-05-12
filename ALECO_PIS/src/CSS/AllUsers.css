@@ -32,8 +32,8 @@
 }
 
 .users-page-container .users-table th {
-  padding: calc(10px * var(--users-ui-scale, 1)) calc(12px * var(--users-ui-scale, 1));
-  font-size: calc(0.65rem * var(--users-ui-scale, 1));
+  padding: calc(10px * var(--users-ui-scale, 1)) calc(12px * var(--users-ui-scale, 1)) !important;
+  font-size: calc(0.7rem * var(--users-ui-scale, 1)) !important;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -78,8 +78,8 @@
 }
 
 .users-page-container .users-table td {
-  padding: calc(8px * var(--users-ui-scale, 1)) calc(10px * var(--users-ui-scale, 1));
-  font-size: calc(0.8rem * var(--users-ui-scale, 1));
+  padding: calc(8px * var(--users-ui-scale, 1)) calc(10px * var(--users-ui-scale, 1)) !important;
+  font-size: calc(0.8rem * var(--users-ui-scale, 1)) !important;
   font-weight: 600;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
@@ -530,4 +530,115 @@
   .users-page-container .users-user-card-email {
     -webkit-line-clamp: 3;
   }
+}
+
+/* ==========================================================================
+   SKELETON LOADING — structural mirroring with modular scale
+   ========================================================================== */
+
+/* Table/Compact View Skeletons */
+.users-page-container .users-skeleton-table-avatar {
+  width: calc(36px * var(--users-ui-scale, 1));
+  height: calc(36px * var(--users-ui-scale, 1));
+  border-radius: 50%;
+}
+
+.users-page-container .users-skeleton-table-name {
+  width: calc(120px * var(--users-ui-scale, 1));
+  height: calc(16px * var(--users-ui-scale, 1));
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-table-email {
+  width: calc(180px * var(--users-ui-scale, 1));
+  height: calc(16px * var(--users-ui-scale, 1));
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-table-role {
+  width: calc(80px * var(--users-ui-scale, 1));
+  height: calc(20px * var(--users-ui-scale, 1));
+  border-radius: calc(6px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-table-status {
+  width: calc(80px * var(--users-ui-scale, 1));
+  height: calc(16px * var(--users-ui-scale, 1));
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-table-action {
+  width: calc(70px * var(--users-ui-scale, 1));
+  height: calc(32px * var(--users-ui-scale, 1));
+  border-radius: calc(6px * var(--users-ui-scale, 1));
+}
+
+/* Card/Workflow View Skeletons */
+.users-page-container .users-skeleton-card-avatar {
+  width: calc(44px * var(--users-ui-scale, 1));
+  height: calc(44px * var(--users-ui-scale, 1));
+  border-radius: 50%;
+}
+
+.users-page-container .users-skeleton-card-name {
+  width: calc(120px * var(--users-ui-scale, 1));
+  height: calc(18px * var(--users-ui-scale, 1));
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-card-email {
+  width: calc(180px * var(--users-ui-scale, 1));
+  height: calc(14px * var(--users-ui-scale, 1));
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-card-badge {
+  width: calc(80px * var(--users-ui-scale, 1));
+  height: calc(20px * var(--users-ui-scale, 1));
+  border-radius: calc(6px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-card-action {
+  width: calc(70px * var(--users-ui-scale, 1));
+  height: calc(32px * var(--users-ui-scale, 1));
+  border-radius: calc(6px * var(--users-ui-scale, 1));
+}
+
+/* Pending Invites Skeletons */
+.users-page-container .users-skeleton-pending-email {
+  width: calc(180px * var(--users-ui-scale, 1));
+  height: calc(16px * var(--users-ui-scale, 1));
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-pending-role {
+  width: calc(80px * var(--users-ui-scale, 1));
+  height: calc(20px * var(--users-ui-scale, 1));
+  border-radius: calc(6px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-pending-code {
+  width: calc(120px * var(--users-ui-scale, 1));
+  height: calc(20px * var(--users-ui-scale, 1));
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+.users-page-container .users-skeleton-pending-date {
+  width: calc(150px * var(--users-ui-scale, 1));
+  height: calc(14px * var(--users-ui-scale, 1));
+  border-radius: calc(4px * var(--users-ui-scale, 1));
+}
+
+/* Shimmer animation for react-loading-skeleton */
+.users-page-container .react-loading-skeleton {
+  --base-color: var(--border-color, #e5e7eb);
+  --highlight-color: rgba(255, 255, 255, 0.5);
+  --animation-duration: 1.5s;
+  --animation-direction: normal;
+  --pseudo-element-display: block;
+}
+
+[data-theme="dark"] .users-page-container .react-loading-skeleton {
+  --base-color: rgba(255, 255, 255, 0.1);
+  --highlight-color: rgba(255, 255, 255, 0.2);
 }

@@ -5,6 +5,64 @@
 
 .dashboard-page-container {
   --dashboard-ui-scale: 1;
+  /* Chart responsive sizing */
+  --chart-line-width: 3;
+  --chart-dot-radius: 4;
+  --chart-active-dot-radius: 6;
+  --chart-axis-font-size: 10;
+  /* Pie chart sizing - proportional scaling for mobile */
+  --pie-inner-radius: 45;
+  --pie-outer-radius: 65;
+  --pie-padding-angle: 5;
+  --legend-icon-size: 8;
+  --legend-font-size: 12;
+  --pie-center-y: 50;
+  /* Bar chart sizing */
+  --bar-chart-bar-size: 16;
+  --bar-chart-yaxis-width: 100;
+  /* List/skeleton sizing */
+  --list-skeleton-height: 11;
+}
+
+/* Chart sizing scales down on mobile */
+@media (max-width: 767px) {
+  .dashboard-page-container {
+    --chart-line-width: 2;
+    --chart-dot-radius: 3;
+    --chart-active-dot-radius: 5;
+    --chart-axis-font-size: 9;
+    /* Pie chart - tablet sizing */
+    --pie-inner-radius: 30;
+    --pie-outer-radius: 45;
+    --pie-padding-angle: 3;
+    --legend-icon-size: 5;
+    --legend-font-size: 10;
+    --pie-center-y: 45;
+    /* Bar chart - reduced label width for more chart space */
+    --bar-chart-bar-size: 14;
+    --bar-chart-yaxis-width: 85;
+    --list-skeleton-height: 10;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-page-container {
+    --chart-line-width: 1.5;
+    --chart-dot-radius: 2.5;
+    --chart-active-dot-radius: 4;
+    --chart-axis-font-size: 8;
+    /* Pie chart - mobile sizing (smaller circle) */
+    --pie-inner-radius: 20;
+    --pie-outer-radius: 32;
+    --pie-padding-angle: 2;
+    --legend-icon-size: 4;
+    --legend-font-size: 9;
+    --pie-center-y: 40;
+    /* Bar chart - minimal label width for maximum chart space */
+    --bar-chart-bar-size: 12;
+    --bar-chart-yaxis-width: 70;
+    --list-skeleton-height: 9;
+  }
 }
 
 @media (max-width: 1023px) and (min-width: 768px) {
@@ -46,6 +104,325 @@
 @media (max-width: 320px) {
   .dashboard-page-container {
     --dashboard-ui-scale: 0.5;
+  }
+}
+
+/* Chart wrapper full-width for mobile */
+.chart-wrapper--fullwidth {
+  width: 100%;
+}
+
+/* Location insight list - fixed height with scrollable content */
+.location-insight-list--scrollable {
+  max-height: 260px;
+  height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.location-list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.location-list-na {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 120px;
+  color: var(--text-secondary);
+  font-size: clamp(12px, calc(14px * var(--dashboard-ui-scale, 1)), 16px);
+}
+
+/* Custom scrollbar for scrollable lists */
+.location-insight-list--scrollable::-webkit-scrollbar {
+  width: 4px;
+}
+
+.location-insight-list--scrollable::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.location-insight-list--scrollable::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.location-insight-list--scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 480px) {
+  .chart-wrapper--fullwidth .recharts-wrapper {
+    width: 100% !important;
+  }
+  
+  .chart-wrapper--fullwidth .recharts-surface {
+    width: 100% !important;
+  }
+  
+  /* Bar chart Y-axis label truncation on mobile */
+  .bar-chart-yaxis tspan {
+    font-size: clamp(8px, calc(9px * var(--dashboard-ui-scale, 1)), 10px);
+  }
+  
+  /* Fixed height for scrollable lists on mobile */
+  .location-insight-list--scrollable {
+    max-height: 140px;
+    height: 140px;
+  }
+  
+  /* Ensure chart wrapper has visible height on mobile - override Dashboard.css calc */
+  .chart-wrapper,
+  .charts-grid-main .chart-wrapper,
+  .charts-grid-secondary .chart-wrapper {
+    min-height: 180px !important;
+    height: 200px !important;
+  }
+}
+
+/* Chart wrapper display fix for all views */
+.chart-wrapper.daily-outage-trends-chart {
+  display: block !important;
+  position: relative;
+}
+
+/* Desktop (>=768px) - use Dashboard.css defaults */
+@media (min-width: 768px) {
+  .daily-outage-trends-chart {
+    min-height: 180px;
+    height: calc(180px * var(--dashboard-ui-scale, 1));
+  }
+  
+  .daily-outage-trends-chart .recharts-responsive-container,
+  .daily-outage-trends-chart .recharts-wrapper {
+    min-height: 180px;
+    height: 100% !important;
+  }
+}
+
+/* Tablet and Mobile (<=767px) - FIXED HEIGHT with aggressive overrides */
+@media (max-width: 767px) {
+  /* Override the general chart-wrapper height */
+  .chart-wrapper.daily-outage-trends-chart,
+  .charts-grid-main .chart-wrapper.daily-outage-trends-chart,
+  .charts-grid-secondary .chart-wrapper.daily-outage-trends-chart {
+    min-height: 200px !important;
+    height: 200px !important;
+    max-height: 200px !important;
+    display: block !important;
+  }
+  
+  .daily-outage-trends-chart .recharts-responsive-container,
+  .daily-outage-trends-chart .recharts-wrapper {
+    min-height: 200px !important;
+    height: 200px !important;
+    width: 100% !important;
+  }
+  
+  /* Fix chart card overflow on mobile */
+  .chart-card {
+    overflow: visible !important;
+    min-height: 250px !important;
+  }
+  
+  .charts-grid-main .chart-card {
+    padding-bottom: 10px !important;
+  }
+  
+  /* Ensure SVG is visible and fills width */
+  .daily-outage-trends-chart svg {
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 200px !important;
+    overflow: visible !important;
+  }
+  
+  .daily-outage-trends-chart .recharts-surface {
+    width: 100% !important;
+    height: 200px !important;
+  }
+  
+  /* Recharts container fills parent */
+  .daily-outage-trends-chart .recharts-responsive-container {
+    width: 100% !important;
+    height: 200px !important;
+    position: relative !important;
+  }
+  
+  .daily-outage-trends-chart .recharts-wrapper {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 200px !important;
+  }
+  
+  .daily-outage-trends-chart .recharts-line path {
+    visibility: visible !important;
+    opacity: 1 !important;
+    stroke: var(--accent-primary) !important;
+    stroke-width: 2px !important;
+  }
+  
+  .daily-outage-trends-chart .recharts-cartesian-axis-tick-value tspan {
+    fill: var(--text-secondary) !important;
+    font-size: 10px !important;
+  }
+}
+
+/* Power Advisories Cards - 4 columns on mobile like KPI ribbon */
+@media (max-width: 767px) {
+  /* Override Dashboard.css mobile rules with very high specificity */
+  .dashboard-page-container .dashboard-power-advisories-wrapper .dash-summary-grid.count-9,
+  .dashboard-power-advisories-wrapper .dash-summary-grid,
+  .dashboard-power-advisories-wrapper .dash-summary-grid.count-9 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+  
+  .dashboard-power-advisories-wrapper .dash-summary-card {
+    padding: 4px 6px !important;
+    min-height: 50px !important;
+  }
+  
+  .dashboard-power-advisories-wrapper .dash-summary-title {
+    font-size: 9px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .dashboard-power-advisories-wrapper .dash-summary-count {
+    font-size: 14px !important;
+  }
+  
+  .dashboard-power-advisories-wrapper .dash-summary-trend {
+    font-size: 7px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  /* Ticket Overview Cards - 5 columns on mobile */
+  .dashboard-page-container .dashboard-ticket-features-wrapper .dash-summary-grid.count-9,
+  .dashboard-ticket-features-wrapper .dash-summary-grid,
+  .dashboard-ticket-features-wrapper .dash-summary-grid.count-9 {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+  }
+  
+  .dashboard-ticket-features-wrapper .dash-summary-card {
+    padding: 4px 6px !important;
+    min-height: 50px !important;
+  }
+  
+  .dashboard-ticket-features-wrapper .dash-summary-title {
+    font-size: 9px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .dashboard-ticket-features-wrapper .dash-summary-count {
+    font-size: 14px !important;
+  }
+  
+  .dashboard-ticket-features-wrapper .dash-summary-trend {
+    font-size: 7px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* Interruption Types Chart - Dual Pane Mobile Layout */
+.interruption-types-chart-wrapper {
+  position: relative;
+}
+
+.interruption-types-na {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: clamp(12px, calc(14px * var(--dashboard-ui-scale, 1)), 16px);
+}
+
+/* Desktop: Show standard chart, hide mobile layout */
+.interruption-types-desktop {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.interruption-types-mobile {
+  display: none;
+}
+
+/* Mobile: Show dual-pane layout */
+@media (max-width: 480px) {
+  .interruption-types-desktop {
+    display: none;
+  }
+  
+  .interruption-types-mobile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  
+  .mobile-chart-left {
+    flex: 0 0 40%;
+    height: 100%;
+    min-height: 80px;
+  }
+  
+  .mobile-chart-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 4px;
+  }
+  
+  .mobile-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: clamp(9px, calc(10px * var(--dashboard-ui-scale, 1)), 11px);
+  }
+  
+  .mobile-legend-color {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  
+  .mobile-legend-label {
+    color: var(--text-primary);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .mobile-legend-value {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: clamp(8px, calc(9px * var(--dashboard-ui-scale, 1)), 10px);
   }
 }
 

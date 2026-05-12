@@ -13,6 +13,8 @@ import {
 import axios from 'axios';
 import { apiUrl } from './utils/api';
 import useTickets from './utils/useTickets';
+import { listInterruptions } from './api/interruptionsApi';
+import { CAUSE_CATEGORY_FORM_OPTIONS, getCauseCategoryLabel } from './utils/interruptionLabels';
 import { FaEnvelope, FaPaperPlane, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa';
 import { authFetch } from './utils/authFetch';
 import Skeleton from 'react-loading-skeleton';
@@ -136,12 +138,36 @@ const AdminDashboard = () => {
         const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         setCurrentDate(new Date().toLocaleDateString('en-US', dateOptions));
 
-        // 4. Fetch real-time Power Advisories
+        // 4. Fetch real-time Power Advisories (active only, no deleted/archived)
         const fetchAdvisories = async () => {
             try {
-                const response = await axios.get(apiUrl('/interruptions'));
-                const data = response.data.interruptions || response.data || [];
-                setInterruptions(Array.isArray(data) ? data : []);
+                // Use the proper API function with authentication
+                const result = await listInterruptions({
+                    limit: 200,
+                    includeFuture: true,
+                    includeDeleted: false,
+                    deletedOnly: false
+                });
+                
+                if (result.success && !result.unavailable) {
+                    const rawData = result.data || [];
+                    
+                    // Filter out any deleted or archived items client-side as extra safety
+                    const activeData = rawData.filter(i => 
+                        !i.is_deleted && 
+                        !i.deleted && 
+                        !i.is_archived && 
+                        !i.archived
+                    );
+                    
+                    console.log('Dashboard: Fetched interruptions:', rawData.length, 'raw items');
+                    console.log('Dashboard: Active interruptions:', activeData.length, 'items');
+                    console.log('Dashboard: First active item:', activeData[0]);
+                    setInterruptions(activeData);
+                } else {
+                    console.error('Dashboard: API returned error or unavailable:', result.message);
+                    setInterruptions([]);
+                }
             } catch (err) {
                 console.error("Dashboard: Error connecting to Power Advisories", err);
             } finally {
@@ -156,18 +182,29 @@ const AdminDashboard = () => {
 
     // Dynamic calculations for Power Advisories features
     const interruptionStats = useMemo(() => {
-        // Use real data if available, otherwise use placeholders for testing charts/analytics
+        // Only use real data - no mock fallback
         const hasData = interruptions.length > 0;
-        const todayStr = new Date().toISOString().split('T')[0];
-        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        console.log('Dashboard: hasData =', hasData, 'interruptions.length =', interruptions.length);
+        
+        // Return N/A state when no data available
+        if (!hasData) {
+            return {
+                active: 0,
+                upcoming: 0,
+                restored24h: 0,
+                total: 0,
+                cancelled: 0,
+                scheduledTotal: 0,
+                rescheduled: 0,
+                feeders: [],
+                topAreas: [],
+                trendData: [],
+                causeData: [],
+                statusData: null // null indicates no data for pie chart
+            };
+        }
 
-        const sourceData = hasData ? interruptions : [
-            { id: 1, status: 'Ongoing', type: 'Unscheduled', feeder: 'BITANO-1', date_time_start: `${todayStr} 08:30`, cause_category: 'Vegetation', affected_areas: '["Rawis", "Bitano"]' },
-            { id: 2, status: 'Ongoing', type: 'Unscheduled', feeder: 'RAWIS-2', date_time_start: `${todayStr} 09:15`, cause_category: 'Equipment Failure', affected_areas: '["Lapu-Lapu"]' },
-            { id: 3, status: 'Pending', type: 'Scheduled', feeder: 'POLANGUI-4', date_time_start: `${todayStr} 13:00`, cause_category: 'Maintenance', affected_areas: '["Ubaliw", "Alnay"]' },
-            { id: 4, status: 'Restored', type: 'Scheduled', feeder: 'TABACO-1', date_time_start: yesterdayStr, date_time_restored: todayStr, cause_category: 'Maintenance', affected_areas: '["San Roque"]' },
-            { id: 5, status: 'Restored', type: 'Unscheduled', feeder: 'LEGAZPI-3', date_time_start: todayStr, date_time_restored: todayStr, cause_category: 'External Factors', affected_areas: '["Albay District"]' }
-        ];
+        const sourceData = interruptions;
 
         // Active: Current unscheduled interruptions
         const active = sourceData.filter(i => i.status === 'Ongoing' && i.type === 'Unscheduled').length;
@@ -189,7 +226,8 @@ const AdminDashboard = () => {
         const feederMap = {};
         const areaMap = {};
         const causeMap = {};
-        const typeMap = { Scheduled: 0, Unscheduled: 0 };
+        // Status breakdown for pie chart: Upcoming, Ongoing, Energized, Cancelled, Rescheduled
+        const statusMap = { Upcoming: 0, Ongoing: 0, Energized: 0, Cancelled: 0, Rescheduled: 0 };
         
         // Setup real trend map for the last 7 days
         const daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -217,13 +255,36 @@ const AdminDashboard = () => {
             }
 
             // 2. Top Impacted Areas Logic
+            // Check both camelCase (API) and snake_case (legacy) field names
+            // Handle both flat array (affectedAreas) and grouped format (affectedAreasGrouped)
             let areas = [];
+            
+            // Try grouped areas first (from poster sections)
+            if (i.affectedAreasGrouped && Array.isArray(i.affectedAreasGrouped)) {
+                i.affectedAreasGrouped.forEach(group => {
+                    if (group.items && Array.isArray(group.items)) {
+                        group.items.forEach(area => {
+                            if (area && String(area).trim()) {
+                                areaMap[String(area).trim()] = (areaMap[String(area).trim()] || 0) + 1;
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Also try flat affectedAreas array (from where & why section)
             try {
-                areas = typeof i.affected_areas === 'string' ? JSON.parse(i.affected_areas) : i.affected_areas;
+                areas = i.affectedAreas || i.affected_areas || [];
+                if (typeof areas === 'string') {
+                    areas = JSON.parse(areas);
+                }
             } catch(e) {}
+            
             if (Array.isArray(areas)) {
                 areas.forEach(a => {
-                    areaMap[a] = (areaMap[a] || 0) + 1;
+                    if (a && String(a).trim()) {
+                        areaMap[String(a).trim()] = (areaMap[String(a).trim()] || 0) + 1;
+                    }
                 });
             }
 
@@ -235,21 +296,38 @@ const AdminDashboard = () => {
                 }
             }
 
-            // 4. Type Breakdown Logic
-            if (i.type && typeMap[i.type] !== undefined) {
-                typeMap[i.type]++;
+            // 4. Status Breakdown Logic (for Interruption Types pie chart)
+            // Note: Archived/deleted already filtered at API level
+            
+            // Map interruption status to display categories
+            // Real data uses: Pending, Ongoing, Restored, Cancelled, Rescheduled
+            // Display as: Upcoming (Pending), Ongoing, Energized (Restored), Cancelled, Rescheduled
+            const status = i.status;
+            if (status === 'Pending') {
+                statusMap.Upcoming++; // Pending = Upcoming
+            } else if (status === 'Ongoing') {
+                statusMap.Ongoing++;
+            } else if (status === 'Restored' || status === 'Energized') {
+                statusMap.Energized++; // Restored/Energized = Energized
+            } else if (status === 'Cancelled') {
+                statusMap.Cancelled++;
+            } else if (status === 'Rescheduled') {
+                statusMap.Rescheduled++;
             }
 
-            // 5. Cause Category Logic
-            const cause = i.cause_category || 'Uncategorized';
-            causeMap[cause] = (causeMap[cause] || 0) + 1;
+            // 5. Cause Category Logic - use official categories from CAUSE_CATEGORY_FORM_OPTIONS
+            // Map cause_category to official display label
+            // Check both cause_category and causeCategory field names
+            const rawCause = i.cause_category || i.causeCategory || '';
+            const causeLabel = getCauseCategoryLabel(rawCause) || 'Other';
+            causeMap[causeLabel] = (causeMap[causeLabel] || 0) + 1;
         });
 
         const feeders = Object.values(feederMap)
             .sort((a,b) => (b.status === 'Critical') - (a.status === 'Critical'))
             .slice(0, 4);
 
-        const totalItems = Math.max(1, sourceData.length);
+        const totalItems = Math.max(1, Object.keys(areaMap).length || 1);
         const topAreas = Object.entries(areaMap)
             .sort((a,b) => b[1] - a[1])
             .slice(0, 4)
@@ -258,17 +336,33 @@ const AdminDashboard = () => {
                 count, 
                 perc: `${Math.min(100, (count / totalItems) * 100)}%` 
             }));
+        
+        console.log('Dashboard: areaMap =', areaMap);
+        console.log('Dashboard: topAreas =', topAreas);
 
-        const causeData = Object.entries(causeMap)
-            .map(([name, count]) => ({ name, count }))
+        // Build causeData ensuring all official categories are represented (with 0 if no data)
+        const officialCategories = CAUSE_CATEGORY_FORM_OPTIONS
+            .filter(opt => opt.value !== '') // exclude '(none)'
+            .map(opt => opt.label);
+        
+        const causeData = officialCategories
+            .map(name => ({ name, count: causeMap[name] || 0 }))
+            .filter(item => item.count > 0) // only show categories with data
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
 
-        const typeData = Object.entries(typeMap).map(([name, value]) => ({ name, value }));
+        console.log('Dashboard: causeMap =', causeMap);
+        console.log('Dashboard: causeData =', causeData);
+        console.log('Dashboard: First item cause fields:', { cause_category: sourceData[0]?.cause_category, causeCategory: sourceData[0]?.causeCategory });
+
+        const statusData = Object.entries(statusMap).map(([name, value]) => ({ name, value }));
+        console.log('Dashboard: statusMap =', statusMap);
+        console.log('Dashboard: statusData =', statusData);
 
         const trendData = Object.values(trendMap);
+        console.log('Dashboard: trendData =', trendData);
 
-        return { active, upcoming, restored24h, total, cancelled, scheduledTotal, rescheduled, feeders, topAreas, trendData, causeData, typeData };
+        return { active, upcoming, restored24h, total, cancelled, scheduledTotal, rescheduled, feeders, topAreas, trendData, causeData, statusData };
     }, [interruptions]);
 
     // Dynamic calculations for Support Tickets analytics
@@ -600,18 +694,52 @@ const AdminDashboard = () => {
                                     <FaChartLine className="chart-icon" />
                                     <h4>Daily Outage Trends</h4>
                                 </div>
-                                <div className="chart-wrapper">
+                                <div className="chart-wrapper chart-wrapper--fullwidth daily-outage-trends-chart">
                                     {loadingAdvisories
                                         ? <Skeleton height="100%" borderRadius={8} />
-                                        : <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart data={interruptionStats.trendData}>
+                                        : interruptionStats.trendData.length === 0 ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>
+                                                N/A
+                                            </div>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height="100%" key={`trend-${interruptionStats.trendData.length}`}>
+                                                <LineChart data={interruptionStats.trendData}>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                                                <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} />
-                                                <YAxis axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} />
-                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-color)' }} />
-                                                <Line type="monotone" dataKey="count" stroke="var(--accent-primary)" strokeWidth={3} dot={{ r: 4 }} />
+                                                <XAxis 
+                                                    dataKey="name" 
+                                                    axisLine={false} 
+                                                    tickLine={false} 
+                                                    stroke="var(--text-secondary)" 
+                                                    tick={{ fontSize: 10 }}
+                                                    interval={0}
+                                                />
+                                                <YAxis 
+                                                    axisLine={false} 
+                                                    tickLine={false} 
+                                                    stroke="var(--text-secondary)" 
+                                                    tick={{ fontSize: 10 }}
+                                                    width={30}
+                                                />
+                                                <Tooltip 
+                                                    contentStyle={{ 
+                                                        background: 'var(--bg-card)', 
+                                                        borderRadius: '6px', 
+                                                        border: '1px solid var(--border-color)',
+                                                        fontSize: '12px'
+                                                    }} 
+                                                />
+                                                <Line 
+                                                    type="monotone" 
+                                                    dataKey="count" 
+                                                    stroke="var(--accent-primary)" 
+                                                    strokeWidth={2}
+                                                    dot={{ r: 2 }}
+                                                    activeDot={{ r: 4 }}
+                                                    isAnimationActive={false}
+                                                />
                                             </LineChart>
-                                        </ResponsiveContainer>
+                                            </ResponsiveContainer>
+                                        )
                                     }
                                 </div>
                             </div>
@@ -621,19 +749,105 @@ const AdminDashboard = () => {
                                     <FaTools className="chart-icon" />
                                     <h4>Interruption Types</h4>
                                 </div>
-                                <div className="chart-wrapper">
+                                <div className="chart-wrapper interruption-types-chart-wrapper">
                                     {loadingAdvisories
                                         ? <Skeleton height="100%" borderRadius={8} />
-                                        : <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie data={interruptionStats.typeData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
-                                                    <Cell fill="#2563eb" />
-                                                    <Cell fill="#facc15" />
-                                                </Pie>
-                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
+                                        : !interruptionStats.statusData
+                                            ? (
+                                                <div className="interruption-types-na">
+                                                    N/A
+                                                </div>
+                                            )
+                                            : (
+                                                <>
+                                                    {/* Desktop/Tablet: Standard pie chart with bottom legend */}
+                                                    <div className="interruption-types-desktop">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie 
+                                                                    data={interruptionStats.statusData} 
+                                                                    cx="50%" 
+                                                                    cy={`${parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pie-center-y')) || 50}%`}
+                                                                    innerRadius={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pie-inner-radius')) || 45}
+                                                                    outerRadius={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pie-outer-radius')) || 65}
+                                                                    paddingAngle={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pie-padding-angle')) || 5}
+                                                                    dataKey="value"
+                                                                >
+                                                                    {interruptionStats.statusData?.map((entry, index) => {
+                                                                        const colors = ['#3b82f6', '#ef4444', '#22c55e', '#6b7280', '#f97316'];
+                                                                        return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                                                                    })}
+                                                                </Pie>
+                                                                <Tooltip 
+                                                                    contentStyle={{ 
+                                                                        background: 'var(--bg-card)', 
+                                                                        borderColor: 'var(--border-color)', 
+                                                                        borderRadius: 'clamp(6px, calc(8px * var(--dashboard-ui-scale, 1)), 10px)',
+                                                                        fontSize: 'clamp(10px, calc(12px * var(--dashboard-ui-scale, 1)), 14px)'
+                                                                    }} 
+                                                                />
+                                                                <Legend 
+                                                                    verticalAlign="bottom" 
+                                                                    align="center" 
+                                                                    iconSize={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--legend-icon-size')) || 8}
+                                                                    wrapperStyle={{ 
+                                                                        paddingBottom: 'clamp(4px, calc(8px * var(--dashboard-ui-scale, 1)), 12px)',
+                                                                        paddingTop: '2px',
+                                                                        fontSize: `${parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--legend-font-size')) || 12}px`
+                                                                    }} 
+                                                                />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+                                                    
+                                                    {/* Mobile: Dual pane - left small circle, right legend */}
+                                                    <div className="interruption-types-mobile">
+                                                        <div className="mobile-chart-left">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <PieChart>
+                                                                    <Pie 
+                                                                        data={interruptionStats.statusData} 
+                                                                        cx="50%" 
+                                                                        cy="50%"
+                                                                        innerRadius={15}
+                                                                        outerRadius={28}
+                                                                        paddingAngle={2}
+                                                                        dataKey="value"
+                                                                    >
+                                                                        {interruptionStats.statusData?.map((entry, index) => {
+                                                                            const colors = ['#3b82f6', '#ef4444', '#22c55e', '#6b7280', '#f97316'];
+                                                                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                                                                        })}
+                                                                    </Pie>
+                                                                    <Tooltip 
+                                                                        contentStyle={{ 
+                                                                            background: 'var(--bg-card)', 
+                                                                            borderColor: 'var(--border-color)', 
+                                                                            borderRadius: '6px',
+                                                                            fontSize: '10px'
+                                                                        }} 
+                                                                    />
+                                                                </PieChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                        <div className="mobile-chart-right">
+                                                            {interruptionStats.statusData?.map((entry, index) => {
+                                                                const colors = ['#3b82f6', '#ef4444', '#22c55e', '#6b7280', '#f97316'];
+                                                                return (
+                                                                    <div key={index} className="mobile-legend-item">
+                                                                        <span 
+                                                                            className="mobile-legend-color" 
+                                                                            style={{ backgroundColor: colors[index % colors.length] }}
+                                                                        />
+                                                                        <span className="mobile-legend-label">{entry.name}</span>
+                                                                        <span className="mobile-legend-value">{entry.value}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )
                                     }
                                 </div>
                             </div>
@@ -646,15 +860,42 @@ const AdminDashboard = () => {
                                     <FaExclamationTriangle className="chart-icon" />
                                     <h4>Primary Outage Causes</h4>
                                 </div>
-                                <div className="chart-wrapper">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart layout="vertical" data={interruptionStats.causeData}>
-                                            <XAxis type="number" hide />
-                                            <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={10} width={90} />
-                                            <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ background: 'var(--bg-card)' }} />
-                                            <Bar dataKey="count" fill="var(--accent-primary)" radius={[0, 4, 4, 0]} barSize={16} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                <div className="location-insight-list location-insight-list--scrollable">
+                                    {loadingAdvisories ? (
+                                        Array.from({ length: 4 }).map((_, i) => (
+                                            <div key={i} className="location-row">
+                                                <div className="loc-info">
+                                                    <span><Skeleton width={100} height={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--list-skeleton-height')) || 11} /></span>
+                                                    <span><Skeleton width={20} height={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--list-skeleton-height')) || 11} /></span>
+                                                </div>
+                                                <div className="loc-bar-bg">
+                                                    <div className="loc-bar-fill" style={{ width: 0 }}></div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : !interruptionStats.causeData || interruptionStats.causeData.length === 0 ? (
+                                        <div className="location-list-na">
+                                            N/A
+                                        </div>
+                                    ) : (
+                                        <div className="location-list-content">
+                                            {interruptionStats.causeData.map((cause, index) => {
+                                                const maxCount = Math.max(...interruptionStats.causeData.map(c => c.count), 1);
+                                                const percentage = `${(cause.count / maxCount) * 100}%`;
+                                                return (
+                                                    <div key={index} className="location-row">
+                                                        <div className="loc-info">
+                                                            <span style={{ fontSize: 'clamp(11px, calc(12px * var(--dashboard-ui-scale, 1)), 14px)' }}>{cause.name}</span>
+                                                            <span style={{ fontSize: 'clamp(10px, calc(11px * var(--dashboard-ui-scale, 1)), 12px)' }}>{cause.count}</span>
+                                                        </div>
+                                                        <div className="loc-bar-bg">
+                                                            <div className="loc-bar-fill" style={{ width: percentage }}></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -663,13 +904,13 @@ const AdminDashboard = () => {
                                     <FaMapMarkerAlt className="chart-icon" />
                                     <h4>Top Impacted Areas</h4>
                                 </div>
-                                <div className="location-insight-list">
+                                <div className="location-insight-list location-insight-list--scrollable">
                                     {loadingAdvisories ? (
                                         Array.from({ length: 4 }).map((_, i) => (
                                             <div key={i} className="location-row">
                                                 <div className="loc-info">
-                                                    <span><Skeleton width={100} height={11} /></span>
-                                                    <span><Skeleton width={20} height={11} /></span>
+                                                    <span><Skeleton width={100} height={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--list-skeleton-height')) || 11} /></span>
+                                                    <span><Skeleton width={20} height={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--list-skeleton-height')) || 11} /></span>
                                                 </div>
                                                 <div className="loc-bar-bg">
                                                     <div className="loc-bar-fill" style={{ width: 0 }}></div>
@@ -677,19 +918,23 @@ const AdminDashboard = () => {
                                             </div>
                                         ))
                                     ) : interruptionStats.topAreas.length > 0 ? (
-                                        interruptionStats.topAreas.map((area, index) => (
-                                            <div key={index} className="location-row">
-                                                <div className="loc-info">
-                                                    <span>{area.name}</span>
-                                                    <span>{area.count} Issues</span>
+                                        <div className="location-list-content">
+                                            {interruptionStats.topAreas.map((area, index) => (
+                                                <div key={index} className="location-row">
+                                                    <div className="loc-info">
+                                                        <span style={{ fontSize: 'clamp(11px, calc(12px * var(--dashboard-ui-scale, 1)), 14px)' }}>{area.name}</span>
+                                                        <span style={{ fontSize: 'clamp(10px, calc(11px * var(--dashboard-ui-scale, 1)), 12px)' }}>{area.count} Issues</span>
+                                                    </div>
+                                                    <div className="loc-bar-bg">
+                                                        <div className="loc-bar-fill" style={{ width: area.perc }}></div>
+                                                    </div>
                                                 </div>
-                                                <div className="loc-bar-bg">
-                                                    <div className="loc-bar-fill" style={{ width: area.perc }}></div>
-                                                </div>
-                                            </div>
-                                        ))
+                                            ))}
+                                        </div>
                                     ) : (
-                                        <p className="widget-text" style={{ textAlign: 'center', opacity: 0.6, padding: '10px 0' }}>No recurring impacted areas recorded.</p>
+                                        <div className="location-list-na">
+                                            N/A
+                                        </div>
                                     )}
                                 </div>
                             </div>

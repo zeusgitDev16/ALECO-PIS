@@ -4,14 +4,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 60px 24px;
+  gap: calc(12px * var(--public-section-scale, 1));
+  padding: calc(60px * var(--public-section-scale, 1)) calc(24px * var(--public-section-scale, 1));
   width: 100%;
+  text-align: center;
 }
 
 .interruption-loading-state .chaotic-orbit {
   --uib-color: black;
-  --uib-size: 30px;
+  --uib-size: calc(30px * var(--public-section-scale, 1));
 }
 
 [data-theme="dark"] .interruption-loading-state .chaotic-orbit {
@@ -19,9 +20,17 @@
 }
 
 .interruption-loading-label {
-  font-size: 13px;
+  font-size: calc(13px * var(--public-section-scale, 1));
   font-weight: 500;
   color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Mobile centering for interruption loading */
+@media (max-width: 767px) {
+  .interruption-loading-state {
+    min-height: calc(200px * var(--public-section-scale, 1));
+  }
 }
 
 /* --- Interruption Feed (Horizontal Scroll) --- */

@@ -918,15 +918,25 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: calc(10px * var(--b2b-ui-scale, 1));
+    gap: calc(12px * var(--b2b-ui-scale, 1));
     padding: calc(48px * var(--b2b-ui-scale, 1));
     text-align: center;
     color: var(--text-secondary);
 }
 
+/* Target bare span/p inside B2B loading containers */
+.b2b-contact-list-loading > span,
+.b2b-contact-list-loading > p {
+    font-size: calc(0.75rem * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin: 0;
+}
+
 .b2b-contact-list-loading .b2b-loading-text {
     font-size: calc(0.75rem * var(--b2b-ui-scale, 1));
     color: var(--text-secondary);
+    line-height: 1.4;
 }
 
 .b2b-contact-list-empty {
@@ -1883,14 +1893,25 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: calc(10px * var(--b2b-ui-scale, 1));
+    gap: calc(12px * var(--b2b-ui-scale, 1));
     padding: calc(48px * var(--b2b-ui-scale, 1));
     color: var(--text-secondary);
+    text-align: center;
+}
+
+/* Target bare span/p inside B2B messages loading */
+.b2b-messages-loading > span,
+.b2b-messages-loading > p {
+    font-size: calc(0.75rem * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin: 0;
 }
 
 .b2b-messages-loading .b2b-loading-text {
     font-size: calc(0.75rem * var(--b2b-ui-scale, 1));
     color: var(--text-secondary);
+    line-height: 1.4;
 }
 
 /* Empty State */

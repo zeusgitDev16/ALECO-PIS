@@ -9,10 +9,11 @@
 }
 
 .interruption-workflow-wrapper .interruption-workflow-loading {
-    font-size: 0.7rem;
+    font-size: calc(0.75rem * var(--interruption-ui-scale, 1));
     color: var(--text-secondary);
     text-align: center;
-    padding: 20px;
+    line-height: 1.4;
+    margin: 0;
 }
 
 .interruption-workflow-empty {

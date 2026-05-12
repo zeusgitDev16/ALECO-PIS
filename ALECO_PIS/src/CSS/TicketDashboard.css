@@ -81,9 +81,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 60px 16px;
+    gap: calc(12px * var(--ticket-ui-scale, 1));
+    padding: calc(60px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1));
     width: 100%;
+    text-align: center;
 }
 
 .ticket-loading-state .ticket-spinner {
@@ -103,7 +104,8 @@
     font-size: calc(0.75rem * var(--ticket-ui-scale, 1));
     font-weight: 500;
     color: var(--text-secondary);
-    margin-top: calc(10px * var(--ticket-ui-scale, 1));
+    text-align: center;
+    line-height: 1.4;
 }
 
 .group-badge-parent {

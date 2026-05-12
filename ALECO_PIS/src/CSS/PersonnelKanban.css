@@ -10,7 +10,16 @@
     font-size: calc(0.75rem * var(--personnel-ui-scale, 1));
     color: var(--text-secondary);
     text-align: center;
+    line-height: 1.4;
     padding: calc(24px * var(--personnel-ui-scale, 1));
+}
+
+/* Ensure bare span/p inside kanban loading use same styling */
+.personnel-kanban-wrapper .personnel-loading > span,
+.personnel-kanban-wrapper .personnel-loading > p {
+    font-size: calc(0.75rem * var(--personnel-ui-scale, 1));
+    line-height: 1.4;
+    margin: 0;
 }
 
 .personnel-kanban-board {

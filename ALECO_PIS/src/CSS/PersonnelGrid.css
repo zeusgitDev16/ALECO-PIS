@@ -236,9 +236,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: calc(10px * var(--personnel-ui-scale, 1));
+  gap: calc(12px * var(--personnel-ui-scale, 1));
+  text-align: center;
   padding: calc(60px * var(--personnel-ui-scale, 1)) calc(12px * var(--personnel-ui-scale, 1));
   color: var(--text-secondary);
+}
+
+/* Target bare span/p inside personnel-loading for standardization */
+.personnel-loading > span:not(.personnel-spinner),
+.personnel-loading > p {
+  font-size: calc(0.75rem * var(--personnel-ui-scale, 1));
+  line-height: 1.4;
+  margin: 0;
 }
 
 .personnel-empty {
@@ -262,7 +271,7 @@
   font-size: calc(0.75rem * var(--personnel-ui-scale, 1));
   color: var(--text-secondary);
   text-align: center;
-  margin-top: calc(10px * var(--personnel-ui-scale, 1));
+  line-height: 1.4;
 }
 
 @keyframes personnel-spin {

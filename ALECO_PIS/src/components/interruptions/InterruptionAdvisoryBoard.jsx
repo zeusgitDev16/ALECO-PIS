@@ -65,7 +65,8 @@ export default function InterruptionAdvisoryBoard({
 
   if (loading) {
     return (
-      <div className="interruptions-admin-board interruptions-admin-board--in-card">
+      <div className="interruptions-admin-board interruptions-admin-board--in-card interruptions-admin-board-loading-state">
+        <div className="interruptions-loader-spinner" />
         <p className="widget-text interruptions-admin-board-loading">Loading advisories…</p>
       </div>
     );

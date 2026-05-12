@@ -913,21 +913,37 @@
 }
 
 /* Loading and Empty States */
-.b2b-contact-list-loading,
+.b2b-contact-list-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(10px * var(--b2b-ui-scale, 1));
+    padding: calc(48px * var(--b2b-ui-scale, 1));
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.b2b-contact-list-loading .b2b-loading-text {
+    font-size: calc(0.75rem * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+}
+
 .b2b-contact-list-empty {
     padding: calc(48px * var(--b2b-ui-scale, 1));
     text-align: center;
     color: var(--text-secondary);
 }
 
-.b2b-spinner {
+/* B2B loader spinner — simple circle spinner */
+.b2b-loader-spinner {
     width: calc(40px * var(--b2b-ui-scale, 1));
     height: calc(40px * var(--b2b-ui-scale, 1));
-    border: calc(3px * var(--b2b-ui-scale, 1)) solid var(--border-color);
-    border-top-color: var(--primary);
+    border: calc(4px * var(--b2b-ui-scale, 1)) solid var(--border-color);
+    border-top-color: var(--text-secondary);
     border-radius: 50%;
-    animation: b2b-spin 1s linear infinite;
-    margin: 0 auto calc(16px * var(--b2b-ui-scale, 1));
+    animation: b2b-spin 0.8s linear infinite;
+    margin: 0 auto;
 }
 
 @keyframes b2b-spin {
@@ -1132,6 +1148,27 @@
 
 .b2b-btn-ghost {
     background: transparent;
+}
+
+/* Button spinner for Send Message */
+.b2b-btn-send {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.b2b-btn-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: b2b-btn-spin 0.8s linear infinite;
+}
+
+@keyframes b2b-btn-spin {
+    to { transform: rotate(360deg); }
 }
 
 .b2b-feeder-selector-card {
@@ -1846,22 +1883,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: calc(16px * var(--b2b-ui-scale, 1));
+    gap: calc(10px * var(--b2b-ui-scale, 1));
     padding: calc(48px * var(--b2b-ui-scale, 1));
     color: var(--text-secondary);
 }
 
-.b2b-messages-loading .spinner {
-    width: calc(40px * var(--b2b-ui-scale, 1));
-    height: calc(40px * var(--b2b-ui-scale, 1));
-    border: 3px solid var(--border-color);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
+.b2b-messages-loading .b2b-loading-text {
+    font-size: calc(0.75rem * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
 }
 
 /* Empty State */
@@ -2859,4 +2888,148 @@
     .b2b-search-input {
         width: 100%;
     }
+}
+
+/* ─── Delete Confirmation Modal ─────────────────────────────────── */
+.b2b-delete-confirm-modal {
+    max-width: calc(480px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-delete-confirm-body {
+    padding: calc(20px * var(--b2b-ui-scale, 1));
+    display: flex;
+    flex-direction: column;
+    gap: calc(16px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-delete-warn-banner {
+    display: flex;
+    gap: calc(10px * var(--b2b-ui-scale, 1));
+    align-items: flex-start;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: calc(8px * var(--b2b-ui-scale, 1));
+    padding: calc(12px * var(--b2b-ui-scale, 1));
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+.b2b-delete-warn-icon {
+    font-size: calc(18px * var(--b2b-ui-scale, 1));
+    flex-shrink: 0;
+    color: #ef4444;
+    margin-top: 1px;
+}
+
+.b2b-delete-warn-banner p {
+    margin: 0;
+}
+
+.b2b-delete-contacts-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(6px * var(--b2b-ui-scale, 1));
+    max-height: calc(140px * var(--b2b-ui-scale, 1));
+    overflow-y: auto;
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: calc(6px * var(--b2b-ui-scale, 1));
+    padding: calc(8px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-delete-contact-row {
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--b2b-ui-scale, 1));
+    font-size: calc(12px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-delete-contact-name {
+    font-weight: 600;
+    color: var(--text-main);
+    flex-shrink: 0;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.b2b-delete-contact-email {
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.b2b-delete-confirm-form {
+    display: flex;
+    flex-direction: column;
+    gap: calc(10px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-delete-confirm-label {
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.b2b-delete-confirm-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: calc(9px * var(--b2b-ui-scale, 1)) calc(11px * var(--b2b-ui-scale, 1));
+    border: 1px solid var(--border-color);
+    border-radius: calc(6px * var(--b2b-ui-scale, 1));
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+    font-family: monospace;
+}
+
+.b2b-delete-confirm-input:focus {
+    outline: none;
+    border-color: #ef4444;
+}
+
+.b2b-delete-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: calc(10px * var(--b2b-ui-scale, 1));
+    margin-top: calc(4px * var(--b2b-ui-scale, 1));
+}
+
+.b2b-modal-cancel-btn {
+    padding: calc(8px * var(--b2b-ui-scale, 1)) calc(16px * var(--b2b-ui-scale, 1));
+    border-radius: calc(6px * var(--b2b-ui-scale, 1));
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+    cursor: pointer;
+}
+
+.b2b-modal-cancel-btn:hover {
+    background: var(--bg-body);
+}
+
+.b2b-modal-delete-btn {
+    padding: calc(8px * var(--b2b-ui-scale, 1)) calc(16px * var(--b2b-ui-scale, 1));
+    border-radius: calc(6px * var(--b2b-ui-scale, 1));
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    font-size: calc(13px * var(--b2b-ui-scale, 1));
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.b2b-modal-delete-btn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+}
+
+.b2b-modal-delete-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }

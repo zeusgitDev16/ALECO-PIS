@@ -69,6 +69,7 @@ export const B2B_MAIL_EVENT = {
   CONTACT_CREATED: 'b2b_contact_created',
   CONTACT_EDITED: 'b2b_contact_edited',
   CONTACT_DISABLED: 'b2b_contact_disabled',
+  CONTACT_DELETED: 'b2b_contact_deleted',
   MESSAGE_SENT: 'b2b_message_sent',
   REPLY_FETCHED: 'b2b_reply_fetched',
 };

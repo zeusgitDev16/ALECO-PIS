@@ -21,31 +21,31 @@
 
 @media (max-width: 599px) and (min-width: 480px) {
   .dashboard-page-container {
-    --dashboard-ui-scale: 0.72;
+    --dashboard-ui-scale: 0.68;
   }
 }
 
 @media (max-width: 479px) and (min-width: 425px) {
   .dashboard-page-container {
-    --dashboard-ui-scale: 0.72;
+    --dashboard-ui-scale: 0.65;
   }
 }
 
 @media (max-width: 424px) and (min-width: 375px) {
   .dashboard-page-container {
-    --dashboard-ui-scale: 0.68;
+    --dashboard-ui-scale: 0.6;
   }
 }
 
 @media (max-width: 374px) and (min-width: 321px) {
   .dashboard-page-container {
-    --dashboard-ui-scale: 0.65;
+    --dashboard-ui-scale: 0.55;
   }
 }
 
 @media (max-width: 320px) {
   .dashboard-page-container {
-    --dashboard-ui-scale: 0.55;
+    --dashboard-ui-scale: 0.5;
   }
 }
 

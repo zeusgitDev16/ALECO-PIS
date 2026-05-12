@@ -64,7 +64,7 @@ export default function B2BContactList({
   if (loading) {
     return (
       <div className="b2b-contact-list-loading">
-        <div className="b2b-spinner" />
+        <div className="b2b-loader-spinner" />
         <p>Loading contacts...</p>
       </div>
     );

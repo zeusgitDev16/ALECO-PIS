@@ -110,6 +110,37 @@ router.put('/b2b-mail/contacts/:id', requireStaff, async (req, res) => {
     }
 });
 
+router.delete('/b2b-mail/contacts/:id', requireStaff, async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
+        const [[row]] = await pool.execute(
+            `SELECT contact_name, email FROM aleco_b2b_contacts WHERE id = ? LIMIT 1`,
+            [id]
+        );
+        if (!row) return res.status(404).json({ success: false, message: 'Contact not found.' });
+        await pool.execute(
+            `DELETE FROM aleco_b2b_contact_verifications WHERE contact_id = ?`,
+            [id]
+        );
+        await pool.execute(
+            `DELETE FROM aleco_b2b_contacts WHERE id = ?`,
+            [id]
+        );
+        await recordB2BMailNotification(pool, {
+            eventType: B2B_MAIL_EVENT.CONTACT_DELETED,
+            subjectEmail: row.email || null,
+            subjectName: row.contact_name || null,
+            detail: `Contact #${id} permanently deleted`,
+            actorEmail: actorEmailFromReq(req),
+        });
+        return res.json({ success: true });
+    } catch (err) {
+        console.error('❌ DELETE /b2b-mail/contacts/:id:', err);
+        return res.status(500).json({ success: false, message: 'Failed to delete contact.' });
+    }
+});
+
 router.patch('/b2b-mail/contacts/:id/active', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);

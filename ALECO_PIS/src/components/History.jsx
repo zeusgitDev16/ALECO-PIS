@@ -8,6 +8,7 @@ import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/TicketTableView.css';
 import '../CSS/History.css';
+import '../CSS/HistoryUIScale.css';
 
 const MODULE_META = {
     tickets: { label: 'Tickets' },

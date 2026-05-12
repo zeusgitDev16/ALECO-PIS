@@ -86,19 +86,24 @@
     width: 100%;
 }
 
-.ticket-loading-state .chaotic-orbit {
-    --uib-color: black;
-    --uib-size: 28px;
+.ticket-loading-state .ticket-spinner {
+    width: calc(40px * var(--ticket-ui-scale, 1));
+    height: calc(40px * var(--ticket-ui-scale, 1));
+    border: calc(4px * var(--ticket-ui-scale, 1)) solid var(--border-color);
+    border-top-color: var(--text-secondary);
+    border-radius: 50%;
+    animation: ticket-spin 0.8s linear infinite;
 }
 
-[data-theme="dark"] .ticket-loading-state .chaotic-orbit {
-    --uib-color: var(--accent-primary, #7c3aed);
+@keyframes ticket-spin {
+    to { transform: rotate(360deg); }
 }
 
 .ticket-loading-label {
-    font-size: 12px;
+    font-size: calc(0.75rem * var(--ticket-ui-scale, 1));
     font-weight: 500;
     color: var(--text-secondary);
+    margin-top: calc(10px * var(--ticket-ui-scale, 1));
 }
 
 .group-badge-parent {

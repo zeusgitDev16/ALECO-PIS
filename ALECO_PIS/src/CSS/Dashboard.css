@@ -39,6 +39,23 @@
     }
 }
 
+/* --- Dashboard Modular Font Scale (matches History.css clamp() pattern) --- */
+.dash-text-xs {
+    font-size: clamp(0.38rem, calc(0.6rem * var(--dashboard-ui-scale, 1)), 0.63rem);
+}
+.dash-text-sm {
+    font-size: clamp(0.42rem, calc(0.65rem * var(--dashboard-ui-scale, 1)), 0.68rem);
+}
+.dash-text-md {
+    font-size: clamp(0.55rem, calc(0.8rem * var(--dashboard-ui-scale, 1)), 0.85rem);
+}
+.dash-text-lg {
+    font-size: clamp(0.62rem, calc(0.95rem * var(--dashboard-ui-scale, 1)), 1.05rem);
+}
+.dash-text-xl {
+    font-size: clamp(0.85rem, calc(1.2rem * var(--dashboard-ui-scale, 1)), 1.4rem);
+}
+
 /* =========================================
    ADMIN LAYOUT ARCHITECTURE
    Dual pane: sidebar | (top bar + scrolling main). No document/body scroll.
@@ -205,27 +222,55 @@ body.admin-app-scroll-lock {
 .dash-kpi-icon--b2b      { background: rgba(34,197,94,0.1);   color: #22c55e; }
 .dash-kpi-icon--crew     { background: rgba(99,102,241,0.1);  color: #6366f1; }
 
-.dash-kpi-body { display: flex; flex-direction: column; min-width: 0; }
+/* Icon skeleton that matches actual icon dimensions with CSS scaling */
+.kpi-icon-skeleton {
+    width: calc(36px * var(--dashboard-ui-scale, 1));
+    height: calc(36px * var(--dashboard-ui-scale, 1));
+    border-radius: calc(10px * var(--dashboard-ui-scale, 1));
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--border-color) 30%, transparent) 25%,
+        color-mix(in srgb, var(--border-color) 50%, transparent) 50%,
+        color-mix(in srgb, var(--border-color) 30%, transparent) 75%
+    );
+    background-size: 200% 100%;
+    animation: kpi-skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes kpi-skeleton-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.dash-kpi-body { display: flex; flex-direction: column; min-width: 0; flex: 1; overflow: hidden; }
 .dash-kpi-label {
-    font-size: calc(0.6rem * var(--dashboard-ui-scale, 1));
+    font-size: clamp(0.42rem, calc(0.65rem * var(--dashboard-ui-scale, 1)), 0.68rem);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--text-secondary);
+    line-height: 1.2;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 .dash-kpi-value {
-    font-size: calc(1.35rem * var(--dashboard-ui-scale, 1));
+    font-size: clamp(0.62rem, calc(0.95rem * var(--dashboard-ui-scale, 1)), 1.05rem);
     font-weight: 900;
     color: var(--text-header);
     line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 /* --- AUXILIARY GRID (2-col side-by-side) --- */
 .dashboard-auxiliary-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: calc(16px * var(--dashboard-ui-scale, 1));
     width: 100%;
 }
 @media (max-width: 900px) { .dashboard-auxiliary-grid { grid-template-columns: 1fr; } }
@@ -352,7 +397,7 @@ body.admin-app-scroll-lock {
     padding-bottom: 80px;
     display: block;
     width: 100%;
-    min-height: 580vh;
+    min-height: 980vh;
     box-sizing: border-box;
 }
 
@@ -377,7 +422,7 @@ body.admin-app-scroll-lock {
     margin-bottom: 40px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: calc(24px * var(--dashboard-ui-scale, 1));
 }
 
 /* Invisible parent container for Power Advisories and Ticket Features 
@@ -385,12 +430,12 @@ body.admin-app-scroll-lock {
 .dashboard-features-grid {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: calc(20px * var(--dashboard-ui-scale, 1));
     width: 100%;
 }
 
-@media (max-width: 1366px) { .dashboard-features-grid { gap: 24px; } }
-@media (max-width: 1024px) { .dashboard-features-grid { gap: 20px; } }
+@media (max-width: 1366px) { .dashboard-features-grid { gap: calc(24px * var(--dashboard-ui-scale, 1)); } }
+@media (max-width: 1024px) { .dashboard-features-grid { gap: calc(20px * var(--dashboard-ui-scale, 1)); } }
 
 /* Internal container to wrap all elements inside the scrollable feature boxes.
    The bottom padding ensures that content isn't cut off by the container's 70vh limit. */
@@ -406,16 +451,25 @@ body.admin-app-scroll-lock {
     margin-bottom: 6px;
 }
 
-.dashboard-power-advisories-wrapper .column-section-title {
+/* Unified section title and description styling across all dashboard wrappers */
+.dashboard-power-advisories-wrapper .column-section-title,
+.dashboard-ticket-features-wrapper .column-section-title,
+.dashboard-b2b-mail-wrapper .column-section-title,
+.dashboard-personnel-wrapper .column-section-title,
+.dashboard-mini-wrapper .column-section-title {
     margin: 0 !important;
-    font-size: calc(0.9rem * var(--dashboard-ui-scale, 1)) !important; /* Shrunk further for unified density */
+    font-size: clamp(0.55rem, calc(0.9rem * var(--dashboard-ui-scale, 1)), 0.95rem) !important;
     letter-spacing: -0.01em;
     color: var(--text-header);
 }
 
-.dashboard-power-advisories-wrapper .widget-text {
+.dashboard-power-advisories-wrapper .widget-text,
+.dashboard-ticket-features-wrapper .widget-text,
+.dashboard-b2b-mail-wrapper .widget-text,
+.dashboard-personnel-wrapper .widget-text,
+.dashboard-mini-wrapper .widget-text {
     margin: 0 !important;
-    font-size: calc(0.7rem * var(--dashboard-ui-scale, 1)) !important; /* Scaled down section description */
+    font-size: clamp(0.42rem, calc(0.7rem * var(--dashboard-ui-scale, 1)), 0.75rem) !important;
 }
 
 .dashboard-power-advisories-wrapper,
@@ -638,10 +692,10 @@ body.admin-app-scroll-lock {
 .personnel-analytics-layout {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: calc(20px * var(--dashboard-ui-scale, 1));
     width: 100%;
-    margin-top: 10px;
-    padding-bottom: 60px; /* Added internal runway to prevent items from being cut off by the wrapper boundary */
+    margin-top: calc(10px * var(--dashboard-ui-scale, 1));
+    padding-bottom: calc(60px * var(--dashboard-ui-scale, 1)); /* Added internal runway to prevent items from being cut off by the wrapper boundary */
     flex-grow: 1; /* Allow the layout to grow and potentially overflow its parent */
     min-height: 0; /* Critical for enabling scrolling within flex-based list containers */
 }
@@ -649,8 +703,8 @@ body.admin-app-scroll-lock {
 /* Specialized row for delivery success/failure trends */
 .b2b-delivery-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(calc(180px * var(--dashboard-ui-scale, 1)), 1fr));
+    gap: calc(12px * var(--dashboard-ui-scale, 1));
     width: 100%;
 }
 
@@ -658,7 +712,7 @@ body.admin-app-scroll-lock {
 .b2b-activity-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: calc(8px * var(--dashboard-ui-scale, 1));
     width: 100%;
 }
 
@@ -709,7 +763,7 @@ body.admin-app-scroll-lock {
 .personnel-activity-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: calc(8px * var(--dashboard-ui-scale, 1));
     width: 100%;
 }
 
@@ -746,6 +800,57 @@ body.admin-app-scroll-lock {
     font-size: 0.65rem;
     color: var(--text-secondary);
     opacity: 0.8;
+}
+
+/* ==========================================================================
+   MOBILE ACTIVITY LIST OPTIMIZATIONS
+   ========================================================================== */
+@media (max-width: 768px) {
+    .b2b-activity-item,
+    .personnel-activity-item {
+        padding: calc(10px * var(--dashboard-ui-scale, 1)) calc(12px * var(--dashboard-ui-scale, 1));
+        min-height: calc(50px * var(--dashboard-ui-scale, 1));
+    }
+
+    .b2b-activity-label,
+    .personnel-activity-label {
+        font-size: clamp(0.55rem, calc(0.75rem * var(--dashboard-ui-scale, 1)), 0.8rem);
+    }
+
+    .b2b-activity-time,
+    .personnel-activity-time {
+        font-size: clamp(0.45rem, calc(0.65rem * var(--dashboard-ui-scale, 1)), 0.7rem);
+    }
+
+    /* Ensure status tags are tappable */
+    .feeder-status-tag {
+        padding: calc(4px * var(--dashboard-ui-scale, 1)) calc(8px * var(--dashboard-ui-scale, 1));
+        font-size: clamp(0.5rem, calc(0.65rem * var(--dashboard-ui-scale, 1)), 0.7rem);
+        min-width: calc(50px * var(--dashboard-ui-scale, 1));
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Stack activity items vertically on very small screens */
+    .b2b-activity-item,
+    .personnel-activity-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: calc(6px * var(--dashboard-ui-scale, 1));
+    }
+
+    .b2b-activity-content,
+    .personnel-activity-content {
+        width: 100%;
+    }
+
+    /* Move status tag to be inline but at end */
+    .b2b-activity-item .feeder-status-tag,
+    .personnel-activity-item .feeder-status-tag {
+        align-self: flex-end;
+        margin-top: calc(-20px * var(--dashboard-ui-scale, 1));
+    }
 }
 
 .dashboard-b2b-mail-wrapper .stat-card,
@@ -851,17 +956,279 @@ body.admin-app-scroll-lock {
 .rescheduled .stat-icon-box { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
 
 .stat-content { display: flex; flex-direction: column; min-width: 0; }
-.stat-label { font-size: calc(0.65rem * var(--dashboard-ui-scale, 1)); font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
-.stat-number { font-size: calc(1.5rem * var(--dashboard-ui-scale, 1)); font-weight: 900; margin: 2px 0; color: var(--text-header); line-height: 1.1; }
-.stat-trend { font-size: calc(0.68rem * var(--dashboard-ui-scale, 1)); font-weight: 600; opacity: 0.8; }
+.stat-label { font-size: clamp(0.42rem, calc(0.65rem * var(--dashboard-ui-scale, 1)), 0.68rem); font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
+.stat-number { font-size: clamp(0.72rem, calc(1.2rem * var(--dashboard-ui-scale, 1)), 1.5rem); font-weight: 900; margin: 2px 0; color: var(--text-header); line-height: 1.1; }
+.stat-trend { font-size: clamp(0.38rem, calc(0.6rem * var(--dashboard-ui-scale, 1)), 0.63rem); font-weight: 600; opacity: 0.8; }
 .stat-trend.positive { color: #22c55e; }
 .stat-trend.negative { color: #ef4444; }
 
-/* Charts Layout */
+/* ==========================================================================
+   UNIFIED DASHBOARD SUMMARY CARDS (matches History.css history-summary-card)
+   ========================================================================== */
+
+.dash-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(calc(100px * var(--dashboard-ui-scale, 1)), 1fr));
+    gap: calc(7px * var(--dashboard-ui-scale, 1));
+    margin-bottom: calc(10px * var(--dashboard-ui-scale, 1));
+}
+
+/* Force equal columns when we know the count */
+.dash-summary-grid.count-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dash-summary-grid.count-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.dash-summary-grid.count-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.dash-summary-grid.count-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+
+@media (max-width: 1024px) {
+    .dash-summary-grid.count-6,
+    .dash-summary-grid.count-7 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+    .dash-summary-grid,
+    .dash-summary-grid.count-4,
+    .dash-summary-grid.count-5,
+    .dash-summary-grid.count-6,
+    .dash-summary-grid.count-7 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    /* Stack major sections vertically on mobile */
+    .dashboard-auxiliary-grid {
+        grid-template-columns: 1fr;
+        gap: calc(12px * var(--dashboard-ui-scale, 1));
+    }
+
+    /* Touch-friendly minimum heights */
+    .dash-summary-card {
+        min-height: calc(70px * var(--dashboard-ui-scale, 1));
+        padding: calc(10px * var(--dashboard-ui-scale, 1)) calc(12px * var(--dashboard-ui-scale, 1));
+    }
+
+    /* Increase tap targets */
+    .dash-summary-title,
+    .dash-summary-count,
+    .dash-summary-trend {
+        min-height: 14px; /* Ensure text is tappable */
+    }
+}
+
+@media (max-width: 480px) {
+    /* Single column for all grids on very small screens */
+    .dash-summary-grid.count-3,
+    .dash-summary-grid.count-4 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+
+    /* Slightly larger touch targets on smallest screens */
+    .dash-summary-card {
+        min-height: calc(75px * var(--dashboard-ui-scale, 1));
+    }
+
+    /* Stack charts vertically */
+    .charts-grid-main,
+    .charts-grid-secondary {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Reduce chart height on mobile */
+    .chart-wrapper {
+        height: calc(140px * var(--dashboard-ui-scale, 1));
+    }
+
+    /* Mobile nav actions already handled by existing CSS */
+}
+
+.dash-summary-card {
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    border-radius: calc(10px * var(--dashboard-ui-scale, 1));
+    padding: calc(7px * var(--dashboard-ui-scale, 1)) calc(9px * var(--dashboard-ui-scale, 1));
+    text-align: left;
+    cursor: default;
+    border-bottom: 3px solid transparent;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    min-height: calc(60px * var(--dashboard-ui-scale, 1));
+}
+
+.dash-summary-card:hover {
+    transform: translateY(-2px);
+}
+
+.dash-summary-card.active {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Color variants matching History.css */
+.dash-summary-card.outage {
+    border-bottom-color: #ef4444;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.08) 100%);
+}
+
+.dash-summary-card.scheduled {
+    border-bottom-color: #f59e0b;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(245, 158, 11, 0.08) 100%);
+}
+
+.dash-summary-card.ongoing {
+    border-bottom-color: #6366f1;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.08) 100%);
+}
+
+.dash-summary-card.restored {
+    border-bottom-color: #22c55e;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.08) 100%);
+}
+
+.dash-summary-card.pending {
+    border-bottom-color: #3b82f6;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.08) 100%);
+}
+
+.dash-summary-card.total {
+    border-bottom-color: #2563eb;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(37, 99, 235, 0.08) 100%);
+}
+
+.dash-summary-card.memo {
+    border-bottom-color: #ec4899;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(236, 72, 153, 0.08) 100%);
+}
+
+.dash-summary-card.crew {
+    border-bottom-color: #0ea5e9;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(14, 165, 233, 0.08) 100%);
+}
+
+.dash-summary-card.personnel {
+    border-bottom-color: #8b5cf6;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.08) 100%);
+}
+
+.dash-summary-card.user {
+    border-bottom-color: #06b6d4;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(6, 182, 212, 0.08) 100%);
+}
+
+.dash-summary-card.delivered {
+    border-bottom-color: #22c55e;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.08) 100%);
+}
+
+.dash-summary-card.failed {
+    border-bottom-color: #ef4444;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.08) 100%);
+}
+
+.dash-summary-card.cancelled {
+    border-bottom-color: #6b7280;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(107, 114, 128, 0.08) 100%);
+}
+
+.dash-summary-card.rescheduled {
+    border-bottom-color: #f43f5e;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(244, 63, 94, 0.08) 100%);
+}
+
+.dash-summary-card.denied {
+    border-bottom-color: #f97316;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(249, 115, 22, 0.08) 100%);
+}
+
+.dash-summary-card.urgent {
+    border-bottom-color: #dc2626;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(220, 38, 38, 0.08) 100%);
+}
+
+/* Active/Top module highlight (matches History) */
+.dash-summary-card.active.outage { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35), inset 0 0 0 1px rgba(239, 68, 68, 0.2); }
+.dash-summary-card.active.scheduled { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35), inset 0 0 0 1px rgba(245, 158, 11, 0.2); }
+.dash-summary-card.active.ongoing { box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), inset 0 0 0 1px rgba(99, 102, 241, 0.2); }
+.dash-summary-card.active.restored { box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35), inset 0 0 0 1px rgba(34, 197, 94, 0.2); }
+.dash-summary-card.active.pending { box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35), inset 0 0 0 1px rgba(59, 130, 246, 0.2); }
+.dash-summary-card.active.total { box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35), inset 0 0 0 1px rgba(37, 99, 235, 0.2); }
+.dash-summary-card.active.memo { box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.35), inset 0 0 0 1px rgba(236, 72, 153, 0.2); }
+.dash-summary-card.active.crew { box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.35), inset 0 0 0 1px rgba(14, 165, 233, 0.2); }
+.dash-summary-card.active.personnel { box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.35), inset 0 0 0 1px rgba(139, 92, 246, 0.2); }
+.dash-summary-card.active.user { box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.35), inset 0 0 0 1px rgba(6, 182, 212, 0.2); }
+.dash-summary-card.active.cancelled { box-shadow: 0 0 0 1px rgba(107, 114, 128, 0.35), inset 0 0 0 1px rgba(107, 114, 128, 0.2); }
+.dash-summary-card.active.rescheduled { box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.35), inset 0 0 0 1px rgba(244, 63, 94, 0.2); }
+.dash-summary-card.active.delivered { box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35), inset 0 0 0 1px rgba(34, 197, 94, 0.2); }
+.dash-summary-card.active.failed { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35), inset 0 0 0 1px rgba(239, 68, 68, 0.2); }
+.dash-summary-card.active.denied { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35), inset 0 0 0 1px rgba(249, 115, 22, 0.2); }
+.dash-summary-card.active.urgent { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35), inset 0 0 0 1px rgba(220, 38, 38, 0.2); }
+
+[data-theme='light'] .dash-summary-card {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme='light'] .dash-summary-card.active {
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+}
+
+/* Typography - matches History.css exactly + overflow prevention */
+.dash-summary-title {
+    font-size: clamp(0.42rem, calc(0.65rem * var(--dashboard-ui-scale, 1)), 0.68rem);
+    color: var(--text-secondary);
+    margin-bottom: calc(3px * var(--dashboard-ui-scale, 1));
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.dash-summary-count {
+    font-size: clamp(0.62rem, calc(0.95rem * var(--dashboard-ui-scale, 1)), 1.05rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-header);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.dash-summary-trend {
+    margin-top: calc(2px * var(--dashboard-ui-scale, 1));
+    font-size: clamp(0.38rem, calc(0.6rem * var(--dashboard-ui-scale, 1)), 0.63rem);
+    font-weight: 600;
+    opacity: 0.85;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* Pulse animation for top/highlighted cards (matches History) */
+@keyframes dash-top-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.15); }
+    70% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+.dash-summary-card.is-highlighted {
+    animation: dash-top-pulse 2.1s infinite;
+}
+
+[data-theme='light'] .dash-summary-card.is-highlighted {
+    animation: none;
+}
+
+/* Skeleton state styling */
+.dash-summary-card .react-loading-skeleton {
+    border-radius: calc(4px * var(--dashboard-ui-scale, 1));
+}
+
+/* ==========================================================================
+   Charts Layout
+   ========================================================================== */
 .charts-grid-main, .charts-grid-secondary {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(auto-fit, minmax(calc(320px * var(--dashboard-ui-scale, 1)), 1fr));
+    gap: calc(10px * var(--dashboard-ui-scale, 1));
 }
 
 @media (max-width: 900px) {
@@ -899,7 +1266,7 @@ body.admin-app-scroll-lock {
 
 .chart-header-group h4 {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: clamp(0.65rem, calc(0.9rem * var(--dashboard-ui-scale, 1)), 0.95rem);
     font-weight: 700;
     color: var(--text-header);
 }
@@ -908,16 +1275,16 @@ body.admin-app-scroll-lock {
 
 .chart-wrapper {
     width: 100%;
+    height: calc(180px * var(--dashboard-ui-scale, 1));
     display: flex;
     justify-content: center;
-    height: calc(180px * var(--dashboard-ui-scale, 1));
 }
 
 /* Location Insight Styling */
 .location-insight-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: calc(12px * var(--dashboard-ui-scale, 1));
 }
 
 .location-row { display: flex; flex-direction: column; gap: 6px; }

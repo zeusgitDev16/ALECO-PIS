@@ -432,70 +432,75 @@ const AdminDashboard = () => {
                         <p className="header-subtitle">{currentDate}</p>
                     </div>
                     <div className="dashboard-nav-actions">
-                        <button className="dash-nav-btn" onClick={() => document.getElementById('power-grid-section')?.scrollIntoView({ behavior: 'smooth' })}><FaBolt /> Advisories</button>
-                        <button className="dash-nav-btn" onClick={() => document.getElementById('ticket-overview-section')?.scrollIntoView({ behavior: 'smooth' })}><FaTicketAlt /> Tickets</button>
-                        <button className="dash-nav-btn" onClick={() => document.getElementById('memo-users-section')?.scrollIntoView({ behavior: 'smooth' })}><FaFileAlt /> Memos</button>
-                        <button className="dash-nav-btn" onClick={() => document.getElementById('b2b-personnel-section')?.scrollIntoView({ behavior: 'smooth' })}><FaEnvelope /> B2B & Crew</button>
+                        <button className="dash-nav-btn" aria-label="Power Advisories" onClick={() => document.getElementById('power-grid-section')?.scrollIntoView({ behavior: 'smooth' })}><FaBolt /> <span className="dash-nav-text">Advisories</span></button>
+                        <button className="dash-nav-btn" aria-label="Tickets" onClick={() => document.getElementById('ticket-overview-section')?.scrollIntoView({ behavior: 'smooth' })}><FaTicketAlt /> <span className="dash-nav-text">Tickets</span></button>
+                        <button className="dash-nav-btn" aria-label="Memos" onClick={() => document.getElementById('memo-users-section')?.scrollIntoView({ behavior: 'smooth' })}><FaFileAlt /> <span className="dash-nav-text">Memos</span></button>
+                        <button className="dash-nav-btn" aria-label="B2B and Crew" onClick={() => document.getElementById('b2b-personnel-section')?.scrollIntoView({ behavior: 'smooth' })}><FaEnvelope /> <span className="dash-nav-text">B2B & Crew</span></button>
                     </div>
                 </div>
 
-                {/* ── KPI Ribbon ── */}
+                {/* ── KPI Ribbon ── Unified Structural Skeleton Loading */}
+                {(() => {
+                    const kpiLoading = loading || loadingAdvisories || memosLoading || usersLoading || b2bLoading || personnelLoading;
+                    return (
                 <div className="dash-kpi-ribbon">
                     <div className="dash-kpi-card">
                         <div className="dash-kpi-icon dash-kpi-icon--tickets">
-                            {loading ? <Skeleton width={32} height={32} circle /> : <FaTicketAlt />}
+                            {kpiLoading ? <div className="kpi-icon-skeleton" /> : <FaTicketAlt />}
                         </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">{loading ? <Skeleton width={80} height={14} /> : 'Total Tickets'}</span>
-                            <span className="dash-kpi-value">{loading ? <Skeleton width={60} height={24} /> : ticketStats.total}</span>
+                            <span className="dash-kpi-label">{kpiLoading ? <Skeleton width={75} height={12} /> : 'Total Tickets'}</span>
+                            <span className="dash-kpi-value">{kpiLoading ? <Skeleton width={35} height={20} /> : ticketStats.total}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
                         <div className="dash-kpi-icon dash-kpi-icon--outage">
-                            {loadingAdvisories ? <Skeleton width={32} height={32} circle /> : <FaBolt />}
+                            {kpiLoading ? <div className="kpi-icon-skeleton" /> : <FaBolt />}
                         </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">{loadingAdvisories ? <Skeleton width={80} height={14} /> : 'Active Outages'}</span>
-                            <span className="dash-kpi-value">{loadingAdvisories ? <Skeleton width={60} height={24} /> : interruptionStats.active}</span>
+                            <span className="dash-kpi-label">{kpiLoading ? <Skeleton width={85} height={12} /> : 'Active Outages'}</span>
+                            <span className="dash-kpi-value">{kpiLoading ? <Skeleton width={35} height={20} /> : interruptionStats.active}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
                         <div className="dash-kpi-icon dash-kpi-icon--memo">
-                            {memosLoading ? <Skeleton width={32} height={32} circle /> : <FaFileAlt />}
+                            {kpiLoading ? <div className="kpi-icon-skeleton" /> : <FaFileAlt />}
                         </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">{memosLoading ? <Skeleton width={80} height={14} /> : 'Service Memos'}</span>
-                            <span className="dash-kpi-value">{memosLoading ? <Skeleton width={60} height={24} /> : memoStats.total}</span>
+                            <span className="dash-kpi-label">{kpiLoading ? <Skeleton width={90} height={12} /> : 'Service Memos'}</span>
+                            <span className="dash-kpi-value">{kpiLoading ? <Skeleton width={35} height={20} /> : memoStats.total}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
                         <div className="dash-kpi-icon dash-kpi-icon--users">
-                            {usersLoading ? <Skeleton width={32} height={32} circle /> : <FaUsers />}
+                            {kpiLoading ? <div className="kpi-icon-skeleton" /> : <FaUsers />}
                         </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">{usersLoading ? <Skeleton width={80} height={14} /> : 'System Users'}</span>
-                            <span className="dash-kpi-value">{usersLoading ? <Skeleton width={60} height={24} /> : userStats.total}</span>
+                            <span className="dash-kpi-label">{kpiLoading ? <Skeleton width={85} height={12} /> : 'System Users'}</span>
+                            <span className="dash-kpi-value">{kpiLoading ? <Skeleton width={35} height={20} /> : userStats.total}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
                         <div className="dash-kpi-icon dash-kpi-icon--b2b">
-                            {b2bLoading ? <Skeleton width={32} height={32} circle /> : <FaEnvelope />}
+                            {kpiLoading ? <div className="kpi-icon-skeleton" /> : <FaEnvelope />}
                         </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">{b2bLoading ? <Skeleton width={80} height={14} /> : 'B2B Sent'}</span>
-                            <span className="dash-kpi-value">{b2bLoading ? <Skeleton width={60} height={24} /> : b2bMailStats.totalSent}</span>
+                            <span className="dash-kpi-label">{kpiLoading ? <Skeleton width={65} height={12} /> : 'B2B Sent'}</span>
+                            <span className="dash-kpi-value">{kpiLoading ? <Skeleton width={35} height={20} /> : b2bMailStats.totalSent}</span>
                         </div>
                     </div>
                     <div className="dash-kpi-card">
                         <div className="dash-kpi-icon dash-kpi-icon--crew">
-                            {personnelLoading ? <Skeleton width={32} height={32} circle /> : <FaTools />}
+                            {kpiLoading ? <div className="kpi-icon-skeleton" /> : <FaTools />}
                         </div>
                         <div className="dash-kpi-body">
-                            <span className="dash-kpi-label">{personnelLoading ? <Skeleton width={80} height={14} /> : 'Active Crews'}</span>
-                            <span className="dash-kpi-value">{personnelLoading ? <Skeleton width={60} height={24} /> : personnelStats.totalCrews}</span>
+                            <span className="dash-kpi-label">{kpiLoading ? <Skeleton width={80} height={12} /> : 'Active Crews'}</span>
+                            <span className="dash-kpi-value">{kpiLoading ? <Skeleton width={35} height={20} /> : personnelStats.totalCrews}</span>
                         </div>
                     </div>
                 </div>
+                    );
+                })()}
 
                 {/* Analytics Section */}
                 <div className="analytics-container">
@@ -507,118 +512,83 @@ const AdminDashboard = () => {
                             <p className="widget-text">Real-time monitoring of power distribution and service advisories.</p>
                         </div>
 
-                        {/* Interruption Summary Stats */}
-                        <div className="stats-grid">
-                            <div className="stat-card urgent">
-                                <div className="stat-icon-box">
-                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaBolt />}
+                        {/* Interruption Summary Stats - Unified Cards */}
+                        <div className="dash-summary-grid count-7">
+                            <div className="dash-summary-card outage">
+                                <div className="dash-summary-title">
+                                    {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Active Outages'}
                                 </div>
-                                <div className="stat-content">
-                                    <span className="stat-label">
-                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Active Outages'}
-                                    </span>
-                                    <h3 className="stat-number">
-                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.active}
-                                    </h3>
-                                    <span className="stat-trend negative">
-                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Unscheduled'}
-                                    </span>
+                                <div className="dash-summary-count">
+                                    {loadingAdvisories ? <Skeleton width={40} height={16} /> : interruptionStats.active}
+                                </div>
+                                <div className="dash-summary-trend">
+                                    {loadingAdvisories ? <Skeleton width={60} height={8} /> : 'Unscheduled'}
                                 </div>
                             </div>
-                            <div className="stat-card pending">
-                                <div className="stat-icon-box">
-                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaCalendarAlt />}
+                            <div className="dash-summary-card pending">
+                                <div className="dash-summary-title">
+                                    {loadingAdvisories ? <Skeleton width={60} height={10} /> : 'Upcoming'}
                                 </div>
-                                <div className="stat-content">
-                                    <span className="stat-label">
-                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Upcoming'}
-                                    </span>
-                                    <h3 className="stat-number">
-                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.upcoming}
-                                    </h3>
-                                    <span className="stat-trend">
-                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Scheduled Maint.'}
-                                    </span>
+                                <div className="dash-summary-count">
+                                    {loadingAdvisories ? <Skeleton width={40} height={16} /> : interruptionStats.upcoming}
+                                </div>
+                                <div className="dash-summary-trend">
+                                    {loadingAdvisories ? <Skeleton width={70} height={8} /> : 'Scheduled Maint.'}
                                 </div>
                             </div>
-                            <div className="stat-card resolved">
-                                <div className="stat-icon-box">
-                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaCheckCircle />}
+                            <div className="dash-summary-card restored">
+                                <div className="dash-summary-title">
+                                    {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Restored (24h)'}
                                 </div>
-                                <div className="stat-content">
-                                    <span className="stat-label">
-                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Restored (24h)'}
-                                    </span>
-                                    <h3 className="stat-number">
-                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.restored24h}
-                                    </h3>
-                                    <span className="stat-trend positive">
-                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Normal Ops'}
-                                    </span>
+                                <div className="dash-summary-count">
+                                    {loadingAdvisories ? <Skeleton width={40} height={16} /> : interruptionStats.restored24h}
+                                </div>
+                                <div className="dash-summary-trend">
+                                    {loadingAdvisories ? <Skeleton width={60} height={8} /> : 'Normal Ops'}
                                 </div>
                             </div>
-                            <div className="stat-card total">
-                                <div className="stat-icon-box">
-                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaListUl />}
+                            <div className="dash-summary-card total">
+                                <div className="dash-summary-title">
+                                    {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Total Recorded'}
                                 </div>
-                                <div className="stat-content">
-                                    <span className="stat-label">
-                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Total Recorded'}
-                                    </span>
-                                    <h3 className="stat-number">
-                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.total}
-                                    </h3>
-                                    <span className="stat-trend">
-                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Advisory Logs'}
-                                    </span>
+                                <div className="dash-summary-count">
+                                    {loadingAdvisories ? <Skeleton width={40} height={16} /> : interruptionStats.total}
+                                </div>
+                                <div className="dash-summary-trend">
+                                    {loadingAdvisories ? <Skeleton width={60} height={8} /> : 'Advisory Logs'}
                                 </div>
                             </div>
-                            <div className="stat-card scheduled">
-                                <div className="stat-icon-box">
-                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaCalendarAlt />}
+                            <div className="dash-summary-card scheduled">
+                                <div className="dash-summary-title">
+                                    {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Total Scheduled'}
                                 </div>
-                                <div className="stat-content">
-                                    <span className="stat-label">
-                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Total Scheduled'}
-                                    </span>
-                                    <h3 className="stat-number">
-                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.scheduledTotal}
-                                    </h3>
-                                    <span className="stat-trend">
-                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Planned Events'}
-                                    </span>
+                                <div className="dash-summary-count">
+                                    {loadingAdvisories ? <Skeleton width={40} height={16} /> : interruptionStats.scheduledTotal}
+                                </div>
+                                <div className="dash-summary-trend">
+                                    {loadingAdvisories ? <Skeleton width={60} height={8} /> : 'Planned Events'}
                                 </div>
                             </div>
-                            <div className="stat-card cancelled">
-                                <div className="stat-icon-box">
-                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaTimesCircle />}
+                            <div className="dash-summary-card cancelled">
+                                <div className="dash-summary-title">
+                                    {loadingAdvisories ? <Skeleton width={60} height={10} /> : 'Cancelled'}
                                 </div>
-                                <div className="stat-content">
-                                    <span className="stat-label">
-                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Cancelled'}
-                                    </span>
-                                    <h3 className="stat-number">
-                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.cancelled}
-                                    </h3>
-                                    <span className="stat-trend">
-                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'No longer active'}
-                                    </span>
+                                <div className="dash-summary-count">
+                                    {loadingAdvisories ? <Skeleton width={40} height={16} /> : interruptionStats.cancelled}
+                                </div>
+                                <div className="dash-summary-trend">
+                                    {loadingAdvisories ? <Skeleton width={70} height={8} /> : 'No longer active'}
                                 </div>
                             </div>
-                            <div className="stat-card rescheduled">
-                                <div className="stat-icon-box">
-                                    {loadingAdvisories ? <Skeleton circle width={32} height={32} /> : <FaClock />}
+                            <div className="dash-summary-card rescheduled">
+                                <div className="dash-summary-title">
+                                    {loadingAdvisories ? <Skeleton width={70} height={10} /> : 'Rescheduled'}
                                 </div>
-                                <div className="stat-content">
-                                    <span className="stat-label">
-                                        {loadingAdvisories ? <Skeleton width={100} height={12} /> : 'Rescheduled'}
-                                    </span>
-                                    <h3 className="stat-number">
-                                        {loadingAdvisories ? <Skeleton width={60} height={28} /> : interruptionStats.rescheduled}
-                                    </h3>
-                                    <span className="stat-trend">
-                                        {loadingAdvisories ? <Skeleton width={80} height={10} /> : 'Adjusted dates'}
-                                    </span>
+                                <div className="dash-summary-count">
+                                    {loadingAdvisories ? <Skeleton width={40} height={16} /> : interruptionStats.rescheduled}
+                                </div>
+                                <div className="dash-summary-trend">
+                                    {loadingAdvisories ? <Skeleton width={60} height={8} /> : 'Adjusted dates'}
                                 </div>
                             </div>
                         </div>
@@ -677,7 +647,7 @@ const AdminDashboard = () => {
                                     <h4>Primary Outage Causes</h4>
                                 </div>
                                 <div className="chart-wrapper">
-                                    <ResponsiveContainer width="100%" height={150}>
+                                    <ResponsiveContainer width="100%" height="100%">
                                         <BarChart layout="vertical" data={interruptionStats.causeData}>
                                             <XAxis type="number" hide />
                                             <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={10} width={90} />
@@ -735,152 +705,54 @@ const AdminDashboard = () => {
                             <p className="widget-text">Real-time performance metrics and distribution.</p>
                         </div>
 
-                    {loading ? (
-                        <>
-                        {/* 1. Top Summary Cards Skeleton */}
-                        <div className="stats-grid">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-                                <div key={i} className="stat-card">
-                                    <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label"><Skeleton width={100} height={16} /></span>
-                                        <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
-                                        <span className="stat-trend"><Skeleton width={80} height={14} /></span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Charts Grid Skeleton */}
-                        <div className="charts-grid-main">
-                            <div className="chart-card">
-                                <div className="chart-header-group">
-                                    <Skeleton width={24} height={24} circle />
-                                    <h4><Skeleton width={200} height={20} /></h4>
-                                </div>
-                                <div className="chart-wrapper">
-                                    <Skeleton width="100%" height={170} />
-                                </div>
+                        {/* 1. Top Summary Cards - Unified */}
+                        <div className="dash-summary-grid count-9">
+                            <div className="dash-summary-card total">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={70} height={10} /> : 'Total Tickets'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.total}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : '+5% from yesterday'}</div>
                             </div>
-                            <div className="chart-card">
-                                <div className="chart-header-group">
-                                    <Skeleton width={24} height={24} circle />
-                                    <h4><Skeleton width={200} height={20} /></h4>
-                                </div>
-                                <div className="chart-wrapper">
-                                    <Skeleton width="100%" height={170} />
-                                </div>
+                            <div className="dash-summary-card pending">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={50} height={10} /> : 'Pending'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.pending}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Action required'}</div>
                             </div>
-                        </div>
-
-                        <div className="charts-grid-secondary">
-                            <div className="chart-card">
-                                <div className="chart-header-group">
-                                    <Skeleton width={24} height={24} circle />
-                                    <h4><Skeleton width={200} height={20} /></h4>
-                                </div>
-                                <div className="chart-wrapper">
-                                    <Skeleton width="100%" height={150} />
-                                </div>
+                            <div className="dash-summary-card ongoing">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={50} height={10} /> : 'Ongoing'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.ongoing}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Crews on field'}</div>
                             </div>
-                            <div className="chart-card">
-                                <div className="chart-header-group">
-                                    <Skeleton width={24} height={24} circle />
-                                    <h4><Skeleton width={200} height={20} /></h4>
-                                </div>
-                                <div className="location-insight-list">
-                                    {[1, 2, 3, 4].map((i) => (
-                                        <div key={i} className="location-row">
-                                            <div className="loc-info">
-                                                <span><Skeleton width={80} height={14} /></span>
-                                                <span><Skeleton width={40} height={14} /></span>
-                                            </div>
-                                            <div className="loc-bar-bg">
-                                                <Skeleton width="100%" height={8} />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="dash-summary-card restored">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={50} height={10} /> : 'Resolved'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.resolved}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : '92% success rate'}</div>
+                            </div>
+                            <div className="dash-summary-card outage">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={60} height={10} /> : 'Unresolved'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.unresolved}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Needs review'}</div>
+                            </div>
+                            <div className="dash-summary-card cancelled">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={70} height={10} /> : 'No Fault Found'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.nofault}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Verified issue'}</div>
+                            </div>
+                            <div className="dash-summary-card denied">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={70} height={10} /> : 'Access Denied'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.denied}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Restricted area'}</div>
+                            </div>
+                            <div className="dash-summary-card urgent">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={40} height={10} /> : 'Urgent'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.urgent}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'High priority'}</div>
+                            </div>
+                            <div className="dash-summary-card memo">
+                                <div className="dash-summary-title">{loading ? <Skeleton width={60} height={10} /> : 'Memo Linked'}</div>
+                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.memoLinked}</div>
+                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Service Memos'}</div>
                             </div>
                         </div>
-                        </>
-                    ) : (
-                    <>
-                    {/* 1. Top Summary Cards */}
-                    <div className="stats-grid">
-                        <div className="stat-card total">
-                            <div className="stat-icon-box"><FaTicketAlt /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">Total Tickets</span>
-                                <h3 className="stat-number">{ticketStats.total}</h3>
-                                <span className="stat-trend positive">+5% from yesterday</span>
-                            </div>
-                        </div>
-                        <div className="stat-card pending">
-                            <div className="stat-icon-box"><FaClock /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">Pending</span>
-                                <h3 className="stat-number">{ticketStats.pending}</h3>
-                                <span className="stat-trend negative">Action required</span>
-                            </div>
-                        </div>
-                        <div className="stat-card ongoing">
-                            <div className="stat-icon-box"><FaTools /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">Ongoing</span>
-                                <h3 className="stat-number">{ticketStats.ongoing}</h3>
-                                <span className="stat-trend">Crews on field</span>
-                            </div>
-                        </div>
-                        <div className="stat-card resolved">
-                            <div className="stat-icon-box"><FaCheckCircle /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">Resolved</span>
-                                <h3 className="stat-number">{ticketStats.resolved}</h3>
-                                <span className="stat-trend positive">92% success rate</span>
-                            </div>
-                        </div>
-                        <div className="stat-card unresolved">
-                            <div className="stat-icon-box"><FaExclamationCircle /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">Unresolved</span>
-                                <h3 className="stat-number">{ticketStats.unresolved}</h3>
-                                <span className="stat-trend negative">Needs review</span>
-                            </div>
-                        </div>
-                        <div className="stat-card nofault">
-                            <div className="stat-icon-box"><FaSearch /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">No Fault Found</span>
-                                <h3 className="stat-number">{ticketStats.nofault}</h3>
-                                <span className="stat-trend">Verified issue</span>
-                            </div>
-                        </div>
-                        <div className="stat-card denied">
-                            <div className="stat-icon-box"><FaLock /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">Access Denied</span>
-                                <h3 className="stat-number">{ticketStats.denied}</h3>
-                                <span className="stat-trend negative">Restricted area</span>
-                            </div>
-                        </div>
-                        <div className="stat-card urgent">
-                            <div className="stat-icon-box"><FaExclamationTriangle /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">Urgent</span>
-                                <h3 className="stat-number">{ticketStats.urgent}</h3>
-                                <span className="stat-trend negative">High priority</span>
-                            </div>
-                        </div>
-                        <div className="stat-card memo">
-                            <div className="stat-icon-box"><FaListUl /></div>
-                            <div className="stat-content">
-                                <span className="stat-label">Memo Linked</span>
-                                <h3 className="stat-number">{ticketStats.memoLinked}</h3>
-                                <span className="stat-trend">Service Memos</span>
-                            </div>
-                        </div>
-                    </div>
 
                     {/* 2 & 3. Main Charts Row */}
                     <div className="charts-grid-main">
@@ -890,7 +762,7 @@ const AdminDashboard = () => {
                                 <h4>Ticket Status Distribution</h4>
                             </div>
                             <div className="chart-wrapper">
-                                <ResponsiveContainer width="100%" height={170}>
+                                <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
                                             data={[
@@ -922,7 +794,7 @@ const AdminDashboard = () => {
                                 <h4>Monthly Ticket Trends</h4>
                             </div>
                             <div className="chart-wrapper">
-                                <ResponsiveContainer width="100%" height={170}>
+                                <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={ticketStats.trendData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={12} />
@@ -943,7 +815,7 @@ const AdminDashboard = () => {
                                 <h4>Ticket Category Breakdown</h4>
                             </div>
                             <div className="chart-wrapper">
-                                <ResponsiveContainer width="100%" height={150}>
+                                <ResponsiveContainer width="100%" height="100%">
                                     <BarChart layout="vertical" data={ticketStats.categoryData}>
                                         <XAxis type="number" hide />
                                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} width={80} />
@@ -974,8 +846,6 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                     </div>
-                    </>
-                    )}
                     </div> {/* End of Ticket Overview & Analytics Wrapper */}
 
                     {/* ── B2B Mail + Personnel side-by-side ── */}
@@ -987,104 +857,40 @@ const AdminDashboard = () => {
                             <p className="widget-text">Tracking of outgoing business notifications and partner communications.</p>
                         </div>
                         
-                        {b2bLoading ? (
-                            <div className="b2b-analytics-layout">
-                                {/* B2B Mail Summary Stats Skeleton */}
-                                <div className="stats-grid">
-                                    {[1, 2, 3, 4].map((i) => (
-                                        <div key={i} className="stat-card">
-                                            <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
-                                            <div className="stat-content">
-                                                <span className="stat-label"><Skeleton width={100} height={16} /></span>
-                                                <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
-                                                <span className="stat-trend"><Skeleton width={80} height={14} /></span>
-                                            </div>
-                                        </div>
-                                    ))}
+                        <div className="b2b-analytics-layout">
+                            {/* B2B Mail Summary Stats - Unified Cards */}
+                            <div className="dash-summary-grid count-4">
+                                <div className="dash-summary-card total">
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={60} height={10} /> : 'Total Sent'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.totalSent}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={50} height={8} /> : 'All Time'}</div>
                                 </div>
-
-                                {/* Charts Grid Skeleton */}
-                                <div className="charts-grid-main">
-                                    <div className="chart-card">
-                                        <div className="chart-header-group">
-                                            <Skeleton width={24} height={24} circle />
-                                            <h4><Skeleton width={200} height={20} /></h4>
-                                        </div>
-                                        <div className="chart-wrapper">
-                                            <Skeleton width="100%" height={180} />
-                                        </div>
-                                    </div>
-                                    <div className="chart-card">
-                                        <div className="chart-header-group">
-                                            <Skeleton width={24} height={24} circle />
-                                            <h4><Skeleton width={200} height={20} /></h4>
-                                        </div>
-                                        <div className="chart-wrapper">
-                                            <Skeleton width="100%" height={180} />
-                                        </div>
-                                    </div>
+                                <div className="dash-summary-card delivered">
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={60} height={10} /> : 'Delivered'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.delivered}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={60} height={8} /> : 'Success Rate'}</div>
                                 </div>
-
-                                {/* Activity List Skeleton */}
-                                <div className="b2b-activity-list">
-                                    {[1, 2, 3, 4, 5].map((i) => (
-                                        <div key={i} className="b2b-activity-item">
-                                            <div className="b2b-activity-content">
-                                                <span className="b2b-activity-label"><Skeleton width={150} height={14} /></span>
-                                                <span className="b2b-activity-time"><Skeleton width={120} height={12} /></span>
-                                            </div>
-                                            <span className="feeder-status-tag"><Skeleton width={60} height={20} /></span>
-                                        </div>
-                                    ))}
+                                <div className="dash-summary-card failed">
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={50} height={10} /> : 'Failed'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.failed}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={70} height={8} /> : 'Needs Attention'}</div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="b2b-analytics-layout">
-                            {/* B2B Mail Summary Stats */}
-                            <div className="stats-grid">
-                                <div className="stat-card total">
-                                    <div className="stat-icon-box"><FaEnvelope /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">Total Sent</span>
-                                        <h3 className="stat-number">{b2bMailStats.totalSent}</h3>
-                                        <span className="stat-trend">All Time</span>
-                                    </div>
-                                </div>
-                                <div className="stat-card resolved">
-                                    <div className="stat-icon-box"><FaPaperPlane /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">Delivered</span>
-                                        <h3 className="stat-number">{b2bMailStats.delivered}</h3>
-                                        <span className="stat-trend positive">Success Rate</span>
-                                    </div>
-                                </div>
-                                <div className="stat-card urgent">
-                                    <div className="stat-icon-box"><FaTimesCircle /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">Failed</span>
-                                        <h3 className="stat-number">{b2bMailStats.failed}</h3>
-                                        <span className="stat-trend negative">Needs Attention</span>
-                                    </div>
-                                </div>
-                                <div className="stat-card pending">
-                                    <div className="stat-icon-box"><FaHourglassHalf /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">Pending</span>
-                                        <h3 className="stat-number">{b2bMailStats.pending}</h3>
-                                        <span className="stat-trend">In Queue</span>
-                                    </div>
+                                <div className="dash-summary-card pending">
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={50} height={10} /> : 'Pending'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.pending}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={50} height={8} /> : 'In Queue'}</div>
                                 </div>
                             </div>
 
-                            {/* B2B Mail Delivery Status Chart */}
+                            {/* B2B Mail Delivery Status Chart - Structural Mirroring */}
                             <div className="charts-grid-main">
                                 <div className="chart-card">
                                     <div className="chart-header-group">
-                                        <FaChartPie className="chart-icon" />
-                                        <h4>Delivery Status</h4>
+                                        {b2bLoading ? <Skeleton width={24} height={24} circle /> : <FaChartPie className="chart-icon" />}
+                                        <h4>{b2bLoading ? <Skeleton width={150} height={20} /> : 'Delivery Status'}</h4>
                                     </div>
                                     <div className="chart-wrapper">
-                                        <ResponsiveContainer width="100%" height={180}>
+                                        <ResponsiveContainer width="100%" height="100%">
                                             <BarChart data={b2bMailStats.deliveryData} layout="vertical">
                                                 <XAxis type="number" hide />
                                                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} width={80} />
@@ -1095,54 +901,51 @@ const AdminDashboard = () => {
                                     </div>
                                 </div>
 
-                                {/* B2B Contact Verification Health Analytics */}
+                                {/* B2B Contact Verification Health Analytics - Structural Mirroring */}
                                 <div className="chart-card">
                                     <div className="chart-header-group">
-                                        <FaCheckCircle className="chart-icon" />
-                                        <h4>Contact Verification Health</h4>
+                                        {b2bLoading ? <Skeleton width={24} height={24} circle /> : <FaCheckCircle className="chart-icon" />}
+                                        <h4>{b2bLoading ? <Skeleton width={180} height={20} /> : 'Contact Verification Health'}</h4>
                                     </div>
                                     <div className="chart-wrapper">
-                                        <ResponsiveContainer width="100%" height={180}>
-                                            <PieChart>
-                                                <Pie data={b2bMailStats.verificationData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
-                                                    {b2bMailStats.verificationData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
+                                        {b2bLoading ? (
+                                            <Skeleton width="100%" height={180} borderRadius={8} />
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie data={b2bMailStats.verificationData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                        {b2bMailStats.verificationData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                    <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Recent Mail Activity List */}
+                            {/* Recent Mail Activity List - Structural Mirroring */}
                             <div className="b2b-activity-list">
-                                {loading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <div key={i} className="b2b-activity-item">
-                                            <div className="b2b-activity-content">
-                                                <span className="b2b-activity-label"><Skeleton width={150} height={14} /></span>
-                                                <span className="b2b-activity-time"><Skeleton width={120} height={12} /></span>
-                                            </div>
-                                            <span className="feeder-status-tag"><Skeleton width={60} height={20} /></span>
-                                        </div>
-                                    ))
-                                ) : b2bMailStats.recentActivity.map(activity => (
-                                    <div key={activity.id} className="b2b-activity-item">
+                                {(b2bLoading ? Array.from({ length: 5 }) : b2bMailStats.recentActivity).map((activity, i) => (
+                                    <div key={b2bLoading ? i : activity.id} className="b2b-activity-item">
                                         <div className="b2b-activity-content">
-                                            <span className="b2b-activity-label">{activity.subject}</span>
-                                            <span className="b2b-activity-time">To: {activity.recipient} • {activity.time}</span>
+                                            <span className="b2b-activity-label">
+                                                {b2bLoading ? <Skeleton width={150} height={14} /> : activity.subject}
+                                            </span>
+                                            <span className="b2b-activity-time">
+                                                {b2bLoading ? <Skeleton width={120} height={12} /> : `To: ${activity.recipient} • ${activity.time}`}
+                                            </span>
                                         </div>
-                                        <span className={`feeder-status-tag ${activity.status.toLowerCase()}`}>
-                                            {activity.status}
+                                        <span className={`feeder-status-tag ${b2bLoading ? '' : activity.status.toLowerCase()}`}>
+                                            {b2bLoading ? <Skeleton width={60} height={20} /> : activity.status}
                                         </span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        )}
                     </div>
 
                     {/* 4. Personnel Section Container */}
@@ -1153,38 +956,61 @@ const AdminDashboard = () => {
                         </div>
                         
                         <div className="personnel-analytics-layout">
-                            {personnelLoading ? (
-                                <>
-                                {/* Personnel Summary Stats Skeleton */}
-                                <div className="stats-grid">
-                                    {[1, 2, 3, 4].map((i) => (
-                                        <div key={i} className="stat-card">
-                                            <div className="stat-icon-box"><Skeleton width={32} height={32} circle /></div>
-                                            <div className="stat-content">
-                                                <span className="stat-label"><Skeleton width={100} height={16} /></span>
-                                                <h3 className="stat-number"><Skeleton width={60} height={32} /></h3>
-                                                <span className="stat-trend"><Skeleton width={80} height={14} /></span>
-                                            </div>
-                                        </div>
-                                    ))}
+                            {/* Personnel Summary Stats - Unified Cards */}
+                            <div className="dash-summary-grid count-4">
+                                <div className="dash-summary-card personnel">
+                                    <div className="dash-summary-title">{personnelLoading ? <Skeleton width={70} height={10} /> : 'Total Linemen'}</div>
+                                    <div className="dash-summary-count">{personnelLoading ? <Skeleton width={40} height={16} /> : personnelStats.totalLinemen}</div>
+                                    <div className="dash-summary-trend">{personnelLoading ? <Skeleton width={60} height={8} /> : 'Personnel Pool'}</div>
                                 </div>
+                                <div className="dash-summary-card restored">
+                                    <div className="dash-summary-title">{personnelLoading ? <Skeleton width={80} height={10} /> : 'Available Crews'}</div>
+                                    <div className="dash-summary-count">{personnelLoading ? <Skeleton width={40} height={16} /> : personnelStats.availableCrews}</div>
+                                    <div className="dash-summary-trend">{personnelLoading ? <Skeleton width={80} height={8} /> : 'Ready for dispatch'}</div>
+                                </div>
+                                <div className="dash-summary-card ongoing">
+                                    <div className="dash-summary-title">{personnelLoading ? <Skeleton width={80} height={10} /> : 'Deployed Crews'}</div>
+                                    <div className="dash-summary-count">{personnelLoading ? <Skeleton width={40} height={16} /> : personnelStats.deployedCrews}</div>
+                                    <div className="dash-summary-trend">{personnelLoading ? <Skeleton width={60} height={8} /> : 'Crews on field'}</div>
+                                </div>
+                                <div className="dash-summary-card cancelled">
+                                    <div className="dash-summary-title">{personnelLoading ? <Skeleton width={50} height={10} /> : 'On Leave'}</div>
+                                    <div className="dash-summary-count">{personnelLoading ? <Skeleton width={40} height={16} /> : personnelStats.onLeave}</div>
+                                    <div className="dash-summary-trend">{personnelLoading ? <Skeleton width={70} height={8} /> : 'Away from duty'}</div>
+                                </div>
+                            </div>
 
-                                {/* Chart Skeleton */}
-                                <div className="charts-grid-main">
-                                    <div className="chart-card">
-                                        <div className="chart-header-group">
-                                            <Skeleton width={24} height={24} circle />
-                                            <h4><Skeleton width={200} height={20} /></h4>
-                                        </div>
-                                        <div className="chart-wrapper">
+                            {/* Charts Row - Crew Status Distribution - Structural Mirroring */}
+                            <div className="charts-grid-main">
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        {personnelLoading ? <Skeleton width={24} height={24} circle /> : <FaChartPie className="chart-icon" />}
+                                        <h4>{personnelLoading ? <Skeleton width={200} height={20} /> : 'Crew Status Distribution'}</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        {personnelLoading ? (
                                             <Skeleton width="100%" height={180} />
-                                        </div>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie data={personnelStats.crewStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                        {personnelStats.crewStatusData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                    <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        )}
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Activity List Skeleton */}
-                                <div className="personnel-activity-list">
-                                    {[1, 2, 3, 4, 5].map((i) => (
+                            {/* Recent Crews List - Structural Mirroring */}
+                            <div className="personnel-activity-list">
+                                {personnelLoading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
                                         <div key={i} className="personnel-activity-item">
                                             <div className="personnel-activity-content">
                                                 <span className="personnel-activity-label"><Skeleton width={120} height={14} /></span>
@@ -1192,73 +1018,8 @@ const AdminDashboard = () => {
                                             </div>
                                             <span className="feeder-status-tag"><Skeleton width={60} height={20} /></span>
                                         </div>
-                                    ))}
-                                </div>
-                                </>
-                            ) : (
-                                <>
-                                {/* Personnel Summary Stats */}
-                                <div className="stats-grid">
-                                <div className="stat-card total">
-                                    <div className="stat-icon-box"><FaUsers /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">Total Linemen</span>
-                                        <h3 className="stat-number">{personnelStats.totalLinemen}</h3>
-                                        <span className="stat-trend">Personnel Pool</span>
-                                    </div>
-                                </div>
-                                <div className="stat-card resolved">
-                                    <div className="stat-icon-box"><FaCheckCircle /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">Available Crews</span>
-                                        <h3 className="stat-number">{personnelStats.availableCrews}</h3>
-                                        <span className="stat-trend positive">Ready for dispatch</span>
-                                    </div>
-                                </div>
-                                <div className="stat-card ongoing">
-                                    <div className="stat-icon-box"><FaTools /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">Deployed Crews</span>
-                                        <h3 className="stat-number">{personnelStats.deployedCrews}</h3>
-                                        <span className="stat-trend">Crews on field</span>
-                                    </div>
-                                </div>
-                                <div className="stat-card pending">
-                                    <div className="stat-icon-box"><FaClock /></div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">On Leave</span>
-                                        <h3 className="stat-number">{personnelStats.onLeave}</h3>
-                                        <span className="stat-trend">Away from duty</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Charts Row - Crew Status Distribution */}
-                            <div className="charts-grid-main">
-                                <div className="chart-card">
-                                    <div className="chart-header-group">
-                                        <FaChartPie className="chart-icon" />
-                                        <h4>Crew Status Distribution</h4>
-                                    </div>
-                                    <div className="chart-wrapper">
-                                        <ResponsiveContainer width="100%" height={180}>
-                                            <PieChart>
-                                                <Pie data={personnelStats.crewStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
-                                                    {personnelStats.crewStatusData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Recent Crews List */}
-                            <div className="personnel-activity-list">
-                                {personnelStats.recentDeployments.length === 0 ? (
+                                    ))
+                                ) : personnelStats.recentDeployments.length === 0 ? (
                                     <p className="placeholder-desc" style={{ textAlign: 'center', padding: '12px 0' }}>No crews found.</p>
                                 ) : personnelStats.recentDeployments.map(deployment => (
                                     <div key={deployment.id} className="personnel-activity-item">
@@ -1272,8 +1033,6 @@ const AdminDashboard = () => {
                                     </div>
                                 ))}
                             </div>
-                        </>
-                        )}
                         </div>
                     </div>
                     </div> {/* End of b2b-personnel-section */}
@@ -1287,54 +1046,21 @@ const AdminDashboard = () => {
                                 <h3 className="column-section-title">Service Memos</h3>
                                 <p className="widget-text">Summary of field service memo records.</p>
                             </div>
-                            <div className="stats-grid">
-                                <div className="stat-card total">
-                                    <div className="stat-icon-box">
-                                        {memosLoading ? <Skeleton circle width={32} height={32} /> : <FaFileAlt />}
-                                    </div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">
-                                            {memosLoading ? <Skeleton width={100} height={12} /> : 'Total Memos'}
-                                        </span>
-                                        <h3 className="stat-number">
-                                            {memosLoading ? <Skeleton width={60} height={28} /> : memoStats.total}
-                                        </h3>
-                                        <span className="stat-trend">
-                                            {memosLoading ? <Skeleton width={80} height={10} /> : 'All records'}
-                                        </span>
-                                    </div>
+                            <div className="dash-summary-grid count-3">
+                                <div className="dash-summary-card memo">
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={60} height={10} /> : 'Total Memos'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.total}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={50} height={8} /> : 'All records'}</div>
                                 </div>
-                                <div className="stat-card pending">
-                                    <div className="stat-icon-box">
-                                        {memosLoading ? <Skeleton circle width={32} height={32} /> : <FaClock />}
-                                    </div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">
-                                            {memosLoading ? <Skeleton width={100} height={12} /> : 'Saved / Open'}
-                                        </span>
-                                        <h3 className="stat-number">
-                                            {memosLoading ? <Skeleton width={60} height={28} /> : memoStats.saved}
-                                        </h3>
-                                        <span className="stat-trend">
-                                            {memosLoading ? <Skeleton width={80} height={10} /> : 'In progress'}
-                                        </span>
-                                    </div>
+                                <div className="dash-summary-card pending">
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={70} height={10} /> : 'Saved / Open'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.saved}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'In progress'}</div>
                                 </div>
-                                <div className="stat-card resolved">
-                                    <div className="stat-icon-box">
-                                        {memosLoading ? <Skeleton circle width={32} height={32} /> : <FaCheckCircle />}
-                                    </div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">
-                                            {memosLoading ? <Skeleton width={100} height={12} /> : 'Closed'}
-                                        </span>
-                                        <h3 className="stat-number">
-                                            {memosLoading ? <Skeleton width={60} height={28} /> : memoStats.closed}
-                                        </h3>
-                                        <span className="stat-trend positive">
-                                            {memosLoading ? <Skeleton width={80} height={10} /> : 'Completed'}
-                                        </span>
-                                    </div>
+                                <div className="dash-summary-card restored">
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={40} height={10} /> : 'Closed'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.closed}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'Completed'}</div>
                                 </div>
                             </div>
                             <div className="charts-grid-main">
@@ -1374,54 +1100,21 @@ const AdminDashboard = () => {
                                 <h3 className="column-section-title">System Users</h3>
                                 <p className="widget-text">Registered accounts and role distribution.</p>
                             </div>
-                            <div className="stats-grid">
-                                <div className="stat-card total">
-                                    <div className="stat-icon-box">
-                                        {usersLoading ? <Skeleton circle width={32} height={32} /> : <FaUsers />}
-                                    </div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">
-                                            {usersLoading ? <Skeleton width={100} height={12} /> : 'Total Users'}
-                                        </span>
-                                        <h3 className="stat-number">
-                                            {usersLoading ? <Skeleton width={60} height={28} /> : userStats.total}
-                                        </h3>
-                                        <span className="stat-trend">
-                                            {usersLoading ? <Skeleton width={80} height={10} /> : 'All accounts'}
-                                        </span>
-                                    </div>
+                            <div className="dash-summary-grid count-3">
+                                <div className="dash-summary-card user">
+                                    <div className="dash-summary-title">{usersLoading ? <Skeleton width={60} height={10} /> : 'Total Users'}</div>
+                                    <div className="dash-summary-count">{usersLoading ? <Skeleton width={40} height={16} /> : userStats.total}</div>
+                                    <div className="dash-summary-trend">{usersLoading ? <Skeleton width={60} height={8} /> : 'All accounts'}</div>
                                 </div>
-                                <div className="stat-card urgent">
-                                    <div className="stat-icon-box">
-                                        {usersLoading ? <Skeleton circle width={32} height={32} /> : <FaUserShield />}
-                                    </div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">
-                                            {usersLoading ? <Skeleton width={100} height={12} /> : 'Admins'}
-                                        </span>
-                                        <h3 className="stat-number">
-                                            {usersLoading ? <Skeleton width={60} height={28} /> : userStats.admins}
-                                        </h3>
-                                        <span className="stat-trend">
-                                            {usersLoading ? <Skeleton width={80} height={10} /> : 'Full access'}
-                                        </span>
-                                    </div>
+                                <div className="dash-summary-card personnel">
+                                    <div className="dash-summary-title">{usersLoading ? <Skeleton width={50} height={10} /> : 'Admins'}</div>
+                                    <div className="dash-summary-count">{usersLoading ? <Skeleton width={40} height={16} /> : userStats.admins}</div>
+                                    <div className="dash-summary-trend">{usersLoading ? <Skeleton width={60} height={8} /> : 'Full access'}</div>
                                 </div>
-                                <div className="stat-card ongoing">
-                                    <div className="stat-icon-box">
-                                        {usersLoading ? <Skeleton circle width={32} height={32} /> : <FaUserTie />}
-                                    </div>
-                                    <div className="stat-content">
-                                        <span className="stat-label">
-                                            {usersLoading ? <Skeleton width={100} height={12} /> : 'Employees'}
-                                        </span>
-                                        <h3 className="stat-number">
-                                            {usersLoading ? <Skeleton width={60} height={28} /> : userStats.employees}
-                                        </h3>
-                                        <span className="stat-trend">
-                                            {usersLoading ? <Skeleton width={80} height={10} /> : 'Staff access'}
-                                        </span>
-                                    </div>
+                                <div className="dash-summary-card crew">
+                                    <div className="dash-summary-title">{usersLoading ? <Skeleton width={60} height={10} /> : 'Employees'}</div>
+                                    <div className="dash-summary-count">{usersLoading ? <Skeleton width={40} height={16} /> : userStats.employees}</div>
+                                    <div className="dash-summary-trend">{usersLoading ? <Skeleton width={60} height={8} /> : 'Staff access'}</div>
                                 </div>
                             </div>
                             <div className="charts-grid-main">

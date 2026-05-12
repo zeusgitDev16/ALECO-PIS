@@ -62,7 +62,7 @@ const TicketTableView = ({
         return (
             <div className="ticket-table-container">
                 <div className="ticket-loading-state">
-                    <div className="chaotic-orbit" aria-hidden="true"></div>
+                    <div className="ticket-spinner" aria-hidden="true"></div>
                     <span className="ticket-loading-label">Loading tickets…</span>
                 </div>
             </div>

@@ -18,7 +18,10 @@ const CrewGrid = ({
   if (isLoading && (!crews || crews.length === 0)) {
     return (
       <div className="personnel-grid-wrapper">
-        <p className="personnel-loading">Loading crews...</p>
+        <div className="personnel-loading">
+          <span className="personnel-spinner" />
+          <span>Loading crews...</span>
+        </div>
       </div>
     );
   }

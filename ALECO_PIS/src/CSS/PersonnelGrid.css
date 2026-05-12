@@ -231,12 +231,42 @@
   padding-bottom: calc(40px * var(--personnel-ui-scale, 1));
 }
 
-.personnel-loading,
+.personnel-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10px * var(--personnel-ui-scale, 1));
+  padding: calc(60px * var(--personnel-ui-scale, 1)) calc(12px * var(--personnel-ui-scale, 1));
+  color: var(--text-secondary);
+}
+
 .personnel-empty {
   font-size: max(0.5rem, calc(0.65rem * var(--personnel-ui-scale, 1)));
   color: var(--text-secondary);
   text-align: center;
-  padding: calc(20px * var(--personnel-ui-scale, 1)) calc(16px * var(--personnel-ui-scale, 1));
+  padding: calc(60px * var(--personnel-ui-scale, 1)) calc(12px * var(--personnel-ui-scale, 1));
+}
+
+.personnel-spinner {
+  width: calc(40px * var(--personnel-ui-scale, 1));
+  height: calc(40px * var(--personnel-ui-scale, 1));
+  border: calc(4px * var(--personnel-ui-scale, 1)) solid var(--border-color);
+  border-top-color: var(--text-secondary);
+  border-radius: 50%;
+  animation: personnel-spin 0.8s linear infinite;
+}
+
+/* Standardized loading text size */
+.personnel-loading-text {
+  font-size: calc(0.75rem * var(--personnel-ui-scale, 1));
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: calc(10px * var(--personnel-ui-scale, 1));
+}
+
+@keyframes personnel-spin {
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 425px) {

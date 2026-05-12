@@ -15,7 +15,7 @@
 }
 
 [data-theme="dark"] .interruption-loading-state .chaotic-orbit {
-  --uib-color: var(--accent-primary, #7c3aed);
+  --uib-color: #ffffff;
 }
 
 .interruption-loading-label {

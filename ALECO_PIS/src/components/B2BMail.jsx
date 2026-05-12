@@ -18,6 +18,7 @@ import B2BDualPaneLayout from './b2bmail/B2BDualPaneLayout';
 import B2BFilterSidebar from './b2bmail/B2BFilterSidebar';
 import B2BFilterDrawer from './b2bmail/B2BFilterDrawer';
 import B2BContactsSidebarFilters from './b2bmail/B2BContactsSidebarFilters';
+import B2BDeleteConfirmModal from './b2bmail/B2BDeleteConfirmModal';
 import B2BMessagesSidebarFilters from './b2bmail/B2BMessagesSidebarFilters';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/B2BMailPage.css';
@@ -87,6 +88,7 @@ const B2BMail = () => {
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('contacts');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [deleteModalContacts, setDeleteModalContacts] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [messagesFilters, setMessagesFilters] = useState(DEFAULT_MESSAGES_FILTERS);
 
@@ -221,12 +223,20 @@ const B2BMail = () => {
     setSelectedIds([]);
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedIds.length === 0) return;
+    const targets = allContacts.filter((c) => selectedIds.includes(Number(c.id)));
+    if (targets.length === 0) return;
+    setDeleteModalContacts(targets);
+  };
+
+  const executeDelete = async () => {
+    const targets = deleteModalContacts;
+    setDeleteModalContacts(null);
     let success = 0;
-    for (const id of selectedIds) {
+    for (const contact of targets) {
       try {
-        const result = await authMutation(apiUrl(`/api/b2b-mail/contacts/${id}`), {
+        const result = await authMutation(apiUrl(`/api/b2b-mail/contacts/${contact.id}`), {
           method: 'DELETE',
           body: {},
           emitRealtime: { module: REALTIME_MODULES.B2B_MAIL },
@@ -536,6 +546,14 @@ const B2BMail = () => {
             />
           )}
         </B2BFilterDrawer>
+        {/* Delete Confirmation Modal */}
+        {deleteModalContacts && (
+          <B2BDeleteConfirmModal
+            contacts={deleteModalContacts}
+            onCancel={() => setDeleteModalContacts(null)}
+            onConfirm={executeDelete}
+          />
+        )}
         {/* Contact Form Modal */}
         <B2BContactForm
           isOpen={isContactModalOpen}

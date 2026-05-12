@@ -14,7 +14,7 @@ const UrgentTickets = ({ tickets, isLoading, onSelectTicket, selectedIds, onTogg
                     <h3 className="urgent-title">Action Required: Urgent Tickets</h3>
                 </div>
                 <div className="ticket-loading-state">
-                    <div className="chaotic-orbit" aria-hidden="true"></div>
+                    <div className="ticket-spinner" aria-hidden="true"></div>
                     <span className="ticket-loading-label">Checking for urgent tickets…</span>
                 </div>
             </div>

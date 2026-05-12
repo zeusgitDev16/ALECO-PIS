@@ -224,7 +224,7 @@ export default function B2BMessagesView({
         <div className="b2b-messages-list-container">
           {loading ? (
             <div className="b2b-messages-loading">
-              <div className="spinner" />
+              <div className="b2b-loader-spinner" />
               <span>Loading messages...</span>
             </div>
           ) : messages.length === 0 ? (

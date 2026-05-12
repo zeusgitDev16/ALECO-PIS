@@ -18,7 +18,10 @@ const LinemanGrid = ({
   if (isLoading && (!linemen || linemen.length === 0)) {
     return (
       <div className="personnel-grid-wrapper">
-        <p className="personnel-loading">Loading linemen...</p>
+        <div className="personnel-loading">
+          <span className="personnel-spinner" />
+          <span>Loading linemen...</span>
+        </div>
       </div>
     );
   }

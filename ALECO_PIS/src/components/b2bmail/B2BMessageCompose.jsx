@@ -357,11 +357,18 @@ export default function B2BMessageCompose({
           </button>
           <button
             type="button"
-            className="b2b-btn b2b-btn-primary"
+            className="b2b-btn b2b-btn-primary b2b-btn-send"
             onClick={handleSend}
             disabled={saving}
           >
-            {saving ? 'Sending...' : 'Send Message'}
+            {saving ? (
+              <>
+                <span className="b2b-btn-spinner" />
+                Sending...
+              </>
+            ) : (
+              'Send Message'
+            )}
           </button>
         </div>
       </div>

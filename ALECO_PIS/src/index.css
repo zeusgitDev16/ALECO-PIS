@@ -425,6 +425,11 @@ h4, h5, h6 {
     --uib-color: white;
 }
 
+/* Dark mode: global loader spinner should be white, not yellow */
+[data-theme="dark"] .loader-spinner {
+    border-top-color: #ffffff;
+}
+
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;

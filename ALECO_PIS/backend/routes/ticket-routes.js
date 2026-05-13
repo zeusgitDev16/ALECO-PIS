@@ -133,4 +133,29 @@ router.get('/filtered-tickets', requireStaff, async (req, res) => {
     }
 });
 
+// DASHBOARD STATS ROUTE: Counts all non-deleted tickets for dashboard summary cards
+router.get('/tickets/dashboard-stats', requireStaff, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(`
+            SELECT
+                COUNT(*) AS total,
+                SUM(status = 'Pending') AS pending,
+                SUM(status = 'Ongoing') AS ongoing,
+                SUM(status = 'OnHold') AS onhold,
+                SUM(status IN ('Restored', 'Resolved')) AS resolved,
+                SUM(status = 'Unresolved') AS unresolved,
+                SUM(status = 'NoFaultFound') AS nofault,
+                SUM(status = 'AccessDenied') AS denied,
+                SUM(is_urgent = 1) AS urgent,
+                SUM(service_memo_id IS NOT NULL) AS memo_linked
+            FROM aleco_tickets
+            WHERE deleted_at IS NULL
+        `);
+        res.json({ success: true, data: rows[0] });
+    } catch (error) {
+        console.error('❌ Dashboard stats error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch dashboard stats.' });
+    }
+});
+
 export default router;

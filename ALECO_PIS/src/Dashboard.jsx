@@ -42,6 +42,10 @@ const AdminDashboard = () => {
 
     const { tickets = [], loading } = useTickets();
 
+    // ── Ticket dashboard stats (accurate counts from DB) ──
+    const [ticketDashStats, setTicketDashStats] = useState(null);
+    const [ticketStatsLoading, setTicketStatsLoading] = useState(true);
+
     // ── Real data state ──
     const [b2bMessages,    setB2bMessages]    = useState([]);
     const [b2bContacts,    setB2bContacts]    = useState([]);
@@ -56,6 +60,15 @@ const AdminDashboard = () => {
 
     const fetchRealData = useCallback(async () => {
         try {
+            // Fetch ticket dashboard stats separately for accuracy
+            authFetch(apiUrl('/api/tickets/dashboard-stats')).then(async (res) => {
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d.success) setTicketDashStats(d.data);
+                }
+                setTicketStatsLoading(false);
+            }).catch(() => setTicketStatsLoading(false));
+
             const [b2bMsgRes, b2bCtcRes, crewsRes, linemanRes, memosRes, usersRes] = await Promise.allSettled([
                 authFetch(apiUrl('/api/b2b-mail/messages')),
                 authFetch(apiUrl('/api/b2b-mail/contacts')),
@@ -422,19 +435,20 @@ const AdminDashboard = () => {
             .sort((a, b) => b.count - a.count)
             .slice(0, 4);
 
-        // Summary Counts for Cards
-        const total = hasData ? tickets.length : 124;
-        const pending = sourceData.filter(t => t.status === 'Pending').length;
-        const ongoing = sourceData.filter(t => t.status === 'Ongoing').length;
-        const resolved = sourceData.filter(t => ['Restored', 'Resolved'].includes(t.status)).length;
-        const unresolved = sourceData.filter(t => t.status === 'Unresolved').length;
-        const nofault = sourceData.filter(t => t.status === 'NoFaultFound').length;
-        const denied = sourceData.filter(t => t.status === 'AccessDenied').length;
-        const urgent = sourceData.filter(t => t.is_urgent === 1).length;
-        const memoLinked = sourceData.filter(t => Number(t?.service_memo_id || 0) > 0 || Number(t?.has_service_memo || 0) === 1).length;
+        // Summary Counts for Cards — use DB stats if available, else fall back to ticket array
+        const total    = ticketDashStats ? Number(ticketDashStats.total)       : (hasData ? tickets.length : 0);
+        const pending  = ticketDashStats ? Number(ticketDashStats.pending)      : sourceData.filter(t => t.status === 'Pending').length;
+        const ongoing  = ticketDashStats ? Number(ticketDashStats.ongoing)      : sourceData.filter(t => t.status === 'Ongoing').length;
+        const onhold   = ticketDashStats ? Number(ticketDashStats.onhold)       : sourceData.filter(t => t.status === 'OnHold').length;
+        const resolved = ticketDashStats ? Number(ticketDashStats.resolved)     : sourceData.filter(t => ['Restored', 'Resolved'].includes(t.status)).length;
+        const unresolved = ticketDashStats ? Number(ticketDashStats.unresolved) : sourceData.filter(t => t.status === 'Unresolved').length;
+        const nofault  = ticketDashStats ? Number(ticketDashStats.nofault)      : sourceData.filter(t => t.status === 'NoFaultFound').length;
+        const denied   = ticketDashStats ? Number(ticketDashStats.denied)       : sourceData.filter(t => t.status === 'AccessDenied').length;
+        const urgent   = ticketDashStats ? Number(ticketDashStats.urgent)       : sourceData.filter(t => t.is_urgent === 1).length;
+        const memoLinked = ticketDashStats ? Number(ticketDashStats.memo_linked) : sourceData.filter(t => Number(t?.service_memo_id || 0) > 0 || Number(t?.has_service_memo || 0) === 1).length;
 
-        return { total, pending, ongoing, resolved, unresolved, nofault, denied, urgent, memoLinked, trendData, categoryData, topLocations };
-    }, [tickets]);
+        return { total, pending, ongoing, onhold, resolved, unresolved, nofault, denied, urgent, memoLinked, trendData, categoryData, topLocations };
+    }, [tickets, ticketDashStats]);
 
     // Dynamic calculations for B2B Mail — real data
     const b2bMailStats = useMemo(() => {
@@ -951,51 +965,56 @@ const AdminDashboard = () => {
                         </div>
 
                         {/* 1. Top Summary Cards - Unified */}
-                        <div className="dash-summary-grid count-9">
+                        <div className="dash-summary-grid count-10">
                             <div className="dash-summary-card total">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={70} height={10} /> : 'Total Tickets'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.total}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : '+5% from yesterday'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={70} height={10} /> : 'Total Tickets'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.total}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'All time records'}</div>
                             </div>
                             <div className="dash-summary-card pending">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={50} height={10} /> : 'Pending'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.pending}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Action required'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={50} height={10} /> : 'Pending'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.pending}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Action required'}</div>
                             </div>
                             <div className="dash-summary-card ongoing">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={50} height={10} /> : 'Ongoing'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.ongoing}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Crews on field'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={50} height={10} /> : 'Ongoing'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.ongoing}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Crews on field'}</div>
                             </div>
                             <div className="dash-summary-card restored">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={50} height={10} /> : 'Resolved'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.resolved}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : '92% success rate'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={50} height={10} /> : 'Resolved'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.resolved}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Restored / closed'}</div>
                             </div>
                             <div className="dash-summary-card outage">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={60} height={10} /> : 'Unresolved'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.unresolved}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Needs review'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={60} height={10} /> : 'Unresolved'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.unresolved}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Needs review'}</div>
                             </div>
                             <div className="dash-summary-card cancelled">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={70} height={10} /> : 'No Fault Found'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.nofault}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Verified issue'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={70} height={10} /> : 'No Fault Found'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.nofault}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Verified clear'}</div>
+                            </div>
+                            <div className="dash-summary-card pending">
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={70} height={10} /> : 'On Hold'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.onhold}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Paused tickets'}</div>
                             </div>
                             <div className="dash-summary-card denied">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={70} height={10} /> : 'Access Denied'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.denied}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Restricted area'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={70} height={10} /> : 'Access Denied'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.denied}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Restricted area'}</div>
                             </div>
                             <div className="dash-summary-card urgent">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={40} height={10} /> : 'Urgent'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.urgent}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'High priority'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={40} height={10} /> : 'Urgent'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.urgent}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'High priority'}</div>
                             </div>
                             <div className="dash-summary-card memo">
-                                <div className="dash-summary-title">{loading ? <Skeleton width={60} height={10} /> : 'Memo Linked'}</div>
-                                <div className="dash-summary-count">{loading ? <Skeleton width={40} height={16} /> : ticketStats.memoLinked}</div>
-                                <div className="dash-summary-trend">{loading ? <Skeleton width={60} height={8} /> : 'Service Memos'}</div>
+                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={60} height={10} /> : 'Memo Linked'}</div>
+                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.memoLinked}</div>
+                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Service Memos'}</div>
                             </div>
                         </div>
 
@@ -1006,30 +1025,81 @@ const AdminDashboard = () => {
                                 <FaChartPie className="chart-icon" />
                                 <h4>Ticket Status Distribution</h4>
                             </div>
-                            <div className="chart-wrapper">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={[
-                                                { name: 'Pending', value: ticketStats.pending },
-                                                { name: 'Ongoing', value: ticketStats.ongoing },
-                                                { name: 'Resolved', value: ticketStats.resolved }
-                                            ]}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={45}
-                                            outerRadius={65}
-                                            paddingAngle={5}
-                                            dataKey="value"
-                                        >
-                                            <Cell fill="var(--accent-warning)" />
-                                            <Cell fill="var(--accent-primary)" />
-                                            <Cell fill="var(--accent-success)" />
-                                        </Pie>
-                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                        <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingTop: '10px' }} />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                            <div className="chart-wrapper ticket-status-chart-wrapper">
+                                {ticketStatsLoading ? <Skeleton height="100%" borderRadius={8} /> : (() => {
+                                    const statusPieData = [
+                                        { name: 'Pending',      value: ticketStats.pending,    fill: '#f59e0b' },
+                                        { name: 'Ongoing',      value: ticketStats.ongoing,    fill: '#3b82f6' },
+                                        { name: 'On Hold',      value: ticketStats.onhold,     fill: '#64748b' },
+                                        { name: 'Resolved',     value: ticketStats.resolved,   fill: '#22c55e' },
+                                        { name: 'Unresolved',   value: ticketStats.unresolved, fill: '#ef4444' },
+                                        { name: 'No Fault',     value: ticketStats.nofault,    fill: '#a78bfa' },
+                                        { name: 'Access Denied',value: ticketStats.denied,     fill: '#fb923c' },
+                                    ].filter(d => d.value > 0);
+                                    return statusPieData.length === 0 ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>N/A</div>
+                                    ) : (
+                                        <>
+                                            {/* Desktop/Tablet: Standard pie with bottom legend */}
+                                            <div className="interruption-types-desktop">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={statusPieData}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            innerRadius={45}
+                                                            outerRadius={65}
+                                                            paddingAngle={3}
+                                                            dataKey="value"
+                                                            isAnimationActive={false}
+                                                        >
+                                                            {statusPieData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px', fontSize: '12px' }} formatter={(value, name) => [value, name]} />
+                                                        <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }} />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+
+                                            {/* Mobile: Dual pane - left small circle, right legend */}
+                                            <div className="interruption-types-mobile">
+                                                <div className="mobile-chart-left">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <PieChart>
+                                                            <Pie
+                                                                data={statusPieData}
+                                                                cx="50%"
+                                                                cy="50%"
+                                                                innerRadius={15}
+                                                                outerRadius={28}
+                                                                paddingAngle={2}
+                                                                dataKey="value"
+                                                                isAnimationActive={false}
+                                                            >
+                                                                {statusPieData.map((entry, index) => (
+                                                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                ))}
+                                                            </Pie>
+                                                            <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '6px', fontSize: '10px' }} />
+                                                        </PieChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                                <div className="mobile-chart-right">
+                                                    {statusPieData.map((entry, index) => (
+                                                        <div key={index} className="mobile-legend-item">
+                                                            <span className="mobile-legend-color" style={{ backgroundColor: entry.fill }} />
+                                                            <span className="mobile-legend-label">{entry.name}</span>
+                                                            <span className="mobile-legend-value">{entry.value}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
 

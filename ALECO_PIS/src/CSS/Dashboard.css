@@ -978,10 +978,12 @@ body.admin-app-scroll-lock {
 .dash-summary-grid.count-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .dash-summary-grid.count-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .dash-summary-grid.count-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.dash-summary-grid.count-10 { grid-template-columns: repeat(10, minmax(0, 1fr)); }
 
 @media (max-width: 1024px) {
     .dash-summary-grid.count-6,
     .dash-summary-grid.count-7 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .dash-summary-grid.count-10 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
@@ -989,7 +991,8 @@ body.admin-app-scroll-lock {
     .dash-summary-grid.count-4,
     .dash-summary-grid.count-5,
     .dash-summary-grid.count-6,
-    .dash-summary-grid.count-7 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dash-summary-grid.count-7,
+    .dash-summary-grid.count-10 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
     /* Stack major sections vertically on mobile */
     .dashboard-auxiliary-grid {

@@ -310,9 +310,8 @@
   }
   
   /* Ticket Overview Cards - 5 columns on mobile */
-  .dashboard-page-container .dashboard-ticket-features-wrapper .dash-summary-grid.count-9,
-  .dashboard-ticket-features-wrapper .dash-summary-grid,
-  .dashboard-ticket-features-wrapper .dash-summary-grid.count-9 {
+  .dashboard-page-container .dashboard-ticket-features-wrapper .dash-summary-grid.count-10,
+  .dashboard-ticket-features-wrapper .dash-summary-grid.count-10 {
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: 3px !important;
   }

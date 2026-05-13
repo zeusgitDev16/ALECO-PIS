@@ -71,6 +71,7 @@ const B2BMail = () => {
     messages,
     templates,
     loading: messagesLoading,
+    saving: messageSaving,
     message: composeMessage,
     clearMessage: clearComposeMessage,
     previewResult,
@@ -574,7 +575,7 @@ const B2BMail = () => {
           contacts={allContacts}
           feederOptions={feederOptions}
           templates={templates}
-          saving={saving}
+          saving={messageSaving}
         />
       </div>
     </AdminLayout>

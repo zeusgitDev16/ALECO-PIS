@@ -6,6 +6,7 @@ import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
 import { requireStaff } from '../middleware/requireRole.js';
 import { normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
+import { syncCrewStatusByTicketId } from '../utils/crewStatusSync.js';
 
 const router = express.Router();
 
@@ -267,6 +268,11 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireStaff, async (req, res
         const masterStatus = masterRows[0].status;
         const masterUpdatedAt = masterRows[0].updated_at;
 
+        if (masterStatus === 'Ongoing') {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Cannot ungroup tickets while the group is currently Ongoing. Please resolve or hold the group first.' });
+        }
+
         const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
         if (expectedUpdatedAt) {
             const dbIso = masterUpdatedAt ? new Date(masterUpdatedAt).toISOString() : '';
@@ -518,6 +524,9 @@ ${mainTicketId}`;
 
         await connection.commit();
 
+        // Sync crew status after committing group dispatch
+        await syncCrewStatusByTicketId(mainTicketId);
+
         console.log(`✅ GROUP DISPATCH: ${mainTicketId} - ${members.length} tickets + master dispatched to ${assigned_crew}`);
         const total = consumerSmsResults.length;
         const attempted = consumerSmsResults.filter(r => r.attempted).length;
@@ -634,6 +643,9 @@ router.put('/tickets/group/:mainTicketId/status', requireStaff, async (req, res)
 
         await connection.commit();
 
+        // Sync crew status after status update
+        await syncCrewStatusByTicketId(mainTicketId);
+
         const actorEmail = req.body.actor_email || req.headers['x-user-email'];
         const actorName = req.body.actor_name || req.headers['x-user-name'];
         for (const tid of allTicketIds) {
@@ -660,6 +672,241 @@ router.put('/tickets/group/:mainTicketId/status', requireStaff, async (req, res)
     } catch (error) {
         await connection.rollback();
         console.error("❌ Error updating group status:", error);
+        res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+/**
+ * PUT GROUP ON HOLD
+ * PUT /api/tickets/group/:mainTicketId/hold
+ */
+router.put('/tickets/group/:mainTicketId/hold', requireStaff, async (req, res) => {
+    const { mainTicketId } = req.params;
+    const { hold_reason, notify_consumer } = req.body;
+    
+    if (!hold_reason || !hold_reason.trim()) {
+        return res.status(400).json({ success: false, message: 'Hold reason is required.' });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [masterRows] = await connection.execute(
+            `SELECT status, updated_at FROM aleco_tickets WHERE ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        if (masterRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Group not found.' });
+        }
+
+        const masterRow = masterRows[0];
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+        
+        if (expectedUpdatedAt && masterRow.updated_at) {
+            const dbIso = new Date(masterRow.updated_at).toISOString();
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (dbIso !== clientIso) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_TICKET',
+                    message: 'This group was updated by someone else. Reload and try again.',
+                    latest: { ticket_id: mainTicketId, updated_at: masterRow.updated_at },
+                });
+            }
+        }
+
+        const phNow = nowPhilippineForMysql();
+
+        // Update master
+        const [masterUpdate] = await connection.execute(
+            `UPDATE aleco_tickets SET status = 'OnHold', hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
+            [hold_reason.trim(), phNow, mainTicketId]
+        );
+
+        if (masterUpdate.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Group is not Ongoing.' });
+        }
+
+        // Update children
+        const [childRows] = await connection.execute(
+            `SELECT ticket_id, phone_number FROM aleco_tickets WHERE parent_ticket_id = ? AND status = 'Ongoing'`,
+            [mainTicketId]
+        );
+
+        const allTicketIds = [mainTicketId];
+        const consumerSmsResults = [];
+
+        if (childRows.length > 0) {
+            const childIds = childRows.map(c => c.ticket_id);
+            allTicketIds.push(...childIds);
+            const placeholders = childIds.map(() => '?').join(', ');
+            
+            await connection.execute(
+                `UPDATE aleco_tickets SET status = 'OnHold', hold_reason = ?, hold_since = ? WHERE ticket_id IN (${placeholders})`,
+                [hold_reason.trim(), phNow, ...childIds]
+            );
+
+            if (notify_consumer) {
+                for (const child of childRows) {
+                    if (child.phone_number) {
+                        const holdMsg = `ALECO: Your grouped ticket ${child.ticket_id} (Master: ${mainTicketId}) has been put on hold. Reason: ${hold_reason.trim()}. We will resume work soon.`;
+                        const holdSmsResult = await sendPhilSMS(child.phone_number, holdMsg);
+                        consumerSmsResults.push({ ticket_id: child.ticket_id, attempted: true, ...holdSmsResult });
+                    } else {
+                        consumerSmsResults.push({ ticket_id: child.ticket_id, attempted: false, skipped: true, reason: 'no_phone_on_ticket' });
+                    }
+                }
+            }
+        }
+
+        await connection.commit();
+        await syncCrewStatusByTicketId(mainTicketId);
+
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+        for (const tid of allTicketIds) {
+            await insertTicketLog(pool, {
+                ticket_id: tid,
+                action: 'hold',
+                from_status: 'Ongoing',
+                to_status: 'OnHold',
+                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                actor_email: actorEmail || null,
+                actor_name: actorName || 'System',
+                metadata: { hold_reason: hold_reason.trim(), group_update: true, main_ticket_id: mainTicketId }
+            });
+        }
+
+        console.log(`✅ GROUP HOLD: ${mainTicketId} put on hold by dispatcher.`);
+        
+        const attempted = consumerSmsResults.filter(r => r.attempted).length;
+        const successCount = consumerSmsResults.filter(r => r.attempted && r.success).length;
+        
+        let holdMsgText = `Group ${mainTicketId} put on hold.`;
+        if (notify_consumer) {
+            if (attempted === 0) holdMsgText += ' Consumers have no phone on file.';
+            else if (successCount === attempted) holdMsgText += ` ${successCount} consumer(s) notified by SMS.`;
+            else holdMsgText += ` ${successCount}/${attempted} consumer(s) notified.`;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: holdMsgText,
+            sms: { consumers: consumerSmsResults },
+            ...(attempted > 0 && successCount < attempted ? { warnings: ['consumer_sms_failed'] } : {})
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("❌ GROUP HOLD ERROR:", error);
+        res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+/**
+ * RESUME GROUP FROM HOLD
+ * PUT /api/tickets/group/:mainTicketId/resume-hold
+ */
+router.put('/tickets/group/:mainTicketId/resume-hold', requireStaff, async (req, res) => {
+    const { mainTicketId } = req.params;
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [masterRows] = await connection.execute(
+            `SELECT status, updated_at FROM aleco_tickets WHERE ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        if (masterRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Group not found.' });
+        }
+
+        const masterRow = masterRows[0];
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+        
+        if (expectedUpdatedAt && masterRow.updated_at) {
+            const dbIso = new Date(masterRow.updated_at).toISOString();
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (dbIso !== clientIso) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_TICKET',
+                    message: 'This group was updated by someone else. Reload and try again.',
+                    latest: { ticket_id: mainTicketId, updated_at: masterRow.updated_at },
+                });
+            }
+        }
+
+        // Update master
+        const [masterUpdate] = await connection.execute(
+            `UPDATE aleco_tickets SET status = 'Ongoing', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'OnHold'`,
+            [mainTicketId]
+        );
+
+        if (masterUpdate.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Group is not On Hold.' });
+        }
+
+        // Update children
+        const [childRows] = await connection.execute(
+            `SELECT ticket_id FROM aleco_tickets WHERE parent_ticket_id = ? AND status = 'OnHold'`,
+            [mainTicketId]
+        );
+
+        const allTicketIds = [mainTicketId];
+
+        if (childRows.length > 0) {
+            const childIds = childRows.map(c => c.ticket_id);
+            allTicketIds.push(...childIds);
+            const placeholders = childIds.map(() => '?').join(', ');
+            
+            await connection.execute(
+                `UPDATE aleco_tickets SET status = 'Ongoing', hold_reason = NULL, hold_since = NULL WHERE ticket_id IN (${placeholders})`,
+                [...childIds]
+            );
+        }
+
+        await connection.commit();
+        await syncCrewStatusByTicketId(mainTicketId);
+
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+        for (const tid of allTicketIds) {
+            await insertTicketLog(pool, {
+                ticket_id: tid,
+                action: 'resume_hold',
+                from_status: 'OnHold',
+                to_status: 'Ongoing',
+                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                actor_email: actorEmail || null,
+                actor_name: actorName || 'System',
+                metadata: { group_update: true, main_ticket_id: mainTicketId }
+            });
+        }
+
+        console.log(`✅ GROUP RESUME HOLD: ${mainTicketId} resumed.`);
+        res.status(200).json({ success: true, message: `Group ${mainTicketId} is back in progress.` });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("❌ GROUP RESUME HOLD ERROR:", error);
         res.status(500).json({ success: false, message: error.message });
     } finally {
         connection.release();

@@ -297,7 +297,12 @@ const AdminTickets = () => {
             const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
             const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
             const body = { ...holdData, ...getActor() };
-            const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/hold`), {
+            const isGroupMaster = ticketId?.startsWith('GROUP-');
+            const url = isGroupMaster 
+                ? apiUrl(`/api/tickets/group/${ticketId}/hold`)
+                : apiUrl(`/api/tickets/${ticketId}/hold`);
+                
+            const result = await authMutation(url, {
                 method: 'PUT',
                 body,
                 expectedUpdatedAt,
@@ -329,7 +334,12 @@ const AdminTickets = () => {
         try {
             const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
             const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
-            const result = await authMutation(apiUrl(`/api/tickets/${ticketId}/resume-hold`), {
+            const isGroupMaster = ticketId?.startsWith('GROUP-');
+            const url = isGroupMaster 
+                ? apiUrl(`/api/tickets/group/${ticketId}/resume-hold`)
+                : apiUrl(`/api/tickets/${ticketId}/resume-hold`);
+                
+            const result = await authMutation(url, {
                 method: 'PUT',
                 body: { ...getActor() },
                 expectedUpdatedAt,

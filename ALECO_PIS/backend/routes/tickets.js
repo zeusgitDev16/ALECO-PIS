@@ -22,6 +22,7 @@ import {
 import { sendAppMail } from '../utils/appMail.js';
 import { requireStaff } from '../middleware/requireRole.js';
 import { buildOptimisticTicketWhere, normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
+import { syncCrewStatusByTicketId } from '../utils/crewStatusSync.js';
 
 function actorEmailFromReq(req) {
   return req.authUser?.email || String(req.headers['x-user-email'] || '').trim() || null;
@@ -520,6 +521,10 @@ ${ticket_id}`;
                 metadata: { assigned_crew, eta, dispatch_notes: dispatch_notes || null }
             });
             console.log(`✅ DATABASE SUCCESS: Ticket ${ticket_id} updated to Ongoing.`);
+            
+            // Sync crew status
+            await syncCrewStatusByTicketId(ticket_id);
+            
             const c = consumerSmsPayload;
             let dispatchMessage;
             if (!c.attempted) {
@@ -627,6 +632,9 @@ router.put('/tickets/:ticket_id/resolve-concern', requireStaff, async (req, res)
             metadata: { resolution_mode: 'concern', concern_resolution_notes: concernNotes }
         });
 
+        // Sync crew status (if it had a crew previously)
+        await syncCrewStatusByTicketId(ticket_id);
+
         const c = consumerSmsPayload;
         let message;
         if (!c.attempted) {
@@ -713,6 +721,9 @@ router.put('/tickets/:ticket_id/hold', requireStaff, async (req, res) => {
             metadata: { hold_reason: hold_reason.trim() }
         });
 
+        // Sync crew status
+        await syncCrewStatusByTicketId(ticket_id);
+
         console.log(`✅ Ticket ${ticket_id} put on hold by dispatcher.`);
         const c = sms.consumer;
         let holdMsgText;
@@ -774,6 +785,9 @@ router.put('/tickets/:ticket_id/resume-hold', requireStaff, async (req, res) => 
             actor_name: actorName || 'System',
             metadata: null
         });
+
+        // Sync crew status
+        await syncCrewStatusByTicketId(ticket_id);
 
         console.log(`✅ Ticket ${ticket_id} resumed from hold.`);
         res.status(200).json({ success: true, message: `Ticket ${ticket_id} is back in progress.` });
@@ -1399,6 +1413,9 @@ const statusUpdateHandler = async (req, res) => {
                 metadata: null
             });
 
+            // Sync crew status
+            await syncCrewStatusByTicketId(ticketId);
+
             console.log(`✅ SUCCESS: Ticket ${ticketId} updated to ${status}`);
             res.status(200).json({ success: true, message: `Ticket ${ticketId} marked as ${status}` });
         } else {
@@ -1444,7 +1461,7 @@ router.get('/crews/list', requireStaff, async (req, res) => {
             crews = crews.filter(c => {
                 const crewStatus = (c.status || 'Available').toLowerCase();
                 const leadStatus = (c.lead_status || 'Active').toLowerCase();
-                const isAvailable = crewStatus === 'available';
+                const isAvailable = crewStatus === 'available' || crewStatus === 'deployed';
                 const leadActive = leadStatus === 'active';
                 const hasPhone = c.phone_number && c.phone_number.trim() !== '';
                 return isAvailable && leadActive && hasPhone;
@@ -1476,6 +1493,24 @@ router.get('/crews/list', requireStaff, async (req, res) => {
         res.status(200).json(formattedCrews);
     } catch (error) {
         console.error("❌ Error fetching crews:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// --- 1.b GET ACTIVE TICKETS FOR A CREW ---
+router.get('/crews/:crewName/tickets', requireStaff, async (req, res) => {
+    try {
+        const { crewName } = req.params;
+        const [tickets] = await pool.execute(
+            `SELECT ticket_id, category, status, address, municipality, district
+             FROM aleco_tickets 
+             WHERE assigned_crew = ? AND status = 'Ongoing' AND parent_ticket_id IS NULL
+             ORDER BY created_at DESC`,
+            [crewName]
+        );
+        res.status(200).json({ success: true, tickets });
+    } catch (error) {
+        console.error("❌ Error fetching crew active tickets:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });

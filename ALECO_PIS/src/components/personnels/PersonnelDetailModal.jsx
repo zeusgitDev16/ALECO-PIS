@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../../utils/api';
+import { authFetch } from '../../utils/authFetch';
 import { formatPhoneDisplay, toDisplayFormat } from '../../utils/phoneUtils';
 import { personnelStatusSlug, personnelStatusLabel } from '../../utils/personnelStatusClass';
 import { IconPencil } from '../interruptions/AdvisoryActionIcons';
@@ -8,6 +10,28 @@ import { IconPencil } from '../interruptions/AdvisoryActionIcons';
  * Version 2.1: Robust member display
  */
 export default function PersonnelDetailModal({ variant, crew, lineman, onClose, onEdit, saving }) {
+  const [activeTickets, setActiveTickets] = useState([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (variant === 'crew' && crew?.crew_name && crew?.status === 'Deployed') {
+      setLoadingTickets(true);
+      authFetch(apiUrl(`/api/crews/${encodeURIComponent(crew.crew_name)}/tickets`))
+        .then(res => res.json())
+        .then(data => {
+          if (isMounted && data.success) {
+            setActiveTickets(data.tickets || []);
+          }
+        })
+        .catch(err => console.error('Error fetching active tickets:', err))
+        .finally(() => {
+          if (isMounted) setLoadingTickets(false);
+        });
+    }
+    return () => { isMounted = false; };
+  }, [variant, crew]);
+
   const row = variant === 'crew' ? crew : lineman;
   if (!row) return null;
 
@@ -78,6 +102,33 @@ export default function PersonnelDetailModal({ variant, crew, lineman, onClose, 
                   <span className="interruptions-admin-card-meta-label">Phone</span>
                   <span className="interruptions-admin-card-meta-value">{phone}</span>
                 </div>
+                {statusSlug === 'deployed' && (
+                  <div className="interruptions-admin-card-meta personnel-detail-members-section">
+                    <span className="interruptions-admin-card-meta-label">Active Assignments ({activeTickets.length})</span>
+                    <div className="personnel-detail-assignments-scroll-container">
+                      {loadingTickets ? (
+                        <div className="personnel-detail-no-members">Loading tickets...</div>
+                      ) : activeTickets.length > 0 ? (
+                        <ul className="personnel-detail-members-list-styled">
+                          {activeTickets.map((t, i) => (
+                            <li key={i} className="personnel-detail-member-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span className="personnel-detail-member-bullet">•</span>
+                                <span className="personnel-detail-member-name-text" style={{ fontWeight: 600 }}>{t.ticket_id}</span>
+                              </div>
+                              <div style={{ fontSize: '0.85em', color: 'var(--text-secondary)', paddingLeft: '14px', lineHeight: 1.2 }}>
+                                {t.category}<br/>
+                                {t.municipality}, {t.district}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="personnel-detail-no-members">No active assignments found</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <>

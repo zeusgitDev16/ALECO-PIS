@@ -14,6 +14,7 @@ export const PERSONNEL_EVENT = {
   CREW_CREATED: 'crew_created',
   CREW_UPDATED: 'crew_updated',
   CREW_DELETED: 'crew_deleted',
+  CREW_STATUS_CHANGED: 'crew_status_changed',
   LINEMAN_CREATED: 'lineman_created',
   LINEMAN_UPDATED: 'lineman_updated',
   LINEMAN_DELETED: 'lineman_deleted',

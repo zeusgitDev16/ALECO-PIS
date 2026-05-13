@@ -236,7 +236,10 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
     if (!posterUrl) return { error: 'Cloudinary did not return a URL.' };
     return { posterUrl };
   } catch (err) {
-    return { error: typeof err?.message === 'string' ? err.message : 'Poster capture failed.' };
+    const code = err?.code || err?.statusCode || err?.http_code || 'unknown';
+    const msg = typeof err?.message === 'string' ? err.message : 'Poster capture failed.';
+    console.error(`[poster] captureInterruptionPosterToCloudinary id=${id} ERROR code=${code}:`, msg, err?.stack || '');
+    return { error: `${msg} (code: ${code})` };
   } finally {
     if (browser) {
       try {

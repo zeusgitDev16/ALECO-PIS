@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
 // Removed mysql, nodemailer, bcrypt, and cloudinary - they are all handled by the bricks now!
 
 import { buildAllowedCorsOrigins, normalizeOrigin, hasExplicitPublicCorsEnv } from './backend/config/corsOrigins.js';
@@ -32,7 +32,9 @@ import {
 import { pollB2BInboundOnce } from './backend/services/b2bInboundImapPoll.js';
 import { requireApiSession } from './backend/middleware/requireApiSession.js';
 
-dotenv.config();
+const __serverFilename = fileURLToPath(import.meta.url);
+const __serverDirname  = dirname(__serverFilename);
+dotenv.config({ path: resolve(__serverDirname, '.env') });
 
 process.env.TZ = 'Asia/Manila';
 

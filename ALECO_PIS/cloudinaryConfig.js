@@ -25,7 +25,13 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'aleco_reports',
-    allowed_formats: ['jpg', 'png', 'jpeg'],
+  allowed_formats: [
+  'jpg', 'jpeg', 'png', 'webp', // Standard Web
+  'heic', 'heif',               // Modern iOS (iPhone)
+  'avif',                       // High-efficiency Next-Gen
+  'bmp', 'tiff',                // Legacy/High-res
+  'gif'                         // Animated/Simple graphics
+],
   },
 });
 

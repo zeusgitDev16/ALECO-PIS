@@ -55,16 +55,16 @@ const COORDS = {
   //              (user name)
   //           __________________
   // Y spacing: 9pt between lines (tight but readable)
-  MSD_ACCOMPLISHED_BY_LABEL: { x: 495, y: 229 },   // "Accomplished by:" text
-  MSD_ACCOMPLISHED_BY_NAME:  { x: 485, y: 248 },   // User name (indented)
+  MSD_ACCOMPLISHED_BY_LABEL: { x: 450, y: 229 },   // "Accomplished by:" text
+  MSD_ACCOMPLISHED_BY_NAME:  { x: 450, y: 248 },   // User name (indented)
   MSD_ACCOMPLISHED_BY_LINE:  { x: 450, y: 250 },   // Signature line __________
-  LINEMEN_ACCOMPLISHED_BY_LABEL: { x: 495, y: 697}, // "Accomplished by:" text
-  LINEMEN_ACCOMPLISHED_BY_NAME:  { x: 485, y: 716 }, // User name (indented)
+  LINEMEN_ACCOMPLISHED_BY_LABEL: { x: 450, y: 697}, // "Accomplished by:" text
+  LINEMEN_ACCOMPLISHED_BY_NAME:  { x: 450, y: 716 }, // User name (indented)
   LINEMEN_ACCOMPLISHED_BY_LINE:  { x: 450, y: 720 }, // Signature line __________
 
   // ── COPY LABELS (user calibrate position) ─────────────────────────────
-  MSD_COPY_LABEL:    { x: 492, y: 262 },   // "MSD COPY" label - calibrate as needed
-  LINEMEN_COPY_LABEL:{ x: 481.8, y: 732 },  // "LINEMEN COPY" label - calibrate as needed
+  MSD_COPY_LABEL:    { x: 490, y: 262 },   // "MSD COPY" label - calibrate as needed
+  LINEMEN_COPY_LABEL:{ x: 478, y: 732 },  // "LINEMEN COPY" label - calibrate as needed
   CUT_LINE:          { x: 30, y: 470},   // Cut/fold here dashed line - calibrate y as needed
 
   // ── Header (top-right corner) ──────────────────────────────────────────

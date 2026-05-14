@@ -3,9 +3,7 @@ import { listB2BInbound, refreshB2BInbound } from '../../api/b2bMailApi';
 
 const MESSAGE_STATUS = {
   sent: { label: 'Sent', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
-  delivered: { label: 'Delivered', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
   failed: { label: 'Failed', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
-  draft: { label: 'Draft', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
   scheduled: { label: 'Scheduled', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
 };
 
@@ -64,7 +62,6 @@ export default function B2BMessagesView({
   onViewDetails,
   showLogs,
   stats,
-  hasDraftMessages,
 }) {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [inboundReplies, setInboundReplies] = useState([]);
@@ -133,13 +130,9 @@ export default function B2BMessagesView({
         action:
           m.status === 'sent'
             ? 'Message Sent'
-            : m.status === 'delivered'
-              ? 'Message Delivered'
-              : m.status === 'failed'
-                ? 'Send Failed'
-                : m.status === 'draft'
-                  ? 'Draft Created'
-                  : 'Message Updated',
+            : m.status === 'failed'
+              ? 'Send Failed'
+              : 'Message Updated',
         details: m.subject || '(No subject)',
         status: m.status,
       }))
@@ -192,20 +185,10 @@ export default function B2BMessagesView({
             <span className="stat-value">{stats.sent}</span>
             <span className="stat-label">Sent</span>
           </div>
-          <div className="b2b-messages-stat delivered">
-            <span className="stat-value">{stats.delivered}</span>
-            <span className="stat-label">Delivered</span>
-          </div>
           <div className="b2b-messages-stat failed">
             <span className="stat-value">{stats.failed}</span>
             <span className="stat-label">Failed</span>
           </div>
-          {hasDraftMessages && (
-            <div className="b2b-messages-stat draft">
-              <span className="stat-value">{stats.draft}</span>
-              <span className="stat-label">Drafts</span>
-            </div>
-          )}
         </div>
         <button
           type="button"

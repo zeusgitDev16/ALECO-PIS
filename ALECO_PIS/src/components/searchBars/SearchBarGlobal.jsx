@@ -332,37 +332,38 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       const j = result.data || {};
       if (!result.ok || !j.success) return;
       fetchNotificationCounts();
-      setNotificationListVersion((v) => v + 1);
+      markAllAsReadInList();
     } finally {
       setMarkAllReadLoading(false);
     }
   }, [canUseNotifications, fetchNotificationCounts]);
 
-  const removeNotificationFromList = useCallback((tabId, notificationId) => {
+  const markNotificationAsReadInList = useCallback((tabId, notificationId) => {
     const id = Number(notificationId);
-    const drop = (prev) => prev.filter((x) => Number(x.id) !== id);
+    const ts = new Date().toISOString();
+    const update = (prev) => prev.map((x) => (Number(x.id) === id ? { ...x, readAt: ts } : x));
     switch (tabId) {
-      case 'user':
-        setUserNotifications(drop);
-        break;
-      case 'personnel':
-        setPersonnelNotifications(drop);
-        break;
-      case 'b2b-mail':
-        setB2bMailNotifications(drop);
-        break;
-      case 'tickets':
-        setTicketsNotifications(drop);
-        break;
-      case 'interruptions':
-        setInterruptionsNotifications(drop);
-        break;
-      case 'memo':
-        setMemoNotifications(drop);
-        break;
-      default:
-        break;
+      case 'user': setUserNotifications(update); break;
+      case 'personnel': setPersonnelNotifications(update); break;
+      case 'b2b-mail': setB2bMailNotifications(update); break;
+      case 'tickets': setTicketsNotifications(update); break;
+      case 'interruptions': setInterruptionsNotifications(update); break;
+      case 'memo': setMemoNotifications(update); break;
+      default: break;
     }
+  }, []);
+
+  const markAllAsReadInList = useCallback(() => {
+    const ts = new Date().toISOString();
+    const updateAll = (prev) => prev.map((x) => (x.readAt ? x : { ...x, readAt: ts }));
+    setUserNotifications(updateAll);
+    setPersonnelNotifications(updateAll);
+    setB2bMailNotifications(updateAll);
+    setTicketsNotifications(updateAll);
+    setInterruptionsNotifications(updateAll);
+    setMemoNotifications(updateAll);
+    // Optimistically clear counts so the button disables immediately
+    setNotificationCounts(emptyNotificationCounts());
   }, []);
 
   const handleNotificationRowActivate = useCallback(
@@ -396,13 +397,13 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       });
       const j = result.data || {};
       if (!result.ok || !j.success) return;
-      removeNotificationFromList(notificationDetail.tabId, id);
+      markNotificationAsReadInList(notificationDetail.tabId, id);
       fetchNotificationCounts();
       setNotificationDetail(null);
     } finally {
       setMarkOneReadLoadingId(null);
     }
-  }, [notificationDetail, canUseNotifications, removeNotificationFromList, fetchNotificationCounts]);
+  }, [notificationDetail, canUseNotifications, markNotificationAsReadInList, fetchNotificationCounts]);
 
   useEffect(() => {
     if (!notificationDetail) return undefined;
@@ -705,11 +706,12 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
                                 canUseNotifications ? ' notifications-user-item--clickable' : ''
-                              }`}
+                              }${n.readAt ? ' is-read' : ''}`}
                               onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'user') : undefined}
                               onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'user') : undefined}
                             >
                               <div className="notifications-user-item__row">
+                                {!n.readAt && <span className="notifications-user-item__unread-dot" title="Unread" />}
                                 <span className="notifications-user-item__badge">{label}</span>
                                 <span className="notifications-user-item__email">{email || '—'}</span>
                               </div>
@@ -718,6 +720,12 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               ) : null}
                               <div className="notifications-user-item__meta">
                                 {[parts.join(' · '), timeStr].filter(Boolean).join(' · ')}
+                                {n.readAt && (
+                                  <>
+                                    {' · '}
+                                    <span className="notifications-user-item__read-status">Marked as read</span>
+                                  </>
+                                )}
                               </div>
                             </li>
                           );
@@ -748,16 +756,23 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
                                 canUseNotifications ? ' notifications-user-item--clickable' : ''
-                              }`}
+                              }${n.readAt ? ' is-read' : ''}`}
                               onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'personnel') : undefined}
                               onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'personnel') : undefined}
                             >
                               <div className="notifications-user-item__row">
+                                {!n.readAt && <span className="notifications-user-item__unread-dot" title="Unread" />}
                                 <span className="notifications-user-item__badge">{label}</span>
                                 <span className="notifications-user-item__email">{name || '—'}</span>
                               </div>
                               <div className="notifications-user-item__meta">
                                 {[parts.join(' · '), timeStr].filter(Boolean).join(' · ')}
+                                {n.readAt && (
+                                  <>
+                                    {' · '}
+                                    <span className="notifications-user-item__read-status">Marked as read</span>
+                                  </>
+                                )}
                               </div>
                             </li>
                           );
@@ -790,11 +805,12 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
                                 canUseNotifications ? ' notifications-user-item--clickable' : ''
-                              }`}
+                              }${n.readAt ? ' is-read' : ''}`}
                               onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'b2b-mail') : undefined}
                               onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'b2b-mail') : undefined}
                             >
                               <div className="notifications-user-item__row">
+                                {!n.readAt && <span className="notifications-user-item__unread-dot" title="Unread" />}
                                 <span className="notifications-user-item__badge">{label}</span>
                                 <span className="notifications-user-item__email">{headline}</span>
                               </div>
@@ -803,6 +819,12 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               ) : null}
                               <div className="notifications-user-item__meta">
                                 {[parts.join(' · '), timeStr].filter(Boolean).join(' · ')}
+                                {n.readAt && (
+                                  <>
+                                    {' · '}
+                                    <span className="notifications-user-item__read-status">Marked as read</span>
+                                  </>
+                                )}
                               </div>
                             </li>
                           );
@@ -833,16 +855,23 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
                                 canUseNotifications ? ' notifications-user-item--clickable' : ''
-                              }`}
+                              }${n.readAt ? ' is-read' : ''}`}
                               onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'tickets') : undefined}
                               onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'tickets') : undefined}
                             >
                               <div className="notifications-user-item__row">
+                                {!n.readAt && <span className="notifications-user-item__unread-dot" title="Unread" />}
                                 <span className="notifications-user-item__badge">{label}</span>
                                 <span className="notifications-user-item__email">{ticketId || '—'}</span>
                               </div>
                               <div className="notifications-user-item__meta">
                                 {[parts.join(' · '), timeStr].filter(Boolean).join(' · ')}
+                                {n.readAt && (
+                                  <>
+                                    {' · '}
+                                    <span className="notifications-user-item__read-status">Marked as read</span>
+                                  </>
+                                )}
                               </div>
                             </li>
                           );
@@ -873,11 +902,12 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
                                 canUseNotifications ? ' notifications-user-item--clickable' : ''
-                              }`}
+                              }${n.readAt ? ' is-read' : ''}`}
                               onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'interruptions') : undefined}
                               onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'interruptions') : undefined}
                             >
                               <div className="notifications-user-item__row">
+                                {!n.readAt && <span className="notifications-user-item__unread-dot" title="Unread" />}
                                 <span className="notifications-user-item__badge">{label}</span>
                                 <span className="notifications-user-item__email">
                                   {advisoryId != null && advisoryId !== '' ? `#${advisoryId}` : '—'}
@@ -885,6 +915,12 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               </div>
                               <div className="notifications-user-item__meta">
                                 {[parts.join(' · '), timeStr].filter(Boolean).join(' · ')}
+                                {n.readAt && (
+                                  <>
+                                    {' · '}
+                                    <span className="notifications-user-item__read-status">Marked as read</span>
+                                  </>
+                                )}
                               </div>
                             </li>
                           );
@@ -915,16 +951,23 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                               tabIndex={canUseNotifications ? 0 : undefined}
                               className={`notifications-user-item notifications-user-item--${kind.replace(/[^a-z0-9_-]/gi, '')}${
                                 canUseNotifications ? ' notifications-user-item--clickable' : ''
-                              }`}
+                              }${n.readAt ? ' is-read' : ''}`}
                               onClick={canUseNotifications ? () => handleNotificationRowActivate(n, 'memo') : undefined}
                               onKeyDown={canUseNotifications ? (e) => handleNotificationRowKeyDown(e, n, 'memo') : undefined}
                             >
                               <div className="notifications-user-item__row">
+                                {!n.readAt && <span className="notifications-user-item__unread-dot" title="Unread" />}
                                 <span className="notifications-user-item__badge">{label}</span>
                                 <span className="notifications-user-item__email">{controlNo || '—'}</span>
                               </div>
                               <div className="notifications-user-item__meta">
                                 {[parts.join(' · '), timeStr].filter(Boolean).join(' · ')}
+                                {n.readAt && (
+                                  <>
+                                    {' · '}
+                                    <span className="notifications-user-item__read-status">Marked as read</span>
+                                  </>
+                                )}
                               </div>
                             </li>
                           );
@@ -1257,10 +1300,10 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
               <button
                 type="button"
                 className="notification-detail-modal__btn notification-detail-modal__btn--primary"
-                disabled={markOneReadLoadingId === detailN.id}
+                disabled={markOneReadLoadingId === detailN.id || !!detailN.readAt}
                 onClick={handleMarkSingleNotificationRead}
               >
-                {markOneReadLoadingId === detailN.id ? 'Marking…' : 'Mark as read'}
+                {markOneReadLoadingId === detailN.id ? 'Marking…' : detailN.readAt ? 'Already read' : 'Mark as read'}
               </button>
             </div>
           </div>

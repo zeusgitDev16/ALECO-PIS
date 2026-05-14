@@ -199,11 +199,11 @@ router.get('/notifications', async (req, res) => {
 
     const [rows] = await pool.execute(
       `SELECT n.id, n.tab, n.event_type AS eventType, n.subject_email AS subjectEmail, n.subject_name AS subjectName,
-              n.detail, n.actor_email AS actorEmail, n.created_at AS createdAt
+              n.detail, n.actor_email AS actorEmail, n.created_at AS createdAt, r.read_at AS readAt
        FROM aleco_admin_notifications n
        LEFT JOIN aleco_admin_notification_reads r
          ON r.notification_id = n.id AND r.user_id = ?
-       WHERE n.tab = ? AND r.id IS NULL
+       WHERE n.tab = ?
        ORDER BY n.created_at DESC
        LIMIT 80`,
       [userId, tab]

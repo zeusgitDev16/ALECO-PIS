@@ -14,7 +14,7 @@
     background-color: var(--bg-body);
     flex-shrink: 0;
     flex-grow: 0;
-    z-index: 10;
+    z-index: 1100;
     box-sizing: border-box;
     transition: padding 0.3s ease, gap 0.3s ease;
 }
@@ -739,9 +739,37 @@
     border-color: rgba(128, 128, 128, 0.22);
 }
 
+.notifications-user-item__unread-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #3b82f6; /* Blue for new */
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 4px;
+}
+
+.notifications-user-item__read-status {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+[data-theme='dark'] .notifications-user-item__unread-dot {
+    background-color: #60a5fa;
+}
+
 .notifications-user-item--clickable:focus-visible {
     outline: 2px solid rgba(59, 130, 246, 0.75);
     outline-offset: 2px;
+}
+
+.notifications-user-item.is-read {
+    opacity: 0.6;
+    background: rgba(128, 128, 128, 0.03);
+    border-color: rgba(128, 128, 128, 0.08);
+}
+
+.notifications-user-item.is-read:hover {
+    opacity: 0.8;
 }
 
 /* Portaled outside .admin-top-nav — inherits same --nav-scale via .notification-detail-root (see tiers below) */

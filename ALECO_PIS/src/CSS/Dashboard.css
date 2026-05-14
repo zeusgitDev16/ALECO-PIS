@@ -172,7 +172,7 @@ body.admin-app-scroll-lock {
 .dashboard-header {
     position: sticky;
     top: 0;
-    z-index: 500;
+    z-index: 100;
     margin-bottom: 16px;
     display: flex;
     flex-direction: row;
@@ -1350,8 +1350,8 @@ body.admin-app-scroll-lock {
 }
 
 .dash-summary-card.ongoing {
-    border-bottom-color: #6366f1;
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.08) 100%);
+    border-bottom-color: #3b82f6;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.08) 100%);
 }
 
 .dash-summary-card.restored {
@@ -1360,13 +1360,23 @@ body.admin-app-scroll-lock {
 }
 
 .dash-summary-card.pending {
-    border-bottom-color: #3b82f6;
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.08) 100%);
+    border-bottom-color: #f59e0b;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(245, 158, 11, 0.08) 100%);
 }
 
 .dash-summary-card.total {
-    border-bottom-color: #2563eb;
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(37, 99, 235, 0.08) 100%);
+    border-bottom-color: #8b5cf6;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.08) 100%);
+}
+
+.dash-summary-card.sent {
+    border-bottom-color: #ec4899;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(236, 72, 153, 0.08) 100%);
+}
+
+.dash-summary-card.onhold {
+    border-bottom-color: #4b5563;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(75, 85, 99, 0.08) 100%);
 }
 
 .dash-summary-card.memo {
@@ -1377,6 +1387,11 @@ body.admin-app-scroll-lock {
 .dash-summary-card.crew {
     border-bottom-color: #0ea5e9;
     background: linear-gradient(180deg, var(--bg-card) 0%, rgba(14, 165, 233, 0.08) 100%);
+}
+
+.dash-summary-card.deployed {
+    border-bottom-color: #3b82f6;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.08) 100%);
 }
 
 .dash-summary-card.personnel {
@@ -1404,6 +1419,11 @@ body.admin-app-scroll-lock {
     background: linear-gradient(180deg, var(--bg-card) 0%, rgba(107, 114, 128, 0.08) 100%);
 }
 
+.dash-summary-card.onleave {
+    border-bottom-color: #ef4444;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.08) 100%);
+}
+
 .dash-summary-card.rescheduled {
     border-bottom-color: #f43f5e;
     background: linear-gradient(180deg, var(--bg-card) 0%, rgba(244, 63, 94, 0.08) 100%);
@@ -1429,7 +1449,7 @@ body.admin-app-scroll-lock {
 }
 
 .dash-summary-card.active.ongoing {
-    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), inset 0 0 0 1px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35), inset 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
 .dash-summary-card.active.restored {
@@ -1437,11 +1457,19 @@ body.admin-app-scroll-lock {
 }
 
 .dash-summary-card.active.pending {
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35), inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35), inset 0 0 0 1px rgba(245, 158, 11, 0.2);
 }
 
 .dash-summary-card.active.total {
-    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35), inset 0 0 0 1px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.35), inset 0 0 0 1px rgba(139, 92, 246, 0.2);
+}
+
+.dash-summary-card.active.sent {
+    box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.35), inset 0 0 0 1px rgba(236, 72, 153, 0.2);
+}
+
+.dash-summary-card.active.onhold {
+    box-shadow: 0 0 0 1px rgba(75, 85, 99, 0.35), inset 0 0 0 1px rgba(75, 85, 99, 0.2);
 }
 
 .dash-summary-card.active.memo {

@@ -2,7 +2,6 @@ import React from 'react';
 
 const B2BMessagesSidebarFilters = ({
   filters,
-  hasDraftMessages,
   onChange,
   onClearAll,
 }) => {
@@ -22,9 +21,7 @@ const B2BMessagesSidebarFilters = ({
         >
           <option value="all">All</option>
           <option value="sent">Sent</option>
-          <option value="delivered">Delivered</option>
           <option value="failed">Failed</option>
-          {hasDraftMessages && <option value="draft">Drafts</option>}
         </select>
       </div>
 

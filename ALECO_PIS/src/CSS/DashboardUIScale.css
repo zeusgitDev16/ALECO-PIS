@@ -136,23 +136,39 @@
   font-size: clamp(12px, calc(14px * var(--dashboard-ui-scale, 1)), 16px);
 }
 
-/* Custom scrollbar for scrollable lists */
-.location-insight-list--scrollable::-webkit-scrollbar {
+.location-insight-list--scrollable::-webkit-scrollbar,
+.b2b-activity-wrapper--scrollable::-webkit-scrollbar,
+.personnel-activity-wrapper--scrollable::-webkit-scrollbar {
   width: 4px;
 }
 
-.location-insight-list--scrollable::-webkit-scrollbar-track {
+.location-insight-list--scrollable::-webkit-scrollbar-track,
+.b2b-activity-wrapper--scrollable::-webkit-scrollbar-track,
+.personnel-activity-wrapper--scrollable::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 2px;
 }
 
-.location-insight-list--scrollable::-webkit-scrollbar-thumb {
+.location-insight-list--scrollable::-webkit-scrollbar-thumb,
+.b2b-activity-wrapper--scrollable::-webkit-scrollbar-thumb,
+.personnel-activity-wrapper--scrollable::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
 }
 
-.location-insight-list--scrollable::-webkit-scrollbar-thumb:hover {
+.location-insight-list--scrollable::-webkit-scrollbar-thumb:hover,
+.b2b-activity-wrapper--scrollable::-webkit-scrollbar-thumb:hover,
+.personnel-activity-wrapper--scrollable::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Scrollable Wrapper Base Styles */
+.b2b-activity-wrapper--scrollable,
+.personnel-activity-wrapper--scrollable {
+  max-height: 260px;
+  height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 @media (max-width: 480px) {
@@ -162,6 +178,22 @@
   
   .chart-wrapper--fullwidth .recharts-surface {
     width: 100% !important;
+  }
+  
+  /* Force 3 columns for B2B mail summary cards on mobile */
+  .b2b-mail-summary-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  /* Force 2 columns for Personnel summary cards on mobile */
+  .personnel-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Force 3 columns for Memo and User summary cards on mobile */
+  .memo-summary-grid,
+  .user-summary-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
   }
   
   /* Bar chart Y-axis label truncation on mobile */
@@ -333,6 +365,37 @@
   }
   
   .dashboard-ticket-features-wrapper .dash-summary-trend {
+    font-size: 7px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* B2B Mail Overview Cards - 3 columns on mobile */
+  .dashboard-page-container .dashboard-b2b-mail-wrapper .dash-summary-grid.count-5,
+  .dashboard-b2b-mail-wrapper .dash-summary-grid.count-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+
+  .dashboard-b2b-mail-wrapper .dash-summary-card {
+    padding: 4px 6px !important;
+    min-height: 50px !important;
+  }
+
+  .dashboard-b2b-mail-wrapper .dash-summary-title {
+    font-size: 9px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .dashboard-b2b-mail-wrapper .dash-summary-count {
+    font-size: 14px !important;
+  }
+
+  .dashboard-b2b-mail-wrapper .dash-summary-trend {
     font-size: 7px !important;
     line-height: 1.1 !important;
     white-space: nowrap !important;

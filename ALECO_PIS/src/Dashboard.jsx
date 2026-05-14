@@ -489,13 +489,7 @@ const AdminDashboard = () => {
 
     // Dynamic calculations for Support Tickets analytics
     const ticketStats = useMemo(() => {
-        const hasData = tickets.length > 0;
-        const sourceData = hasData ? tickets : [
-            { id: 1, status: 'Pending', category: 'Primary Line No Power', municipality: 'Legazpi', is_urgent: 1, created_at: new Date().toISOString() },
-            { id: 2, status: 'Ongoing', category: 'Metering Issue', municipality: 'Daraga', is_urgent: 0, created_at: new Date().toISOString(), service_memo_id: 101 },
-            { id: 3, status: 'Restored', category: 'Fallen Pole', municipality: 'Camalig', is_urgent: 0, created_at: new Date().toISOString() },
-            { id: 4, status: 'NoFaultFound', category: 'Other', municipality: 'Guinobatan', is_urgent: 0, created_at: new Date().toISOString() }
-        ];
+        const sourceData = tickets;
 
         // 1. Monthly Trends (Last 6 Months)
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -525,34 +519,39 @@ const AdminDashboard = () => {
             .sort((a, b) => a.order - b.order)
             .map(({ name, count }) => ({ name, count }));
 
-        // 2. Category Breakdown (Top 5)
+        // 2. Category Breakdown (Top 10)
         const catMap = {};
         sourceData.forEach(t => {
             catMap[t.category || 'Other'] = (catMap[t.category || 'Other'] || 0) + 1;
         });
+        const maxCatCount = Math.max(...Object.values(catMap), 1);
         const categoryData = Object.entries(catMap)
-            .map(([name, count]) => ({ name, count }))
+            .map(([name, count]) => ({ 
+                name, 
+                count,
+                perc: `${Math.min(100, (count / maxCatCount) * 100)}%`
+            }))
             .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
+            .slice(0, 10);
 
-        // 3. Top Ticket Locations
+        // 3. Top Ticket Locations (Top 10)
         const locMap = {};
         sourceData.forEach(t => {
             const loc = t.municipality || 'Unknown';
             locMap[loc] = (locMap[loc] || 0) + 1;
         });
-        const totalTickets = Math.max(1, sourceData.length);
+        const maxLocCount = Math.max(...Object.values(locMap), 1);
         const topLocations = Object.entries(locMap)
             .map(([name, count]) => ({ 
                 name, 
                 count, 
-                perc: `${Math.min(100, (count / totalTickets) * 100)}%` 
+                perc: `${Math.min(100, (count / maxLocCount) * 100)}%` 
             }))
             .sort((a, b) => b.count - a.count)
-            .slice(0, 4);
+            .slice(0, 10);
 
         // Summary Counts for Cards — use DB stats if available, else fall back to ticket array
-        const total    = ticketDashStats ? Number(ticketDashStats.total)       : (hasData ? tickets.length : 0);
+        const total    = ticketDashStats ? Number(ticketDashStats.total)       : tickets.length;
         const pending  = ticketDashStats ? Number(ticketDashStats.pending)      : sourceData.filter(t => t.status === 'Pending').length;
         const ongoing  = ticketDashStats ? Number(ticketDashStats.ongoing)      : sourceData.filter(t => t.status === 'Ongoing').length;
         const onhold   = ticketDashStats ? Number(ticketDashStats.onhold)       : sourceData.filter(t => t.status === 'OnHold').length;
@@ -572,20 +571,25 @@ const AdminDashboard = () => {
         const failed  = b2bMessages.filter(m => m.status === 'failed').length;
         const draft   = b2bMessages.filter(m => m.status === 'draft').length;
         const queued  = b2bMessages.filter(m => ['queued','sending'].includes(m.status)).length;
+
+        // Recipient-level aggregation for "Real" delivery status
+        const totalSentRecipients = b2bMessages.reduce((sum, m) => sum + (Number(m.sent_count) || 0), 0);
+        const totalFailedRecipients = b2bMessages.reduce((sum, m) => sum + (Number(m.failed_count) || 0), 0);
+        const totalPendingRecipients = b2bMessages.reduce((sum, m) => {
+            if (['queued', 'sending'].includes(m.status)) {
+                return sum + (Number(m.recipients_count) || 0);
+            }
+            return sum;
+        }, 0);
         const totalContacts = b2bContacts.length;
+        const active     = b2bContacts.filter(c => c.is_active === 1 || c.is_active === true).length;
+        const inactive   = b2bContacts.filter(c => c.is_active === 0 || c.is_active === false).length;
         const verified   = b2bContacts.filter(c => c.is_verified === 1 || c.is_verified === true).length;
         const unverified = totalContacts - verified;
 
         const deliveryData = [
-            { name: 'Sent',   value: sent,   fill: 'var(--accent-success)' },
-            { name: 'Failed', value: failed, fill: 'var(--accent-danger)' },
-            { name: 'Draft',  value: draft,  fill: 'var(--text-secondary)' },
-            { name: 'Queued', value: queued, fill: 'var(--accent-warning)' },
-        ];
-
-        const verificationData = [
-            { name: 'Verified',   value: verified   || 0, fill: 'var(--accent-success)' },
-            { name: 'Unverified', value: unverified || 0, fill: 'var(--accent-warning)' },
+            { name: 'Sent',   value: totalSentRecipients, fill: 'var(--accent-success)' },
+            { name: 'Failed', value: totalFailedRecipients, fill: 'var(--accent-danger)' },
         ];
 
         const recentActivity = b2bMessages.slice(0, 5).map(m => ({
@@ -596,7 +600,7 @@ const AdminDashboard = () => {
             time:      m.updated_at ? new Date(m.updated_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : '—',
         }));
 
-        return { totalSent: sent, delivered: sent, failed, pending: queued, draft, totalContacts, deliveryData, verificationData, recentActivity };
+        return { totalSent: totalSentRecipients, failed, totalContacts, active, inactive, unverified, deliveryData, recentActivity };
     }, [b2bMessages, b2bContacts]);
 
     // Dynamic calculations for Personnel — real data
@@ -613,7 +617,7 @@ const AdminDashboard = () => {
         const crewStatusData = [
             { name: 'Available', value: availableCrews, fill: 'var(--accent-success)' },
             { name: 'Deployed',  value: deployedCrews,  fill: 'var(--accent-primary)' },
-            { name: 'Offline',   value: offlineCrews,   fill: 'var(--text-secondary)' },
+            { name: 'On Leave',  value: onLeave,        fill: 'var(--accent-danger)' },
         ];
 
         const recentDeployments = crews.slice(0, 5).map(c => ({
@@ -632,16 +636,25 @@ const AdminDashboard = () => {
         const total  = memos.length;
         const saved  = memos.filter(m => m.memo_status === 'saved').length;
         const closed = memos.filter(m => m.memo_status === 'closed').length;
-        return { total, saved, closed };
+        const statusData = [
+            { name: 'Saved',  value: saved,  fill: 'var(--accent-warning)' },
+            { name: 'Closed', value: closed, fill: 'var(--accent-success)' },
+        ];
+        return { total, saved, closed, statusData };
     }, [memos]);
 
     // Users stats — real data
     const userStats = useMemo(() => {
-        const total    = users.length;
-        const admins   = users.filter(u => (u.role || '').toLowerCase() === 'admin').length;
+        const total     = users.length;
+        const admins    = users.filter(u => (u.role || '').toLowerCase() === 'admin').length;
         const employees = users.filter(u => (u.role || '').toLowerCase() === 'employee').length;
-        const others   = total - admins - employees;
-        return { total, admins, employees, others };
+        const others    = total - admins - employees;
+        const roleData = [
+            { name: 'Admins',    value: admins,    fill: 'var(--accent-primary)' },
+            { name: 'Employees', value: employees, fill: 'var(--accent-success)' },
+            { name: 'Others',    value: others,    fill: 'var(--text-secondary)' },
+        ];
+        return { total, admins, employees, others, roleData };
     }, [users]);
 
 
@@ -1112,7 +1125,7 @@ const AdminDashboard = () => {
                                 <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.nofault}</div>
                                 <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Verified clear'}</div>
                             </div>
-                            <div className="dash-summary-card pending">
+                            <div className="dash-summary-card onhold">
                                 <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={70} height={10} /> : 'On Hold'}</div>
                                 <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.onhold}</div>
                                 <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Paused tickets'}</div>
@@ -1245,15 +1258,36 @@ const AdminDashboard = () => {
                                 <FaListUl className="chart-icon" />
                                 <h4>Ticket Category Breakdown</h4>
                             </div>
-                            <div className="chart-wrapper">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart layout="vertical" data={ticketStats.categoryData}>
-                                        <XAxis type="number" hide />
-                                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} width={80} />
-                                        <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ background: 'var(--bg-card)' }} />
-                                        <Bar dataKey="count" fill="var(--accent-primary)" radius={[0, 4, 4, 0]} barSize={20} />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                            <div className="location-insight-list location-insight-list--scrollable">
+                                {ticketStatsLoading ? (
+                                    Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="location-row">
+                                            <div className="loc-info">
+                                                <span><Skeleton width={100} height={11} /></span>
+                                                <span><Skeleton width={20} height={11} /></span>
+                                            </div>
+                                            <div className="loc-bar-bg">
+                                                <div className="loc-bar-fill" style={{ width: 0 }}></div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : ticketStats.categoryData.length > 0 ? (
+                                    <div className="location-list-content">
+                                        {ticketStats.categoryData.map((cat, index) => (
+                                            <div key={index} className="location-row">
+                                                <div className="loc-info">
+                                                    <span style={{ fontSize: 'clamp(11px, calc(12px * var(--dashboard-ui-scale, 1)), 14px)' }}>{cat.name}</span>
+                                                    <span style={{ fontSize: 'clamp(10px, calc(11px * var(--dashboard-ui-scale, 1)), 12px)' }}>{cat.count}</span>
+                                                </div>
+                                                <div className="loc-bar-bg">
+                                                    <div className="loc-bar-fill" style={{ width: cat.perc }}></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="location-list-na">N/A</div>
+                                )}
                             </div>
                         </div>
 
@@ -1262,18 +1296,36 @@ const AdminDashboard = () => {
                                 <FaMapMarkerAlt className="chart-icon" />
                                 <h4>Top Ticket Locations</h4>
                             </div>
-                            <div className="location-insight-list">
-                                {ticketStats.topLocations.map((loc, index) => (
-                                    <div key={index} className="location-row">
-                                        <div className="loc-info">
-                                            <span>{loc.name}</span>
-                                            <span>{loc.count}</span>
+                            <div className="location-insight-list location-insight-list--scrollable">
+                                {ticketStatsLoading ? (
+                                    Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="location-row">
+                                            <div className="loc-info">
+                                                <span><Skeleton width={100} height={11} /></span>
+                                                <span><Skeleton width={20} height={11} /></span>
+                                            </div>
+                                            <div className="loc-bar-bg">
+                                                <div className="loc-bar-fill" style={{ width: 0 }}></div>
+                                            </div>
                                         </div>
-                                        <div className="loc-bar-bg">
-                                            <div className="loc-bar-fill" style={{ width: loc.perc }}></div>
-                                        </div>
+                                    ))
+                                ) : ticketStats.topLocations.length > 0 ? (
+                                    <div className="location-list-content">
+                                        {ticketStats.topLocations.map((loc, index) => (
+                                            <div key={index} className="location-row">
+                                                <div className="loc-info">
+                                                    <span style={{ fontSize: 'clamp(11px, calc(12px * var(--dashboard-ui-scale, 1)), 14px)' }}>{loc.name}</span>
+                                                    <span style={{ fontSize: 'clamp(10px, calc(11px * var(--dashboard-ui-scale, 1)), 12px)' }}>{loc.count}</span>
+                                                </div>
+                                                <div className="loc-bar-bg">
+                                                    <div className="loc-bar-fill" style={{ width: loc.perc }}></div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                ) : (
+                                    <div className="location-list-na">N/A</div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1290,26 +1342,31 @@ const AdminDashboard = () => {
                         
                         <div className="b2b-analytics-layout">
                             {/* B2B Mail Summary Stats - Unified Cards */}
-                            <div className="dash-summary-grid count-4">
+                            <div className="dash-summary-grid count-5">
                                 <div className="dash-summary-card total">
-                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={60} height={10} /> : 'Total Sent'}</div>
-                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.totalSent}</div>
-                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={50} height={8} /> : 'All Time'}</div>
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={60} height={10} /> : 'Total Contacts'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.totalContacts}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={50} height={8} /> : 'Partner Pool'}</div>
                                 </div>
-                                <div className="dash-summary-card delivered">
-                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={60} height={10} /> : 'Delivered'}</div>
-                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.delivered}</div>
-                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={60} height={8} /> : 'Success Rate'}</div>
+                                <div className="dash-summary-card restored">
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={60} height={10} /> : 'Active'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.active}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={60} height={8} /> : 'Enabled'}</div>
                                 </div>
-                                <div className="dash-summary-card failed">
-                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={50} height={10} /> : 'Failed'}</div>
-                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.failed}</div>
-                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={70} height={8} /> : 'Needs Attention'}</div>
+                                <div className="dash-summary-card outage">
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={60} height={10} /> : 'Inactive'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.inactive}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={60} height={8} /> : 'Disabled'}</div>
                                 </div>
                                 <div className="dash-summary-card pending">
-                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={50} height={10} /> : 'Pending'}</div>
-                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.pending}</div>
-                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={50} height={8} /> : 'In Queue'}</div>
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={50} height={10} /> : 'Unverified'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.unverified}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={70} height={8} /> : 'Email Pending'}</div>
+                                </div>
+                                <div className="dash-summary-card sent">
+                                    <div className="dash-summary-title">{b2bLoading ? <Skeleton width={50} height={10} /> : 'Total Sent'}</div>
+                                    <div className="dash-summary-count">{b2bLoading ? <Skeleton width={40} height={16} /> : b2bMailStats.totalSent}</div>
+                                    <div className="dash-summary-trend">{b2bLoading ? <Skeleton width={50} height={8} /> : 'Successfully Sent'}</div>
                                 </div>
                             </div>
 
@@ -1321,60 +1378,80 @@ const AdminDashboard = () => {
                                         <h4>{b2bLoading ? <Skeleton width={150} height={20} /> : 'Delivery Status'}</h4>
                                     </div>
                                     <div className="chart-wrapper">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={b2bMailStats.deliveryData} layout="vertical">
-                                                <XAxis type="number" hide />
-                                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={11} width={80} />
-                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                                <Bar dataKey="value" barSize={20} radius={[0, 4, 4, 0]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
+                                        {b2bLoading ? (
+                                            <Skeleton width="100%" height={180} />
+                                        ) : (() => {
+                                            const deliveryData = b2bMailStats.deliveryData;
+                                            return (
+                                                <>
+                                                    <div className="interruption-types-desktop">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie data={deliveryData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                                    {deliveryData.map((entry, index) => (
+                                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                    ))}
+                                                                </Pie>
+                                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+
+                                                    <div className="interruption-types-mobile">
+                                                        <div className="mobile-chart-left">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <PieChart>
+                                                                    <Pie data={deliveryData} cx="50%" cy="50%" innerRadius={15} outerRadius={28} paddingAngle={2} dataKey="value">
+                                                                        {deliveryData.map((entry, index) => (
+                                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                        ))}
+                                                                    </Pie>
+                                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '6px', fontSize: '10px' }} />
+                                                                </PieChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                        <div className="mobile-chart-right">
+                                                            {deliveryData.map((entry, index) => (
+                                                                <div key={index} className="mobile-legend-item">
+                                                                    <span className="mobile-legend-color" style={{ backgroundColor: entry.fill }} />
+                                                                    <span className="mobile-legend-label">{entry.name}</span>
+                                                                    <span className="mobile-legend-value">{entry.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
 
-                                {/* B2B Contact Verification Health Analytics - Structural Mirroring */}
-                                <div className="chart-card">
-                                    <div className="chart-header-group">
-                                        {b2bLoading ? <Skeleton width={24} height={24} circle /> : <FaCheckCircle className="chart-icon" />}
-                                        <h4>{b2bLoading ? <Skeleton width={180} height={20} /> : 'Contact Verification Health'}</h4>
-                                    </div>
-                                    <div className="chart-wrapper">
-                                        {b2bLoading ? (
-                                            <Skeleton width="100%" height={180} borderRadius={8} />
-                                        ) : (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <PieChart>
-                                                    <Pie data={b2bMailStats.verificationData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
-                                                        {b2bMailStats.verificationData.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                                    <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
-                                                </PieChart>
-                                            </ResponsiveContainer>
-                                        )}
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Recent Mail Activity List - Structural Mirroring */}
-                            <div className="b2b-activity-list">
-                                {(b2bLoading ? Array.from({ length: 5 }) : b2bMailStats.recentActivity).map((activity, i) => (
-                                    <div key={b2bLoading ? i : activity.id} className="b2b-activity-item">
-                                        <div className="b2b-activity-content">
-                                            <span className="b2b-activity-label">
-                                                {b2bLoading ? <Skeleton width={150} height={14} /> : activity.subject}
-                                            </span>
-                                            <span className="b2b-activity-time">
-                                                {b2bLoading ? <Skeleton width={120} height={12} /> : `To: ${activity.recipient} • ${activity.time}`}
-                                            </span>
-                                        </div>
-                                        <span className={`feeder-status-tag ${b2bLoading ? '' : activity.status.toLowerCase()}`}>
-                                            {b2bLoading ? <Skeleton width={60} height={20} /> : activity.status}
-                                        </span>
-                                    </div>
-                                ))}
+                            <div className="b2b-activity-wrapper--scrollable">
+                                <div className="b2b-activity-list">
+                                    {!b2bLoading && b2bMailStats.recentActivity.length === 0 ? (
+                                        <div className="location-list-na">N/A</div>
+                                    ) : (
+                                        (b2bLoading ? Array.from({ length: 5 }) : b2bMailStats.recentActivity).map((activity, i) => (
+                                            <div key={b2bLoading ? i : activity.id} className="b2b-activity-item">
+                                                <div className="b2b-activity-content">
+                                                    <span className="b2b-activity-label">
+                                                        {b2bLoading ? <Skeleton width={150} height={14} /> : activity.subject}
+                                                    </span>
+                                                    <span className="b2b-activity-time">
+                                                        {b2bLoading ? <Skeleton width={120} height={12} /> : `To: ${activity.recipient} • ${activity.time}`}
+                                                    </span>
+                                                </div>
+                                                <span className={`feeder-status-tag ${b2bLoading ? '' : activity.status.toLowerCase()}`}>
+                                                    {b2bLoading ? <Skeleton width={60} height={20} /> : activity.status}
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1388,7 +1465,7 @@ const AdminDashboard = () => {
                         
                         <div className="personnel-analytics-layout">
                             {/* Personnel Summary Stats - Unified Cards */}
-                            <div className="dash-summary-grid count-4">
+                            <div className="dash-summary-grid count-4 personnel-summary-grid">
                                 <div className="dash-summary-card personnel">
                                     <div className="dash-summary-title">{personnelLoading ? <Skeleton width={70} height={10} /> : 'Total Linemen'}</div>
                                     <div className="dash-summary-count">{personnelLoading ? <Skeleton width={40} height={16} /> : personnelStats.totalLinemen}</div>
@@ -1399,15 +1476,15 @@ const AdminDashboard = () => {
                                     <div className="dash-summary-count">{personnelLoading ? <Skeleton width={40} height={16} /> : personnelStats.availableCrews}</div>
                                     <div className="dash-summary-trend">{personnelLoading ? <Skeleton width={80} height={8} /> : 'Ready for dispatch'}</div>
                                 </div>
-                                <div className="dash-summary-card ongoing">
+                                <div className="dash-summary-card deployed">
                                     <div className="dash-summary-title">{personnelLoading ? <Skeleton width={80} height={10} /> : 'Deployed Crews'}</div>
                                     <div className="dash-summary-count">{personnelLoading ? <Skeleton width={40} height={16} /> : personnelStats.deployedCrews}</div>
                                     <div className="dash-summary-trend">{personnelLoading ? <Skeleton width={60} height={8} /> : 'Crews on field'}</div>
                                 </div>
-                                <div className="dash-summary-card cancelled">
+                                <div className="dash-summary-card onleave">
                                     <div className="dash-summary-title">{personnelLoading ? <Skeleton width={50} height={10} /> : 'On Leave'}</div>
                                     <div className="dash-summary-count">{personnelLoading ? <Skeleton width={40} height={16} /> : personnelStats.onLeave}</div>
-                                    <div className="dash-summary-trend">{personnelLoading ? <Skeleton width={70} height={8} /> : 'Away from duty'}</div>
+                                    <div className="dash-summary-trend">{personnelLoading ? <Skeleton width={60} height={8} /> : 'Away / Leave'}</div>
                                 </div>
                             </div>
 
@@ -1421,48 +1498,83 @@ const AdminDashboard = () => {
                                     <div className="chart-wrapper">
                                         {personnelLoading ? (
                                             <Skeleton width="100%" height={180} />
-                                        ) : (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <PieChart>
-                                                    <Pie data={personnelStats.crewStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
-                                                        {personnelStats.crewStatusData.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                                    <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
-                                                </PieChart>
-                                            </ResponsiveContainer>
-                                        )}
+                                        ) : (() => {
+                                            const statusData = personnelStats.crewStatusData;
+                                            return (
+                                                <>
+                                                    {/* Desktop/Tablet: Standard pie chart with bottom legend */}
+                                                    <div className="interruption-types-desktop">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                                    {statusData.map((entry, index) => (
+                                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                    ))}
+                                                                </Pie>
+                                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                                <Legend verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ paddingBottom: '10px' }} />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+
+                                                    {/* Mobile: Dual pane - left small circle, right legend */}
+                                                    <div className="interruption-types-mobile">
+                                                        <div className="mobile-chart-left">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <PieChart>
+                                                                    <Pie data={statusData} cx="50%" cy="50%" innerRadius={15} outerRadius={28} paddingAngle={2} dataKey="value">
+                                                                        {statusData.map((entry, index) => (
+                                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                        ))}
+                                                                    </Pie>
+                                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '6px', fontSize: '10px' }} />
+                                                                </PieChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                        <div className="mobile-chart-right">
+                                                            {statusData.map((entry, index) => (
+                                                                <div key={index} className="mobile-legend-item">
+                                                                    <span className="mobile-legend-color" style={{ backgroundColor: entry.fill }} />
+                                                                    <span className="mobile-legend-label">{entry.name}</span>
+                                                                    <span className="mobile-legend-value">{entry.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Recent Crews List - Structural Mirroring */}
-                            <div className="personnel-activity-list">
-                                {personnelLoading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <div key={i} className="personnel-activity-item">
-                                            <div className="personnel-activity-content">
-                                                <span className="personnel-activity-label"><Skeleton width={120} height={14} /></span>
-                                                <span className="personnel-activity-time"><Skeleton width={150} height={12} /></span>
+                            <div className="personnel-activity-wrapper--scrollable">
+                                <div className="personnel-activity-list">
+                                    {personnelLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <div key={i} className="personnel-activity-item">
+                                                <div className="personnel-activity-content">
+                                                    <span className="personnel-activity-label"><Skeleton width={120} height={14} /></span>
+                                                    <span className="personnel-activity-time"><Skeleton width={150} height={12} /></span>
+                                                </div>
+                                                <span className="feeder-status-tag"><Skeleton width={60} height={20} /></span>
                                             </div>
-                                            <span className="feeder-status-tag"><Skeleton width={60} height={20} /></span>
+                                        ))
+                                    ) : personnelStats.recentDeployments.length === 0 ? (
+                                        <div className="location-list-na">N/A</div>
+                                    ) : personnelStats.recentDeployments.map(deployment => (
+                                        <div key={deployment.id} className="personnel-activity-item">
+                                            <div className="personnel-activity-content">
+                                                <span className="personnel-activity-label">{deployment.crew}</span>
+                                                <span className="personnel-activity-time">Lead: {deployment.lead} &bull; {deployment.members} member{deployment.members !== 1 ? 's' : ''}</span>
+                                            </div>
+                                            <span className={`feeder-status-tag ${deployment.status.toLowerCase() === 'deployed' ? 'critical' : deployment.status.toLowerCase() === 'offline' ? 'failed' : 'scheduled'}`}>
+                                                {deployment.status}
+                                            </span>
                                         </div>
-                                    ))
-                                ) : personnelStats.recentDeployments.length === 0 ? (
-                                    <p className="placeholder-desc" style={{ textAlign: 'center', padding: '12px 0' }}>No crews found.</p>
-                                ) : personnelStats.recentDeployments.map(deployment => (
-                                    <div key={deployment.id} className="personnel-activity-item">
-                                        <div className="personnel-activity-content">
-                                            <span className="personnel-activity-label">{deployment.crew}</span>
-                                            <span className="personnel-activity-time">Lead: {deployment.lead} &bull; {deployment.members} member{deployment.members !== 1 ? 's' : ''}</span>
-                                        </div>
-                                        <span className={`feeder-status-tag ${deployment.status.toLowerCase() === 'deployed' ? 'critical' : deployment.status.toLowerCase() === 'offline' ? 'failed' : 'scheduled'}`}>
-                                            {deployment.status}
-                                        </span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1477,7 +1589,7 @@ const AdminDashboard = () => {
                                 <h3 className="column-section-title">Service Memos</h3>
                                 <p className="widget-text">Summary of field service memo records.</p>
                             </div>
-                            <div className="dash-summary-grid count-3">
+                            <div className="dash-summary-grid count-3 memo-summary-grid">
                                 <div className="dash-summary-card memo">
                                     <div className="dash-summary-title">{memosLoading ? <Skeleton width={60} height={10} /> : 'Total Memos'}</div>
                                     <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.total}</div>
@@ -1501,25 +1613,51 @@ const AdminDashboard = () => {
                                         <h4>Memo Status Split</h4>
                                     </div>
                                     <div className="chart-wrapper">
-                                        {memosLoading
-                                            ? <Skeleton height="100%" borderRadius={8} />
-                                            : <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={[
-                                                        { name: 'Saved', value: memoStats.saved },
-                                                        { name: 'Closed', value: memoStats.closed },
-                                                    ]}
-                                                    cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value"
-                                                >
-                                                    <Cell fill="#f59e0b" />
-                                                    <Cell fill="#22c55e" />
-                                                </Pie>
-                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                                <Legend verticalAlign="bottom" align="center" iconSize={8} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                        }
+                                        {memosLoading ? (
+                                            <Skeleton height="100%" borderRadius={8} />
+                                        ) : (() => {
+                                            const statusData = memoStats.statusData;
+                                            return (
+                                                <>
+                                                    <div className="interruption-types-desktop">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                                    {statusData.map((entry, index) => (
+                                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                    ))}
+                                                                </Pie>
+                                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                                <Legend verticalAlign="bottom" align="center" iconSize={8} />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+                                                    <div className="interruption-types-mobile">
+                                                        <div className="mobile-chart-left">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <PieChart>
+                                                                    <Pie data={statusData} cx="50%" cy="50%" innerRadius={15} outerRadius={28} paddingAngle={2} dataKey="value">
+                                                                        {statusData.map((entry, index) => (
+                                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                        ))}
+                                                                    </Pie>
+                                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '6px', fontSize: '10px' }} />
+                                                                </PieChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                        <div className="mobile-chart-right">
+                                                            {statusData.map((entry, index) => (
+                                                                <div key={index} className="mobile-legend-item">
+                                                                    <span className="mobile-legend-color" style={{ backgroundColor: entry.fill }} />
+                                                                    <span className="mobile-legend-label">{entry.name}</span>
+                                                                    <span className="mobile-legend-value">{entry.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -1531,7 +1669,7 @@ const AdminDashboard = () => {
                                 <h3 className="column-section-title">System Users</h3>
                                 <p className="widget-text">Registered accounts and role distribution.</p>
                             </div>
-                            <div className="dash-summary-grid count-3">
+                            <div className="dash-summary-grid count-3 user-summary-grid">
                                 <div className="dash-summary-card user">
                                     <div className="dash-summary-title">{usersLoading ? <Skeleton width={60} height={10} /> : 'Total Users'}</div>
                                     <div className="dash-summary-count">{usersLoading ? <Skeleton width={40} height={16} /> : userStats.total}</div>
@@ -1555,27 +1693,51 @@ const AdminDashboard = () => {
                                         <h4>Role Distribution</h4>
                                     </div>
                                     <div className="chart-wrapper">
-                                        {usersLoading
-                                            ? <Skeleton height="100%" borderRadius={8} />
-                                            : <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={[
-                                                        { name: 'Admin', value: userStats.admins },
-                                                        { name: 'Employee', value: userStats.employees },
-                                                        { name: 'Other', value: userStats.others },
-                                                    ]}
-                                                    cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value"
-                                                >
-                                                    <Cell fill="#a855f7" />
-                                                    <Cell fill="#22c55e" />
-                                                    <Cell fill="#64748b" />
-                                                </Pie>
-                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
-                                                <Legend verticalAlign="bottom" align="center" iconSize={8} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                        }
+                                        {usersLoading ? (
+                                            <Skeleton height="100%" borderRadius={8} />
+                                        ) : (() => {
+                                            const roleData = userStats.roleData;
+                                            return (
+                                                <>
+                                                    <div className="interruption-types-desktop">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie data={roleData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={5} dataKey="value">
+                                                                    {roleData.map((entry, index) => (
+                                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                    ))}
+                                                                </Pie>
+                                                                <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px' }} />
+                                                                <Legend verticalAlign="bottom" align="center" iconSize={8} />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+                                                    <div className="interruption-types-mobile">
+                                                        <div className="mobile-chart-left">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <PieChart>
+                                                                    <Pie data={roleData} cx="50%" cy="50%" innerRadius={15} outerRadius={28} paddingAngle={2} dataKey="value">
+                                                                        {roleData.map((entry, index) => (
+                                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                                        ))}
+                                                                    </Pie>
+                                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '6px', fontSize: '10px' }} />
+                                                                </PieChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                        <div className="mobile-chart-right">
+                                                            {roleData.map((entry, index) => (
+                                                                <div key={index} className="mobile-legend-item">
+                                                                    <span className="mobile-legend-color" style={{ backgroundColor: entry.fill }} />
+                                                                    <span className="mobile-legend-label">{entry.name}</span>
+                                                                    <span className="mobile-legend-value">{entry.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>

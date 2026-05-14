@@ -142,7 +142,6 @@ export function useB2BMessages() {
     setFolder,
     // Operations
     loadMessages,
-    saveDraft,
     sendMessage,
     previewRecipients,
   };

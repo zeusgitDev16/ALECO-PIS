@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import AdminLayout from './AdminLayout';
 import { useB2BContacts } from '../hooks/useB2BContacts';
@@ -28,6 +28,12 @@ import '../CSS/B2BFilterLayout.css';
 const DEFAULT_CONTACTS_FILTERS = {
   filter: 'all',
   searchQuery: '',
+};
+
+const MESSAGE_STATUS = {
+  sent: { label: 'Sent', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
+  failed: { label: 'Failed', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
+  scheduled: { label: 'Scheduled', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
 };
 
 const DEFAULT_MESSAGES_FILTERS = {
@@ -76,7 +82,6 @@ const B2BMail = () => {
     clearMessage: clearComposeMessage,
     previewResult,
     clearPreview,
-    saveDraft,
     sendMessage,
     previewRecipients,
     loadMessages,
@@ -260,24 +265,14 @@ const B2BMail = () => {
     }
   };
 
-  const handleSaveDraft = async (formData) => {
-    await saveDraft(formData);
-    closeCompose();
-  };
 
   const feederOptions = useMemo(() => feeders, [feeders]);
 
-  const hasDraftMessages = useMemo(
-    () => messages.some((m) => m.status === 'draft'),
-    [messages]
-  );
 
   const messagesStats = useMemo(() => ({
     total: messages.length,
     sent: messages.filter((m) => m.status === 'sent').length,
-    delivered: messages.filter((m) => m.status === 'delivered').length,
     failed: messages.filter((m) => m.status === 'failed').length,
-    draft: messages.filter((m) => m.status === 'draft').length,
   }), [messages]);
 
   const filteredMessages = useMemo(() => {
@@ -365,7 +360,6 @@ const B2BMail = () => {
       ) : (
         <B2BMessagesSidebarFilters
           filters={messagesFilters}
-          hasDraftMessages={hasDraftMessages}
           onChange={handleUpdateMessagesFilters}
           onClearAll={handleClearMessagesFilters}
         />
@@ -519,7 +513,6 @@ const B2BMail = () => {
                   onViewDetails={() => {}}
                   showLogs={messagesFilters.showLogs}
                   stats={messagesStats}
-                  hasDraftMessages={hasDraftMessages}
                 />
               )}
             </div>
@@ -541,7 +534,6 @@ const B2BMail = () => {
           ) : (
             <B2BMessagesSidebarFilters
               filters={messagesFilters}
-              hasDraftMessages={hasDraftMessages}
               onChange={handleUpdateMessagesFilters}
               onClearAll={handleClearMessagesFilters}
             />
@@ -569,7 +561,6 @@ const B2BMail = () => {
           isOpen={isComposeOpen}
           onClose={closeCompose}
           onSend={handleSendMessage}
-          onSaveDraft={handleSaveDraft}
           onPreviewRecipients={previewRecipients}
           previewResult={previewResult}
           contacts={allContacts}

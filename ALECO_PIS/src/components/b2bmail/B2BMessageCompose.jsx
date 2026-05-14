@@ -12,11 +12,6 @@ const TARGET_MODES = [
  * @param {boolean} props.isOpen
  * @param {() => void} props.onClose
  * @param {(data: object) => Promise<void>} props.onSend
- * @param {(data: object) => Promise<void>} props.onSaveDraft
- * @param {() => Promise<void>} props.onPreviewRecipients
- * @param {object} props.previewResult - { count, sample }
- * @param {Array} props.contacts - Verified contacts
- * @param {Array} props.feederOptions
  * @param {Array} props.templates
  * @param {boolean} props.saving
  */
@@ -24,7 +19,6 @@ export default function B2BMessageCompose({
   isOpen,
   onClose,
   onSend,
-  onSaveDraft,
   onPreviewRecipients,
   previewResult,
   contacts,
@@ -99,10 +93,6 @@ export default function B2BMessageCompose({
     onClose();
   };
 
-  const handleSaveDraft = async () => {
-    await onSaveDraft(formData);
-    onClose();
-  };
 
   const handlePreview = async () => {
     setErrors([]);
@@ -347,14 +337,6 @@ export default function B2BMessageCompose({
         </div>
 
         <div className="b2b-modal-footer">
-          <button
-            type="button"
-            className="b2b-btn b2b-btn-secondary"
-            onClick={handleSaveDraft}
-            disabled={saving}
-          >
-            Save Draft
-          </button>
           <button
             type="button"
             className="b2b-btn b2b-btn-primary b2b-btn-send"

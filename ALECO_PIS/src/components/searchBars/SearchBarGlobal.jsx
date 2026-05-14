@@ -132,6 +132,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   const [notificationDetail, setNotificationDetail] = useState(null);
   const [markOneReadLoadingId, setMarkOneReadLoadingId] = useState(null);
   const notificationsRef = useRef(null);
+  const profileRef = useRef(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showManageSiteModal, setShowManageSiteModal] = useState(false);
   const [manageSiteTab, setManageSiteTab] = useState('settings');
@@ -268,6 +269,18 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [isNotificationsOpen]);
+  
+  // Outside-click listener for Profile Dropdown
+  useEffect(() => {
+    if (!isDropdownOpen) return undefined;
+    const onMouseDown = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [isDropdownOpen]);
 
   const fetchNotificationCounts = useCallback(() => {
     authFetch(apiUrl('/api/notifications/counts'))
@@ -951,7 +964,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
         
         <ThemeIconButton theme={theme} toggleTheme={toggleTheme} />
         
-        <div className="profile-menu-wrapper">
+        <div className="profile-menu-wrapper" ref={profileRef}>
           <button 
             type="button"
             className="profile-btn" 
@@ -973,8 +986,26 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                 <span className="user-role">{role.toUpperCase()}</span>
               </div>
               <div className="dropdown-divider"></div>
-              <button className="dropdown-link" onClick={() => navigate('/admin-profile')}>View Profile</button>
-              {role === 'admin' && <button className="dropdown-link" onClick={() => setShowManageSiteModal(true)}>Manage Site</button>}
+              <button 
+                className="dropdown-link" 
+                onClick={() => {
+                  navigate('/admin-profile');
+                  setIsDropdownOpen(false);
+                }}
+              >
+                View Profile
+              </button>
+              {role === 'admin' && (
+                <button 
+                  className="dropdown-link" 
+                  onClick={() => {
+                    setShowManageSiteModal(true);
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  Manage Site
+                </button>
+              )}
               
               <button 
                 className="dropdown-link logout-red" 

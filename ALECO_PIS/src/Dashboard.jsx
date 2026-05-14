@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import AdminLayout from './components/AdminLayout';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -14,7 +14,12 @@ import axios from 'axios';
 import { apiUrl } from './utils/api';
 import useTickets from './utils/useTickets';
 import { listInterruptions } from './api/interruptionsApi';
-import { CAUSE_CATEGORY_FORM_OPTIONS, getCauseCategoryLabel } from './utils/interruptionLabels';
+import { 
+    CAUSE_CATEGORY_FORM_OPTIONS, 
+    getCauseCategoryLabel, 
+    isEmergencyOutageType, 
+    isInterruptionEnergizedStatus 
+} from './utils/interruptionLabels';
 import { FaEnvelope, FaPaperPlane, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa';
 import { authFetch } from './utils/authFetch';
 import Skeleton from 'react-loading-skeleton';
@@ -39,8 +44,11 @@ const AdminDashboard = () => {
     const [currentDate, setCurrentDate] = useState('');
     const [interruptions, setInterruptions] = useState([]);
     const [loadingAdvisories, setLoadingAdvisories] = useState(true);
+    const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+    const scrollHostRef = useRef(null);
+    const headerRef = useRef(null);
 
-    const { tickets = [], loading } = useTickets();
+    const { tickets = [], loading } = useTickets({ includeChildren: true });
 
     // ── Ticket dashboard stats (accurate counts from DB) ──
     const [ticketDashStats, setTicketDashStats] = useState(null);
@@ -58,6 +66,73 @@ const AdminDashboard = () => {
     const [users,          setUsers]          = useState([]);
     const [usersLoading,   setUsersLoading]   = useState(true);
 
+    // --- PREMIUM NAVIGATION & UI LOGIC ---
+
+    /**
+     * Shell Scroll Lock: Ensures the parent container doesn't double-scroll.
+     */
+    useEffect(() => {
+        const mainWrapper = document.querySelector('.admin-main-wrapper');
+        if (mainWrapper) {
+            mainWrapper.classList.add('is-dashboard-active');
+        }
+        return () => {
+            if (mainWrapper) mainWrapper.classList.remove('is-dashboard-active');
+        };
+    }, []);
+
+    /**
+     * Scroll Listener: Tracks if header should show glassmorphism.
+     */
+    useEffect(() => {
+        const host = scrollHostRef.current;
+        if (!host) return;
+
+        const handleHostScroll = () => {
+            setIsHeaderScrolled(host.scrollTop > 20);
+        };
+
+        host.addEventListener('scroll', handleHostScroll);
+        return () => host.removeEventListener('scroll', handleHostScroll);
+    }, []);
+
+    /**
+     * Slow Smooth Scroll: Custom easing animator for a premium feel.
+     * @param {string} targetId - ID of element to scroll to
+     * @param {number} duration - Duration in ms
+     */
+    const slowScrollTo = useCallback((targetId, duration = 1200) => {
+        const host = scrollHostRef.current;
+        const target = document.getElementById(targetId);
+        if (!host || !target) return;
+
+        // Calculate offset (Sticky header height + buffer)
+        const headerHeight = headerRef.current?.getBoundingClientRect().height || 80;
+        const start = host.scrollTop;
+        const targetPos = target.offsetTop - headerHeight - 10;
+        const change = targetPos - start;
+        const startTime = performance.now();
+
+        // Easing function: easeInOutCubic
+        const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+
+        const animateScroll = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easedProgress = easeInOutCubic(progress);
+
+            host.scrollTop = start + change * easedProgress;
+
+            if (progress < 1) {
+                requestAnimationFrame(animateScroll);
+            }
+        };
+
+        requestAnimationFrame(animateScroll);
+    }, []);
+
+    const [ticketSyncLoading, setTicketSyncLoading] = useState(false);
+
     const fetchRealData = useCallback(async () => {
         try {
             // Fetch ticket dashboard stats separately for accuracy
@@ -67,7 +142,11 @@ const AdminDashboard = () => {
                     if (d.success) setTicketDashStats(d.data);
                 }
                 setTicketStatsLoading(false);
-            }).catch(() => setTicketStatsLoading(false));
+                setTicketSyncLoading(false);
+            }).catch(() => {
+                setTicketStatsLoading(false);
+                setTicketSyncLoading(false);
+            });
 
             const [b2bMsgRes, b2bCtcRes, crewsRes, linemanRes, memosRes, usersRes] = await Promise.allSettled([
                 authFetch(apiUrl('/api/b2b-mail/messages')),
@@ -121,6 +200,21 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         fetchRealData();
+    }, [fetchRealData]);
+
+    // ── Real-time Ticket Sync ──
+    useEffect(() => {
+        const onRealtimeChange = (ev) => {
+            const module = ev?.detail?.module;
+            // Listen for ticket-related changes
+            if (module === 'TICKETS' || module === 'SERVICE_MEMOS' || module === 'SYSTEM') {
+                console.log('Dashboard: Real-time ticket change detected, refreshing...');
+                setTicketSyncLoading(true);
+                fetchRealData();
+            }
+        };
+        window.addEventListener('aleco:realtime-change', onRealtimeChange);
+        return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
     }, [fetchRealData]);
 
     useEffect(() => {
@@ -220,17 +314,17 @@ const AdminDashboard = () => {
         const sourceData = interruptions;
 
         // Active: Current unscheduled interruptions
-        const active = sourceData.filter(i => i.status === 'Ongoing' && i.type === 'Unscheduled').length;
+        const active = sourceData.filter(i => i.status === 'Ongoing' && isEmergencyOutageType(i.type)).length;
         // Upcoming: Scheduled maintenance events
-        const upcoming = sourceData.filter(i => i.status === 'Pending' && i.type === 'Scheduled').length;
+        const upcoming = sourceData.filter(i => i.status === 'Pending' && !isEmergencyOutageType(i.type)).length;
         const total = hasData ? interruptions.length : 52;
         const cancelled = sourceData.filter(i => i.status === 'Cancelled').length;
         const rescheduled = sourceData.filter(i => i.status === 'Rescheduled').length;
-        const scheduledTotal = sourceData.filter(i => i.type === 'Scheduled').length; // Total scheduled advisories
+        const scheduledTotal = sourceData.filter(i => i.type === 'Scheduled' || i.type === 'NgcScheduled').length; // Total scheduled advisories
         
         const restored24h = sourceData.filter(i => {
-            if (i.status !== 'Restored' || !i.date_time_restored) return false;
-            const restoredDate = new Date(i.date_time_restored.replace(' ', 'T'));
+            if (!isInterruptionEnergizedStatus(i.status) || !i.dateTimeRestored) return false;
+            const restoredDate = new Date(i.dateTimeRestored);
             const now = new Date();
             return (now - restoredDate) < (24 * 60 * 60 * 1000);
         }).length;
@@ -302,8 +396,9 @@ const AdminDashboard = () => {
             }
 
             // 3. Daily Outage Trend Logic
-            if (i.date_time_start) {
-                const iDate = i.date_time_start.split(' ')[0];
+            if (i.dateTimeStart) {
+                // Ensure date is parsed in local time to match trendMap keys (YYYY-MM-DD)
+                const iDate = new Date(i.dateTimeStart).toLocaleDateString('en-CA');
                 if (trendMap[iDate]) {
                     trendMap[iDate].count++;
                 }
@@ -396,18 +491,25 @@ const AdminDashboard = () => {
         for (let i = 5; i >= 0; i--) {
             const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
             const label = months[d.getMonth()];
-            trendMap[label] = 0;
+            const yearKey = d.getFullYear();
+            const fullKey = `${label}-${yearKey}`;
+            trendMap[fullKey] = { name: label, count: 0, order: 5 - i };
         }
 
         sourceData.forEach(t => {
             const date = new Date(t.created_at);
             const label = months[date.getMonth()];
-            if (trendMap[label] !== undefined) {
-                trendMap[label]++;
+            const yearKey = date.getFullYear();
+            const fullKey = `${label}-${yearKey}`;
+            
+            if (trendMap[fullKey] !== undefined) {
+                trendMap[fullKey].count++;
             }
         });
 
-        const trendData = Object.entries(trendMap).map(([name, count]) => ({ name, count }));
+        const trendData = Object.values(trendMap)
+            .sort((a, b) => a.order - b.order)
+            .map(({ name, count }) => ({ name, count }));
 
         // 2. Category Breakdown (Top 5)
         const catMap = {};
@@ -531,19 +633,19 @@ const AdminDashboard = () => {
 
     return (
         <AdminLayout activePage="home">
-            <div className="dashboard-scroll-host">
+            <div className="dashboard-scroll-host" ref={scrollHostRef}>
             <div className="admin-page-container dashboard-page-container">
                 {/* Page Header */}
-                <div className="dashboard-header">
+                <div className={`dashboard-header ${isHeaderScrolled ? 'is-scrolled' : ''}`} ref={headerRef}>
                     <div className="header-text-group">
                         <h2 className="header-title">{greeting}, {userName}</h2>
                         <p className="header-subtitle">{currentDate}</p>
                     </div>
                     <div className="dashboard-nav-actions">
-                        <button className="dash-nav-btn" aria-label="Power Advisories" onClick={() => document.getElementById('power-grid-section')?.scrollIntoView({ behavior: 'smooth' })}><FaBolt /> <span className="dash-nav-text">Advisories</span></button>
-                        <button className="dash-nav-btn" aria-label="Tickets" onClick={() => document.getElementById('ticket-overview-section')?.scrollIntoView({ behavior: 'smooth' })}><FaTicketAlt /> <span className="dash-nav-text">Tickets</span></button>
-                        <button className="dash-nav-btn" aria-label="Memos" onClick={() => document.getElementById('memo-users-section')?.scrollIntoView({ behavior: 'smooth' })}><FaFileAlt /> <span className="dash-nav-text">Memos</span></button>
-                        <button className="dash-nav-btn" aria-label="B2B and Crew" onClick={() => document.getElementById('b2b-personnel-section')?.scrollIntoView({ behavior: 'smooth' })}><FaEnvelope /> <span className="dash-nav-text">B2B & Crew</span></button>
+                        <button className="dash-nav-btn" aria-label="Power Advisories" onClick={() => slowScrollTo('power-grid-section')}><FaBolt /> <span className="dash-nav-text">Advisories</span></button>
+                        <button className="dash-nav-btn" aria-label="Tickets" onClick={() => slowScrollTo('ticket-overview-section')}><FaTicketAlt /> <span className="dash-nav-text">Tickets</span></button>
+                        <button className="dash-nav-btn" aria-label="Memos" onClick={() => slowScrollTo('memo-users-section')}><FaFileAlt /> <span className="dash-nav-text">Memos</span></button>
+                        <button className="dash-nav-btn" aria-label="B2B and Crew" onClick={() => slowScrollTo('b2b-personnel-section')}><FaEnvelope /> <span className="dash-nav-text">B2B & Crew</span></button>
                     </div>
                 </div>
 

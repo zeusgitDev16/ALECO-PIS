@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 // Adjust this import path if your axiosConfig.js is located differently relative to this file
 import axios from '../api/axiosConfig'; 
 
-const useTickets = () => {
+const useTickets = (initialFilters = {}) => {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -20,7 +20,8 @@ const useTickets = () => {
         datePreset: '',
         startDate: '',
         endDate: '',
-        groupFilter: 'all' // 'all' | 'grouped' | 'ungrouped'
+        groupFilter: 'all', // 'all' | 'grouped' | 'ungrouped'
+        ...initialFilters
     });
 
     // 2. The Fetch Logic (shared for initial load and refetch)

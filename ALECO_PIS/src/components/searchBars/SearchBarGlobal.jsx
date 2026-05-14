@@ -9,6 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
 import ThemeIconButton from '../buttons/ThemeIconButton';
 import UserProfileViewModal from '../users/UserProfileViewModal';
+import alecoLogo from '../../assets/Aleco-logo-modified.png';
 import '../../CSS/SearchBarGlobal.css';
 
 const NOTIFICATION_TABS = [
@@ -1047,7 +1048,7 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                         <div className="logo-upload-container">
                           <div className="logo-preview">
                             <img
-                              src={logoPreview || '/src/assets/Aleco-logo-modified.png'}
+                              src={logoPreview || alecoLogo}
                               alt="Site Logo"
                               className="logo-image"
                             />

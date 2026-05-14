@@ -106,10 +106,21 @@ const AdminDashboard = () => {
         const target = document.getElementById(targetId);
         if (!host || !target) return;
 
-        // Calculate offset (Sticky header height + buffer)
+        // Force 'auto' behavior to prevent CSS conflict during manual animation
+        const originalScrollBehavior = host.style.scrollBehavior;
+        host.style.scrollBehavior = 'auto';
+
+        // Calculate target position relative to host for cross-device accuracy
+        const hostRect = host.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
         const headerHeight = headerRef.current?.getBoundingClientRect().height || 80;
+        
+        // targetRect.top is viewport relative, hostRect.top is viewport relative.
+        // Subtracting them gives position relative to the top of the host.
+        // Adding current scrollTop gives the absolute destination inside the host.
+        const targetPos = (targetRect.top - hostRect.top) + host.scrollTop - headerHeight - 10;
+        
         const start = host.scrollTop;
-        const targetPos = target.offsetTop - headerHeight - 10;
         const change = targetPos - start;
         const startTime = performance.now();
 
@@ -125,6 +136,9 @@ const AdminDashboard = () => {
 
             if (progress < 1) {
                 requestAnimationFrame(animateScroll);
+            } else {
+                // Restore original behavior after animation
+                host.style.scrollBehavior = originalScrollBehavior;
             }
         };
 

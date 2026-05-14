@@ -129,7 +129,7 @@ body.admin-app-scroll-lock {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+    /* Removed scroll-behavior: smooth to prevent conflict with custom JS animator */
     scroll-padding-top: 10px;
     overscroll-behavior: contain;
     touch-action: pan-y;
@@ -458,7 +458,7 @@ body.admin-app-scroll-lock {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+    /* Removed scroll-behavior: smooth to prevent conflict with custom JS animator */
     scroll-padding-top: 60px;
     overscroll-behavior: contain;
     touch-action: pan-y;

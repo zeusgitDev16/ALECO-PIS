@@ -82,9 +82,11 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
 
     setIsFlushing(true);
     try {
-      const endpoint = flushType === 'history' 
-        ? apiUrl('/api/history/flush') 
-        : apiUrl('/api/notifications/flush');
+      const endpoint = flushType === 'history'
+        ? apiUrl('/api/history/flush')
+        : flushType === 'messages'
+          ? apiUrl('/api/b2b-mail/flush')
+          : apiUrl('/api/notifications/flush');
 
       const result = await authMutation(endpoint, {
         method: 'DELETE',
@@ -102,12 +104,14 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       setFlushResponsibilityChecked(false);
       setFlushConfirmEmail('');
 
-      // Notify parent to clear bell counts + notification lists
-      if (onFlushComplete && flushType === 'notifications') onFlushComplete();
+      // Notify parent to clear bell counts + notification lists (applies to all flush types for consistency)
+      if (onFlushComplete) onFlushComplete();
 
       const successMsg = flushType === 'history'
         ? 'System optimization complete: All history logs and audit trails have been permanently cleared.'
-        : 'System optimization complete: All notifications have been permanently cleared.';
+        : flushType === 'messages'
+          ? 'System optimization complete: All B2B messages and interaction records have been permanently cleared.'
+          : 'System optimization complete: All notifications have been permanently cleared.';
 
       toast.success(successMsg);
       window.dispatchEvent(new CustomEvent('aleco:realtime-change'));
@@ -251,11 +255,30 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                   </button>
                 </div>
 
+                {/* B2B Message Flush */}
+                <div className="flush-section">
+                  <h4 className="flush-section-title">B2B Message Flush</h4>
+                  <p className="flush-section-description">
+                    This feature permanently purges all B2B mail messages, recipients, and inbound replies
+                    from the database to maintain system efficiency.
+                  </p>
+                  <button
+                    type="button"
+                    className="flush-btn flush-btn--messages"
+                    onClick={() => {
+                      setFlushType('messages');
+                      setShowFlushConfirmModal(true);
+                    }}
+                  >
+                    Flush B2B Messages
+                  </button>
+                </div>
+
                 {/* History & Logs Flush */}
                 <div className="flush-section">
                   <h4 className="flush-section-title">History & Logs Flush</h4>
                   <p className="flush-section-description">
-                    This feature permanently purges all activity logs and audit trails from the 
+                    This feature permanently purges all activity logs and audit trails from the
                     database to maximize storage space and maintain peak system performance.
                   </p>
                   <button
@@ -298,11 +321,17 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
             </div>
             <div className="flush-confirm-body">
               <div className="flush-confirm-warning-icon">⚠️</div>
-              <h3>HARD FLUSH {flushType === 'history' ? 'HISTORY & LOGS' : 'NOTIFICATIONS'}</h3>
+              <h3>HARD FLUSH {
+                flushType === 'history' ? 'HISTORY & LOGS' :
+                  flushType === 'messages' ? 'B2B MESSAGES' :
+                    'NOTIFICATIONS'
+              }</h3>
               <p>
                 {flushType === 'history'
                   ? 'You are about to permanently purge all system activity logs and audit trails from the database. This includes ticket history, B2B logs, and personnel trails.'
-                  : 'You are about to permanently purge all notification data from the system database.'
+                  : flushType === 'messages'
+                    ? 'You are about to permanently purge all B2B messages, recipient records, and inbound replies from the database. This action is destructive and irreversible.'
+                    : 'You are about to permanently purge all notification data from the system database.'
                 }
                 {' '}This action is global and cannot be reversed.
               </p>
@@ -316,8 +345,11 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                   />
                   <span className="responsibility-text">
                     I hereby acknowledge that I am initiating a destructive operation and I
-                    responsibly take full accountability for removing all {flushType === 'history' ? 'history and activity log' : 'notification'} records from
-                    the database.
+                    responsibly take full accountability for removing all {
+                      flushType === 'history' ? 'history and activity log' :
+                        flushType === 'messages' ? 'B2B message' :
+                          'notification'
+                    } records from the database.
                   </span>
                 </label>
               </div>

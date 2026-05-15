@@ -92,6 +92,23 @@
     flex-wrap: wrap;
 }
 
+.backup-date-bar--alltime {
+    padding: calc(4px * var(--backup-ui-scale, 1)) 0;
+}
+
+.backup-date-bar-alltime-label {
+    font-size: calc(0.82rem * var(--backup-ui-scale, 1));
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: calc(6px * var(--backup-ui-scale, 1));
+}
+
+.backup-date-bar-alltime-label strong {
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
 .backup-date-bar-toggle {
     display: flex;
     align-items: center;

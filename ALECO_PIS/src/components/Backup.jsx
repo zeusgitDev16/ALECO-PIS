@@ -18,8 +18,6 @@ import BackupTicketFiltersForm, { getActiveTicketFiltersCount } from './backup/B
 import BackupInterruptionFiltersForm, { getActiveInterruptionFiltersCount } from './backup/BackupInterruptionFiltersForm';
 import BackupHistoryFiltersForm, { getActiveHistoryFiltersCount } from './backup/BackupHistoryFiltersForm';
 import BackupMemoFiltersForm, { getActiveMemoFiltersCount } from './backup/BackupMemoFiltersForm';
-import BackupB2BMailFiltersBar from './backup/BackupB2BMailFiltersBar';
-import BackupB2BMailFiltersForm, { getActiveB2BMailFiltersCount } from './backup/BackupB2BMailFiltersForm';
 import EntityPicker from './backup/EntityPicker';
 import ComingSoonPlaceholder from './backup/ComingSoonPlaceholder';
 import TicketFilterDrawer from './tickets/TicketFilterDrawer';
@@ -106,10 +104,6 @@ const AdminBackup = () => {
         () => getActiveMemoFiltersCount(memoFilters),
         [memoFilters]
     );
-    const b2bMailFilterActiveCount = useMemo(
-        () => getActiveB2BMailFiltersCount(b2bMailFilters),
-        [b2bMailFilters]
-    );
 
     const isTicketsEntity = entity === 'tickets';
     const isInterruptionsEntity = entity === 'interruptions';
@@ -127,7 +121,7 @@ const AdminBackup = () => {
     );
     const hasDataFilters =
         isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity || isHistoryEntity || isServiceMemosEntity || isB2BMailEntity;
-    const showFilterButton = isTicketsEntity || isInterruptionsEntity || isHistoryEntity || isServiceMemosEntity || isB2BMailEntity;
+    const showFilterButton = isTicketsEntity || isInterruptionsEntity || isHistoryEntity || isServiceMemosEntity;
 
     useEffect(() => {
         if (!canViewHistory && entity === 'history') {
@@ -135,6 +129,13 @@ const AdminBackup = () => {
             localStorage.setItem('dataManagementEntity', 'tickets');
         }
     }, [canViewHistory, entity]);
+
+    useEffect(() => {
+        if (entity === 'b2b_mail') {
+            setPreset('allTime');
+            setUseCustom(false);
+        }
+    }, [entity]);
 
     const filterActiveCount = isTicketsEntity
         ? ticketFilterActiveCount
@@ -144,8 +145,6 @@ const AdminBackup = () => {
                 ? historyFilterActiveCount
             : isServiceMemosEntity
                 ? memoFilterActiveCount
-            : isB2BMailEntity
-                ? b2bMailFilterActiveCount
             : 0;
 
     const getExportBasePath = () => {
@@ -194,8 +193,6 @@ const AdminBackup = () => {
         }
         
         if (isB2BMailEntity) {
-            if (b2bMailFilters.status) base.status = b2bMailFilters.status;
-            if (b2bMailFilters.q) base.q = b2bMailFilters.q;
             return base;
         }
 
@@ -647,16 +644,22 @@ const AdminBackup = () => {
     const dataManagementMain = (
         <>
             <div className="backup-date-bar-wrap">
-                <BackupDateBar
-                    preset={preset}
-                    useCustom={useCustom}
-                    startDate={startDate}
-                    endDate={endDate}
-                    onPresetChange={setPreset}
-                    onUseCustomChange={setUseCustom}
-                    onStartDateChange={setStartDate}
-                    onEndDateChange={setEndDate}
-                />
+                {isB2BMailEntity ? (
+                    <div className="backup-date-bar backup-date-bar--alltime">
+                        <span className="backup-date-bar-alltime-label">📅 Export range: <strong>All Time</strong> — the entire B2B message pool will be exported.</span>
+                    </div>
+                ) : (
+                    <BackupDateBar
+                        preset={preset}
+                        useCustom={useCustom}
+                        startDate={startDate}
+                        endDate={endDate}
+                        onPresetChange={setPreset}
+                        onUseCustomChange={setUseCustom}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                    />
+                )}
             </div>
 
             {isTicketsEntity && <BackupFiltersBar filters={filters} setFilters={setFilters} />}
@@ -673,9 +676,7 @@ const AdminBackup = () => {
                     </div>
                 </div>
             )}
-            {isB2BMailEntity && (
-                <BackupB2BMailFiltersBar filters={b2bMailFilters} setFilters={setB2BMailFilters} />
-            )}
+            {/* B2B Mail filters removed per request */}
 
             <div
                 className={
@@ -742,11 +743,7 @@ const AdminBackup = () => {
                                     <BackupMemoFiltersForm filters={memoFilters} setFilters={setMemoFilters} />
                                 </div>
                             )}
-                            {isB2BMailEntity && (
-                                <div className="backup-filters-content backup-filters-content--drawer">
-                                    <BackupB2BMailFiltersForm filters={b2bMailFilters} setFilters={setB2BMailFilters} />
-                                </div>
-                            )}
+                            {/* B2B Mail filters removed per request */}
                         </div>
                     </TicketFilterDrawer>
                 )}

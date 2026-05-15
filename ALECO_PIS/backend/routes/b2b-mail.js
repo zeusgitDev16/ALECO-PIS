@@ -650,4 +650,31 @@ router.post('/b2b-mail/inbound/webhook', async (req, res) => {
     }
 });
 
+router.delete('/b2b-mail/flush', requireStaff, async (req, res) => {
+    try {
+        // Order matters for foreign keys if they exist, but these tables are mostly independent or cascade-deleted.
+        // We use DELETE to avoid TRUNCATE's implicit commit or permission issues in some environments.
+        await pool.execute('DELETE FROM aleco_b2b_inbound_messages');
+        await pool.execute('DELETE FROM aleco_b2b_message_recipients');
+        await pool.execute('DELETE FROM aleco_b2b_mail_audit_logs');
+        await pool.execute('DELETE FROM aleco_b2b_messages');
+        
+        // Clear sync state for IMAP so next poll starts fresh
+        await pool.execute('DELETE FROM aleco_b2b_sync_state WHERE key_name LIKE "imap_last_uid::%"');
+
+        await recordB2BMailNotification(pool, {
+            eventType: B2B_MAIL_EVENT.SYSTEM, // Use a generic system/audit event if specific flush event doesn't exist
+            subjectEmail: null,
+            subjectName: 'B2B MAIL GLOBAL FLUSH',
+            detail: 'All B2B messages and interactions have been permanently purged from the system.',
+            actorEmail: actorEmailFromReq(req),
+        });
+
+        return res.json({ success: true, message: 'B2B messages flushed successfully.' });
+    } catch (err) {
+        console.error('❌ DELETE /b2b-mail/flush:', err);
+        return res.status(500).json({ success: false, message: 'Failed to flush messages.' });
+    }
+});
+
 export default router;

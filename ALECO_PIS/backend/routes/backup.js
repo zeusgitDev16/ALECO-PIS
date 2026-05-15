@@ -10,6 +10,7 @@ import { requireStaff } from '../middleware/requireRole.js';
 import { deleteTicketWithCascade } from '../utils/ticketDeleteHelper.js';
 import { sendAppMail } from '../utils/appMail.js';
 import { signArchiveDeleteToken, verifyArchiveDeleteToken } from '../utils/sessionJwt.js';
+import { stripQuotedReply } from '../services/b2bInboundImapPoll.js';
 
 const router = express.Router();
 const DELETE_CODE_EXPIRY_MINUTES = 10;
@@ -121,6 +122,9 @@ function getDateRangeFromPreset(preset) {
         const start = new Date(year, 0, 1);
         const end = new Date(year, 11, 31);
         return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+    }
+    if (preset === 'allTime') {
+        return { startDate: '1970-01-01', endDate: now.toISOString().slice(0, 10) };
     }
     return null;
 }
@@ -322,6 +326,93 @@ function buildUserQuery(ds, de, filters = {}) {
     }
     query += ` ORDER BY created_at ASC`;
     return { query, params };
+}
+
+function buildB2BMailQuery(ds, de) {
+    let query = `SELECT id, subject, body_text, target_mode, created_by_email, created_by_name, status, sent_at, created_at, updated_at
+                 FROM aleco_b2b_messages
+                 WHERE DATE(created_at) BETWEEN ? AND ?`;
+    const params = [ds, de];
+    query += ` ORDER BY created_at ASC`;
+    return { query, params };
+}
+
+/** 
+ * Aggressively cleans messy email bodies (MIME junk, headers, history) 
+ * for the simplified B2B export view.
+ */
+function cleanB2BReply(text) {
+    if (!text || text === '—') return '—';
+    // 1. Remove leaked MIME boundaries/headers if present
+    let cleaned = text.replace(/--[a-f0-9_]{10,}.*?Content-Type:.*?\n\s*\n/gis, '');
+    cleaned = cleaned.replace(/Content-Transfer-Encoding:.*?\n\s*\n/gi, '');
+    cleaned = cleaned.replace(/--[a-f0-9-]{10,}.*?\r?\n/gi, '');
+    
+    // 2. Use the poller's stripping logic for headers/history
+    cleaned = stripQuotedReply(cleaned);
+
+    return cleaned || '—';
+}
+
+async function fetchSimplifiedB2BMailData(ds, de) {
+    const sql = `
+        SELECT
+            m.id AS m_id,
+            r.id AS r_id,
+            m.created_by_email AS sender,
+            COALESCE(r.email_snapshot, '—') AS receiver,
+            m.body_text AS message,
+            i.body_text AS reply_text,
+            r.sent_at AS sent_at,
+            i.received_at AS reply_at,
+            m.status AS message_status,
+            r.send_status AS recipient_status
+        FROM aleco_b2b_messages m
+        LEFT JOIN aleco_b2b_message_recipients r ON r.message_id = m.id
+        LEFT JOIN aleco_b2b_inbound_messages i ON i.linked_recipient_id = r.id
+        WHERE DATE(m.created_at) BETWEEN ? AND ?
+        ORDER BY m.created_at ASC, r.id ASC, i.received_at ASC
+    `;
+    const [rows] = await pool.execute(sql, [ds, de]);
+
+    const interactionsMap = new Map();
+    const resultOrder = [];
+
+    for (const row of rows) {
+        // Unique key for the message + recipient combination
+        const key = `${row.m_id}-${row.r_id || 'none'}`;
+        
+        if (!interactionsMap.has(key)) {
+            const it = {
+                sender: row.sender,
+                receiver: row.receiver,
+                message: row.message,
+                replies_list: row.reply_text ? [cleanB2BReply(row.reply_text)] : [],
+                sent_at: row.sent_at,
+                reply_at: row.reply_at,
+                message_status: row.message_status,
+                recipient_status: row.recipient_status
+            };
+            interactionsMap.set(key, it);
+            resultOrder.push(it);
+        } else {
+            const it = interactionsMap.get(key);
+            if (row.reply_text) {
+                it.replies_list.push(cleanB2BReply(row.reply_text));
+                // Update reply_at to the latest received reply (query is ASC, so last wins)
+                it.reply_at = row.reply_at;
+            }
+        }
+    }
+
+    // Flatten back to row format for Excel/CSV
+    return resultOrder.map(it => {
+        const { replies_list, ...rest } = it;
+        return {
+            ...rest,
+            replies: replies_list.length > 0 ? replies_list.join('\n\n--- NEXT REPLY ---\n\n') : '—'
+        };
+    });
 }
 
 /** Crews in date range + related crew_members and linemen (leads + members). */
@@ -1289,6 +1380,108 @@ router.get('/service-memos/export', requireStaff, async (req, res) => {
         }
     } catch (error) {
         console.error('❌ Service memos export error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Export failed' });
+    }
+});
+
+// --- B2B MAIL EXPORT PREVIEW ---
+router.get('/b2b-mail/export/preview', requireStaff, async (req, res) => {
+    try {
+        const { preset, startDate, endDate } = req.query;
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const interactions = await fetchSimplifiedB2BMailData(ds, de);
+
+        const metadata = { dateStart: ds, dateEnd: de, interactionCount: interactions.length };
+        res.json({ success: true, metadata, interactions });
+    } catch (error) {
+        console.error('❌ B2B Mail export preview error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Preview failed' });
+    }
+});
+
+// --- B2B MAIL EXPORT ---
+router.get('/b2b-mail/export', requireStaff, async (req, res) => {
+    try {
+        const { preset, startDate, endDate, format } = req.query;
+        const fmt = (format || 'excel').toLowerCase();
+        if (fmt !== 'excel' && fmt !== 'csv') {
+            return res.status(400).json({ success: false, message: 'Format must be excel or csv' });
+        }
+        const dateFilter = buildDateFilter(preset, startDate, endDate);
+        if (!dateFilter) {
+            return res.status(400).json({ success: false, message: 'Provide preset or startDate and endDate' });
+        }
+        const { startDate: ds, endDate: de } = dateFilter;
+        const interactions = await fetchSimplifiedB2BMailData(ds, de);
+
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
+        const baseFilename = `aleco_b2b_interactions_${ds}_to_${de}_${timestamp}`;
+        const ext = fmt === 'excel' ? 'xlsx' : 'csv';
+        const filename = `${baseFilename}.${ext}`;
+        const exportedBy = req.headers['x-user-email'] || req.headers['x-user-name'] || null;
+
+        await pool.execute(
+            `INSERT INTO aleco_export_log (export_date, date_start, date_end, ticket_count, log_count, format, exported_by)
+             VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
+            [ds, de, interactions.length, 0, fmt, exportedBy]
+        );
+
+        if (fmt === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'ALECO PIS';
+            workbook.created = new Date();
+            
+            const metaSheet = workbook.addWorksheet('Metadata', { properties: { tabColor: { argb: 'FF4472C4' } } });
+            metaSheet.addRow(['Export Info']);
+            metaSheet.addRow(['Schema Version', '1']);
+            metaSheet.addRow(['Export Date', new Date().toISOString()]);
+            metaSheet.addRow(['Date Range', `${ds} to ${de}`]);
+            metaSheet.addRow(['Interaction Count', interactions.length]);
+            metaSheet.addRow(['Format', 'excel']);
+            metaSheet.addRow(['Exported By', exportedBy || '']);
+
+            const intCols = interactions.length > 0 ? Object.keys(interactions[0]) : [];
+            const intSheet = workbook.addWorksheet('Interactions', { properties: { tabColor: { argb: 'FF70AD47' } } });
+            const intHeaderRow = intSheet.addRow(intCols);
+            intHeaderRow.font = { bold: true };
+            interactions.forEach((row) => {
+                intSheet.addRow(intCols.map((c) => {
+                    const v = row[c];
+                    if (v instanceof Date) return v;
+                    if (Buffer.isBuffer(v)) return v.toString();
+                    return v;
+                }));
+            });
+            intCols.forEach((col, i) => {
+                const colValues = [col, ...interactions.map((r) => String(r[col] ?? ''))];
+                const maxLen = Math.max(...colValues.map((v) => String(v).length));
+                intSheet.getColumn(i + 1).width = Math.min(Math.max(maxLen + 2, 10), 60);
+            });
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            await workbook.xlsx.write(res);
+        } else {
+            const intCols = interactions.length > 0 ? Object.keys(interactions[0]) : [];
+            const intCsv = stringify(
+                interactions.map((r) => intCols.map((c) => {
+                    const v = r[c];
+                    if (v instanceof Date) return v.toISOString();
+                    if (Buffer.isBuffer(v)) return v.toString();
+                    return v ?? '';
+                })),
+                { header: true, columns: intCols }
+            );
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.send(intCsv);
+        }
+    } catch (error) {
+        console.error('❌ B2B Mail export error:', error);
         res.status(500).json({ success: false, message: error.message || 'Export failed' });
     }
 });

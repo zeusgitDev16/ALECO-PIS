@@ -345,6 +345,17 @@
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+.flush-btn--messages {
+    background-color: #6366f1; /* Indigo */
+    color: white;
+}
+
+.flush-btn--messages:hover {
+    background-color: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
 .flush-footer {
     margin-top: calc(30px * var(--nav-scale));
     padding-top: calc(20px * var(--nav-scale));

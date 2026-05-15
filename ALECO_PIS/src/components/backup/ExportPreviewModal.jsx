@@ -26,10 +26,11 @@ const PERSONNEL_CREW_MEMBER_COLUMNS = ['crew_id', 'lineman_id'];
 const PERSONNEL_LINEMEN_COLUMNS = ['id', 'full_name', 'designation', 'contact_no', 'status', 'leave_start', 'leave_end', 'leave_reason'];
 const HISTORY_COLUMNS = ['createdAt', 'module', 'action', 'title', 'detail', 'actorEmail', 'actorName', 'entityId', 'entityLabel', 'severityTag'];
 const MEMO_COLUMNS = ['Memo#', 'ticket_id', 'category', 'service_date', 'received_by', 'referred_to', 'memo_status', 'Action Taken', 'created_at', 'closed_at'];
+const B2B_INTERACTION_COLUMNS = ['sender', 'receiver', 'message', 'replies', 'sent_at', 'reply_at', 'message_status', 'recipient_status'];
 
-const DATE_COLS = new Set(['created_at', 'closed_at', 'service_date', 'createdAt', 'leave_start', 'leave_end']);
+const DATE_COLS = new Set(['created_at', 'closed_at', 'service_date', 'createdAt', 'leave_start', 'leave_end', 'sent_at', 'received_at', 'reply_at']);
 
-const STATUS_BADGE_COLS = new Set(['status', 'memo_status', 'role', 'kind', 'actor_type']);
+const STATUS_BADGE_COLS = new Set(['status', 'memo_status', 'role', 'kind', 'actor_type', 'send_status', 'message_status', 'recipient_status']);
 
 const formatDate = (d) => {
     if (!d) return '—';
@@ -49,6 +50,11 @@ function statusClass(col, val) {
     if (col === 'memo_status') return `ep-badge ep-badge--memo ep-badge--${v}`;
     if (col === 'role') return `ep-badge ep-badge--role ep-badge--${v}`;
     if (col === 'kind' || col === 'actor_type') return `ep-badge ep-badge--kind ep-badge--${v}`;
+    if (col === 'message_status' || col === 'recipient_status') {
+        if (v === 'failed') return 'ep-badge ep-badge--status ep-badge--failed';
+        if (v === 'sent' || v === 'success') return 'ep-badge ep-badge--status ep-badge--sent';
+        return `ep-badge ep-badge--status ep-badge--${v}`;
+    }
     return '';
 }
 
@@ -58,6 +64,7 @@ function defaultTabForEntity(entity) {
     if (entity === 'users') return 'users';
     if (entity === 'personnel') return 'crews';
     if (entity === 'service_memos') return 'memos';
+    if (entity === 'b2b_mail') return 'b2b_interactions';
     return 'tickets';
 }
 
@@ -74,6 +81,9 @@ function previewStats(entity, metadata) {
         { label: 'Linemen', value: metadata.linemanCount ?? 0 },
     ];
     if (entity === 'service_memos') return [{ label: 'Memos', value: metadata.memoCount ?? 0 }];
+    if (entity === 'b2b_mail') return [
+        { label: 'Interactions', value: metadata.interactionCount ?? 0 },
+    ];
     return [
         { label: 'Tickets', value: metadata.ticketCount ?? 0 },
         { label: 'Logs', value: metadata.logCount ?? 0 },
@@ -131,6 +141,7 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets', title =
     const linemen = data?.linemen || [];
     const history = data?.history || [];
     const memos = data?.memos || [];
+    const b2bInteractions = data?.interactions || [];
     const stats = previewStats(entity, metadata);
 
     const renderCell = (col, value) => {
@@ -221,6 +232,9 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets', title =
                         <button type="button" className={`export-preview-tab ${activeTab === 'crewMembers' ? 'active' : ''}`} onClick={() => setActiveTab('crewMembers')}>Crew Members ({crewMembers.length})</button>
                         <button type="button" className={`export-preview-tab ${activeTab === 'linemen' ? 'active' : ''}`} onClick={() => setActiveTab('linemen')}>Linemen ({linemen.length})</button>
                     </>)}
+                    {entity === 'b2b_mail' && (
+                        <button type="button" className={`export-preview-tab ${activeTab === 'b2b_interactions' ? 'active' : ''}`} onClick={() => setActiveTab('b2b_interactions')}>Interactions ({b2bInteractions.length})</button>
+                    )}
                 </div>
 
                 {/* ── Table area ── */}
@@ -235,6 +249,7 @@ const ExportPreviewModal = ({ isOpen, onClose, data, entity = 'tickets', title =
                     {entity === 'personnel' && activeTab === 'crews' && (crews.length === 0 ? renderEmpty('No crews in this date range.') : renderTable(PERSONNEL_CREW_COLUMNS, crews, (r, i) => r.id || i))}
                     {entity === 'personnel' && activeTab === 'crewMembers' && (crewMembers.length === 0 ? renderEmpty('No crew member rows for this range.') : renderTable(PERSONNEL_CREW_MEMBER_COLUMNS, crewMembers, (r, i) => `${r.crew_id}-${r.lineman_id}-${i}`))}
                     {entity === 'personnel' && activeTab === 'linemen' && (linemen.length === 0 ? renderEmpty('No linemen referenced by exported crews.') : renderTable(PERSONNEL_LINEMEN_COLUMNS, linemen, (r, i) => r.id || i))}
+                    {entity === 'b2b_mail' && activeTab === 'b2b_interactions' && (b2bInteractions.length === 0 ? renderEmpty('No interactions found in the message pool.') : renderTable(B2B_INTERACTION_COLUMNS, b2bInteractions, (r, i) => i))}
                 </div>
 
                 {/* ── Footer ── */}

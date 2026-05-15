@@ -22,36 +22,158 @@ function decodeQP(str) {
         .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
 }
 
-function stripQuotedReply(text) {
-    const idx = text.search(/\r?\nOn\s[^\n]+wrote:\s*\r?\n/i);
-    if (idx !== -1) text = text.slice(0, idx);
-    return text.split(/\r?\n/).filter((l) => !l.startsWith('>')).join('\n').trim();
+/**
+ * Converts a minimal HTML email body to plain text.
+ * Handles the most common cases (divs, brs, ps, anchors) so that the
+ * stripping logic works identically on HTML-only and plain-text replies.
+ * Idempotent: running it twice on plain text returns the same result.
+ */
+function htmlToPlainText(html) {
+    return html
+        // Block-level tags → newline
+        .replace(/<\s*br[^>]*>/gi, '\n')
+        .replace(/<\/(div|p|blockquote|li|tr|h[1-6])>/gi, '\n')
+        // Strip all remaining tags
+        .replace(/<[^>]+>/g, '')
+        // Decode the most common HTML entities
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        // Collapse more than 2 consecutive blank lines
+        .replace(/(\n\s*){3,}/g, '\n\n')
+        .trim();
 }
 
+/**
+ * Strips quoted reply history from a plain-text email body.
+ *
+ * Design decisions:
+ *  - Leading newline is OPTIONAL (\r?\n)? so separators at the top of a MIME
+ *    part are still caught, fixing the root cause for Outlook mobile replies.
+ *  - Outlook-style header blocks use a flexible multi-field pattern that fires
+ *    when any two of From/Sent/Date/To/Subject appear consecutively, regardless
+ *    of their ordering or localization.
+ *  - All patterns tested in a single earliest-index pass so we cut at the
+ *    first occurrence of any separator, making the function idempotent.
+ */
+export function stripQuotedReply(text) {
+    if (!text) return '';
+
+    // --- Pattern set ---
+    // ① "On <date>, <name> wrote:" — covers Gmail, Apple Mail, Yahoo
+    // ② "---- Original Message ----" (Outlook classic)
+    // ③ "---- Forwarded Message ----"
+    // ④ Any two consecutive header lines from the Outlook block set (From/Sent/Date/To/Subject)
+    //    The leading newline is optional so it catches separators at the start of a part.
+    // ⑤ 10+ underscores or dashes on their own line
+    const SEPARATORS = [
+        // ① Gmail / Apple Mail / Yahoo "On ... wrote:"
+        /(\r?\n)?On\s[^\n]{0,200}wrote:\s*$/im,
+
+        // ② ③ Classic delimiters (Outlook, Thunderbird)
+        /(\r?\n)?-{2,}\s*(?:Original|Forwarded)\s+Message\s*-{2,}/i,
+
+        // ④ Outlook-style multi-field header block.
+        //   Matches any two header fields from {From, Sent, Date, To, CC, Subject}
+        //   appearing on consecutive lines — order-independent.
+        /(\r?\n)(?:From|Sent|Date|To|Cc|Subject):\s*.+?\r?\n(?:From|Sent|Date|To|Cc|Subject):\s*/i,
+
+        // ⑤ Horizontal rule (10+ underscores or dashes)
+        /(\r?\n)[_-]{10,}\s*(\r?\n|$)/,
+    ];
+
+    // Find the earliest match across all patterns
+    let cutAt = text.length;
+    for (const pattern of SEPARATORS) {
+        const m = pattern.exec(text);
+        if (m && m.index < cutAt) {
+            cutAt = m.index;
+        }
+    }
+
+    const cleaned = text.slice(0, cutAt);
+
+    // Remove standard '>'-prefixed quoted lines (RFC 3676 format=flowed)
+    return cleaned
+        .split(/\r?\n/)
+        .filter((l) => !l.trimStart().startsWith('>'))
+        .join('\n')
+        .trim();
+}
+
+/**
+ * Extracts a clean plain-text body from a raw RFC-822 message.
+ *
+ * Priority:
+ *  1. text/plain MIME part (decoded if quoted-printable)
+ *  2. text/html MIME part converted to plain text
+ *  3. Non-multipart plain-text fallback
+ *
+ * After extraction, stripQuotedReply is applied so only the user's
+ * new content is stored — never the original message thread.
+ */
 function extractBodySnippet(source) {
     const headerEnd = source.search(/\r?\n\r?\n/);
     if (headerEnd === -1) return '';
 
-    // Multipart: extract the text/plain part
-    const bMatch = source.match(/boundary="?([^\s";]+)"?/i);
-    if (bMatch) {
-        const fence = '--' + bMatch[1];
-        const parts = source.split(fence);
-        for (const part of parts) {
-            if (/Content-Type:\s*text\/plain/i.test(part)) {
-                const bodyStart = part.search(/\n\s*\n/);
-                if (bodyStart === -1) continue;
-                let text = part.slice(bodyStart).trim();
-                if (/Content-Transfer-Encoding:\s*quoted-printable/i.test(part)) text = decodeQP(text);
-                return stripQuotedReply(text).slice(0, 20000);
+    // --- Multipart: walk all MIME boundaries ---
+    const boundaries = [...source.matchAll(/boundary="?([^\s";]+)"?/gi)].map((m) => m[1]);
+    if (boundaries.length > 0) {
+        // Sort longest-first so the most specific boundary wins
+        boundaries.sort((a, b) => b.length - a.length);
+
+        let htmlFallback = '';
+
+        for (const boundary of boundaries) {
+            const fence = '--' + boundary;
+            const parts = source.split(fence);
+
+            for (const part of parts) {
+                // ─ text/plain wins immediately ─
+                if (/Content-Type:\s*text\/plain/i.test(part)) {
+                    const bodyStart = part.search(/\n\s*\n/);
+                    if (bodyStart === -1) continue;
+                    let text = part.slice(bodyStart).trim();
+                    if (/Content-Transfer-Encoding:\s*quoted-printable/i.test(part)) {
+                        text = decodeQP(text);
+                    }
+                    // Scrub any leftover boundary markers that leaked into the part
+                    text = text.replace(/--[^\s]{6,}.*?(\r?\n|$)/g, '').trim();
+                    return stripQuotedReply(text).slice(0, 20000);
+                }
+
+                // ─ text/html — keep as a fallback, pick the first one ─
+                if (!htmlFallback && /Content-Type:\s*text\/html/i.test(part)) {
+                    const bodyStart = part.search(/\n\s*\n/);
+                    if (bodyStart !== -1) {
+                        let html = part.slice(bodyStart).trim();
+                        if (/Content-Transfer-Encoding:\s*quoted-printable/i.test(part)) {
+                            html = decodeQP(html);
+                        }
+                        htmlFallback = htmlToPlainText(html);
+                    }
+                }
             }
+        }
+
+        // No text/plain part found — use the HTML fallback
+        if (htmlFallback) {
+            return stripQuotedReply(htmlFallback).slice(0, 20000);
         }
     }
 
-    // Non-multipart fallback
+    // --- Non-multipart fallback ---
+    const topHeaders = source.slice(0, headerEnd);
     let text = source.slice(headerEnd).trim();
-    if (/Content-Transfer-Encoding:\s*quoted-printable/i.test(source.slice(0, headerEnd))) {
+    if (/Content-Transfer-Encoding:\s*quoted-printable/i.test(topHeaders)) {
         text = decodeQP(text);
+    }
+    // If the body looks like HTML, convert it
+    if (/^\s*</i.test(text)) {
+        text = htmlToPlainText(text);
     }
     return stripQuotedReply(text).slice(0, 20000);
 }
@@ -315,7 +437,7 @@ async function _doPoll() {
             if (!isBootstrap && uidsToProcess.length > 500) {
                 const jumpTo = (client.mailbox?.uidNext ?? 1) - 1;
                 console.warn(`[B2B inbound] ${uidsToProcess.length} UIDs behind — advancing cursor to ${jumpTo}`);
-                try { await setLastUid(mailboxKey, jumpTo); } catch {}
+                try { await setLastUid(mailboxKey, jumpTo); } catch { }
                 uidsToProcess = [];
             }
 

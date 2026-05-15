@@ -73,6 +73,7 @@ export const B2B_MAIL_EVENT = {
   CONTACT_DELETED: 'b2b_contact_deleted',
   MESSAGE_SENT: 'b2b_message_sent',
   REPLY_FETCHED: 'b2b_reply_fetched',
+  SYSTEM: 'b2b_system_event',
 };
 
 /**

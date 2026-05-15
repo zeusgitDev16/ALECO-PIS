@@ -14,7 +14,7 @@ import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { sendB2BMail } from '../utils/b2bMailProvider.js';
 import { pollB2BInboundOnce, relinkUnlinkedInbound, fetchTargetedReplies } from '../services/b2bInboundImapPoll.js';
 import { recordB2BMailNotification, B2B_MAIL_EVENT } from '../utils/adminNotifications.js';
-import { requireStaff } from '../middleware/requireRole.js';
+import { requireAdmin, requireStaff } from '../middleware/requireRole.js';
 
 const router = express.Router();
 

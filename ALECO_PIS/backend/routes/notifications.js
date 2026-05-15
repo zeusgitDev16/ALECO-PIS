@@ -226,7 +226,7 @@ router.get('/notifications', async (req, res) => {
  * GLOBAL: Permanently deletes all notification records and their read status markers.
  * Restricted to admins only.
  */
-router.delete('/flush', requireAdmin, async (req, res) => {
+router.delete('/notifications/flush', requireAdmin, async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();

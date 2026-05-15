@@ -18,6 +18,8 @@ import BackupTicketFiltersForm, { getActiveTicketFiltersCount } from './backup/B
 import BackupInterruptionFiltersForm, { getActiveInterruptionFiltersCount } from './backup/BackupInterruptionFiltersForm';
 import BackupHistoryFiltersForm, { getActiveHistoryFiltersCount } from './backup/BackupHistoryFiltersForm';
 import BackupMemoFiltersForm, { getActiveMemoFiltersCount } from './backup/BackupMemoFiltersForm';
+import BackupB2BMailFiltersBar from './backup/BackupB2BMailFiltersBar';
+import BackupB2BMailFiltersForm, { getActiveB2BMailFiltersCount } from './backup/BackupB2BMailFiltersForm';
 import EntityPicker from './backup/EntityPicker';
 import ComingSoonPlaceholder from './backup/ComingSoonPlaceholder';
 import TicketFilterDrawer from './tickets/TicketFilterDrawer';
@@ -86,6 +88,10 @@ const AdminBackup = () => {
         municipality: '',
         receivedBy: '',
     });
+    const [b2bMailFilters, setB2BMailFilters] = useState({
+        status: '',
+        q: '',
+    });
 
     const ticketFilterActiveCount = useMemo(() => getActiveTicketFiltersCount(filters), [filters]);
     const interruptionFilterActiveCount = useMemo(
@@ -100,6 +106,10 @@ const AdminBackup = () => {
         () => getActiveMemoFiltersCount(memoFilters),
         [memoFilters]
     );
+    const b2bMailFilterActiveCount = useMemo(
+        () => getActiveB2BMailFiltersCount(b2bMailFilters),
+        [b2bMailFilters]
+    );
 
     const isTicketsEntity = entity === 'tickets';
     const isInterruptionsEntity = entity === 'interruptions';
@@ -107,6 +117,7 @@ const AdminBackup = () => {
     const isHistoryEntity = entity === 'history';
     const isPersonnelEntity = entity === 'personnel';
     const isServiceMemosEntity = entity === 'service_memos';
+    const isB2BMailEntity = entity === 'b2b_mail';
     const currentRole = String(localStorage.getItem('userRole') || USER_ROLES.EMPLOYEE).toLowerCase();
     const canDeleteTickets = currentRole === USER_ROLES.ADMIN;
     const canViewHistory = currentRole === USER_ROLES.ADMIN;
@@ -115,8 +126,8 @@ const AdminBackup = () => {
         [canViewHistory]
     );
     const hasDataFilters =
-        isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity || isHistoryEntity || isServiceMemosEntity;
-    const showFilterButton = isTicketsEntity || isInterruptionsEntity || isHistoryEntity || isServiceMemosEntity;
+        isTicketsEntity || isInterruptionsEntity || isUsersEntity || isPersonnelEntity || isHistoryEntity || isServiceMemosEntity || isB2BMailEntity;
+    const showFilterButton = isTicketsEntity || isInterruptionsEntity || isHistoryEntity || isServiceMemosEntity || isB2BMailEntity;
 
     useEffect(() => {
         if (!canViewHistory && entity === 'history') {
@@ -133,6 +144,8 @@ const AdminBackup = () => {
                 ? historyFilterActiveCount
             : isServiceMemosEntity
                 ? memoFilterActiveCount
+            : isB2BMailEntity
+                ? b2bMailFilterActiveCount
             : 0;
 
     const getExportBasePath = () => {
@@ -141,6 +154,7 @@ const AdminBackup = () => {
         if (isHistoryEntity) return '/api/history/export';
         if (isPersonnelEntity) return '/api/personnel/export';
         if (isServiceMemosEntity) return '/api/service-memos/export';
+        if (isB2BMailEntity) return '/api/b2b-mail/export';
         return '/api/tickets/export';
     };
 
@@ -150,6 +164,7 @@ const AdminBackup = () => {
         if (isHistoryEntity) return '/api/history/export/preview';
         if (isPersonnelEntity) return '/api/personnel/export/preview';
         if (isServiceMemosEntity) return '/api/service-memos/export/preview';
+        if (isB2BMailEntity) return '/api/b2b-mail/export/preview';
         return '/api/tickets/export/preview';
     };
 
@@ -175,6 +190,12 @@ const AdminBackup = () => {
             if (memoFilters.district) base.district = memoFilters.district;
             if (memoFilters.municipality) base.municipality = memoFilters.municipality;
             if (memoFilters.receivedBy) base.receivedBy = memoFilters.receivedBy;
+            return base;
+        }
+        
+        if (isB2BMailEntity) {
+            if (b2bMailFilters.status) base.status = b2bMailFilters.status;
+            if (b2bMailFilters.q) base.q = b2bMailFilters.q;
             return base;
         }
 
@@ -251,6 +272,8 @@ const AdminBackup = () => {
                         ? `aleco_personnel_export.${format === 'excel' ? 'xlsx' : 'csv'}`
                         : isServiceMemosEntity
                             ? `aleco_service_memos_export.${format === 'excel' ? 'xlsx' : 'csv'}`
+                        : isB2BMailEntity
+                            ? `aleco_b2b_messages_export.${format === 'excel' ? 'xlsx' : 'csv'}`
                             : `aleco_tickets_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
             if (contentDisposition) {
                 const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
@@ -280,7 +303,9 @@ const AdminBackup = () => {
                     ? 'aleco_personnel_export'
                     : isServiceMemosEntity
                         ? 'aleco_service_memos_export'
-                        : 'aleco_tickets_export';
+                        : isB2BMailEntity
+                            ? 'aleco_b2b_messages_export'
+                            : 'aleco_tickets_export';
         setExportFileName(suggestedBase);
         setExportConfirmOpen(true);
     };
@@ -648,6 +673,9 @@ const AdminBackup = () => {
                     </div>
                 </div>
             )}
+            {isB2BMailEntity && (
+                <BackupB2BMailFiltersBar filters={b2bMailFilters} setFilters={setB2BMailFilters} />
+            )}
 
             <div
                 className={
@@ -712,6 +740,11 @@ const AdminBackup = () => {
                             {isServiceMemosEntity && (
                                 <div className="backup-filters-content backup-filters-content--drawer">
                                     <BackupMemoFiltersForm filters={memoFilters} setFilters={setMemoFilters} />
+                                </div>
+                            )}
+                            {isB2BMailEntity && (
+                                <div className="backup-filters-content backup-filters-content--drawer">
+                                    <BackupB2BMailFiltersForm filters={b2bMailFilters} setFilters={setB2BMailFilters} />
                                 </div>
                             )}
                         </div>

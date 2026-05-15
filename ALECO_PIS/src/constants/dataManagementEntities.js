@@ -5,6 +5,7 @@ export const DATA_MANAGEMENT_ENTITIES = [
     { id: 'users', label: 'Users', icon: '👥', available: true },
     { id: 'history', label: 'History', icon: '🕐', available: true },
     { id: 'personnel', label: 'Personnel', icon: '👷', available: true },
+    { id: 'b2b_mail', label: 'B2B Mail', icon: '📧', available: true },
 ];
 
 /** Short copy for the Export card / compact panel (entity-aware). */
@@ -16,6 +17,7 @@ export function getDataManagementExportDescription(entityId) {
         users: 'Download users as Excel or CSV.',
         history: 'Download unified system history as Excel or CSV.',
         personnel: 'Download crews, linemen, and crew assignments as Excel or CSV.',
+        b2b_mail: 'Download sent messages and inbound replies as Excel or CSV.',
     };
     return map[entityId] || 'Download data as Excel or CSV.';
 }

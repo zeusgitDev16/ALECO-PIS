@@ -650,30 +650,64 @@ router.post('/b2b-mail/inbound/webhook', async (req, res) => {
     }
 });
 
-router.delete('/b2b-mail/flush', requireStaff, async (req, res) => {
+router.delete('/b2b-mail/flush', requireAdmin, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-        // Order matters for foreign keys if they exist, but these tables are mostly independent or cascade-deleted.
-        // We use DELETE to avoid TRUNCATE's implicit commit or permission issues in some environments.
-        await pool.execute('DELETE FROM aleco_b2b_inbound_messages');
-        await pool.execute('DELETE FROM aleco_b2b_message_recipients');
-        await pool.execute('DELETE FROM aleco_b2b_mail_audit_logs');
-        await pool.execute('DELETE FROM aleco_b2b_messages');
+        await connection.beginTransaction();
+
+        // 1. Purge child tables that might have foreign keys to messages or recipients
+        // inbound_messages linked_recipient_id -> recipients.id, linked_message_id -> messages.id
+        const [rInbound] = await connection.execute('DELETE FROM aleco_b2b_inbound_messages');
         
-        // Clear sync state for IMAP so next poll starts fresh
-        await pool.execute('DELETE FROM aleco_b2b_sync_state WHERE key_name LIKE "imap_last_uid::%"');
+        // 2. Purge recipients (linked to messages.id)
+        const [rRecipients] = await connection.execute('DELETE FROM aleco_b2b_message_recipients');
+        
+        // 3. Purge audit logs (linked to messages.id)
+        const [rAudit] = await connection.execute('DELETE FROM aleco_b2b_mail_audit_logs');
+        
+        // 4. Purge the core messages table
+        const [rMessages] = await connection.execute('DELETE FROM aleco_b2b_messages');
+        
+        // 5. Reset IMAP/Mailbox sync state completely so next poll is a full refresh
+        const [rSync] = await connection.execute('DELETE FROM aleco_b2b_sync_state');
+
+        await connection.commit();
+
+        const totalDeleted = (rInbound.affectedRows ?? 0) + 
+                             (rRecipients.affectedRows ?? 0) + 
+                             (rAudit.affectedRows ?? 0) + 
+                             (rMessages.affectedRows ?? 0);
+
+        const actorEmail = req.authUser?.email || 'unknown';
+        console.log(`--- [B2B MESSAGE FLUSH] ${totalDeleted} records purged by ${actorEmail} ---`);
 
         await recordB2BMailNotification(pool, {
-            eventType: B2B_MAIL_EVENT.SYSTEM, // Use a generic system/audit event if specific flush event doesn't exist
+            eventType: B2B_MAIL_EVENT.SYSTEM,
             subjectEmail: null,
             subjectName: 'B2B MAIL GLOBAL FLUSH',
-            detail: 'All B2B messages and interactions have been permanently purged from the system.',
-            actorEmail: actorEmailFromReq(req),
+            detail: `All B2B messages (${rMessages.affectedRows}), replies (${rInbound.affectedRows}), and activity logs have been permanently purged.`,
+            actorEmail: actorEmail,
         });
 
-        return res.json({ success: true, message: 'B2B messages flushed successfully.' });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ 
+            success: true, 
+            message: 'B2B message pool flushed successfully.',
+            deleted: {
+                messages: rMessages.affectedRows,
+                replies: rInbound.affectedRows,
+                recipients: rRecipients.affectedRows,
+                audit_logs: rAudit.affectedRows,
+                sync_markers: rSync.affectedRows,
+                total: totalDeleted
+            }
+        });
     } catch (err) {
-        console.error('❌ DELETE /b2b-mail/flush:', err);
-        return res.status(500).json({ success: false, message: 'Failed to flush messages.' });
+        await connection.rollback();
+        console.error('❌ DELETE /b2b-mail/flush failed:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to flush B2B messages. No data was deleted.' });
+    } finally {
+        connection.release();
     }
 });
 

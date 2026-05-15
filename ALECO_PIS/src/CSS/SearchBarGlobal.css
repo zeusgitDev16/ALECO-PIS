@@ -1850,6 +1850,189 @@
     background: var(--text-header);
 }
 
+/* =========================================
+   FLUSH CONFIRMATION MODAL
+   ========================================= */
+.flush-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10010;
+    padding: calc(20px * var(--nav-scale));
+    box-sizing: border-box;
+}
+
+.flush-confirm-modal {
+    background-color: var(--bg-body);
+    border-radius: calc(16px * var(--nav-scale));
+    width: min(100%, calc(480px * var(--nav-scale)));
+    box-shadow: 0 calc(25px * var(--nav-scale)) calc(50px * var(--nav-scale)) rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.flush-confirm-header {
+    background: rgba(239, 68, 68, 0.1);
+    padding: calc(16px * var(--nav-scale)) calc(20px * var(--nav-scale));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.flush-confirm-title {
+    color: #ef4444;
+    font-weight: 700;
+    font-size: calc(0.95rem * var(--nav-scale));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.flush-confirm-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.flush-confirm-body {
+    padding: calc(30px * var(--nav-scale));
+    text-align: center;
+}
+
+.flush-confirm-warning-icon {
+    font-size: calc(48px * var(--nav-scale));
+    margin-bottom: calc(15px * var(--nav-scale));
+}
+
+.flush-confirm-body h3 {
+    color: var(--text-header);
+    font-size: calc(1.25rem * var(--nav-scale));
+    margin: 0 0 calc(10px * var(--nav-scale)) 0;
+}
+
+.flush-confirm-body p {
+    color: var(--text-secondary);
+    font-size: calc(0.9rem * var(--nav-scale));
+    line-height: 1.5;
+    margin-bottom: calc(24px * var(--nav-scale));
+}
+
+.flush-confirm-responsibility {
+    background: rgba(128, 128, 128, 0.05);
+    padding: calc(16px * var(--nav-scale));
+    border-radius: calc(10px * var(--nav-scale));
+    border: 1px solid var(--border-color);
+    margin-bottom: calc(24px * var(--nav-scale));
+    text-align: left;
+}
+
+.responsibility-checkbox-container {
+    display: flex;
+    gap: calc(12px * var(--nav-scale));
+    cursor: pointer;
+}
+
+.responsibility-checkbox-container input {
+    width: calc(20px * var(--nav-scale));
+    height: calc(20px * var(--nav-scale));
+    margin-top: calc(2px * var(--nav-scale));
+    accent-color: #ef4444;
+    flex-shrink: 0;
+}
+
+.responsibility-text {
+    font-size: calc(0.85rem * var(--nav-scale));
+    color: var(--text-main);
+    line-height: 1.4;
+    user-select: none;
+}
+
+.flush-confirm-email-step {
+    text-align: left;
+}
+
+.flush-confirm-email-step label {
+    display: block;
+    font-size: calc(0.85rem * var(--nav-scale));
+    color: var(--text-secondary);
+    margin-bottom: calc(8px * var(--nav-scale));
+}
+
+.flush-confirm-input {
+    width: 100%;
+    padding: calc(12px * var(--nav-scale)) calc(14px * var(--nav-scale));
+    border: 1px solid var(--border-color);
+    border-radius: calc(8px * var(--nav-scale));
+    background: var(--bg-card);
+    color: var(--text-header);
+    font-size: calc(0.9rem * var(--nav-scale));
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.flush-confirm-input:focus {
+    border-color: #ef4444;
+}
+
+.flush-confirm-footer {
+    padding: calc(20px * var(--nav-scale)) calc(30px * var(--nav-scale));
+    background: rgba(128, 128, 128, 0.03);
+    display: flex;
+    justify-content: flex-end;
+    gap: calc(12px * var(--nav-scale));
+    border-top: 1px solid var(--border-color);
+}
+
+.flush-final-btn {
+    padding: calc(12px * var(--nav-scale)) calc(24px * var(--nav-scale));
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: calc(8px * var(--nav-scale));
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.flush-final-btn:hover:not(:disabled) {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+.flush-final-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+}
+
+.flush-verify-label {
+    display: block;
+    font-size: calc(0.85rem * var(--nav-scale));
+    font-weight: 600;
+    color: var(--text-header);
+    margin-bottom: calc(10px * var(--nav-scale));
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.flush-input-container {
+    position: relative;
+    width: 100%;
+}
+
 .security-option {
     margin: calc(15px * var(--nav-scale)) 0;
     display: flex;

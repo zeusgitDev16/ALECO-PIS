@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/db.js';
+import { requireAdmin } from '../middleware/requireRole.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 
 const router = express.Router();
@@ -217,6 +218,37 @@ router.get('/notifications', async (req, res) => {
     }
     console.error('[GET /notifications]', e.message);
     res.status(500).json({ success: false, message: 'Failed to load notifications.' });
+  }
+});
+
+/**
+ * DELETE /notifications/flush
+ * GLOBAL: Permanently deletes all notification records and their read status markers.
+ * Restricted to admins only.
+ */
+router.delete('/flush', requireAdmin, async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Clear personal read markers first (foreign key consideration if applicable, 
+    // though they are currently independent in schema)
+    await connection.execute('DELETE FROM aleco_admin_notification_reads');
+
+    // 2. Clear the main notification table
+    await connection.execute('DELETE FROM aleco_admin_notifications');
+
+    await connection.commit();
+    
+    console.log(`--- [GLOBAL FLUSH] Notifications wiped by ${req.authUser?.email} ---`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, message: 'All notifications have been permanently cleared.' });
+  } catch (e) {
+    await connection.rollback();
+    console.error('[DELETE /notifications/flush]', e.message);
+    res.status(500).json({ success: false, message: 'Failed to flush notifications.' });
+  } finally {
+    connection.release();
   }
 });
 

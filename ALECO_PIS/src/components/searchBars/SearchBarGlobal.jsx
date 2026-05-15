@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { apiUrl } from '../../utils/api';
 import { authFetch } from '../../utils/authFetch';
 import { authMutation } from '../../utils/authMutation';
@@ -151,6 +152,10 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
   
   // Secure feature state for global logout
   const [logoutAllDevices, setLogoutAllDevices] = useState(false);
+  const [isFlushingNotifs, setIsFlushingNotifs] = useState(false);
+  const [showFlushConfirmModal, setShowFlushConfirmModal] = useState(false);
+  const [flushResponsibilityChecked, setFlushResponsibilityChecked] = useState(false);
+  const [flushConfirmEmail, setFlushConfirmEmail] = useState('');
 
   // ── Global search state ──
   const [searchQuery, setSearchQuery] = useState('');
@@ -404,6 +409,59 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
       setMarkOneReadLoadingId(null);
     }
   }, [notificationDetail, canUseNotifications, markNotificationAsReadInList, fetchNotificationCounts]);
+
+  const handleFlushNotifications = useCallback(async () => {
+    if (!canUseNotifications) return;
+    
+    const userEmail = localStorage.getItem('userEmail');
+    const entered = flushConfirmEmail.trim().toLowerCase();
+    const current = (userEmail || '').trim().toLowerCase();
+
+    if (!entered) {
+      toast.error('Email verification is required to proceed.');
+      return;
+    }
+
+    if (entered !== current) {
+      toast.error('Security mismatch. Please enter your correct administrator email address.');
+      return;
+    }
+
+    setIsFlushingNotifs(true);
+    try {
+      const result = await authMutation(apiUrl('/api/notifications/flush'), {
+        method: 'DELETE',
+        body: {},
+        emitRealtime: { module: REALTIME_MODULES.SYSTEM },
+      });
+      const j = result.data || {};
+      if (!result.ok || !j.success) {
+        toast.error(j.message || 'Failed to flush notifications.');
+        return;
+      }
+      
+      // Clear local state
+      setNotificationCounts(emptyNotificationCounts());
+      setUserNotifications([]);
+      setPersonnelNotifications([]);
+      setB2bMailNotifications([]);
+      setTicketsNotifications([]);
+      setInterruptionsNotifications([]);
+      setMemoNotifications([]);
+      
+      setShowFlushConfirmModal(false);
+      setFlushResponsibilityChecked(false);
+      setFlushConfirmEmail('');
+      
+      toast.success('System optimization complete: All notifications have been permanently cleared.');
+      window.dispatchEvent(new CustomEvent('aleco:realtime-change'));
+    } catch (error) {
+      console.error('[handleFlushNotifications]', error);
+      toast.error('An unexpected error occurred during the flush operation.');
+    } finally {
+      setIsFlushingNotifs(false);
+    }
+  }, [canUseNotifications, flushConfirmEmail]);
 
   useEffect(() => {
     if (!notificationDetail) return undefined;
@@ -1183,7 +1241,11 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                         <p className="flush-section-description">
                           This feature clears notification records from the database to free up storage space and optimize performance.
                         </p>
-                        <button type="button" className="flush-btn flush-btn--notification">
+                        <button
+                          type="button"
+                          className="flush-btn flush-btn--notification"
+                          onClick={() => setShowFlushConfirmModal(true)}
+                        >
                           Flush Notifications
                         </button>
                       </div>
@@ -1205,6 +1267,68 @@ const SearchBarGlobal = ({ toggleSidebar }) => {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showFlushConfirmModal && (
+            <div className="flush-confirm-overlay">
+              <div className="flush-confirm-modal">
+                <div className="flush-confirm-header">
+                  <span className="flush-confirm-title">Critical Action Required</span>
+                  <button type="button" className="flush-confirm-close" onClick={() => {
+                    setShowFlushConfirmModal(false);
+                    setFlushResponsibilityChecked(false);
+                    setFlushConfirmEmail('');
+                  }}>×</button>
+                </div>
+                <div className="flush-confirm-body">
+                  <div className="flush-confirm-warning-icon">⚠️</div>
+                  <h3>HARD FLUSH NOTIFICATIONS</h3>
+                  <p>You are about to permanently purge all notification data from the system database. This action is global and cannot be reversed.</p>
+                  
+                  <div className="flush-confirm-responsibility">
+                    <label className="responsibility-checkbox-container">
+                      <input 
+                        type="checkbox" 
+                        checked={flushResponsibilityChecked}
+                        onChange={(e) => setFlushResponsibilityChecked(e.target.checked)}
+                      />
+                      <span className="responsibility-text">
+                        I hereby acknowledge that I am initiating a destructive operation and I responsibly take full accountability for removing all notification records from the database.
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="flush-confirm-email-step">
+                    <label htmlFor="flush-email-verify" className="flush-verify-label">Verify Identity</label>
+                    <div className="flush-input-container">
+                      <input 
+                        id="flush-email-verify"
+                        type="email"
+                        placeholder="Enter your administrator email"
+                        value={flushConfirmEmail}
+                        onChange={(e) => setFlushConfirmEmail(e.target.value)}
+                        className="flush-confirm-input"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flush-confirm-footer">
+                  <button className="cancel-btn" onClick={() => {
+                    setShowFlushConfirmModal(false);
+                    setFlushResponsibilityChecked(false);
+                    setFlushConfirmEmail('');
+                  }}>Cancel</button>
+                  <button 
+                    className="flush-final-btn"
+                    disabled={!flushResponsibilityChecked || !flushConfirmEmail || isFlushingNotifs}
+                    onClick={handleFlushNotifications}
+                  >
+                    {isFlushingNotifs ? 'Processing...' : 'Confirm Global Flush'}
+                  </button>
                 </div>
               </div>
             </div>

@@ -1,0 +1,597 @@
+/* =========================================
+   MANAGE SITE MODAL
+   Extracted from SearchBarGlobal.css
+   Uses --nav-scale CSS variable (defaults to 1,
+   set by .manage-site-modal-overlay root rule
+   so responsive tiers still apply via inherited
+   @media rules from the host page).
+   ========================================= */
+
+.manage-site-modal-overlay {
+    --nav-scale: 1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: calc(16px * var(--nav-scale));
+    box-sizing: border-box;
+}
+
+.manage-site-modal {
+    background-color: var(--bg-body);
+    border-radius: calc(15px * var(--nav-scale));
+    width: min(100%, calc(700px * var(--nav-scale)));
+    max-height: 90vh;
+    box-shadow: 0 calc(20px * var(--nav-scale)) calc(40px * var(--nav-scale)) rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    animation: manageSiteModalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes manageSiteModalPop {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.manage-site-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(20px * var(--nav-scale)) calc(24px * var(--nav-scale));
+    border-bottom: 1px solid var(--border-color);
+}
+
+.manage-site-modal-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.manage-site-tab {
+    flex: 1;
+    padding: calc(14px * var(--nav-scale)) calc(20px * var(--nav-scale));
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-size: calc(0.9rem * var(--nav-scale));
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.manage-site-tab:hover {
+    color: var(--text-header);
+    background: rgba(128, 128, 128, 0.05);
+}
+
+.manage-site-tab--active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.manage-site-tab--active:hover {
+    background: transparent;
+}
+
+.manage-site-modal-title {
+    color: var(--text-header);
+    font-size: calc(1.125rem * var(--nav-scale));
+    font-weight: 600;
+}
+
+.manage-site-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.manage-site-close-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.manage-site-modal-body {
+    padding: calc(24px * var(--nav-scale));
+    overflow-y: auto;
+    flex: 1;
+}
+
+.manage-site-tab-panel {
+    animation: manageSiteFadeIn 0.2s ease;
+}
+
+@keyframes manageSiteFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scrollbar for modal body */
+.manage-site-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.manage-site-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.manage-site-modal-body::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 3px;
+}
+
+.manage-site-modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--text-header);
+}
+
+/* =========================================
+   SETTINGS SECTIONS
+   ========================================= */
+.settings-section {
+    padding: calc(20px * var(--nav-scale));
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: calc(12px * var(--nav-scale));
+    margin-bottom: calc(20px * var(--nav-scale));
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-section-title {
+    color: var(--text-header);
+    font-size: calc(1rem * var(--nav-scale));
+    font-weight: 600;
+    margin: 0 0 calc(20px * var(--nav-scale)) 0;
+}
+
+.settings-section-description {
+    color: var(--text-secondary);
+    font-size: calc(0.875rem * var(--nav-scale));
+    line-height: 1.5;
+    margin: 0 0 calc(20px * var(--nav-scale)) 0;
+}
+
+.nav-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(16px * var(--nav-scale));
+}
+
+.nav-item-row {
+    display: flex;
+    align-items: center;
+    gap: calc(16px * var(--nav-scale));
+}
+
+.nav-item-label {
+    min-width: calc(140px * var(--nav-scale));
+    color: var(--text-secondary);
+    font-size: calc(0.875rem * var(--nav-scale));
+    font-weight: 500;
+}
+
+.nav-item-input {
+    flex: 1;
+    padding: calc(10px * var(--nav-scale)) calc(14px * var(--nav-scale));
+    border: 1px solid var(--border-color);
+    border-radius: calc(6px * var(--nav-scale));
+    background: var(--bg-body);
+    color: var(--text-header);
+    font-size: calc(0.875rem * var(--nav-scale));
+    transition: all 0.2s ease;
+}
+
+.nav-item-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.nav-item-input:hover {
+    border-color: var(--text-secondary);
+}
+
+.logo-upload-container {
+    display: flex;
+    flex-direction: column;
+    gap: calc(20px * var(--nav-scale));
+}
+
+.logo-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: calc(30px * var(--nav-scale));
+    background: var(--bg-body);
+    border: 2px dashed var(--border-color);
+    border-radius: calc(10px * var(--nav-scale));
+    min-height: calc(150px * var(--nav-scale));
+}
+
+.logo-image {
+    max-width: 100%;
+    max-height: calc(200px * var(--nav-scale));
+    object-fit: contain;
+}
+
+.logo-upload-actions {
+    display: flex;
+    gap: calc(12px * var(--nav-scale));
+}
+
+.settings-btn {
+    padding: calc(10px * var(--nav-scale)) calc(20px * var(--nav-scale));
+    border-radius: calc(8px * var(--nav-scale));
+    border: none;
+    font-size: calc(0.9rem * var(--nav-scale));
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-btn--primary {
+    background-color: var(--accent-primary);
+    color: white;
+}
+
+.settings-btn--primary:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.logo-upload-input {
+    display: none;
+}
+
+/* =========================================
+   FLUSH SECTIONS
+   ========================================= */
+.flush-section {
+    padding: calc(20px * var(--nav-scale));
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: calc(12px * var(--nav-scale));
+    margin-bottom: calc(20px * var(--nav-scale));
+}
+
+.flush-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.flush-section-title {
+    color: var(--text-header);
+    font-size: calc(1rem * var(--nav-scale));
+    font-weight: 600;
+    margin: 0 0 calc(12px * var(--nav-scale)) 0;
+}
+
+.flush-section-description {
+    color: var(--text-secondary);
+    font-size: calc(0.875rem * var(--nav-scale));
+    line-height: 1.5;
+    margin: 0 0 calc(16px * var(--nav-scale)) 0;
+}
+
+.flush-btn {
+    padding: calc(12px * var(--nav-scale)) calc(24px * var(--nav-scale));
+    border-radius: calc(8px * var(--nav-scale));
+    border: none;
+    font-size: calc(0.9rem * var(--nav-scale));
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flush-btn--notification {
+    background-color: var(--accent-primary);
+    color: white;
+}
+
+.flush-btn--notification:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.flush-btn--history {
+    background-color: #ef4444;
+    color: white;
+}
+
+.flush-btn--history:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.flush-footer {
+    margin-top: calc(30px * var(--nav-scale));
+    padding-top: calc(20px * var(--nav-scale));
+    border-top: 1px solid var(--border-color);
+}
+
+.flush-footer-text {
+    color: var(--text-secondary);
+    font-size: calc(0.85rem * var(--nav-scale));
+    line-height: 1.6;
+    margin: 0;
+    font-style: italic;
+}
+
+/* =========================================
+   FLUSH CONFIRMATION MODAL
+   ========================================= */
+.flush-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10010;
+    padding: calc(20px * var(--nav-scale));
+    box-sizing: border-box;
+}
+
+.flush-confirm-modal {
+    background-color: var(--bg-body);
+    border-radius: calc(16px * var(--nav-scale));
+    width: min(100%, calc(480px * var(--nav-scale)));
+    box-shadow: 0 calc(25px * var(--nav-scale)) calc(50px * var(--nav-scale)) rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation: manageSiteModalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.flush-confirm-header {
+    background: rgba(239, 68, 68, 0.1);
+    padding: calc(16px * var(--nav-scale)) calc(20px * var(--nav-scale));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.flush-confirm-title {
+    color: #ef4444;
+    font-weight: 700;
+    font-size: calc(0.95rem * var(--nav-scale));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.flush-confirm-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.flush-confirm-body {
+    padding: calc(30px * var(--nav-scale));
+    text-align: center;
+}
+
+.flush-confirm-warning-icon {
+    font-size: calc(48px * var(--nav-scale));
+    margin-bottom: calc(15px * var(--nav-scale));
+}
+
+.flush-confirm-body h3 {
+    color: var(--text-header);
+    font-size: calc(1.25rem * var(--nav-scale));
+    margin: 0 0 calc(10px * var(--nav-scale)) 0;
+}
+
+.flush-confirm-body p {
+    color: var(--text-secondary);
+    font-size: calc(0.9rem * var(--nav-scale));
+    line-height: 1.5;
+    margin-bottom: calc(24px * var(--nav-scale));
+}
+
+.flush-confirm-responsibility {
+    background: rgba(128, 128, 128, 0.05);
+    padding: calc(16px * var(--nav-scale));
+    border-radius: calc(10px * var(--nav-scale));
+    border: 1px solid var(--border-color);
+    margin-bottom: calc(24px * var(--nav-scale));
+    text-align: left;
+}
+
+.responsibility-checkbox-container {
+    display: flex;
+    gap: calc(12px * var(--nav-scale));
+    cursor: pointer;
+}
+
+.responsibility-checkbox-container input {
+    width: calc(20px * var(--nav-scale));
+    height: calc(20px * var(--nav-scale));
+    margin-top: calc(2px * var(--nav-scale));
+    accent-color: #ef4444;
+    flex-shrink: 0;
+}
+
+.responsibility-text {
+    font-size: calc(0.85rem * var(--nav-scale));
+    color: var(--text-main);
+    line-height: 1.4;
+    user-select: none;
+}
+
+.flush-confirm-email-step {
+    text-align: left;
+}
+
+.flush-confirm-email-step label {
+    display: block;
+    font-size: calc(0.85rem * var(--nav-scale));
+    color: var(--text-secondary);
+    margin-bottom: calc(8px * var(--nav-scale));
+}
+
+.flush-confirm-input {
+    width: 100%;
+    padding: calc(12px * var(--nav-scale)) calc(14px * var(--nav-scale));
+    border: 1px solid var(--border-color);
+    border-radius: calc(8px * var(--nav-scale));
+    background: var(--bg-card);
+    color: var(--text-header);
+    font-size: calc(0.9rem * var(--nav-scale));
+    outline: none;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+.flush-confirm-input:focus {
+    border-color: #ef4444;
+}
+
+.flush-confirm-footer {
+    padding: calc(20px * var(--nav-scale)) calc(30px * var(--nav-scale));
+    background: rgba(128, 128, 128, 0.03);
+    display: flex;
+    justify-content: flex-end;
+    gap: calc(12px * var(--nav-scale));
+    border-top: 1px solid var(--border-color);
+}
+
+.flush-final-btn {
+    padding: calc(12px * var(--nav-scale)) calc(24px * var(--nav-scale));
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: calc(8px * var(--nav-scale));
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.flush-final-btn:hover:not(:disabled) {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+.flush-final-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+}
+
+.flush-verify-label {
+    display: block;
+    font-size: calc(0.85rem * var(--nav-scale));
+    font-weight: 600;
+    color: var(--text-header);
+    margin-bottom: calc(10px * var(--nav-scale));
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.flush-input-container {
+    position: relative;
+    width: 100%;
+}
+
+/* =========================================
+   RESPONSIVE TIERS
+   mirrors .admin-top-nav breakpoints so
+   --nav-scale scales correctly on mobile
+   ========================================= */
+@media (max-width: 1023px) and (min-width: 768px) {
+    .manage-site-modal-overlay {
+        --nav-scale: 0.88;
+    }
+}
+
+@media (max-width: 767px) and (min-width: 600px) {
+    .manage-site-modal-overlay {
+        --nav-scale: 0.72;
+    }
+}
+
+@media (max-width: 599px) and (min-width: 480px) {
+    .manage-site-modal-overlay {
+        --nav-scale: 0.72;
+    }
+}
+
+@media (max-width: 479px) and (min-width: 425px) {
+    .manage-site-modal-overlay {
+        --nav-scale: 0.72;
+    }
+}
+
+@media (max-width: 424px) and (min-width: 375px) {
+    .manage-site-modal-overlay {
+        --nav-scale: 0.68;
+    }
+}
+
+@media (max-width: 374px) and (min-width: 321px) {
+    .manage-site-modal-overlay {
+        --nav-scale: 0.65;
+    }
+}
+
+@media (max-width: 320px) {
+    .manage-site-modal-overlay {
+        --nav-scale: 0.55;
+    }
+}
+
+@media (min-width: 1024px) {
+    .manage-site-modal-overlay {
+        --nav-scale: 1;
+    }
+}

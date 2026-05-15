@@ -449,4 +449,80 @@ router.get('/history/export', requireAdmin, async (req, res) => {
   }
 });
 
+
+/**
+ * DELETE /history/flush
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GLOBAL HARD FLUSH: Permanently purges all records from the 5 audit/log tables.
+ * Safe — does NOT touch primary data tables (aleco_tickets, aleco_b2b_messages,
+ * aleco_interruptions, aleco_personnel, users, etc.).
+ *
+ * Tables cleared:
+ *   1. aleco_ticket_logs
+ *   2. aleco_b2b_mail_audit_logs
+ *   3. aleco_interruption_updates
+ *   4. aleco_personnel_audit_logs
+ *   5. aleco_export_log
+ *
+ * Restricted to admins only. Uses a transaction so all-or-nothing.
+ */
+router.delete('/history/flush', requireAdmin, async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Ticket activity logs
+    const [r1] = await connection.execute('DELETE FROM aleco_ticket_logs');
+
+    // 2. B2B Mail audit logs (FK to aleco_b2b_messages ON DELETE SET NULL — safe to delete)
+    const [r2] = await connection.execute('DELETE FROM aleco_b2b_mail_audit_logs');
+
+    // 3. Interruption update remarks (FK to aleco_interruptions ON DELETE CASCADE — rows deleted before parent, safe)
+    const [r3] = await connection.execute('DELETE FROM aleco_interruption_updates');
+
+    // 4. Personnel audit logs (no FK — pure log table)
+    const [r4] = await connection.execute('DELETE FROM aleco_personnel_audit_logs');
+
+    // 5. Export log (no FK — pure log table)
+    const [r5] = await connection.execute('DELETE FROM aleco_export_log');
+
+    await connection.commit();
+
+    const totalDeleted =
+      (r1.affectedRows ?? 0) +
+      (r2.affectedRows ?? 0) +
+      (r3.affectedRows ?? 0) +
+      (r4.affectedRows ?? 0) +
+      (r5.affectedRows ?? 0);
+
+    const actorEmail = req.authUser?.email || 'unknown';
+    console.log(
+      `--- [GLOBAL HISTORY FLUSH] ${totalDeleted} log records permanently purged by ${actorEmail} ---`
+    );
+    console.log(
+      `    ticket_logs: ${r1.affectedRows} | b2b_audit: ${r2.affectedRows} | interruption_updates: ${r3.affectedRows} | personnel_audit: ${r4.affectedRows} | export_log: ${r5.affectedRows}`
+    );
+
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      success: true,
+      message: 'All history and activity logs have been permanently cleared.',
+      deleted: {
+        ticket_logs: r1.affectedRows ?? 0,
+        b2b_mail_audit_logs: r2.affectedRows ?? 0,
+        interruption_updates: r3.affectedRows ?? 0,
+        personnel_audit_logs: r4.affectedRows ?? 0,
+        export_log: r5.affectedRows ?? 0,
+        total: totalDeleted,
+      },
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error('[DELETE /history/flush] Transaction rolled back:', err.message);
+    res.status(500).json({ success: false, message: 'Failed to flush history logs. No data was deleted.' });
+  } finally {
+    connection.release();
+  }
+});
+
 export default router;

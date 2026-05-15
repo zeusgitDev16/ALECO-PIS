@@ -35,8 +35,9 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     { id: 'backup', label: 'Data Management' },
   ]);
 
-  // ── Notification Flush state ──
-  const [isFlushingNotifs, setIsFlushingNotifs] = useState(false);
+  // ── Flush state ──
+  const [flushType, setFlushType] = useState(null); // 'notifications' or 'history'
+  const [isFlushing, setIsFlushing] = useState(false);
   const [showFlushConfirmModal, setShowFlushConfirmModal] = useState(false);
   const [flushResponsibilityChecked, setFlushResponsibilityChecked] = useState(false);
   const [flushConfirmEmail, setFlushConfirmEmail] = useState('');
@@ -59,11 +60,12 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       setShowFlushConfirmModal(false);
       setFlushResponsibilityChecked(false);
       setFlushConfirmEmail('');
+      setFlushType(null);
     }
   }, [isOpen]);
 
   // ── Notification Flush handler ──
-  const handleFlushNotifications = useCallback(async () => {
+  const handleExecuteFlush = useCallback(async () => {
     const userEmail = localStorage.getItem('userEmail');
     const entered = flushConfirmEmail.trim().toLowerCase();
     const current = (userEmail || '').trim().toLowerCase();
@@ -78,9 +80,13 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       return;
     }
 
-    setIsFlushingNotifs(true);
+    setIsFlushing(true);
     try {
-      const result = await authMutation(apiUrl('/api/notifications/flush'), {
+      const endpoint = flushType === 'history' 
+        ? apiUrl('/api/history/flush') 
+        : apiUrl('/api/notifications/flush');
+
+      const result = await authMutation(endpoint, {
         method: 'DELETE',
         body: {},
         emitRealtime: { module: REALTIME_MODULES.SYSTEM },
@@ -97,23 +103,28 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       setFlushConfirmEmail('');
 
       // Notify parent to clear bell counts + notification lists
-      if (onFlushComplete) onFlushComplete();
+      if (onFlushComplete && flushType === 'notifications') onFlushComplete();
 
-      toast.success('System optimization complete: All notifications have been permanently cleared.');
+      const successMsg = flushType === 'history'
+        ? 'System optimization complete: All history logs and audit trails have been permanently cleared.'
+        : 'System optimization complete: All notifications have been permanently cleared.';
+
+      toast.success(successMsg);
       window.dispatchEvent(new CustomEvent('aleco:realtime-change'));
     } catch (error) {
       console.error('[ManageSiteModal] handleFlushNotifications error:', error);
       toast.error('An unexpected error occurred during the flush operation.');
     } finally {
-      setIsFlushingNotifs(false);
+      setIsFlushing(false);
     }
-  }, [flushConfirmEmail, onFlushComplete]);
+  }, [flushConfirmEmail, flushType, onFlushComplete]);
 
   // ── Close flush sub-modal helper ──
   const closeFlushConfirmModal = useCallback(() => {
     setShowFlushConfirmModal(false);
     setFlushResponsibilityChecked(false);
     setFlushConfirmEmail('');
+    setFlushType(null);
   }, []);
 
   if (!isOpen) return null;
@@ -231,21 +242,31 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                   <button
                     type="button"
                     className="flush-btn flush-btn--notification"
-                    onClick={() => setShowFlushConfirmModal(true)}
+                    onClick={() => {
+                      setFlushType('notifications');
+                      setShowFlushConfirmModal(true);
+                    }}
                   >
                     Flush Notifications
                   </button>
                 </div>
 
-                {/* History Flush (UI only — no backend yet) */}
+                {/* History & Logs Flush */}
                 <div className="flush-section">
-                  <h4 className="flush-section-title">History Flush</h4>
+                  <h4 className="flush-section-title">History & Logs Flush</h4>
                   <p className="flush-section-description">
-                    This feature deletes all history logs from the database to reduce storage usage
-                    and maintain system efficiency.
+                    This feature permanently purges all activity logs and audit trails from the 
+                    database to maximize storage space and maintain peak system performance.
                   </p>
-                  <button type="button" className="flush-btn flush-btn--history">
-                    Flush History
+                  <button
+                    type="button"
+                    className="flush-btn flush-btn--history"
+                    onClick={() => {
+                      setFlushType('history');
+                      setShowFlushConfirmModal(true);
+                    }}
+                  >
+                    Flush History & Logs
                   </button>
                 </div>
 
@@ -277,12 +298,14 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
             </div>
             <div className="flush-confirm-body">
               <div className="flush-confirm-warning-icon">⚠️</div>
-              <h3>HARD FLUSH NOTIFICATIONS</h3>
+              <h3>HARD FLUSH {flushType === 'history' ? 'HISTORY & LOGS' : 'NOTIFICATIONS'}</h3>
               <p>
-                You are about to permanently purge all notification data from the system database.
-                This action is global and cannot be reversed.
+                {flushType === 'history'
+                  ? 'You are about to permanently purge all system activity logs and audit trails from the database. This includes ticket history, B2B logs, and personnel trails.'
+                  : 'You are about to permanently purge all notification data from the system database.'
+                }
+                {' '}This action is global and cannot be reversed.
               </p>
-
               {/* Responsibility acknowledgement */}
               <div className="flush-confirm-responsibility">
                 <label className="responsibility-checkbox-container">
@@ -293,7 +316,7 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                   />
                   <span className="responsibility-text">
                     I hereby acknowledge that I am initiating a destructive operation and I
-                    responsibly take full accountability for removing all notification records from
+                    responsibly take full accountability for removing all {flushType === 'history' ? 'history and activity log' : 'notification'} records from
                     the database.
                   </span>
                 </label>
@@ -323,10 +346,10 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
               </button>
               <button
                 className="flush-final-btn"
-                disabled={!flushResponsibilityChecked || !flushConfirmEmail || isFlushingNotifs}
-                onClick={handleFlushNotifications}
+                disabled={!flushResponsibilityChecked || !flushConfirmEmail || isFlushing}
+                onClick={handleExecuteFlush}
               >
-                {isFlushingNotifs ? 'Processing...' : 'Confirm Global Flush'}
+                {isFlushing ? 'Processing...' : 'Confirm Global Flush'}
               </button>
             </div>
           </div>

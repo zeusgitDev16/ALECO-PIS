@@ -123,6 +123,7 @@ export default function B2BMessagesView({
   // Generate activity logs from messages
   const logs = useMemo(() => {
     return (allMessages || messages)
+      .filter((m) => m.status !== 'draft') // Exclude drafts from activity logs
       .slice(0, 20)
       .map((m) => ({
         id: m.id,

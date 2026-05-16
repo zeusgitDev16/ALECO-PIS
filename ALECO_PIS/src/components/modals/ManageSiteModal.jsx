@@ -187,6 +187,11 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       return;
     }
 
+    if (widgetRef.current) {
+      widgetRef.current.open();
+      return;
+    }
+
     setIsInitializingWidget(true);
     try {
       // 1. Get Cloudinary Config from backend
@@ -205,8 +210,8 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
         return;
       }
 
-      // 2. Open Signed Widget with Dynamic Signature Function
-      window.cloudinary.openUploadWidget(
+      // 2. Create Signed Widget
+      widgetRef.current = window.cloudinary.createUploadWidget(
         {
           cloudName: configData.cloudName,
           apiKey: configData.apiKey,
@@ -220,28 +225,29 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
           showSkipCropButton: false,
           croppingDefaultSelection: 'transform',
           theme: 'minimal',
-          uploadSignature: async (callback, params_to_sign) => {
-            try {
-              const res = await fetch(apiUrl('/api/site-settings/cloudinary-signature'), {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-User-Email': localStorage.getItem('userEmail'),
-                  'X-Token-Version': localStorage.getItem('tokenVersion'),
-                  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-                },
-                body: JSON.stringify(params_to_sign)
-              });
-              const data = await res.json();
+          uploadSignature: function(callback, params_to_sign) {
+            fetch(apiUrl('/api/site-settings/cloudinary-signature'), {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-User-Email': localStorage.getItem('userEmail'),
+                'X-Token-Version': localStorage.getItem('tokenVersion'),
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              },
+              body: JSON.stringify(params_to_sign)
+            })
+            .then(res => res.json())
+            .then(data => {
               if (data.success) {
                 callback(data.signature);
               } else {
                 toast.error('Failed to sign upload request.');
               }
-            } catch (err) {
+            })
+            .catch(err => {
               console.error('[Signature Error]', err);
               toast.error('Network error while signing upload.');
-            }
+            });
           }
         },
         async (error, result) => {
@@ -254,6 +260,8 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
           }
         }
       );
+      
+      widgetRef.current.open();
     } catch (err) {
       console.error('[ManageSiteModal] openFaviconWidget error:', err);
       toast.error('Failed to initialize upload widget.');

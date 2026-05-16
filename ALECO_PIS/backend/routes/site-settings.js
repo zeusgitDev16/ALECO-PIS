@@ -67,31 +67,30 @@ router.patch('/site-settings', requireAdmin, async (req, res) => {
 });
 
 /**
- * Admin: Generate Cloudinary signature for signed widget uploads.
+ * Admin: Get Cloudinary Config for Upload Widget
  */
-router.get('/site-settings/cloudinary-signature', requireAdmin, (req, res) => {
-  try {
-    const timestamp = Math.round(new Date().getTime() / 1000);
-    const paramsToSign = {
-      timestamp: timestamp,
-      upload_preset: 'ml_default', // Still uses a preset, but it can be signed
-      folder: 'site-branding'
-    };
+router.get('/site-settings/cloudinary-config', requireAdmin, (req, res) => {
+  res.json({
+    success: true,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME
+  });
+});
 
+/**
+ * Admin: Generate Cloudinary signature for signed widget uploads dynamically.
+ */
+router.post('/site-settings/cloudinary-signature', requireAdmin, (req, res) => {
+  try {
+    const paramsToSign = req.body;
+    
+    // The widget sends the exact parameters it wants signed
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
       process.env.CLOUDINARY_API_SECRET
     );
 
-    res.json({
-      success: true,
-      signature,
-      timestamp,
-      apiKey: process.env.CLOUDINARY_API_KEY,
-      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-      uploadPreset: 'ml_default',
-      folder: 'site-branding'
-    });
+    res.json({ success: true, signature });
   } catch (error) {
     console.error('[site-settings] signature error:', error);
     res.status(500).json({ success: false, message: 'Failed to generate signature.' });

@@ -28,6 +28,7 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   const [showLogoResetModal, setShowLogoResetModal] = useState(false);
   
   const [isUpdatingFavicon, setIsUpdatingFavicon] = useState(false);
+  const [isInitializingWidget, setIsInitializingWidget] = useState(false);
   const [showFaviconResetModal, setShowFaviconResetModal] = useState(false);
   const widgetRef = useRef(null);
 
@@ -186,32 +187,30 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       return;
     }
 
-    setIsUpdatingFavicon(true);
+    setIsInitializingWidget(true);
     try {
-      // 1. Get Signed Upload Params from backend
-      const sigResponse = await fetch(apiUrl('/api/site-settings/cloudinary-signature'), {
+      // 1. Get Cloudinary Config from backend
+      const configResponse = await fetch(apiUrl('/api/site-settings/cloudinary-config'), {
         headers: {
           'X-User-Email': localStorage.getItem('userEmail'),
           'X-Token-Version': localStorage.getItem('tokenVersion'),
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
-      const sigData = await sigResponse.json();
+      const configData = await configResponse.json();
 
-      if (!sigData.success) {
-        toast.error('Failed to authorize upload.');
+      if (!configData.success) {
+        toast.error('Failed to get upload configuration.');
+        setIsInitializingWidget(false);
         return;
       }
 
-      // 2. Open Signed Widget
+      // 2. Open Signed Widget with Dynamic Signature Function
       window.cloudinary.openUploadWidget(
         {
-          cloudName: sigData.cloudName,
-          apiKey: sigData.apiKey,
-          uploadSignatureTimestamp: sigData.timestamp,
-          uploadSignature: sigData.signature,
-          uploadPreset: sigData.uploadPreset,
-          folder: sigData.folder,
+          cloudName: configData.cloudName,
+          apiKey: configData.apiKey,
+          folder: 'site-branding',
           cropping: true,
           multiple: false,
           resourceType: 'image',
@@ -221,6 +220,29 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
           showSkipCropButton: false,
           croppingDefaultSelection: 'transform',
           theme: 'minimal',
+          uploadSignature: async (callback, params_to_sign) => {
+            try {
+              const res = await fetch(apiUrl('/api/site-settings/cloudinary-signature'), {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-User-Email': localStorage.getItem('userEmail'),
+                  'X-Token-Version': localStorage.getItem('tokenVersion'),
+                  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                },
+                body: JSON.stringify(params_to_sign)
+              });
+              const data = await res.json();
+              if (data.success) {
+                callback(data.signature);
+              } else {
+                toast.error('Failed to sign upload request.');
+              }
+            } catch (err) {
+              console.error('[Signature Error]', err);
+              toast.error('Network error while signing upload.');
+            }
+          }
         },
         async (error, result) => {
           if (!error && result && result.event === 'success') {
@@ -236,7 +258,7 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       console.error('[ManageSiteModal] openFaviconWidget error:', err);
       toast.error('Failed to initialize upload widget.');
     } finally {
-      setIsUpdatingFavicon(false);
+      setIsInitializingWidget(false);
     }
   };
 
@@ -453,11 +475,11 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
 
                     <div className="favicon-actions">
                       <button 
-                        className="settings-btn settings-btn--primary"
-                        disabled={isUpdatingFavicon}
+                        className={`settings-btn settings-btn--primary ${isInitializingWidget ? 'loading' : ''}`}
+                        disabled={isUpdatingFavicon || isInitializingWidget}
                         onClick={openFaviconWidget}
                       >
-                        Change Favicon
+                        {isInitializingWidget ? 'Loading Widget...' : 'Change Favicon'}
                       </button>
                       
                       {siteFaviconUrl && (

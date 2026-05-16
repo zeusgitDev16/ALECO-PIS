@@ -67,6 +67,38 @@ router.patch('/site-settings', requireAdmin, async (req, res) => {
 });
 
 /**
+ * Admin: Generate Cloudinary signature for signed widget uploads.
+ */
+router.get('/site-settings/cloudinary-signature', requireAdmin, (req, res) => {
+  try {
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const paramsToSign = {
+      timestamp: timestamp,
+      upload_preset: 'ml_default', // Still uses a preset, but it can be signed
+      folder: 'site-branding'
+    };
+
+    const signature = cloudinary.utils.api_sign_request(
+      paramsToSign,
+      process.env.CLOUDINARY_API_SECRET
+    );
+
+    res.json({
+      success: true,
+      signature,
+      timestamp,
+      apiKey: process.env.CLOUDINARY_API_KEY,
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      uploadPreset: 'ml_default',
+      folder: 'site-branding'
+    });
+  } catch (error) {
+    console.error('[site-settings] signature error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate signature.' });
+  }
+});
+
+/**
  * Admin: Upload site logo to Cloudinary and update DB.
  */
 router.post('/site-settings/upload-logo', requireAdmin, upload.single('logo'), async (req, res) => {

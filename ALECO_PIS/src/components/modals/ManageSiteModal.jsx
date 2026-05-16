@@ -180,24 +180,42 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     }
   }, []);
 
-  const openFaviconWidget = () => {
+  const openFaviconWidget = async () => {
     if (!window.cloudinary) {
       toast.error('Cloudinary widget is still loading...');
       return;
     }
 
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dunqagymj';
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+    setIsUpdatingFavicon(true);
+    try {
+      // 1. Get Signed Upload Params from backend
+      const sigResponse = await fetch(apiUrl('/api/site-settings/cloudinary-signature'), {
+        headers: {
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const sigData = await sigResponse.json();
 
-    if (!widgetRef.current) {
-      widgetRef.current = window.cloudinary.createUploadWidget(
+      if (!sigData.success) {
+        toast.error('Failed to authorize upload.');
+        return;
+      }
+
+      // 2. Open Signed Widget
+      window.cloudinary.openUploadWidget(
         {
-          cloudName,
-          uploadPreset,
+          cloudName: sigData.cloudName,
+          apiKey: sigData.apiKey,
+          uploadSignatureTimestamp: sigData.timestamp,
+          uploadSignature: sigData.signature,
+          uploadPreset: sigData.uploadPreset,
+          folder: sigData.folder,
           cropping: true,
           multiple: false,
           resourceType: 'image',
-          clientAllowedFormats: ['png', 'ico', 'svg', 'jpg', 'jpeg'],
+          clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'avif', 'bmp', 'tiff', 'gif', 'ico', 'svg'],
           maxFiles: 1,
           croppingAspectRatio: 1,
           showSkipCropButton: false,
@@ -209,10 +227,17 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
             const faviconUrl = result.info.secure_url;
             await saveFaviconToDb(faviconUrl);
           }
+          if (error) {
+            console.error('[Cloudinary Widget Error]', error);
+          }
         }
       );
+    } catch (err) {
+      console.error('[ManageSiteModal] openFaviconWidget error:', err);
+      toast.error('Failed to initialize upload widget.');
+    } finally {
+      setIsUpdatingFavicon(false);
     }
-    widgetRef.current.open();
   };
 
   const saveFaviconToDb = async (url) => {

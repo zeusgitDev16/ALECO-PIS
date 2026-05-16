@@ -2,6 +2,7 @@ import React from 'react';
 import './CSS/Navbar.css';
 import Login from'./components/buttons/login.jsx';
 import logo from './assets/Aleco-logo-modified.png';
+import { useSiteSettings } from './context/SiteSettingsContext';
 
 /* Icons for compact view (max-width: 425px) - match SearchBarGlobal icon-btn style */
 const NavIcons = {
@@ -45,6 +46,7 @@ const handleNavClick = (e, href) => {
 };
 
 const Navbar = () => {
+  const { siteLogoUrl } = useSiteSettings();
   const navItems = [
     { label: 'Visit us', href: 'https://web.alecoinc.com.ph/', icon: 'visit' },
     { label: 'Report a problem', href: '#report', icon: 'report' },
@@ -58,7 +60,7 @@ const Navbar = () => {
       <div className="nav-container">
         <div className="nav-brand">
           <a href="/" className="Aleco-Logo">
-            <img src={logo} alt="ALECO Logo" className="logo-height" />
+            <img src={siteLogoUrl || logo} alt="ALECO Logo" className="logo-height" />
             <span className="Title">ALECO</span>
           </a>
         </div>

@@ -8,6 +8,7 @@ import {
 } from '../../utils/dateUtils';
 import { getPosterHeadlineText, getPosterReferenceDisplay } from '../../utils/interruptionPosterFields';
 import { getPosterFooterContact } from '../../config/posterPublicEnv';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 
 /**
  * Split the NGCP headline into a two-tone title:
@@ -38,6 +39,7 @@ function renderNgcpTitle(title) {
  * @param {{ item: object }} props
  */
 export default function InterruptionNgcpPrintPoster({ item }) {
+  const { siteLogoUrl } = useSiteSettings();
   const title = getPosterHeadlineText(item);
   const refLine = getPosterReferenceDisplay(item.controlNo);
   const month = formatToPhilippineMonthOnly(item.dateTimeStart);
@@ -91,7 +93,7 @@ export default function InterruptionNgcpPrintPoster({ item }) {
         <div className="ngcp-print-poster-disclaimer">
           <p>{footer.disclaimer}</p>
           {footer.disclaimerBold ? <p className="ngcp-print-poster-disclaimer-strong">{footer.disclaimerBold}</p> : null}
-          {footer.logoUrl ? <img className="ngcp-print-poster-logo" src={footer.logoUrl} alt="ALECO" /> : null}
+          {(siteLogoUrl || footer.logoUrl) ? <img className="ngcp-print-poster-logo" src={siteLogoUrl || footer.logoUrl} alt="ALECO" /> : null}
         </div>
 
         <footer className="ngcp-print-poster-footer">

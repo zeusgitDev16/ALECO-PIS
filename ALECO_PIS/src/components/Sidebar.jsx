@@ -2,11 +2,13 @@ import React from 'react'; // Removed redundant useState
 import { Link } from 'react-router-dom';
 import '../CSS/Sidebar.css';
 import alecoLogo from '../assets/Aleco-logo-modified.png';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import CreatePost from './buttons/CreatePost';
 import { USER_ROLES } from '../constants/userRoles';
 
 // Accept isOpen and toggleSidebar from AdminLayout
 const AdminSidebar = ({ activePage, isOpen, toggleSidebar, onOpenServiceMemos }) => {
+  const { siteLogoUrl } = useSiteSettings();
   const currentRole = String(localStorage.getItem('userRole') || USER_ROLES.EMPLOYEE).toLowerCase();
   const canViewHistory = currentRole === USER_ROLES.ADMIN;
   
@@ -33,7 +35,7 @@ const AdminSidebar = ({ activePage, isOpen, toggleSidebar, onOpenServiceMemos })
           {/* Fixed top: logo + title + separator */}
           <header className="sidebar-top">
             <div className="sidebar-header">
-              <img src={alecoLogo} alt="Aleco Logo" className="sidebar-logo" />
+              <img src={siteLogoUrl || alecoLogo} alt="Aleco Logo" className="sidebar-logo" />
               <h5>ALECO</h5>
             </div>
             <hr className="sidebar-separator" aria-hidden="true" />

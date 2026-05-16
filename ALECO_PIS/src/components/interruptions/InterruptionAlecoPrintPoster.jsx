@@ -14,12 +14,14 @@ import {
 } from '../../utils/dateUtils';
 import { isEmergencyOutageType } from '../../utils/interruptionLabels';
 import { getPosterFooterContact } from '../../config/posterPublicEnv';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 
 /**
  * Full-width ALECO-style print layout for Puppeteer capture (not the compact feed infographic).
  * @param {{ item: object }} props
  */
 export default function InterruptionAlecoPrintPoster({ item }) {
+  const { siteLogoUrl } = useSiteSettings();
   const headerText = getPosterHeadlineText(item);
   const refLine = getPosterReferenceDisplay(item.controlNo);
   const monthBadge = formatToPhilippineMonthOnly(item.dateTimeStart);
@@ -112,8 +114,8 @@ export default function InterruptionAlecoPrintPoster({ item }) {
           {footer.disclaimerBold && (
             <p className="aleco-print-poster-disclaimer-bold">{footer.disclaimerBold}</p>
           )}
-          {footer.logoUrl && (
-            <img className="aleco-print-poster-logo" src={footer.logoUrl} alt="ALECO" />
+          {(siteLogoUrl || footer.logoUrl) && (
+            <img className="aleco-print-poster-logo" src={siteLogoUrl || footer.logoUrl} alt="ALECO" />
           )}
         </div>
 

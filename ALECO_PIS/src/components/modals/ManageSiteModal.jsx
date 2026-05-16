@@ -4,6 +4,7 @@ import { apiUrl } from '../../utils/api';
 import { authMutation } from '../../utils/authMutation';
 import { REALTIME_MODULES } from '../../constants/realtimeModules';
 import alecoLogo from '../../assets/Aleco-logo-modified.png';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 import '../../CSS/ManageSiteModal.css';
 
 /**
@@ -20,8 +21,10 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   const [manageSiteTab, setManageSiteTab] = useState('settings');
 
   // ── Site Settings — logo (UI only, no backend yet) ──
+  const { siteLogoUrl, refreshSettings } = useSiteSettings();
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
 
   // ── Site Settings — nav labels (UI only, no backend yet) ──
   const [navItems, setNavItems] = useState([
@@ -124,6 +127,67 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   }, [flushConfirmEmail, flushType, onFlushComplete]);
 
   // ── Close flush sub-modal helper ──
+  const handleLogoUpload = async (file) => {
+    if (!file) return;
+    setIsUpdatingLogo(true);
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    try {
+      const response = await fetch(apiUrl('/api/site-settings/upload-logo'), {
+        method: 'POST',
+        headers: {
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: formData,
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Logo updated successfully.');
+        refreshSettings();
+        setLogoPreview(null);
+        setLogoFile(null);
+      } else {
+        toast.error(result.message || 'Failed to upload logo.');
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] logo upload error:', error);
+      toast.error('An error occurred during logo upload.');
+    } finally {
+      setIsUpdatingLogo(false);
+    }
+  };
+
+  const handleLogoReset = async () => {
+    if (!window.confirm('Reset logo to default ALECO branding?')) return;
+    setIsUpdatingLogo(true);
+    try {
+      const response = await fetch(apiUrl('/api/site-settings/logo'), {
+        method: 'DELETE',
+        headers: {
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Logo reset to default.');
+        refreshSettings();
+        setLogoPreview(null);
+        setLogoFile(null);
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] logo reset error:', error);
+      toast.error('Failed to reset logo.');
+    } finally {
+      setIsUpdatingLogo(false);
+    }
+  };
+
+  // ── Close flush sub-modal helper ──
   const closeFlushConfirmModal = useCallback(() => {
     setShowFlushConfirmModal(false);
     setFlushResponsibilityChecked(false);
@@ -177,20 +241,21 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                   <div className="logo-upload-container">
                     <div className="logo-preview">
                       <img
-                        src={logoPreview || alecoLogo}
+                        src={logoPreview || siteLogoUrl || alecoLogo}
                         alt="Site Logo"
                         className="logo-image"
                       />
                     </div>
                     <div className="logo-upload-actions">
-                      <label htmlFor="logo-upload" className="settings-btn settings-btn--primary">
-                        <span>Change Logo</span>
+                      <label htmlFor="logo-upload" className={`settings-btn settings-btn--primary ${isUpdatingLogo ? 'disabled' : ''}`}>
+                        <span>{logoPreview ? 'Change Selection' : 'Change Logo'}</span>
                       </label>
                       <input
                         id="logo-upload"
                         type="file"
                         accept="image/*"
                         className="logo-upload-input"
+                        disabled={isUpdatingLogo}
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
@@ -199,6 +264,24 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                           }
                         }}
                       />
+                      {logoPreview && !isUpdatingLogo && (
+                        <button 
+                          className="settings-btn settings-btn--success"
+                          onClick={() => handleLogoUpload(logoFile)}
+                        >
+                          Save New Logo
+                        </button>
+                      )}
+                      {siteLogoUrl && !logoPreview && !isUpdatingLogo && (
+                        <button 
+                          className="settings-btn settings-btn--outline"
+                          onClick={handleLogoReset}
+                          title="Reset to default ALECO logo"
+                        >
+                          Reset to Default
+                        </button>
+                      )}
+                      {isUpdatingLogo && <span className="settings-upload-status">Processing...</span>}
                     </div>
                   </div>
                 </div>

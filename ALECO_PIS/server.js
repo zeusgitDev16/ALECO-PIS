@@ -24,6 +24,7 @@ import b2bMailRoutes from './backend/routes/b2b-mail.js';
 import serviceMemosRoutes from './backend/routes/service-memos.js';
 import notificationsRoutes from './backend/routes/notifications.js';
 import historyRoutes from './backend/routes/history.js';
+import siteSettingsRoutes from './backend/routes/site-settings.js';
 import pool, { getHeartbeatStats } from './backend/config/db.js';
 import {
   transitionScheduledStarts,
@@ -180,6 +181,7 @@ app.use('/api', b2bMailRoutes);
 app.use('/api', serviceMemosRoutes);
 app.use('/api', notificationsRoutes);
 app.use('/api', historyRoutes);
+app.use('/api', siteSettingsRoutes);
 
 app.get('/api/debug/routes', (req, res) => {
     res.json({

@@ -85,10 +85,12 @@
     .entity-picker {
         padding: 4px 8px;
     }
+
     .entity-picker-btn {
         padding: 3px 6px;
         font-size: 0.6rem;
     }
+
     .entity-picker-label {
         font-size: 0.65rem;
     }

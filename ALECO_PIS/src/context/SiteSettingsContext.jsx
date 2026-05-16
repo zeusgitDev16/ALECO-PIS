@@ -28,9 +28,36 @@ export const SiteSettingsProvider = ({ children }) => {
   const value = {
     settings,
     siteLogoUrl: settings.site_logo_url || null,
+    siteFaviconUrl: settings.site_favicon_url || null,
     loading,
     refreshSettings: fetchSettings,
   };
+
+  // Dynamically update branding icons in <head>
+  useEffect(() => {
+    const faviconUrl = settings.site_favicon_url || '/vite.svg';
+    
+    // 1. Update standard favicon
+    const iconLinks = document.querySelectorAll("link[rel*='icon']");
+    if (iconLinks.length > 0) {
+      iconLinks.forEach(link => link.href = faviconUrl);
+    } else {
+      const newLink = document.createElement('link');
+      newLink.rel = 'icon';
+      newLink.href = faviconUrl;
+      document.head.appendChild(newLink);
+    }
+
+    // 2. Update apple-touch-icon for mobile/iOS
+    let appleLink = document.querySelector("link[rel='apple-touch-icon']");
+    if (!appleLink) {
+      appleLink = document.createElement('link');
+      appleLink.rel = 'apple-touch-icon';
+      document.head.appendChild(appleLink);
+    }
+    appleLink.href = faviconUrl;
+
+  }, [settings.site_favicon_url]);
 
   return (
     <SiteSettingsContext.Provider value={value}>

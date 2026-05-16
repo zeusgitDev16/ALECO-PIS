@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS aleco_site_settings (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Seed with current VITE_POSTER_LOGO_URL if you want, 
--- but we'll handle the default fallback in the code.
+
 INSERT IGNORE INTO aleco_site_settings (setting_key, setting_value) 
 VALUES ('site_logo_url', NULL);

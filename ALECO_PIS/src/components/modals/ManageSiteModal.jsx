@@ -21,10 +21,15 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   const [manageSiteTab, setManageSiteTab] = useState('settings');
 
   // ── Site Settings — logo (UI only, no backend yet) ──
-  const { siteLogoUrl, refreshSettings } = useSiteSettings();
+  const { siteLogoUrl, siteFaviconUrl, refreshSettings } = useSiteSettings();
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
+  const [showLogoResetModal, setShowLogoResetModal] = useState(false);
+  
+  const [isUpdatingFavicon, setIsUpdatingFavicon] = useState(false);
+  const [showFaviconResetModal, setShowFaviconResetModal] = useState(false);
+  const widgetRef = useRef(null);
 
   // ── Site Settings — nav labels (UI only, no backend yet) ──
   const [navItems, setNavItems] = useState([
@@ -160,8 +165,110 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     }
   };
 
-  const handleLogoReset = async () => {
-    if (!window.confirm('Reset logo to default ALECO branding?')) return;
+  const handleLogoResetClick = () => {
+    setShowLogoResetModal(true);
+  };
+
+  // ── Favicon Upload Logic ──
+  useEffect(() => {
+    // Load Cloudinary Widget script
+    if (!window.cloudinary) {
+      const script = document.createElement('script');
+      script.src = 'https://widget.cloudinary.com/v2.0/global/all.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  const openFaviconWidget = () => {
+    if (!window.cloudinary) {
+      toast.error('Cloudinary widget is still loading...');
+      return;
+    }
+
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dunqagymj';
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+
+    if (!widgetRef.current) {
+      widgetRef.current = window.cloudinary.createUploadWidget(
+        {
+          cloudName,
+          uploadPreset,
+          cropping: true,
+          multiple: false,
+          resourceType: 'image',
+          clientAllowedFormats: ['png', 'ico', 'svg', 'jpg', 'jpeg'],
+          maxFiles: 1,
+          croppingAspectRatio: 1,
+          showSkipCropButton: false,
+          croppingDefaultSelection: 'transform',
+          theme: 'minimal',
+        },
+        async (error, result) => {
+          if (!error && result && result.event === 'success') {
+            const faviconUrl = result.info.secure_url;
+            await saveFaviconToDb(faviconUrl);
+          }
+        }
+      );
+    }
+    widgetRef.current.open();
+  };
+
+  const saveFaviconToDb = async (url) => {
+    setIsUpdatingFavicon(true);
+    try {
+      const response = await fetch(apiUrl('/api/site-settings'), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({ site_favicon_url: url }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Favicon updated successfully.');
+        refreshSettings();
+      } else {
+        toast.error(result.message || 'Failed to save favicon.');
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] saveFaviconToDb error:', error);
+      toast.error('Failed to connect to server.');
+    } finally {
+      setIsUpdatingFavicon(false);
+    }
+  };
+
+  const confirmFaviconReset = async () => {
+    setIsUpdatingFavicon(true);
+    try {
+      const response = await fetch(apiUrl('/api/site-settings/favicon'), {
+        method: 'DELETE',
+        headers: {
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Favicon reset to default.');
+        refreshSettings();
+        setShowFaviconResetModal(false);
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] favicon reset error:', error);
+      toast.error('Failed to reset favicon.');
+    } finally {
+      setIsUpdatingFavicon(false);
+    }
+  };
+
+  const confirmLogoReset = async () => {
     setIsUpdatingLogo(true);
     try {
       const response = await fetch(apiUrl('/api/site-settings/logo'), {
@@ -178,6 +285,7 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
         refreshSettings();
         setLogoPreview(null);
         setLogoFile(null);
+        setShowLogoResetModal(false);
       }
     } catch (error) {
       console.error('[ManageSiteModal] logo reset error:', error);
@@ -247,6 +355,18 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                       />
                     </div>
                     <div className="logo-upload-actions">
+                      {siteLogoUrl && !logoPreview && !isUpdatingLogo && (
+                        <button 
+                          className="settings-icon-btn"
+                          onClick={handleLogoResetClick}
+                          title="Reset to default ALECO logo"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                          </svg>
+                        </button>
+                      )}
                       <label htmlFor="logo-upload" className={`settings-btn settings-btn--primary ${isUpdatingLogo ? 'disabled' : ''}`}>
                         <span>{logoPreview ? 'Change Selection' : 'Change Logo'}</span>
                       </label>
@@ -269,19 +389,65 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                           className="settings-btn settings-btn--success"
                           onClick={() => handleLogoUpload(logoFile)}
                         >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                            <path d="M20 6 9 17l-5-5"/>
+                          </svg>
                           Save New Logo
                         </button>
                       )}
-                      {siteLogoUrl && !logoPreview && !isUpdatingLogo && (
+                      {isUpdatingLogo && (
+                        <div className="settings-upload-status">
+                          <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                          </svg>
+                          Processing...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Favicon Configuration */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">Site Favicon</h4>
+                  <p className="settings-section-description">
+                    Upload a square icon (e.g. 512x512) to be used as your browser tab icon.
+                  </p>
+                  <div className="favicon-config-container">
+                    {/* Tab Mockup Preview */}
+                    <div className="browser-tab-mockup">
+                      <div className="tab-mockup-inner">
+                        <img 
+                          src={siteFaviconUrl || '/vite.svg'} 
+                          alt="Favicon" 
+                          className="tab-mockup-icon" 
+                        />
+                        <span className="tab-mockup-title">ALECO PIS | Albay...</span>
+                      </div>
+                    </div>
+
+                    <div className="favicon-actions">
+                      <button 
+                        className="settings-btn settings-btn--primary"
+                        disabled={isUpdatingFavicon}
+                        onClick={openFaviconWidget}
+                      >
+                        Change Favicon
+                      </button>
+                      
+                      {siteFaviconUrl && (
                         <button 
-                          className="settings-btn settings-btn--outline"
-                          onClick={handleLogoReset}
-                          title="Reset to default ALECO logo"
+                          className="settings-icon-btn"
+                          onClick={() => setShowFaviconResetModal(true)}
+                          title="Reset to default favicon"
+                          disabled={isUpdatingFavicon}
                         >
-                          Reset to Default
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                          </svg>
                         </button>
                       )}
-                      {isUpdatingLogo && <span className="settings-upload-status">Processing...</span>}
                     </div>
                   </div>
                 </div>
@@ -465,6 +631,81 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                 onClick={handleExecuteFlush}
               >
                 {isFlushing ? 'Processing...' : 'Confirm Global Flush'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Logo Reset Confirmation Modal ── */}
+      {showLogoResetModal && (
+        <div className="flush-confirm-overlay">
+          <div className="flush-confirm-modal">
+            <div className="flush-confirm-header" style={{ background: 'rgba(59, 130, 246, 0.1)', borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              <span className="flush-confirm-title" style={{ color: 'var(--accent-primary)' }}>Reset Branding</span>
+              <button
+                type="button"
+                className="flush-confirm-close"
+                onClick={() => setShowLogoResetModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="flush-confirm-body">
+              <div className="flush-confirm-warning-icon">🔄</div>
+              <h3>Reset Site Logo?</h3>
+              <p>
+                This will remove your custom logo and revert the site branding to the original 
+                <strong> ALECO distribution logo</strong>. This change takes effect immediately across all pages.
+              </p>
+            </div>
+            <div className="flush-confirm-footer">
+              <button className="settings-btn settings-btn--outline" onClick={() => setShowLogoResetModal(false)}>
+                Cancel
+              </button>
+              <button
+                className="settings-btn settings-btn--primary"
+                disabled={isUpdatingLogo}
+                onClick={confirmLogoReset}
+              >
+                {isUpdatingLogo ? 'Resetting...' : 'Confirm Reset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Favicon Reset Confirmation Modal ── */}
+      {showFaviconResetModal && (
+        <div className="flush-confirm-overlay">
+          <div className="flush-confirm-modal">
+            <div className="flush-confirm-header" style={{ background: 'rgba(59, 130, 246, 0.1)', borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              <span className="flush-confirm-title" style={{ color: 'var(--accent-primary)' }}>Reset Favicon</span>
+              <button
+                type="button"
+                className="flush-confirm-close"
+                onClick={() => setShowFaviconResetModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="flush-confirm-body">
+              <div className="flush-confirm-warning-icon">🔄</div>
+              <h3>Reset Site Favicon?</h3>
+              <p>
+                This will remove your custom tab icon and revert the site to the original 
+                <strong> Albay Electric Cooperative (ALECO)</strong> favicon.
+              </p>
+            </div>
+            <div className="flush-confirm-footer">
+              <button className="settings-btn settings-btn--outline" onClick={() => setShowFaviconResetModal(false)}>
+                Cancel
+              </button>
+              <button
+                className="settings-btn settings-btn--primary"
+                disabled={isUpdatingFavicon}
+                onClick={confirmFaviconReset}
+              >
+                {isUpdatingFavicon ? 'Resetting...' : 'Confirm Reset'}
               </button>
             </div>
           </div>

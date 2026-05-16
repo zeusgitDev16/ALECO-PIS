@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/db.js';
 import { upload, cloudinary } from '../../cloudinaryConfig.js';
 import { requireAdmin } from '../middleware/requireRole.js';
+import { extractCloudinaryPublicId } from '../utils/cloudinaryUtils.js';
 
 const router = express.Router();
 
@@ -34,7 +35,21 @@ router.patch('/site-settings', requireAdmin, async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    for (const [key, value] of Object.entries(updates)) {
+    const allowedKeys = [
+      'site_title', 
+      'site_description', 
+      'contact_email', 
+      'phone_number', 
+      'site_logo_url', 
+      'site_favicon_url'
+    ];
+    const filteredUpdates = Object.entries(updates).filter(([key]) => allowedKeys.includes(key));
+
+    if (filteredUpdates.length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid settings provided.' });
+    }
+
+    for (const [key, value] of filteredUpdates) {
       await conn.execute(
         'INSERT INTO aleco_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
         [key, value, value]
@@ -74,15 +89,61 @@ router.post('/site-settings/upload-logo', requireAdmin, upload.single('logo'), a
 });
 
 /**
- * Admin: Reset site logo (delete from DB).
+ * Admin: Reset site logo (delete from DB and Cloudinary).
  */
 router.delete('/site-settings/logo', requireAdmin, async (req, res) => {
   try {
+    // 1. Fetch current logo URL
+    const [rows] = await pool.execute('SELECT setting_value FROM aleco_site_settings WHERE setting_key = ?', ['site_logo_url']);
+    const currentUrl = rows[0]?.setting_value;
+
+    // 2. If it's a Cloudinary URL, delete the asset
+    if (currentUrl) {
+      const publicId = extractCloudinaryPublicId(currentUrl);
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId, { invalidate: true });
+        } catch (cloudinaryError) {
+          console.warn('[site-settings] Cloudinary destroy failed:', cloudinaryError.message);
+          // Continue with DB deletion anyway
+        }
+      }
+    }
+
+    // 3. Delete from DB
     await pool.execute('DELETE FROM aleco_site_settings WHERE setting_key = ?', ['site_logo_url']);
-    res.json({ success: true, message: 'Logo reset to default.' });
+    
+    res.json({ success: true, message: 'Logo reset and storage cleaned up.' });
   } catch (error) {
     console.error('[site-settings] logo reset error:', error);
     res.status(500).json({ success: false, message: 'Failed to reset logo.' });
+  }
+});
+
+/**
+ * Admin: Reset site favicon (delete from DB and Cloudinary).
+ */
+router.delete('/site-settings/favicon', requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT setting_value FROM aleco_site_settings WHERE setting_key = ?', ['site_favicon_url']);
+    const currentUrl = rows[0]?.setting_value;
+
+    if (currentUrl) {
+      const publicId = extractCloudinaryPublicId(currentUrl);
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId, { invalidate: true });
+        } catch (cloudinaryError) {
+          console.warn('[site-settings] Favicon Cloudinary destroy failed:', cloudinaryError.message);
+        }
+      }
+    }
+
+    await pool.execute('DELETE FROM aleco_site_settings WHERE setting_key = ?', ['site_favicon_url']);
+    res.json({ success: true, message: 'Favicon reset and storage cleaned up.' });
+  } catch (error) {
+    console.error('[site-settings] favicon reset error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reset favicon.' });
   }
 });
 

@@ -21,7 +21,7 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   const [manageSiteTab, setManageSiteTab] = useState('settings');
 
   // ── Site Settings — logo (UI only, no backend yet) ──
-  const { siteLogoUrl, siteFaviconUrl, refreshSettings } = useSiteSettings();
+  const { siteLogoUrl, siteFaviconUrl, refreshSettings, settings } = useSiteSettings();
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
@@ -43,6 +43,7 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     { id: 'history', label: 'History' },
     { id: 'backup', label: 'Data Management' },
   ]);
+  const [isSavingLabels, setIsSavingLabels] = useState(false);
 
   // ── Flush state ──
   const [flushType, setFlushType] = useState(null); // 'notifications' or 'history'
@@ -72,6 +73,22 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       setFlushType(null);
     }
   }, [isOpen]);
+
+  // Synchronize navItems input fields with current settings on open or load
+  useEffect(() => {
+    if (isOpen && settings) {
+      setNavItems([
+        { id: 'home', label: settings.sidebar_label_home || 'Home' },
+        { id: 'users', label: settings.sidebar_label_users || 'Users' },
+        { id: 'personnel', label: settings.sidebar_label_personnel || 'Personnel' },
+        { id: 'b2b-mail', label: settings.sidebar_label_b2b_mail || 'B2B Mail' },
+        { id: 'tickets', label: settings.sidebar_label_tickets || 'Tickets' },
+        { id: 'interruptions', label: settings.sidebar_label_interruptions || 'Interruptions' },
+        { id: 'history', label: settings.sidebar_label_history || 'History' },
+        { id: 'backup', label: settings.sidebar_label_backup || 'Data Management' },
+      ]);
+    }
+  }, [isOpen, settings]);
 
   // ── Notification Flush handler ──
   const handleExecuteFlush = useCallback(async () => {
@@ -323,6 +340,40 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     }
   };
 
+  const handleSaveLabels = async () => {
+    setIsSavingLabels(true);
+    try {
+      const updates = {};
+      navItems.forEach(item => {
+        updates[`sidebar_label_${item.id}`] = item.label;
+      });
+
+      const response = await fetch(apiUrl('/api/site-settings'), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Navigation labels updated successfully.');
+        refreshSettings();
+      } else {
+        toast.error(result.message || 'Failed to update navigation labels.');
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] save labels error:', error);
+      toast.error('An error occurred while saving navigation labels.');
+    } finally {
+      setIsSavingLabels(false);
+    }
+  };
+
   const confirmLogoReset = async () => {
     setIsUpdatingLogo(true);
     try {
@@ -519,7 +570,7 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                     {navItems.map((item) => (
                       <div key={item.id} className="nav-item-row">
                         <label className="nav-item-label" htmlFor={`nav-${item.id}`}>
-                          {item.id.charAt(0).toUpperCase() + item.id.slice(1)}
+                          {item.id === 'b2b-mail' ? 'B2B Mail' : item.id === 'backup' ? 'Data Management' : item.id.charAt(0).toUpperCase() + item.id.slice(1)}
                         </label>
                         <input
                           id={`nav-${item.id}`}
@@ -534,6 +585,16 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                         />
                       </div>
                     ))}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                      <button
+                        type="button"
+                        className={`settings-btn settings-btn--primary ${isSavingLabels ? 'loading' : ''}`}
+                        disabled={isSavingLabels}
+                        onClick={handleSaveLabels}
+                      >
+                        {isSavingLabels ? 'Saving Labels...' : 'Save Labels'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

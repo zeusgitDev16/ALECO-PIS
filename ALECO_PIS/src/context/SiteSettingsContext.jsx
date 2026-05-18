@@ -25,10 +25,15 @@ export const SiteSettingsProvider = ({ children }) => {
     fetchSettings();
   }, [fetchSettings]);
 
+  const getSidebarLabel = useCallback((id, defaultLabel) => {
+    return settings[`sidebar_label_${id}`] || defaultLabel;
+  }, [settings]);
+
   const value = {
     settings,
     siteLogoUrl: settings.site_logo_url || null,
     siteFaviconUrl: settings.site_favicon_url || null,
+    getSidebarLabel,
     loading,
     refreshSettings: fetchSettings,
   };

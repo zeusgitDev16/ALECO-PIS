@@ -43,7 +43,9 @@ router.patch('/site-settings', requireAdmin, async (req, res) => {
       'site_logo_url', 
       'site_favicon_url'
     ];
-    const filteredUpdates = Object.entries(updates).filter(([key]) => allowedKeys.includes(key));
+    const filteredUpdates = Object.entries(updates).filter(([key]) => 
+      allowedKeys.includes(key) || key.startsWith('sidebar_label_')
+    );
 
     if (filteredUpdates.length === 0) {
       return res.status(400).json({ success: false, message: 'No valid settings provided.' });

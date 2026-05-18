@@ -112,6 +112,139 @@ const __dirname  = dirname(__filename);
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// 🔥 DYNAMIC RENDERING for Facebook/Twitter crawlers (SEO/Open Graph)
+// Detects bots and serves pre-rendered HTML with meta tags
+const BOT_USER_AGENTS = [
+  'facebookexternalhit',
+  'Facebot',
+  'Twitterbot',
+  'LinkedInBot',
+  'WhatsApp',
+  'TelegramBot',
+  'Discordbot',
+  'Slackbot',
+  'Googlebot',
+];
+
+function isBot(userAgent) {
+  if (!userAgent) return false;
+  const ua = userAgent.toLowerCase();
+  return BOT_USER_AGENTS.some(bot => ua.includes(bot.toLowerCase()));
+}
+
+// Serve advisory pages with OG tags for bots
+app.get('/advisory/:id', async (req, res, next) => {
+  const userAgent = req.headers['user-agent'] || '';
+  
+  // Only prerender for bots - humans get the normal React app
+  if (!isBot(userAgent)) {
+    return next(); // Continue to serve static files (React app)
+  }
+  
+  // Facebook/Twitter bot detected - serve HTML with OG tags
+  const advisoryId = parseInt(req.params.id, 10);
+  if (!Number.isFinite(advisoryId) || advisoryId <= 0) {
+    return next();
+  }
+  
+  try {
+    // Fetch advisory data from database
+    const [rows] = await pool.execute(
+      `SELECT i.*, 
+        GROUP_CONCAT(DISTINCT ia.area_name SEPARATOR ', ') as affectedAreas
+       FROM aleco_interruptions i
+       LEFT JOIN aleco_interruption_areas ia ON i.id = ia.interruption_id
+       WHERE i.id = ?
+       GROUP BY i.id
+       LIMIT 1`,
+      [advisoryId]
+    );
+    
+    const item = rows[0];
+    if (!item) {
+      // Advisory not found - serve default OG tags
+      return res.send(generateBotHtml(null, advisoryId, req));
+    }
+    
+    // Generate HTML with OG tags for this advisory
+    res.send(generateBotHtml(item, advisoryId, req));
+  } catch (err) {
+    console.error('[bot-render] Error fetching advisory:', err);
+    next(); // Fall back to normal React app
+  }
+});
+
+function generateBotHtml(item, advisoryId, req) {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const advisoryUrl = `${baseUrl}/advisory/${advisoryId}`;
+  
+  let title, description, imageUrl, imageAlt;
+  
+  if (item) {
+    const areas = item.affectedAreas || 'Affected areas';
+    title = `Power Interruption Advisory - ${item.feeder} | ${item.status}`;
+    description = `Scheduled power interruption for ${areas}. Date: ${item.date || 'TBA'}. Status: ${item.status}.`;
+    // Use the poster image if available
+    imageUrl = item.poster_url ? `${baseUrl}${item.poster_url}` : `${baseUrl}/og-default.jpg`;
+    imageAlt = `Power interruption advisory poster for ${item.feeder}`;
+  } else {
+    title = 'ALECO Power Interruption Advisory';
+    description = 'View the latest power interruption advisory from Albay Electric Cooperative.';
+    imageUrl = `${baseUrl}/og-default.jpg`;
+    imageAlt = 'ALECO Power Information System';
+  }
+  
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  
+  <!-- Open Graph tags for Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:url" content="${advisoryUrl}">
+  <meta property="og:image" content="${imageUrl}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${escapeHtml(imageAlt)}">
+  <meta property="og:site_name" content="ALECO PIS">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${imageUrl}">
+  
+  <!-- Redirect humans to the React app after a delay -->
+  <meta http-equiv="refresh" content="0;url=${advisoryUrl}">
+  <script>
+    // Immediate redirect for any browser that executes JS
+    window.location.replace('${advisoryUrl}');
+  </script>
+</head>
+<body>
+  <h1>${escapeHtml(title)}</h1>
+  <p>${escapeHtml(description)}</p>
+  <img src="${imageUrl}" alt="${escapeHtml(imageAlt)}" style="max-width:100%;">
+  <p><a href="${advisoryUrl}">View full advisory</a></p>
+</body>
+</html>`;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Serve static assets from the Vite production build (dist/) and the public/ folder.
 // dist/ contains the compiled frontend + all public/ files copied by Vite at build time.
 // public/ is a fallback for running Express directly without a prior build.

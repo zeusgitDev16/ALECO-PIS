@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { getPublicInterruptionSnapshot } from '../../api/interruptionsApi';
 import { useNow } from '../../hooks/useNow';
 import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
@@ -63,8 +64,38 @@ export default function PublicInterruptionPosterPage() {
     );
   }
 
+  const baseUrl = window.location.origin;
+  const advisoryUrl = `${baseUrl}/advisory/${id}`;
+  const posterImageUrl = item.posterUrl ? `${baseUrl}${item.posterUrl}` : `${baseUrl}/og-default.jpg`;
+  const affectedAreas = (item.affectedAreas || []).join(', ') || 'Affected areas';
+  const ogTitle = `Power Interruption Advisory - ${item.feeder || 'ALECO'} | ${item.status}`;
+  const ogDescription = `Scheduled power interruption for ${affectedAreas}. Date: ${item.date || 'TBA'}. Status: ${item.status}.`;
+
   return (
     <div className="public-poster-page">
+      <Helmet>
+        <title>{ogTitle}</title>
+        <meta name="description" content={ogDescription} />
+
+        {/* Open Graph tags for Facebook */}
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={ogTitle} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:url" content={advisoryUrl} />
+        <meta property="og:image" content={posterImageUrl} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={`Power interruption advisory poster for ${item.feeder}`} />
+        <meta property="article:published_time" content={item.createdAt} />
+        <meta property="article:modified_time" content={item.updatedAt || item.createdAt} />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={ogTitle} />
+        <meta name="twitter:description" content={ogDescription} />
+        <meta name="twitter:image" content={posterImageUrl} />
+      </Helmet>
+
       <InterruptionAdvisoryInfographic item={item} now={now} />
     </div>
   );

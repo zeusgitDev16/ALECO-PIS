@@ -1205,6 +1205,77 @@
   color: #ef4444;
 }
 
+/* ============================================================
+   EXPANDED VIEW SHARE BUTTONS (Facebook, Messenger, Native)
+   ============================================================ */
+.feed-expanded-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--public-section-scale, 1));
+  flex-shrink: 0;
+}
+
+.feed-expanded-share-btn {
+  width: calc(32px * var(--public-section-scale, 1));
+  height: calc(32px * var(--public-section-scale, 1));
+  min-width: calc(28px * var(--public-section-scale, 1));
+  min-height: calc(28px * var(--public-section-scale, 1));
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+  padding: 0;
+  color: #ffffff;
+}
+
+.feed-expanded-share-btn svg {
+  width: calc(16px * var(--public-section-scale, 1));
+  height: calc(16px * var(--public-section-scale, 1));
+}
+
+/* Facebook button */
+.feed-expanded-share-btn--facebook {
+  background: #1877F2;
+}
+
+.feed-expanded-share-btn--facebook:hover {
+  background: #166fe5;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(24, 119, 242, 0.4);
+}
+
+/* Messenger button */
+.feed-expanded-share-btn--messenger {
+  background: #0084FF;
+}
+
+.feed-expanded-share-btn--messenger:hover {
+  background: #0073e6;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 132, 255, 0.4);
+}
+
+/* Native share button */
+.feed-expanded-share-btn--native {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-header);
+}
+
+.feed-expanded-share-btn--native:hover {
+  background: var(--text-header);
+  color: var(--bg-card);
+  transform: scale(1.1);
+}
+
+.feed-expanded-share-btn:active {
+  transform: scale(0.95);
+}
+
 .feed-expanded-poster-wrap {
   background: #d4a84b;
   padding: calc(10px * var(--public-section-scale, 1));
@@ -2238,4 +2309,61 @@
     height: 36px;
     font-size: 22px;
   }
+}
+
+/* ============================================================
+   FEED POST SHARE BUTTON (Facebook/Messenger share for consumers)
+   ============================================================ */
+.feed-post-share-btn {
+  position: absolute;
+  bottom: calc(12px * var(--public-section-scale, 1));
+  right: calc(12px * var(--public-section-scale, 1));
+  z-index: 50;
+  width: calc(36px * var(--public-section-scale, 1));
+  height: calc(36px * var(--public-section-scale, 1));
+  min-width: 32px;
+  min-height: 32px;
+  background: rgba(24, 119, 242, 0.95); /* Facebook blue with slight transparency */
+  border: none;
+  border-radius: 50%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+
+.feed-post-share-btn:hover {
+  background: #1877F2; /* Solid Facebook blue */
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(24, 119, 242, 0.4);
+}
+
+.feed-post-share-btn:active {
+  transform: scale(0.95);
+}
+
+.feed-post-share-btn svg {
+  width: calc(18px * var(--public-section-scale, 1));
+  height: calc(18px * var(--public-section-scale, 1));
+  min-width: 16px;
+  min-height: 16px;
+}
+
+/* Dark mode - Messenger purple */
+[data-theme='dark'] .feed-post-share-btn {
+  background: rgba(0, 132, 255, 0.95); /* Messenger blue */
+}
+
+[data-theme='dark'] .feed-post-share-btn:hover {
+  background: #0084FF;
+  box-shadow: 0 6px 16px rgba(0, 132, 255, 0.4);
+}
+
+/* Ensure card has position relative for absolute positioning */
+.interruption-feed-post {
+  position: relative;
 }

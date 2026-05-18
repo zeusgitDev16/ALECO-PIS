@@ -263,6 +263,30 @@
   color: #9ca3af;
 }
 
+/* Share button: Facebook blue for social sharing */
+.interruptions-admin-btn--share {
+  background: rgba(24, 119, 242, 0.15);
+  border-color: rgba(24, 119, 242, 0.5);
+  color: #1877F2;
+}
+
+.interruptions-admin-btn--share:hover:not(:disabled) {
+  background: rgba(24, 119, 242, 0.3);
+  border-color: #1877F2;
+  transform: scale(1.1);
+}
+
+[data-theme='dark'] .interruptions-admin-btn--share {
+  background: rgba(24, 119, 242, 0.25);
+  border-color: rgba(24, 119, 242, 0.6);
+  color: #4aa1ff;
+}
+
+[data-theme='dark'] .interruptions-admin-btn--share:hover:not(:disabled) {
+  background: rgba(24, 119, 242, 0.4);
+  border-color: #4aa1ff;
+}
+
 .interruptions-admin-btn--danger {
   border-color: rgba(198, 40, 40, 0.35);
   color: var(--error, #c62828);

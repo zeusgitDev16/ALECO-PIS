@@ -17,12 +17,14 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 createRoot(document.getElementById('root')).render(
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <StrictMode>
-      <SiteSettingsProvider>
-        <LoadingProvider>
-          <App />
-          <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover theme="colored" />
-        </LoadingProvider>
-      </SiteSettingsProvider>
+      <HelmetProvider>
+        <SiteSettingsProvider>
+          <LoadingProvider>
+            <App />
+            <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover theme="colored" />
+          </LoadingProvider>
+        </SiteSettingsProvider>
+      </HelmetProvider>
     </StrictMode>
   </GoogleOAuthProvider>,
 )

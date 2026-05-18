@@ -32,8 +32,8 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   const [showFaviconResetModal, setShowFaviconResetModal] = useState(false);
   const widgetRef = useRef(null);
 
-  // ── Site Settings — nav labels (UI only, no backend yet) ──
-  const [navItems, setNavItems] = useState([
+  // ── Site Settings — nav labels ──
+  const defaultNavItems = [
     { id: 'home', label: 'Home' },
     { id: 'users', label: 'Users' },
     { id: 'personnel', label: 'Personnel' },
@@ -42,8 +42,11 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     { id: 'interruptions', label: 'Interruptions' },
     { id: 'history', label: 'History' },
     { id: 'backup', label: 'Data Management' },
-  ]);
+  ];
+  const [navItems, setNavItems] = useState(defaultNavItems);
   const [isSavingLabels, setIsSavingLabels] = useState(false);
+  const [isResettingLabels, setIsResettingLabels] = useState(false);
+  const [showLabelsResetModal, setShowLabelsResetModal] = useState(false);
 
   // ── Flush state ──
   const [flushType, setFlushType] = useState(null); // 'notifications' or 'history'
@@ -374,6 +377,35 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     }
   };
 
+  const confirmLabelsReset = async () => {
+    setIsResettingLabels(true);
+    try {
+      const response = await fetch(apiUrl('/api/site-settings/labels'), {
+        method: 'DELETE',
+        headers: {
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Navigation labels reset to defaults.');
+        // Reset local state to defaults
+        setNavItems(defaultNavItems);
+        refreshSettings();
+        setShowLabelsResetModal(false);
+      } else {
+        toast.error(result.message || 'Failed to reset navigation labels.');
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] labels reset error:', error);
+      toast.error('Failed to reset navigation labels.');
+    } finally {
+      setIsResettingLabels(false);
+    }
+  };
+
   const confirmLogoReset = async () => {
     setIsUpdatingLogo(true);
     try {
@@ -442,6 +474,13 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
               onClick={() => setManageSiteTab('flush')}
             >
               Flush
+            </button>
+            <button
+              type="button"
+              className={`manage-site-tab ${manageSiteTab === 'public' ? 'manage-site-tab--active' : ''}`}
+              onClick={() => setManageSiteTab('public')}
+            >
+              Public View
             </button>
           </div>
 
@@ -585,11 +624,24 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                         />
                       </div>
                     ))}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '12px' }}>
+                      <button
+                        type="button"
+                        className="settings-btn settings-btn--danger"
+                        disabled={isSavingLabels || isResettingLabels}
+                        onClick={() => setShowLabelsResetModal(true)}
+                        title="Reset all navigation labels to defaults"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                          <path d="M3 3v5h5"/>
+                        </svg>
+                        Reset to Default
+                      </button>
                       <button
                         type="button"
                         className={`settings-btn settings-btn--primary ${isSavingLabels ? 'loading' : ''}`}
-                        disabled={isSavingLabels}
+                        disabled={isSavingLabels || isResettingLabels}
                         onClick={handleSaveLabels}
                       >
                         {isSavingLabels ? 'Saving Labels...' : 'Save Labels'}
@@ -665,6 +717,422 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                     Use these features every 2–3 months to save space. Export your data first if
                     needed before flushing.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Public View Tab ── */}
+            {manageSiteTab === 'public' && (
+              <div className="manage-site-tab-panel">
+                {/* Page Header / Banner */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="3" y1="9" x2="21" y2="9"></line>
+                      <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                    Page Header Banner
+                  </h4>
+                  <p className="settings-section-description">
+                    Configure the top banner displaying the cooperative name.
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Banner Title:</label>
+                      <input type="text" className="nav-item-input" defaultValue="Albay Electric Cooperative, INC" />
+                    </div>
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Banner Subtitle (Optional):</label>
+                      <input type="text" className="nav-item-input" defaultValue="" placeholder="e.g., Serving Albay since 1975" />
+                    </div>
+                    <div className="config-row">
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Navigation Bar</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Power Outage Advisories */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    Power Outage Advisories
+                  </h4>
+                  <p className="settings-section-description">
+                    Configure the horizontal advisory feed displayed below the header.
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row">
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Enable Advisory Feed</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Scheduled Maintenance Advisories</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Emergency Outage Advisories</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show NGCP Grid Advisories</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show "Good News" Card (when no advisories)</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Live Countdown Timers</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-inline">Max visible advisories:</label>
+                      <input type="number" className="nav-item-input" defaultValue={6} min={1} max={12} style={{ width: '70px' }} />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Section Heading:</label>
+                      <input type="text" className="nav-item-input" defaultValue="Power Outage Advisories" />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Publisher Subtitle:</label>
+                      <input type="text" className="nav-item-input" defaultValue="Published by Albay Electric Cooperative, Inc." />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Report a Problem (Front of Flip Card) */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Report a Problem
+                  </h4>
+                  <p className="settings-section-description">
+                    Configure the 6-step wizard for submitting power outage reports.
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row">
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Enable Report Form</span>
+                      </label>
+                      <span className="config-status active">Active</span>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Require Account Number</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Enable Photo Upload</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Enable GPS "Find My Location"</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Enable Map Pin Selection</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Enable Duplicate Detection</span>
+                      </label>
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Wizard Step Labels:</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <input type="text" className="nav-item-input" defaultValue="Contact" />
+                        <input type="text" className="nav-item-input" defaultValue="Explain" />
+                        <input type="text" className="nav-item-input" defaultValue="Upload" />
+                        <input type="text" className="nav-item-input" defaultValue="Category" />
+                        <input type="text" className="nav-item-input" defaultValue="Location" />
+                        <input type="text" className="nav-item-input" defaultValue="Submit" />
+                      </div>
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Form Title:</label>
+                      <input type="text" className="nav-item-input" defaultValue="Report a Problem" />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Form Description:</label>
+                      <textarea className="nav-item-input" rows={2} defaultValue="Experiencing a power issue? Let us know and we'll look into it." style={{ resize: 'vertical' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Track Your Ticket (Back of Flip Card) */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Track Your Ticket
+                  </h4>
+                  <p className="settings-section-description">
+                    Configure the ticket tracking interface (back side of the flip card).
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row">
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Enable Ticket Tracking</span>
+                      </label>
+                      <span className="config-status active">Active</span>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Crew Assignment Details</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show ETA Information</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Lineman Remarks (for closed tickets)</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Allow "Report Again" for Unresolved</span>
+                      </label>
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Tracking Section Title:</label>
+                      <input type="text" className="nav-item-input" defaultValue="Track Your Ticket" />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Input Field Label:</label>
+                      <input type="text" className="nav-item-input" defaultValue="Tracking Number" />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Input Placeholder:</label>
+                      <input type="text" className="nav-item-input" defaultValue="e.g. ALECO-X892J" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* About ALECO */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    About ALECO
+                  </h4>
+                  <p className="settings-section-description">
+                    Configure the About section with image carousel and company description.
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row">
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show About Section</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Enable Image Carousel</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(76px * var(--nav-scale))' }}>
+                      <label className="config-label-inline">Slide interval (seconds):</label>
+                      <input type="number" className="nav-item-input" defaultValue={3} min={1} max={30} style={{ width: '70px' }} />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Section Heading:</label>
+                      <input type="text" className="nav-item-input" defaultValue="About ALECO" />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Subheading:</label>
+                      <input type="text" className="nav-item-input" defaultValue="Albay Electric Cooperative, Inc. (ALECO)" />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Paragraph 1:</label>
+                      <textarea className="nav-item-input" rows={2} defaultValue="Welcome to Albay Electric Cooperative, Inc. (ALECO), the driving force behind reliable electricity distribution in Albay province." style={{ resize: 'vertical' }} />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Paragraph 2:</label>
+                      <textarea className="nav-item-input" rows={2} defaultValue="We envision a future where every household enjoys uninterrupted access to sustainable, affordable, and high-quality electrical services." style={{ resize: 'vertical' }} />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Paragraph 3:</label>
+                      <textarea className="nav-item-input" rows={2} defaultValue="Our footprint spans 3 cities and 15 municipalities across 9 electrification districts." style={{ resize: 'vertical' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Privacy Notice */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Privacy Notice
+                  </h4>
+                  <p className="settings-section-description">
+                    Configure the privacy notice section displayed before the footer.
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row">
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Privacy Section</span>
+                      </label>
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Section Heading:</label>
+                      <input type="text" className="nav-item-input" defaultValue="Privacy Notice" />
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Privacy Statement:</label>
+                      <textarea className="nav-item-input" rows={3} defaultValue="We respect your privacy and will keep secure and confidential the personal data you provide. We collect, use, and store your Personal Data in accordance with applicable laws." style={{ resize: 'vertical' }} />
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Require "Agree" Button</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <line x1="3" y1="21" x2="21" y2="21"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                      <polyline points="5 10 5 21"></polyline>
+                      <polyline points="19 10 19 21"></polyline>
+                    </svg>
+                    Footer
+                  </h4>
+                  <p className="settings-section-description">
+                    Configure the page footer and global cookie consent.
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row">
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Footer</span>
+                      </label>
+                    </div>
+                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-label-block">Copyright Text:</label>
+                      <input type="text" className="nav-item-input" defaultValue="ALECO's Power Information System, all rights reserved." />
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Cookie Consent Banner</span>
+                      </label>
+                    </div>
+                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                      <label className="config-toggle">
+                        <input type="checkbox" defaultChecked />
+                        <span className="toggle-slider"></span>
+                        <span className="config-label">Show Theme Toggle Button</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview & Save */}
+                <div className="settings-section" style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                  <h4 className="settings-section-title" style={{ color: 'var(--accent-primary)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    Preview & Publish
+                  </h4>
+                  <p className="settings-section-description">
+                    Review and save changes to the public landing page. Changes take effect immediately.
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button className="settings-btn settings-btn--outline">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      Open Preview
+                    </button>
+                    <button className="settings-btn settings-btn--primary">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                      </svg>
+                      Save Public Settings
+                    </button>
+                    <span className="config-status active" style={{ marginLeft: 'auto' }}>● Live</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -824,6 +1292,45 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                 onClick={confirmFaviconReset}
               >
                 {isUpdatingFavicon ? 'Resetting...' : 'Confirm Reset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Navigation Labels Reset Confirmation Modal ── */}
+      {showLabelsResetModal && (
+        <div className="flush-confirm-overlay">
+          <div className="flush-confirm-modal">
+            <div className="flush-confirm-header" style={{ background: 'rgba(59, 130, 246, 0.1)', borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              <span className="flush-confirm-title" style={{ color: 'var(--accent-primary)' }}>Reset Navigation Labels</span>
+              <button
+                type="button"
+                className="flush-confirm-close"
+                onClick={() => setShowLabelsResetModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="flush-confirm-body">
+              <div className="flush-confirm-warning-icon">🔄</div>
+              <h3>Reset Navigation Labels?</h3>
+              <p>
+                This will reset all navigation menu labels to their original defaults:
+                <strong> Home, Users, Personnel, B2B Mail, Tickets, Interruptions, History, Data Management</strong>.
+                This change takes effect immediately across all pages.
+              </p>
+            </div>
+            <div className="flush-confirm-footer">
+              <button className="settings-btn settings-btn--outline" onClick={() => setShowLabelsResetModal(false)}>
+                Cancel
+              </button>
+              <button
+                className="settings-btn settings-btn--primary"
+                disabled={isResettingLabels}
+                onClick={confirmLabelsReset}
+              >
+                {isResettingLabels ? 'Resetting...' : 'Confirm Reset'}
               </button>
             </div>
           </div>

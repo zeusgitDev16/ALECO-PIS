@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import InterruptionFeedPostBody from './InterruptionFeedPostBody';
 import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
+import { shareToFacebook, shareToMessenger, shareNative } from '../../utils/advisoryShare';
 import {
   isEmergencyOutageType,
   getStatusDisplayLabel,
@@ -78,6 +79,26 @@ export default function InterruptionFeedPost({ item, now, onExpand, isExpandedVi
           <InterruptionAdvisoryInfographic item={item} now={now} />
         </div>
       )}
+
+      {/* Share button - stops propagation to prevent card click */}
+      <button
+        type="button"
+        className="feed-post-share-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          shareNative(item).then((usedNative) => {
+            if (!usedNative) shareToFacebook(item.id);
+          });
+        }}
+        title="Share to Facebook"
+        aria-label="Share this advisory to Facebook"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+          <path d="m16 6-4-4-4 4" />
+          <path d="M12 2v13" />
+        </svg>
+      </button>
     </article>
   );
 }

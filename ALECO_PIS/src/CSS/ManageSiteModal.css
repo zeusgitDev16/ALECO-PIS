@@ -721,3 +721,130 @@
 .animate-spin {
     animation: animate-spin 1s linear infinite;
 }
+
+/* =========================================
+   PUBLIC VIEW TAB - TOGGLE SWITCHES & CONFIG
+   ========================================= */
+.public-section-config {
+    display: flex;
+    flex-direction: column;
+    gap: calc(16px * var(--nav-scale));
+}
+
+.config-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(12px * var(--nav-scale));
+}
+
+.config-row.stacked {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(8px * var(--nav-scale));
+}
+
+/* Toggle Switch */
+.config-toggle {
+    display: flex;
+    align-items: center;
+    gap: calc(12px * var(--nav-scale));
+    cursor: pointer;
+    flex: 1;
+}
+
+.config-toggle input {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: calc(44px * var(--nav-scale));
+    height: calc(24px * var(--nav-scale));
+    background: var(--border-color);
+    border-radius: calc(12px * var(--nav-scale));
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: calc(2px * var(--nav-scale));
+    left: calc(2px * var(--nav-scale));
+    width: calc(20px * var(--nav-scale));
+    height: calc(20px * var(--nav-scale));
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.config-toggle input:checked + .toggle-slider {
+    background: var(--accent-primary);
+}
+
+.config-toggle input:checked + .toggle-slider::before {
+    transform: translateX(calc(20px * var(--nav-scale)));
+}
+
+.config-label {
+    font-size: calc(0.875rem * var(--nav-scale));
+    color: var(--text-header);
+    font-weight: 500;
+}
+
+.config-label-inline {
+    font-size: calc(0.875rem * var(--nav-scale));
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.config-label-block {
+    font-size: calc(0.8rem * var(--nav-scale));
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.config-status {
+    font-size: calc(0.75rem * var(--nav-scale));
+    font-weight: 600;
+    padding: calc(4px * var(--nav-scale)) calc(10px * var(--nav-scale));
+    border-radius: calc(4px * var(--nav-scale));
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.config-status.active {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.config-status.inactive {
+    background: rgba(128, 128, 128, 0.15);
+    color: var(--text-secondary);
+}
+
+/* Textarea styling */
+textarea.nav-item-input {
+    min-height: calc(80px * var(--nav-scale));
+    font-family: inherit;
+}
+
+/* =========================================
+   DARK MODE - PUBLIC VIEW SAVE BUTTON
+   Yellow accent for Save Public Settings
+   ========================================= */
+[data-theme='dark'] .settings-btn--primary {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #1a1a1a;
+}
+
+[data-theme='dark'] .settings-btn--primary:hover {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}

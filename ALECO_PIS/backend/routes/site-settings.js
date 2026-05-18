@@ -180,4 +180,20 @@ router.delete('/site-settings/favicon', requireAdmin, async (req, res) => {
   }
 });
 
+/**
+ * Admin: Reset all navigation labels to defaults.
+ */
+router.delete('/site-settings/labels', requireAdmin, async (req, res) => {
+  try {
+    // Delete all sidebar_label_* entries from the database
+    await pool.execute(
+      "DELETE FROM aleco_site_settings WHERE setting_key LIKE 'sidebar_label_%'"
+    );
+    res.json({ success: true, message: 'Navigation labels reset to defaults.' });
+  } catch (error) {
+    console.error('[site-settings] labels reset error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reset navigation labels.' });
+  }
+});
+
 export default router;

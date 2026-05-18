@@ -7,6 +7,7 @@ import {
   interruptionStatusForCssClass,
   getCauseCategoryLabel,
 } from '../../utils/interruptionLabels';
+import { shareToFacebook, shareToMessenger, shareNative, copyAdvisoryLink } from '../../utils/advisoryShare';
 import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
 import InterruptionNgcpPrintPoster from './InterruptionNgcpPrintPoster';
 import '../../CSS/InterruptionPrintPoster.css';
@@ -53,7 +54,7 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
     >
       <div className="feed-expanded-panel">
 
-        {/* ── Top bar: status + type + ref + close ─────────────────── */}
+        {/* ── Top bar: status + type + ref + share + close ─────────────────── */}
         <div className="feed-expanded-topbar">
           <div className="feed-expanded-topbar-left">
             <span className={`feed-post-status-chip feed-post-status-chip--${statusClass}`}>
@@ -64,17 +65,57 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
               <span className="feed-expanded-ref">#{item.controlNo}</span>
             )}
           </div>
-          <button
-            type="button"
-            className="feed-expanded-close"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round" width="18" height="18" aria-hidden="true">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="feed-expanded-topbar-right">
+            {/* Share to Facebook */}
+            <button
+              type="button"
+              className="feed-expanded-share-btn feed-expanded-share-btn--facebook"
+              onClick={() => shareToFacebook(item.id)}
+              title="Share to Facebook"
+              aria-label="Share to Facebook"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+              </svg>
+            </button>
+            {/* Share to Messenger */}
+            <button
+              type="button"
+              className="feed-expanded-share-btn feed-expanded-share-btn--messenger"
+              onClick={() => shareToMessenger(item.id)}
+              title="Share to Messenger"
+              aria-label="Share to Messenger"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2C6.48 2 2 6.03 2 11c0 2.76 1.36 5.23 3.5 6.85V22l4.09-2.24c1.03.28 2.12.44 3.26.44 5.52 0 10-4.03 10-9s-4.48-9-10-9zm1.09 12.28l-2.53-2.69-4.95 2.69 5.45-5.76 2.53 2.69 4.9-2.69-5.4 5.76z" />
+              </svg>
+            </button>
+            {/* Native share (mobile) */}
+            <button
+              type="button"
+              className="feed-expanded-share-btn feed-expanded-share-btn--native"
+              onClick={() => shareNative(item)}
+              title="More sharing options"
+              aria-label="More sharing options"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <path d="m16 6-4-4-4 4" />
+                <path d="M12 2v13" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="feed-expanded-close"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                strokeLinecap="round" strokeLinejoin="round" width="18" height="18" aria-hidden="true">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* ── Visual: poster image or infographic ──────────────────── */}

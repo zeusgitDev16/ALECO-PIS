@@ -82,3 +82,32 @@ export function IconCopy() {
     </svg>
   );
 }
+
+/** Share — external link/share actions (Lucide-style) */
+export function IconShare() {
+  return (
+    <svg {...iconProps} aria-hidden>
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+      <path d="m16 6-4-4-4 4" />
+      <path d="M12 2v13" />
+    </svg>
+  );
+}
+
+/** Facebook — Facebook brand icon for sharing */
+export function IconFacebook() {
+  return (
+    <svg {...iconProps} aria-hidden fill="currentColor" stroke="none">
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+    </svg>
+  );
+}
+
+/** Messenger — Facebook Messenger brand icon for sharing */
+export function IconMessenger() {
+  return (
+    <svg {...iconProps} aria-hidden fill="currentColor" stroke="none">
+      <path d="M12 2C6.48 2 2 6.03 2 11c0 2.76 1.36 5.23 3.5 6.85V22l4.09-2.24c1.03.28 2.12.44 3.26.44 5.52 0 10-4.03 10-9s-4.48-9-10-9zm1.09 12.28l-2.53-2.69-4.95 2.69 5.45-5.76 2.53 2.69 4.9-2.69-5.4 5.76z" />
+    </svg>
+  );
+}

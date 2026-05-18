@@ -1,7 +1,8 @@
 import React from 'react';
 import { getStatusDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw, IconShare } from './AdvisoryActionIcons';
+import { shareToFacebook, shareToMessenger, copyAdvisoryLink } from '../../utils/advisoryShare';
 
 const CARD_PREVIEW_LEN = 80;
 
@@ -102,6 +103,17 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onUpdate, onDel
             <IconExpand />
           </button>
         )}
+        {/* Share button - available for all advisories */}
+        <button
+          type="button"
+          className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--share"
+          onClick={() => shareToFacebook(item.id)}
+          disabled={saving}
+          title="Share to Facebook"
+          aria-label="Share to Facebook"
+        >
+          <IconShare />
+        </button>
         {archived ? (
           <>
             <button type="button" className="interruptions-admin-btn interruptions-admin-btn--icon" onClick={onEdit} disabled={saving} title="View" aria-label="View">

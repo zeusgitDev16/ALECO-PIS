@@ -10,7 +10,7 @@
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: 1200;
   backdrop-filter: blur(2px);
 }
 
@@ -38,7 +38,7 @@
   background-color: var(--bg-body);
   border-right: 1px solid var(--text-secondary);
   transition: left 0.3s ease, width 0.3s ease, border-right 0.3s ease;
-  z-index: 1000;
+  z-index: 1201;
   display: flex;
   flex-direction: column;
   box-shadow: calc(4px * var(--sb-scale)) 0 calc(15px * var(--sb-scale))
@@ -216,6 +216,7 @@
 @media (max-width: 1023px) {
   .sidebar-overlay {
     display: block;
+    z-index: 1200;
   }
 
   .sidebar {
@@ -224,7 +225,7 @@
     left: calc(
       -1 * var(--sb-width-effective) - (60px * var(--sb-scale))
     );
-    z-index: 1001;
+    z-index: 1201;
     height: 100vh;
     height: 100dvh;
     max-height: 100vh;

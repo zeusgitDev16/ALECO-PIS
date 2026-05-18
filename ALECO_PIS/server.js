@@ -206,15 +206,18 @@ app.get('/advisory/:id', async (req, res, next) => {
 // Matches the React Router path: /poster/interruption/:id
 app.get('/poster/interruption/:id', async (req, res, next) => {
   const userAgent = req.headers['user-agent'] || '';
+  const advisoryId = parseInt(req.params.id, 10);
   
-  // Only prerender for bots - humans get the normal React app
-  if (!isBot(userAgent)) {
-    return next(); // Continue to serve static files (React app)
+  // For bots: serve OG tags directly
+  if (isBot(userAgent)) {
+    console.log(`[bot-render] Bot detected for /poster/interruption/${advisoryId}`);
+    const canonicalUrl = `${req.protocol}://${req.get('host')}/poster/interruption/${advisoryId}`;
+    return await serveAdvisoryBotHtml(req, res, next, advisoryId, canonicalUrl);
   }
   
-  const advisoryId = parseInt(req.params.id, 10);
-  const canonicalUrl = `${req.protocol}://${req.get('host')}/poster/interruption/${advisoryId}`;
-  await serveAdvisoryBotHtml(req, res, next, advisoryId, canonicalUrl);
+  // For humans: redirect to frontend (Cloudflare Pages)
+  console.log(`[bot-render] Human detected, redirecting to frontend`);
+  res.redirect(301, `https://apisph.org/poster/interruption/${advisoryId}`);
 });
 
 function generateBotHtml(item, advisoryId, req, canonicalUrl) {

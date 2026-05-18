@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useParams, Navigate } from 'react-router-dom';
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
 import AdminLayout from './components/AdminLayout.jsx';
@@ -25,7 +25,11 @@ import PersonnelManagement from './components/PersonnelManagement.jsx';
 import B2BMail from './components/B2BMail.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
-
+// Redirect component for old /advisory/:id links
+const AdvisoryRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/poster/interruption/${id}`} replace />;
+};
 
 // --- UPDATED HELPER COMPONENT ---
 const NavigationWrapper = () => {
@@ -105,6 +109,9 @@ const NavigationWrapper = () => {
 
         <Route path="/poster/interruption/:id" element={<PublicInterruptionPosterPage />} />
         <Route path="/print-interruption/:id" element={<PrintInterruptionPosterPage />} />
+        
+        {/* Redirect old /advisory/:id links to new /poster/interruption/:id */}
+        <Route path="/advisory/:id" element={<AdvisoryRedirect />} />
 
         {/* ADMIN ROUTES — session required (password or Google via login.jsx only) */}
         <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

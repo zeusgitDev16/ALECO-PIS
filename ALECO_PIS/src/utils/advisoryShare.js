@@ -11,7 +11,8 @@ const BASE_URL = window.location.origin;
  * @returns {string}
  */
 export function getAdvisoryPermalink(advisoryId) {
-  return `${BASE_URL}/advisory/${advisoryId}`;
+  // Must match the React Router path in App.jsx: /poster/interruption/:id
+  return `${BASE_URL}/poster/interruption/${advisoryId}`;
 }
 
 /**

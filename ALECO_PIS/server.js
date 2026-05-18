@@ -132,8 +132,15 @@ function isBot(userAgent) {
   return BOT_USER_AGENTS.some(bot => ua.includes(bot.toLowerCase()));
 }
 
+// Redirect old /advisory/:id links to new /poster/interruption/:id
+app.get('/advisory/:id', (req, res) => {
+  const advisoryId = req.params.id;
+  res.redirect(301, `/poster/interruption/${advisoryId}`);
+});
+
 // Serve advisory pages with OG tags for bots
-app.get('/advisory/:id', async (req, res, next) => {
+// Matches the React Router path: /poster/interruption/:id
+app.get('/poster/interruption/:id', async (req, res, next) => {
   const userAgent = req.headers['user-agent'] || '';
   
   // Only prerender for bots - humans get the normal React app
@@ -149,9 +156,10 @@ app.get('/advisory/:id', async (req, res, next) => {
   
   try {
     // Fetch advisory data from database
+    // Note: i.* includes poster_image_url, feeder, status, affected_areas, etc.
     const [rows] = await pool.execute(
       `SELECT i.*, 
-        GROUP_CONCAT(DISTINCT ia.area_name SEPARATOR ', ') as affectedAreas
+        GROUP_CONCAT(DISTINCT ia.area_name SEPARATOR ', ') as affected_areas_joined
        FROM aleco_interruptions i
        LEFT JOIN aleco_interruption_areas ia ON i.id = ia.interruption_id
        WHERE i.id = ?
@@ -176,16 +184,19 @@ app.get('/advisory/:id', async (req, res, next) => {
 
 function generateBotHtml(item, advisoryId, req) {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const advisoryUrl = `${baseUrl}/advisory/${advisoryId}`;
+  // Matches the React Router path in App.jsx
+  const advisoryUrl = `${baseUrl}/poster/interruption/${advisoryId}`;
   
   let title, description, imageUrl, imageAlt;
   
   if (item) {
-    const areas = item.affectedAreas || 'Affected areas';
+    // Database columns are snake_case: affected_areas, date_time_start, poster_image_url
+    // affected_areas_joined comes from the GROUP_CONCAT of aleco_interruption_areas table
+    const areas = item.affected_areas || item.affected_areas_joined || 'Affected areas';
     title = `Power Interruption Advisory - ${item.feeder} | ${item.status}`;
-    description = `Scheduled power interruption for ${areas}. Date: ${item.date || 'TBA'}. Status: ${item.status}.`;
-    // Use the poster image if available
-    imageUrl = item.poster_url ? `${baseUrl}${item.poster_url}` : `${baseUrl}/og-default.jpg`;
+    description = `Scheduled power interruption for ${areas}. Status: ${item.status}.`;
+    // Use the poster image if available (column is poster_image_url in database)
+    imageUrl = item.poster_image_url ? `${baseUrl}${item.poster_image_url}` : `${baseUrl}/og-default.jpg`;
     imageAlt = `Power interruption advisory poster for ${item.feeder}`;
   } else {
     title = 'ALECO Power Interruption Advisory';

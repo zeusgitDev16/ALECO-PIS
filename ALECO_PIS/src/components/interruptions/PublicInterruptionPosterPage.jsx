@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { getPublicInterruptionSnapshot } from '../../api/interruptionsApi';
+import { formatToPhilippineTime } from '../../utils/dateUtils';
+import {
+  getStatusDisplayLabel,
+  interruptionStatusForCssClass,
+  getCauseCategoryLabel,
+} from '../../utils/interruptionLabels';
 import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
 import '../../CSS/PublicInterruptionPosterPage.css';
 
@@ -69,11 +75,13 @@ export default function PublicInterruptionPosterPage() {
   const affectedAreas = item.affectedAreas || [];
   const ogTitle = `Power Interruption Advisory - ${item.feeder || 'ALECO'} | ${item.status}`;
   const ogDescription = `Scheduled power interruption${affectedAreas.length ? ' for ' + affectedAreas.join(', ') : ''}. Date: ${item.date || 'TBA'}. Status: ${item.status}.`;
-  
-  // Status styling
-  const statusClass = item.status?.toLowerCase().includes('ongoing') ? 'status-ongoing' 
-    : item.status?.toLowerCase().includes('complet') ? 'status-completed' 
-    : 'status-pending';
+
+  const statusClass = interruptionStatusForCssClass(item.status);
+  const statusLabel = getStatusDisplayLabel(item.status);
+  const grouped =
+    Array.isArray(item.affectedAreasGrouped) && item.affectedAreasGrouped.length > 0
+      ? item.affectedAreasGrouped
+      : null;
 
   return (
     <div className="public-poster-page">
@@ -96,99 +104,133 @@ export default function PublicInterruptionPosterPage() {
         <meta name="twitter:image" content={posterImageUrl} />
       </Helmet>
 
-      {/* Header Banner */}
-      <header className="advisory-header">
-        <h2>🔌 ALECO Power Interruption Advisory</h2>
-      </header>
+      <div className="public-poster-shell">
 
-      {item.posterImageUrl && item.posterImageUrl.startsWith('http') ? (
-        <>
-          {/* Full-Screen Poster Section */}
-          <section className="poster-section">
-            <div className="poster-wrapper">
-              <img 
-                src={item.posterImageUrl} 
-                alt={`Power interruption advisory for ${item.feeder}`}
-                className="advisory-poster-image"
-              />
+        {/* Top bar: status + type + control no */}
+        <div className="pp-topbar">
+          <span className={`pp-status-chip pp-status-chip--${statusClass}`}>
+            {statusLabel}
+          </span>
+          <span className="pp-type">{item.type}</span>
+          {item.controlNo && <span className="pp-ref">#{item.controlNo}</span>}
+        </div>
+
+        {/* Poster image — full width */}
+        <div className="pp-poster-wrap">
+          {item.posterImageUrl && item.posterImageUrl.startsWith('http') ? (
+            <img
+              src={item.posterImageUrl}
+              alt={`Power interruption advisory for ${item.feeder}`}
+              className="pp-poster-img"
+            />
+          ) : (
+            <InterruptionAdvisoryInfographic item={item} now={new Date()} />
+          )}
+        </div>
+
+        {/* Details — mirrors the expanded-view modal structure */}
+        <div className="pp-details">
+
+          {/* Schedule */}
+          <div className="pp-section">
+            <h3 className="pp-section-title">Schedule</h3>
+            <div className="pp-row">
+              <span className="pp-label">Outage Start</span>
+              <span className="pp-value">
+                {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '\u2014'}
+              </span>
             </div>
-          </section>
-
-          {/* Details Section */}
-          <section className="details-section">
-            <div className="details-header">
-              <h1>{item.feeder || 'Power Interruption Advisory'}</h1>
-              <p className="subtitle">Albay Electric Cooperative, Inc.</p>
+            <div className="pp-row">
+              <span className="pp-label">Est. Restore</span>
+              <span className="pp-value">
+                {item.dateTimeEndEstimated ? formatToPhilippineTime(item.dateTimeEndEstimated) : '\u2014'}
+              </span>
             </div>
-
-            <div className="info-grid">
-              <div className={`info-item ${statusClass}`}>
-                <div className="info-icon">⚡</div>
-                <div className="info-content">
-                  <div className="info-label">Status</div>
-                  <div className="info-value">{item.status}</div>
-                </div>
-              </div>
-
-              <div className="info-item">
-                <div className="info-icon">📅</div>
-                <div className="info-content">
-                  <div className="info-label">Date</div>
-                  <div className="info-value">{item.date || 'To Be Announced'}</div>
-                </div>
-              </div>
-
-              <div className="info-item">
-                <div className="info-icon">📍</div>
-                <div className="info-content">
-                  <div className="info-label">Feeder</div>
-                  <div className="info-value">{item.feeder}</div>
-                </div>
-              </div>
-
-              <div className="info-item">
-                <div className="info-icon">🔧</div>
-                <div className="info-content">
-                  <div className="info-label">Cause</div>
-                  <div className="info-value">{item.cause || 'Maintenance Work'}</div>
-                </div>
-              </div>
-
-              <div className="info-item" style={{ gridColumn: '1 / -1' }}>
-                <div className="info-icon">🏘️</div>
-                <div className="info-content">
-                  <div className="info-label">Affected Areas</div>
-                  <div className="affected-areas-list">
-                    {affectedAreas.length > 0 ? (
-                      affectedAreas.map((area, idx) => (
-                        <span key={idx} className="area-tag">{area}</span>
-                      ))
-                    ) : (
-                      <span className="area-tag">Areas to be announced</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {item.body && (
-              <div className="details-body">
-                <h3>📝 Additional Details</h3>
-                <p>{item.body}</p>
+            {item.dateTimeRestored && (
+              <div className="pp-row">
+                <span className="pp-label">Power Restored</span>
+                <span className="pp-value pp-value--restored">
+                  {formatToPhilippineTime(item.dateTimeRestored)}
+                </span>
               </div>
             )}
-          </section>
+          </div>
 
-          <footer className="page-footer">
-            <p>For more information, contact ALECO at <a href="mailto:aleco.cares@gmail.com">aleco.cares@gmail.com</a></p>
-            <p style={{ marginTop: '8px', fontSize: '0.75rem' }}>© 2026 Albay Electric Cooperative, Inc.</p>
-          </footer>
-        </>
-      ) : (
-        <section className="poster-section">
-          <InterruptionAdvisoryInfographic item={item} now={new Date()} />
-        </section>
-      )}
+          {/* Cause */}
+          <div className="pp-section">
+            <h3 className="pp-section-title">Cause</h3>
+            <div className="pp-row">
+              <span className="pp-label">Reason</span>
+              <span className="pp-value">{item.cause || '\u2014'}</span>
+            </div>
+            {item.causeCategory && (
+              <div className="pp-row">
+                <span className="pp-label">Category</span>
+                <span className="pp-value">{getCauseCategoryLabel(item.causeCategory)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Substation / Feeder */}
+          <div className="pp-section">
+            <h3 className="pp-section-title">Substation / Feeder</h3>
+            <p className="pp-pill">{item.feeder || '\u2014'}</p>
+          </div>
+
+          {/* Affected Areas */}
+          <div className="pp-section">
+            <h3 className="pp-section-title">Affected Areas</h3>
+            {grouped ? (
+              grouped.map((g, gi) => (
+                <div key={gi}>
+                  {g.heading && <p className="pp-area-group-heading">{g.heading}</p>}
+                  <ul className="pp-area-list">
+                    {g.items.map((a, ai) => <li key={ai}>{a}</li>)}
+                  </ul>
+                </div>
+              ))
+            ) : (
+              <ul className="pp-area-list">
+                {affectedAreas.length > 0
+                  ? affectedAreas.map((a, i) => <li key={i}>{a}</li>)
+                  : <li>\u2014</li>}
+              </ul>
+            )}
+          </div>
+
+          {/* Additional Details */}
+          {item.body && String(item.body).trim() && (
+            <div className="pp-section">
+              <h3 className="pp-section-title">Additional Details</h3>
+              <p className="pp-body-text">{item.body}</p>
+            </div>
+          )}
+
+          {/* Meta timestamps */}
+          <div className="pp-section pp-section--meta">
+            {item.createdAt && (
+              <span className="pp-meta-item">
+                <strong>Posted:</strong> {formatToPhilippineTime(item.createdAt)}
+              </span>
+            )}
+            {item.updatedAt &&
+              String(item.updatedAt).trim() !== String(item.createdAt).trim() && (
+                <span className="pp-meta-item">
+                  <strong>Updated:</strong> {formatToPhilippineTime(item.updatedAt)}
+                </span>
+              )}
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="pp-footer">
+          Albay Electric Cooperative, Inc. &mdash;
+          {' '}<a href="mailto:aleco.cares@gmail.com">aleco.cares@gmail.com</a>
+          {' '}| 0908-6773-393 (SMART) | 0915-9953-455 (GLOBE)
+        </div>
+
+      </div>
     </div>
   );
 }

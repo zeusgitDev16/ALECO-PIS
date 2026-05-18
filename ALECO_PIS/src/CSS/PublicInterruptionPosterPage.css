@@ -1,265 +1,303 @@
-/* Professional public advisory page - Full screen poster with elegant details */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   Public Advisory Permalink Page
+   Clean, structural layout matching the expanded-view modal.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 .public-poster-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: #f5f5f5;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ── Loading / Error states ─────────────────────────────────────────────── */
 .public-poster-page--loading,
 .public-poster-page--error {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: system-ui, sans-serif;
-  font-size: 1.2rem;
-  color: white;
+  font-size: 1rem;
+  color: #555;
   text-align: center;
   padding: 24px;
+  background: #f5f5f5;
 }
 
-/* Header banner */
-.advisory-header {
-  background: linear-gradient(90deg, #0f3460 0%, #533483 100%);
-  color: white;
-  padding: 16px 24px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-.advisory-header h2 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-/* Full-screen poster section */
-.poster-section {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: calc(100vh - 200px);
-  padding: 20px;
-  background: #0a0a0a;
-}
-
-.poster-wrapper {
-  max-width: 100%;
-  max-height: calc(100vh - 240px);
-  overflow: hidden;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-}
-
-.advisory-poster-image {
-  max-width: 100%;
-  max-height: calc(100vh - 240px);
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  display: block;
-}
-
-/* Details section */
-.details-section {
-  background: white;
-  padding: 32px 24px;
-  max-width: 800px;
+/* ── Page shell ─────────────────────────────────────────────────────────── */
+.public-poster-shell {
+  max-width: 680px;
   margin: 0 auto;
-  border-radius: 20px 20px 0 0;
-  margin-top: -20px;
-  position: relative;
-  z-index: 10;
+  background: #fff;
+  min-height: 100vh;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
 }
 
-.details-header {
-  text-align: center;
-  margin-bottom: 28px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e8e8e8;
-}
-
-.details-header h1 {
-  font-size: 1.6rem;
-  color: #1a1a1a;
-  margin-bottom: 8px;
-  font-weight: 700;
-}
-
-.details-header .subtitle {
-  color: #666;
-  font-size: 0.95rem;
-}
-
-/* Info grid */
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.info-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border-left: 4px solid #533483;
-}
-
-.info-item.status-pending { border-left-color: #f39c12; }
-.info-item.status-ongoing { border-left-color: #e74c3c; }
-.info-item.status-completed { border-left-color: #27ae60; }
-
-.info-icon {
-  width: 24px;
-  height: 24px;
+/* ── Top bar: status + type + ref ───────────────────────────────────────── */
+.pp-topbar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #533483;
-  color: white;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  flex-shrink: 0;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #eee;
+  flex-wrap: wrap;
 }
 
-.info-item.status-pending .info-icon { background: #f39c12; }
-.info-item.status-ongoing .info-icon { background: #e74c3c; }
-.info-item.status-completed .info-icon { background: #27ae60; }
-
-.info-content {
-  flex: 1;
-}
-
-.info-label {
-  font-size: 0.75rem;
+.pp-status-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #888;
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-
-.info-value {
-  font-size: 1.05rem;
-  color: #1a1a1a;
-  font-weight: 500;
+  letter-spacing: 0.4px;
   line-height: 1.4;
 }
 
-/* Affected areas tag style */
-.affected-areas-list {
+.pp-status-chip--pending   { background: #fef3cd; color: #856404; }
+.pp-status-chip--ongoing   { background: #f8d7da; color: #721c24; }
+.pp-status-chip--energized { background: #d4edda; color: #155724; }
+
+.pp-type {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pp-ref {
+  font-size: 0.78rem;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* ── Poster image ───────────────────────────────────────────────────────── */
+.pp-poster-wrap {
+  width: 100%;
+  background: #fafafa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pp-poster-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ── Details container ──────────────────────────────────────────────────── */
+.pp-details {
+  padding: 0 20px 20px;
+}
+
+/* ── Section block (matches expanded view) ──────────────────────────────── */
+.pp-section {
+  padding: 18px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.pp-section:last-child {
+  border-bottom: none;
+}
+
+.pp-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #8b1a1a;
+  margin: 0 0 12px;
+}
+
+/* ── Row: label + value (table-like alignment) ──────────────────────────── */
+.pp-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+  align-items: baseline;
+}
+
+.pp-row:last-child {
+  margin-bottom: 0;
+}
+
+.pp-label {
+  font-size: 0.82rem;
+  color: #777;
+  font-weight: 600;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.pp-value {
+  font-size: 0.88rem;
+  color: #1a1a1a;
+  line-height: 1.45;
+}
+
+.pp-value--restored {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* ── Pill (feeder chip) ─────────────────────────────────────────────────── */
+.pp-pill {
+  display: inline-block;
+  padding: 5px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  background: #fafafa;
+}
+
+/* ── Area list ──────────────────────────────────────────────────────────── */
+.pp-area-list {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.pp-area-list li {
+  font-size: 0.88rem;
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 2px;
+}
+
+.pp-area-group-heading {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #444;
+  margin: 8px 0 4px;
+}
+
+/* ── Body text ──────────────────────────────────────────────────────────── */
+.pp-body-text {
+  font-size: 0.88rem;
+  color: #333;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ── Meta footer (posted / updated) ─────────────────────────────────────── */
+.pp-section--meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 6px 24px;
+  padding: 14px 0;
+  border-top: 1px solid #eee;
+  border-bottom: none;
 }
 
-.area-tag {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-/* Details/body section */
-.details-body {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
-  margin-top: 16px;
-}
-
-.details-body h3 {
-  font-size: 1rem;
-  color: #1a1a1a;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.details-body p {
-  color: #444;
-  line-height: 1.7;
-  font-size: 0.95rem;
-}
-
-/* Footer */
-.page-footer {
-  text-align: center;
-  padding: 24px;
-  background: #1a1a2e;
+.pp-meta-item {
+  font-size: 0.78rem;
   color: #888;
-  font-size: 0.85rem;
 }
 
-.page-footer a {
-  color: #667eea;
+.pp-meta-item strong {
+  color: #555;
+  font-weight: 600;
+}
+
+/* ── Page footer ────────────────────────────────────────────────────────── */
+.pp-footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 0.78rem;
+  color: #999;
+  border-top: 1px solid #eee;
+}
+
+.pp-footer a {
+  color: #1a73e8;
   text-decoration: none;
 }
 
-/* Responsive adjustments */
-@media (max-width: 600px) {
-  .poster-section {
-    padding: 10px;
-    min-height: auto;
+.pp-footer a:hover {
+  text-decoration: underline;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile-first responsive
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 720px) {
+  .public-poster-page {
+    background: #fff;
   }
-  
-  .poster-wrapper {
-    max-height: none;
-  }
-  
-  .advisory-poster-image {
-    max-height: none;
-    width: 100%;
-  }
-  
-  .details-section {
-    padding: 24px 16px;
-    border-radius: 16px 16px 0 0;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .details-header h1 {
-    font-size: 1.3rem;
+
+  .public-poster-shell {
+    box-shadow: none;
   }
 }
+
+@media (max-width: 480px) {
+  .pp-topbar {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .pp-details {
+    padding: 0 16px 16px;
+  }
+
+  .pp-label {
+    min-width: 100px;
+    font-size: 0.78rem;
+  }
+
+  .pp-value {
+    font-size: 0.84rem;
+  }
+
+  .pp-section {
+    padding: 14px 0;
+  }
+
+  .pp-section-title {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .pp-row {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .pp-label {
+    min-width: unset;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Print
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 @media print {
   .public-poster-page {
     background: white;
   }
-  
-  .advisory-header {
-    background: #1a1a1a !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+
+  .public-poster-shell {
+    box-shadow: none;
+    max-width: 100%;
   }
-  
-  .poster-section {
-    background: white;
+
+  .pp-poster-wrap {
     page-break-after: always;
   }
-  
-  .details-section {
-    margin-top: 0;
-    border-radius: 0;
+
+  .pp-footer {
+    display: none;
   }
 }

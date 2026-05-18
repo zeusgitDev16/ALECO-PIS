@@ -124,6 +124,16 @@ const BOT_USER_AGENTS = [
   'Discordbot',
   'Slackbot',
   'Googlebot',
+  'Instagram',
+  'Pinterest',
+  'Snapchat',
+  'bingbot',
+  'yandex',
+  'duckduckbot',
+  'baiduspider',
+  'curl',
+  'wget',
+  'postman',
 ];
 
 function isBot(userAgent) {
@@ -132,24 +142,8 @@ function isBot(userAgent) {
   return BOT_USER_AGENTS.some(bot => ua.includes(bot.toLowerCase()));
 }
 
-// Redirect old /advisory/:id links to new /poster/interruption/:id
-app.get('/advisory/:id', (req, res) => {
-  const advisoryId = req.params.id;
-  res.redirect(301, `/poster/interruption/${advisoryId}`);
-});
-
-// Serve advisory pages with OG tags for bots
-// Matches the React Router path: /poster/interruption/:id
-app.get('/poster/interruption/:id', async (req, res, next) => {
-  const userAgent = req.headers['user-agent'] || '';
-  
-  // Only prerender for bots - humans get the normal React app
-  if (!isBot(userAgent)) {
-    return next(); // Continue to serve static files (React app)
-  }
-  
-  // Facebook/Twitter bot detected - serve HTML with OG tags
-  const advisoryId = parseInt(req.params.id, 10);
+// Helper function to serve bot HTML for advisory pages
+async function serveAdvisoryBotHtml(req, res, next, advisoryId, canonicalUrl) {
   if (!Number.isFinite(advisoryId) || advisoryId <= 0) {
     return next();
   }
@@ -169,22 +163,59 @@ app.get('/poster/interruption/:id', async (req, res, next) => {
     );
     
     const item = rows[0];
+    console.log(`[bot-render] DB fetch for advisory ${advisoryId}: found=${!!item}, poster_url=${item?.poster_image_url}`);
+    
     if (!item) {
       // Advisory not found - serve default OG tags
-      return res.send(generateBotHtml(null, advisoryId, req));
+      return res.send(generateBotHtml(null, advisoryId, req, canonicalUrl));
     }
     
     // Generate HTML with OG tags for this advisory
-    res.send(generateBotHtml(item, advisoryId, req));
+    res.send(generateBotHtml(item, advisoryId, req, canonicalUrl));
   } catch (err) {
     console.error('[bot-render] Error fetching advisory:', err);
     next(); // Fall back to normal React app
   }
+}
+
+// Redirect old /advisory/:id links to new /poster/interruption/:id for humans
+// BUT serve OG tags directly to bots (don't redirect bots)
+app.get('/advisory/:id', async (req, res, next) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const advisoryId = parseInt(req.params.id, 10);
+  
+  // For bots: serve OG tags directly at this URL (don't redirect)
+  if (isBot(userAgent)) {
+    console.log(`[bot-render] Bot detected for /advisory/${advisoryId}: ${userAgent.slice(0, 50)}...`);
+    const canonicalUrl = `${req.protocol}://${req.get('host')}/advisory/${advisoryId}`;
+    return await serveAdvisoryBotHtml(req, res, next, advisoryId, canonicalUrl);
+  }
+  console.log(`[bot-render] Human detected for /advisory/${advisoryId}, redirecting to /poster/interruption/${advisoryId}`);
+  
+  // For humans: redirect to the new URL
+  res.redirect(301, `/poster/interruption/${advisoryId}`);
 });
 
-function generateBotHtml(item, advisoryId, req) {
+// Serve advisory pages with OG tags for bots at the canonical URL
+// Matches the React Router path: /poster/interruption/:id
+app.get('/poster/interruption/:id', async (req, res, next) => {
+  const userAgent = req.headers['user-agent'] || '';
+  
+  // Only prerender for bots - humans get the normal React app
+  if (!isBot(userAgent)) {
+    return next(); // Continue to serve static files (React app)
+  }
+  
+  const advisoryId = parseInt(req.params.id, 10);
+  const canonicalUrl = `${req.protocol}://${req.get('host')}/poster/interruption/${advisoryId}`;
+  await serveAdvisoryBotHtml(req, res, next, advisoryId, canonicalUrl);
+});
+
+function generateBotHtml(item, advisoryId, req, canonicalUrl) {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
-  // Matches the React Router path in App.jsx
+  // The URL that Facebook should use as canonical (where the OG tags are served from)
+  const pageUrl = canonicalUrl || `${baseUrl}/advisory/${advisoryId}`;
+  // The URL where humans should go (React app route)
   const advisoryUrl = `${baseUrl}/poster/interruption/${advisoryId}`;
   
   let title, description, imageUrl, imageAlt;
@@ -195,8 +226,15 @@ function generateBotHtml(item, advisoryId, req) {
     const areas = item.affected_areas || item.affected_areas_joined || 'Affected areas';
     title = `Power Interruption Advisory - ${item.feeder} | ${item.status}`;
     description = `Scheduled power interruption for ${areas}. Status: ${item.status}.`;
-    // Use the poster image if available (column is poster_image_url in database)
-    imageUrl = item.poster_image_url ? `${baseUrl}${item.poster_image_url}` : `${baseUrl}/og-default.jpg`;
+    
+    // poster_image_url is a full Cloudinary URL (e.g., https://res.cloudinary.com/...)
+    // Use it directly, fall back to og-default only if missing
+    const posterUrl = item.poster_image_url;
+    if (posterUrl && posterUrl.startsWith('http')) {
+      imageUrl = posterUrl;
+    } else {
+      imageUrl = `${baseUrl}/og-default.jpg`;
+    }
     imageAlt = `Power interruption advisory poster for ${item.feeder}`;
   } else {
     title = 'ALECO Power Interruption Advisory';
@@ -205,6 +243,9 @@ function generateBotHtml(item, advisoryId, req) {
     imageAlt = 'ALECO Power Information System';
   }
   
+  // Debug logging
+  console.log(`[bot-render] Advisory ${advisoryId}: poster_image_url=${item?.poster_image_url}, imageUrl=${imageUrl}`);
+  
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -212,12 +253,13 @@ function generateBotHtml(item, advisoryId, req) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  <link rel="canonical" href="${pageUrl}">
   
   <!-- Open Graph tags for Facebook -->
   <meta property="og:type" content="article">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
-  <meta property="og:url" content="${advisoryUrl}">
+  <meta property="og:url" content="${pageUrl}">
   <meta property="og:image" content="${imageUrl}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -237,11 +279,18 @@ function generateBotHtml(item, advisoryId, req) {
     window.location.replace('${advisoryUrl}');
   </script>
 </head>
-<body>
-  <h1>${escapeHtml(title)}</h1>
-  <p>${escapeHtml(description)}</p>
-  <img src="${imageUrl}" alt="${escapeHtml(imageAlt)}" style="max-width:100%;">
-  <p><a href="${advisoryUrl}">View full advisory</a></p>
+<body style="margin:0; padding:20px; font-family:system-ui,sans-serif; background:#f5f7fb;">
+  <div style="max-width:800px; margin:0 auto; background:white; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.1); overflow:hidden;">
+    <!-- Poster Image -->
+    <img src="${imageUrl}" alt="${escapeHtml(imageAlt)}" style="width:100%; height:auto; display:block;">
+    
+    <!-- Advisory Details -->
+    <div style="padding:24px; background:#f8f9fa; border-top:1px solid #e0e0e0;">
+      <h1 style="margin:0 0 16px 0; font-size:1.5rem; color:#1a1a1a;">${escapeHtml(title)}</h1>
+      <p style="margin:8px 0; line-height:1.6; color:#444;">${escapeHtml(description)}</p>
+      <p style="margin-top:16px;"><a href="${advisoryUrl}" style="color:#0066cc; text-decoration:none; font-weight:600;">View full advisory →</a></p>
+    </div>
+  </div>
 </body>
 </html>`;
 }

@@ -65,8 +65,11 @@ export default function PublicInterruptionPosterPage() {
   }
 
   const baseUrl = window.location.origin;
-  const advisoryUrl = `${baseUrl}/advisory/${id}`;
-  const posterImageUrl = item.posterUrl ? `${baseUrl}${item.posterUrl}` : `${baseUrl}/og-default.jpg`;
+  const advisoryUrl = `${baseUrl}/poster/interruption/${id}`;
+  // posterUrl is a full Cloudinary URL, use it directly
+  const posterImageUrl = item.posterUrl && item.posterUrl.startsWith('http') 
+    ? item.posterUrl 
+    : `${baseUrl}/og-default.jpg`;
   const affectedAreas = (item.affectedAreas || []).join(', ') || 'Affected areas';
   const ogTitle = `Power Interruption Advisory - ${item.feeder || 'ALECO'} | ${item.status}`;
   const ogDescription = `Scheduled power interruption for ${affectedAreas}. Date: ${item.date || 'TBA'}. Status: ${item.status}.`;
@@ -96,7 +99,32 @@ export default function PublicInterruptionPosterPage() {
         <meta name="twitter:image" content={posterImageUrl} />
       </Helmet>
 
-      <InterruptionAdvisoryInfographic item={item} now={now} />
+      {/* Poster-first display: Show poster image prominently, details below */}
+      <div className="poster-container">
+        {item.posterUrl && item.posterUrl.startsWith('http') ? (
+          <>
+            <img 
+              src={item.posterUrl} 
+              alt={`Power interruption advisory for ${item.feeder}`}
+              className="advisory-poster-image"
+              style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }}
+            />
+            {/* Advisory details below the poster */}
+            <div className="advisory-details" style={{ marginTop: '20px', padding: '20px' }}>
+              <h1>Power Interruption Advisory</h1>
+              <p><strong>Feeder:</strong> {item.feeder}</p>
+              <p><strong>Status:</strong> {item.status}</p>
+              <p><strong>Date:</strong> {item.date || 'TBA'}</p>
+              <p><strong>Affected Areas:</strong> {affectedAreas}</p>
+              <p><strong>Cause:</strong> {item.cause || 'N/A'}</p>
+              {item.body && <p><strong>Details:</strong> {item.body}</p>}
+            </div>
+          </>
+        ) : (
+          // Fallback: Show old infographic display when poster is unavailable
+          <InterruptionAdvisoryInfographic item={item} now={now} />
+        )}
+      </div>
     </div>
   );
 }

@@ -221,8 +221,8 @@ function generateBotHtml(item, advisoryId, req, canonicalUrl) {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
   // The URL that Facebook should use as canonical (where the OG tags are served from)
   const pageUrl = canonicalUrl || `${baseUrl}/advisory/${advisoryId}`;
-  // The URL where humans should go (React app route)
-  const advisoryUrl = `${baseUrl}/poster/interruption/${advisoryId}`;
+  // The URL where humans should go (React app on Cloudflare Pages)
+  const advisoryUrl = `https://apisph.org/poster/interruption/${advisoryId}`;
   
   let title, description, imageUrl, imageAlt;
   

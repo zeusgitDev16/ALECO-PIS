@@ -3,7 +3,7 @@
  * Uses URL-based sharing (no SDK required)
  */
 
-const BASE_URL = window.location.origin;
+const BASE_URL = 'https://api.apisph.org';
 
 /**
  * Generate the public permalink for an advisory

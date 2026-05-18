@@ -208,6 +208,53 @@
   font-weight: 600;
 }
 
+/* ── Type badge variants ───────────────────────────────────────────────── */
+.pp-type--scheduled     { color: #1a5276; }
+.pp-type--emergency     { color: #c0392b; font-weight: 700; }
+.pp-type--ngcscheduled  { color: #7d3c98; }
+.pp-type--customposter  { color: #2e86c1; }
+
+/* ── Type-specific section title accent ────────────────────────────────── */
+.pp-type--emergency .pp-section-title   { color: #c0392b; }
+.pp-type--ngcscheduled .pp-section-title { color: #6c3483; }
+.pp-type--customposter .pp-section-title { color: #2471a3; }
+
+/* ── Poster fallback (infographic / print poster) ──────────────────────── */
+.pp-poster-fallback {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #fafafa;
+  padding: 0;
+}
+
+.pp-poster-fallback > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.pp-custom-notice {
+  padding: 40px 20px;
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* ── Attached image ────────────────────────────────────────────────────── */
+.pp-attached-image-wrap {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.pp-attached-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 /* ── Page footer ────────────────────────────────────────────────────────── */
 .pp-footer {
   text-align: center;

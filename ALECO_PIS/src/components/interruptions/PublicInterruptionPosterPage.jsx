@@ -5,10 +5,16 @@ import { getPublicInterruptionSnapshot } from '../../api/interruptionsApi';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import {
   getStatusDisplayLabel,
+  getTypeDisplayLabel,
   interruptionStatusForCssClass,
   getCauseCategoryLabel,
+  isEmergencyOutageType,
 } from '../../utils/interruptionLabels';
+import { getSafeResourceUrl } from '../../utils/safeUrl';
 import InterruptionAdvisoryInfographic from './InterruptionAdvisoryInfographic';
+import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
+import InterruptionNgcpPrintPoster from './InterruptionNgcpPrintPoster';
+import '../../CSS/InterruptionPrintPoster.css';
 import '../../CSS/PublicInterruptionPosterPage.css';
 
 function mapPosterLoadError(message) {
@@ -78,10 +84,26 @@ export default function PublicInterruptionPosterPage() {
 
   const statusClass = interruptionStatusForCssClass(item.status);
   const statusLabel = getStatusDisplayLabel(item.status);
+  const typeLabel = getTypeDisplayLabel(item.type);
+  const isEmergency = isEmergencyOutageType(item.type);
+  const isNgcp = item.type === 'NgcScheduled';
+  const isCustom = item.type === 'CustomPoster';
+  const typeModifier = isEmergency ? 'emergency'
+    : isNgcp ? 'ngcscheduled'
+    : isCustom ? 'customposter'
+    : 'scheduled';
   const grouped =
     Array.isArray(item.affectedAreasGrouped) && item.affectedAreasGrouped.length > 0
       ? item.affectedAreasGrouped
       : null;
+
+  const isBlankStub =
+    typeof item.posterImageUrl === 'string' && item.posterImageUrl.includes('_stub');
+  const safePosterUrl =
+    !isBlankStub && item.posterImageUrl
+      ? getSafeResourceUrl(item.posterImageUrl)
+      : null;
+  const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
 
   return (
     <div className="public-poster-page">
@@ -104,27 +126,36 @@ export default function PublicInterruptionPosterPage() {
         <meta name="twitter:image" content={posterImageUrl} />
       </Helmet>
 
-      <div className="public-poster-shell">
+      <div className={`public-poster-shell pp-type--${typeModifier}`}>
 
         {/* Top bar: status + type + control no */}
         <div className="pp-topbar">
           <span className={`pp-status-chip pp-status-chip--${statusClass}`}>
             {statusLabel}
           </span>
-          <span className="pp-type">{item.type}</span>
+          <span className={`pp-type pp-type--${typeModifier}`}>{typeLabel}</span>
           {item.controlNo && <span className="pp-ref">#{item.controlNo}</span>}
         </div>
 
         {/* Poster image — full width */}
         <div className="pp-poster-wrap">
-          {item.posterImageUrl && item.posterImageUrl.startsWith('http') ? (
+          {safePosterUrl ? (
             <img
-              src={item.posterImageUrl}
+              src={safePosterUrl}
               alt={`Power interruption advisory for ${item.feeder}`}
               className="pp-poster-img"
+              loading="lazy"
             />
           ) : (
-            <InterruptionAdvisoryInfographic item={item} now={new Date()} />
+            <div className="pp-poster-fallback">
+              {isNgcp ? (
+                <InterruptionNgcpPrintPoster item={item} />
+              ) : isCustom ? (
+                <p className="pp-custom-notice">Custom poster advisory &mdash; no generated template.</p>
+              ) : (
+                <InterruptionAlecoPrintPoster item={item} />
+              )}
+            </div>
           )}
         </div>
 
@@ -133,9 +164,13 @@ export default function PublicInterruptionPosterPage() {
 
           {/* Schedule */}
           <div className="pp-section">
-            <h3 className="pp-section-title">Schedule</h3>
+            <h3 className="pp-section-title">
+              {isEmergency ? 'Outage Timeline' : 'Schedule'}
+            </h3>
             <div className="pp-row">
-              <span className="pp-label">Outage Start</span>
+              <span className="pp-label">
+                {isEmergency ? 'Outage Reported' : 'Outage Start'}
+              </span>
               <span className="pp-value">
                 {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '\u2014'}
               </span>
@@ -173,7 +208,9 @@ export default function PublicInterruptionPosterPage() {
 
           {/* Substation / Feeder */}
           <div className="pp-section">
-            <h3 className="pp-section-title">Substation / Feeder</h3>
+            <h3 className="pp-section-title">
+              {isNgcp ? 'Source / Feeder' : 'Substation / Feeder'}
+            </h3>
             <p className="pp-pill">{item.feeder || '\u2014'}</p>
           </div>
 
@@ -203,6 +240,23 @@ export default function PublicInterruptionPosterPage() {
             <div className="pp-section">
               <h3 className="pp-section-title">Additional Details</h3>
               <p className="pp-body-text">{item.body}</p>
+            </div>
+          )}
+
+          {/* Attached Image (NGCP source doc or uploaded image) */}
+          {safeAdvisoryImageUrl && (
+            <div className="pp-section">
+              <h3 className="pp-section-title">
+                {isNgcp ? 'NGCP Source Document' : 'Attached Image'}
+              </h3>
+              <div className="pp-attached-image-wrap">
+                <img
+                  src={safeAdvisoryImageUrl}
+                  alt={isNgcp ? 'NGCP source document' : 'Attached advisory image'}
+                  className="pp-attached-image"
+                  loading="lazy"
+                />
+              </div>
             </div>
           )}
 

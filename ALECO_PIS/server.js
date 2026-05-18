@@ -178,6 +178,18 @@ async function serveAdvisoryBotHtml(req, res, next, advisoryId, canonicalUrl) {
   }
 }
 
+// Debug endpoint to check if bot detection works
+app.get('/debug/bot-test', (req, res) => {
+  const ua = req.headers['user-agent'] || 'none';
+  const isBotResult = isBot(ua);
+  res.json({
+    userAgent: ua,
+    isBot: isBotResult,
+    botList: BOT_USER_AGENTS,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Redirect old /advisory/:id links to new /poster/interruption/:id for humans
 // BUT serve OG tags directly to bots (don't redirect bots)
 app.get('/advisory/:id', async (req, res, next) => {

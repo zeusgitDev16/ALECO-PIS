@@ -66,9 +66,9 @@ export default function PublicInterruptionPosterPage() {
 
   const baseUrl = window.location.origin;
   const advisoryUrl = `${baseUrl}/poster/interruption/${id}`;
-  // posterUrl is a full Cloudinary URL, use it directly
-  const posterImageUrl = item.posterUrl && item.posterUrl.startsWith('http') 
-    ? item.posterUrl 
+  // posterImageUrl is a full Cloudinary URL from API, use it directly
+  const posterImageUrl = item.posterImageUrl && item.posterImageUrl.startsWith('http') 
+    ? item.posterImageUrl 
     : `${baseUrl}/og-default.jpg`;
   const affectedAreas = (item.affectedAreas || []).join(', ') || 'Affected areas';
   const ogTitle = `Power Interruption Advisory - ${item.feeder || 'ALECO'} | ${item.status}`;
@@ -101,10 +101,10 @@ export default function PublicInterruptionPosterPage() {
 
       {/* Poster-first display: Show poster image prominently, details below */}
       <div className="poster-container">
-        {item.posterUrl && item.posterUrl.startsWith('http') ? (
+        {item.posterImageUrl && item.posterImageUrl.startsWith('http') ? (
           <>
             <img 
-              src={item.posterUrl} 
+              src={item.posterImageUrl} 
               alt={`Power interruption advisory for ${item.feeder}`}
               className="advisory-poster-image"
               style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }}

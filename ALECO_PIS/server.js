@@ -152,13 +152,7 @@ async function serveAdvisoryBotHtml(req, res, next, advisoryId, canonicalUrl) {
     // Fetch advisory data from database
     // Note: i.* includes poster_image_url, feeder, status, affected_areas, etc.
     const [rows] = await pool.execute(
-      `SELECT i.*, 
-        GROUP_CONCAT(DISTINCT ia.area_name SEPARATOR ', ') as affected_areas_joined
-       FROM aleco_interruptions i
-       LEFT JOIN aleco_interruption_areas ia ON i.id = ia.interruption_id
-       WHERE i.id = ?
-       GROUP BY i.id
-       LIMIT 1`,
+      `SELECT * FROM aleco_interruptions WHERE id = ? LIMIT 1`,
       [advisoryId]
     );
     
@@ -234,8 +228,7 @@ function generateBotHtml(item, advisoryId, req, canonicalUrl) {
   
   if (item) {
     // Database columns are snake_case: affected_areas, date_time_start, poster_image_url
-    // affected_areas_joined comes from the GROUP_CONCAT of aleco_interruption_areas table
-    const areas = item.affected_areas || item.affected_areas_joined || 'Affected areas';
+    const areas = item.affected_areas || 'Affected areas';
     title = `Power Interruption Advisory - ${item.feeder} | ${item.status}`;
     description = `Scheduled power interruption for ${areas}. Status: ${item.status}.`;
     

@@ -280,12 +280,8 @@ function generateBotHtml(item, advisoryId, req, canonicalUrl) {
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image" content="${imageUrl}">
   
-  <!-- Redirect humans to the React app after a delay -->
-  <meta http-equiv="refresh" content="0;url=${advisoryUrl}">
-  <script>
-    // Immediate redirect for any browser that executes JS
-    window.location.replace('${advisoryUrl}');
-  </script>
+  <!-- Link to full page for humans -->
+  <link rel="alternate" href="${advisoryUrl}" />
 </head>
 <body style="margin:0; padding:20px; font-family:system-ui,sans-serif; background:#f5f7fb;">
   <div style="max-width:800px; margin:0 auto; background:white; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.1); overflow:hidden;">

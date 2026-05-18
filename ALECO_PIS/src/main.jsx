@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async';
 import { installFetchSessionHeaders } from './utils/installFetchSessionHeaders.js';
 
 installFetchSessionHeaders();

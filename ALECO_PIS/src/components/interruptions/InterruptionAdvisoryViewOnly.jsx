@@ -137,7 +137,9 @@ export default function InterruptionAdvisoryViewOnly({
                           {Array.isArray(block.items) && block.items.length > 0 ? (
                             <ul>
                               {block.items.map((line, li) => (
-                                <li key={li}>{line}</li>
+                                <li key={li} style={{ whiteSpace: 'pre-wrap', listStyleType: line.trim() === '' ? 'none' : 'inherit' }}>
+                                  {line.trim() === '' ? '\u200B' : line}
+                                </li>
                               ))}
                             </ul>
                           ) : null}

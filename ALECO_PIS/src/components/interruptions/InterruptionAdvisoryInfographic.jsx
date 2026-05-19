@@ -97,7 +97,9 @@ export default function InterruptionAdvisoryInfographic({ item, now = Date.now()
                 ) : null}
                 <ul>
                   {block.items.map((area, i) => (
-                    <li key={`${bi}-${i}`}>{area}</li>
+                    <li key={`${bi}-${i}`} style={{ whiteSpace: 'pre-wrap', listStyleType: area.trim() === '' ? 'none' : 'inherit' }}>
+                      {area.trim() === '' ? '\u200B' : area}
+                    </li>
                   ))}
                 </ul>
               </div>

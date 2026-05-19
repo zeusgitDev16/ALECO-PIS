@@ -91,7 +91,9 @@ export default function InterruptionPosterAlignmentPreview({ dto }) {
                 {block.items.length > 0 ? (
                   <ul>
                     {block.items.map((line, li) => (
-                      <li key={li}>{line}</li>
+                      <li key={li} style={{ whiteSpace: 'pre-wrap', listStyleType: line.trim() === '' ? 'none' : 'disc' }}>
+                        {line.trim() === '' ? '\u200B' : line}
+                      </li>
                     ))}
                   </ul>
                 ) : (

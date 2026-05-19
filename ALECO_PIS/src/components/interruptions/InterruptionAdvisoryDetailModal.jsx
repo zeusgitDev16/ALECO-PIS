@@ -155,7 +155,9 @@ export default function InterruptionAdvisoryDetailModal({
                         {g.heading ? <p className="interruption-detail-dashboard-group-heading">{g.heading}</p> : null}
                         <ul className="interruption-detail-dashboard-area-list">
                           {(g.items || []).map((a, ai) => (
-                            <li key={ai}>{a}</li>
+                            <li key={ai} style={{ whiteSpace: 'pre-wrap', listStyleType: a.trim() === '' ? 'none' : 'inherit' }}>
+                              {a.trim() === '' ? '\u200B' : a}
+                            </li>
                           ))}
                         </ul>
                       </div>

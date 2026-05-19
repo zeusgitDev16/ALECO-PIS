@@ -497,10 +497,12 @@ export default function InterruptionAdvisoryForm({
                       rows={4}
                       value={(block.items || []).join('\n')}
                       onChange={(ev) => {
-                        const lines = ev.target.value.split('\n').map((x) => x.trim()).filter(Boolean);
+                        // Every line becomes a bullet, including empty lines for spacing
+                        // Spaces preserved exactly as typed
+                        const lines = ev.target.value.split('\n');
                         setForm((f) => {
                           const g = [...(f.affectedAreasGrouped || [])];
-                          g[bi] = { ...g[bi], items: lines.length ? lines : [] };
+                          g[bi] = { ...g[bi], items: lines };
                           return { ...f, affectedAreasGrouped: g };
                         });
                       }}

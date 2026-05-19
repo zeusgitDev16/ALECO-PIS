@@ -368,10 +368,30 @@ body.poster-capture-mode {
   line-height: 1.55;
   color: #1e293b;
   font-weight: 500;
+  list-style-type: disc;
 }
 
 .aleco-print-poster-areas-right li {
   margin: 2px 0;
+  white-space: pre-wrap; /* Preserve spaces */
+}
+
+/* Hide empty bullets (for spacing) but keep their height */
+.aleco-print-poster-areas-right li:empty {
+  list-style-type: none;
+  height: 0.8em;
+}
+
+/* Handle bullets with only whitespace */
+.aleco-print-poster-areas-right li:empty::before {
+  content: '\200B'; /* Zero-width space to maintain line height */
+}
+
+/* Empty item class (for programmatic empty lines) */
+.aleco-print-poster-area-item--empty {
+  list-style-type: none !important;
+  height: 0.6em;
+  color: transparent;
 }
 
 /* ================================================================

@@ -104,9 +104,13 @@ export default function InterruptionAlecoPrintPoster({ item }) {
                     <div key={bi} className="aleco-print-poster-area-block">
                       {block.heading && <h3 className="aleco-print-poster-area-heading">{block.heading}</h3>}
                       <ul>
-                        {block.items.map((line, li) => (
-                          <li key={`${bi}-${li}`}>{line}</li>
-                        ))}
+                        {block.items
+                          .map((line, li) => ({ line, li, trimmed: line.trim() }))
+                          .map(({ line, li, trimmed }) => (
+                            <li key={`${bi}-${li}`} className={trimmed === '' ? 'aleco-print-poster-area-item--empty' : ''}>
+                              {trimmed === '' ? '\u200B' : line}
+                            </li>
+                          ))}
                       </ul>
                     </div>
                   ))

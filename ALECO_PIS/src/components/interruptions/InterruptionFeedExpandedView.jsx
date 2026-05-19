@@ -28,6 +28,7 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
 
   const statusClass = interruptionStatusForCssClass(item.status);
   const statusLabel = getStatusDisplayLabel(item.status);
+  const areas = item.affectedAreas || [];
   const grouped =
     Array.isArray(item.affectedAreasGrouped) && item.affectedAreasGrouped.length > 0
       ? item.affectedAreasGrouped
@@ -197,27 +198,44 @@ export default function InterruptionFeedExpandedView({ item, now, onClose }) {
             <p className="feed-expanded-pill">{item.feeder || '—'}</p>
           </div>
 
-          {/* Affected Areas */}
+          {/* Affected Areas — Dual Pane */}
           <div className="feed-expanded-section">
             <h3 className="feed-expanded-section-title">Affected Areas</h3>
-            {grouped ? (
-              grouped.map((g, gi) => (
-                <div key={gi} className="feed-expanded-group">
-                  {g.heading && (
-                    <p className="feed-expanded-group-heading">{g.heading}</p>
-                  )}
+            <div className="feed-expanded-areas-dual-pane">
+              {/* Left: Comma-separated areas */}
+              <div className="feed-expanded-areas-left">
+                <h4 className="feed-expanded-areas-subtitle">Areas</h4>
+                <p className="feed-expanded-areas-comma-list">
+                  {areas.length > 0 ? areas.join(', ') : '—'}
+                </p>
+              </div>
+              {/* Right: Portions of with bullets */}
+              <div className="feed-expanded-areas-right">
+                <h4 className="feed-expanded-areas-subtitle">Portions Of</h4>
+                {grouped ? (
+                  grouped.map((g, gi) => (
+                    <div key={gi} className="feed-expanded-group">
+                      {g.heading && (
+                        <p className="feed-expanded-group-heading">{g.heading}</p>
+                      )}
+                      <ul className="feed-expanded-area-list">
+                        {g.items.map((a, ai) => (
+                          <li key={ai} style={{ whiteSpace: 'pre-wrap', listStyleType: a.trim() === '' ? 'none' : 'inherit' }}>
+                            {a.trim() === '' ? '\u200B' : a}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                ) : (
                   <ul className="feed-expanded-area-list">
-                    {g.items.map((a, ai) => <li key={ai}>{a}</li>)}
+                    {areas.length > 0
+                      ? areas.map((a, i) => <li key={i}>{a}</li>)
+                      : <li>—</li>}
                   </ul>
-                </div>
-              ))
-            ) : (
-              <ul className="feed-expanded-area-list">
-                {(item.affectedAreas || []).length > 0
-                  ? (item.affectedAreas || []).map((a, i) => <li key={i}>{a}</li>)
-                  : <li>—</li>}
-              </ul>
-            )}
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Additional details / body text */}

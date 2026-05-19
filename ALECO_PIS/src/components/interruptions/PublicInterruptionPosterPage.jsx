@@ -214,25 +214,42 @@ export default function PublicInterruptionPosterPage() {
             <p className="pp-pill">{item.feeder || '\u2014'}</p>
           </div>
 
-          {/* Affected Areas */}
+          {/* Affected Areas — Dual Pane */}
           <div className="pp-section">
             <h3 className="pp-section-title">Affected Areas</h3>
-            {grouped ? (
-              grouped.map((g, gi) => (
-                <div key={gi}>
-                  {g.heading && <p className="pp-area-group-heading">{g.heading}</p>}
+            <div className="pp-areas-dual-pane">
+              {/* Left: Comma-separated areas */}
+              <div className="pp-areas-left">
+                <h4 className="pp-areas-subtitle">Areas</h4>
+                <p className="pp-areas-comma-list">
+                  {affectedAreas.length > 0 ? affectedAreas.join(', ') : '\u2014'}
+                </p>
+              </div>
+              {/* Right: Portions of with bullets */}
+              <div className="pp-areas-right">
+                <h4 className="pp-areas-subtitle">Portions Of</h4>
+                {grouped ? (
+                  grouped.map((g, gi) => (
+                    <div key={gi}>
+                      {g.heading && <p className="pp-area-group-heading">{g.heading}</p>}
+                      <ul className="pp-area-list">
+                        {g.items.map((a, ai) => (
+                          <li key={ai} style={{ whiteSpace: 'pre-wrap', listStyleType: a.trim() === '' ? 'none' : 'inherit' }}>
+                            {a.trim() === '' ? '\u200B' : a}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                ) : (
                   <ul className="pp-area-list">
-                    {g.items.map((a, ai) => <li key={ai}>{a}</li>)}
+                    {affectedAreas.length > 0
+                      ? affectedAreas.map((a, i) => <li key={i}>{a}</li>)
+                      : <li>\u2014</li>}
                   </ul>
-                </div>
-              ))
-            ) : (
-              <ul className="pp-area-list">
-                {affectedAreas.length > 0
-                  ? affectedAreas.map((a, i) => <li key={i}>{a}</li>)
-                  : <li>\u2014</li>}
-              </ul>
-            )}
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Additional Details */}

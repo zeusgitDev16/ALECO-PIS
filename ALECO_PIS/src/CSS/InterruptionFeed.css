@@ -1412,6 +1412,54 @@
   white-space: pre-wrap;
 }
 
+/* ── Dual-pane affected areas layout ───────────────────────────────────── */
+.feed-expanded-areas-dual-pane {
+  display: flex;
+  gap: calc(24px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-areas-left,
+.feed-expanded-areas-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.feed-expanded-areas-subtitle {
+  font-size: calc(0.7rem * var(--public-section-scale, 1));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+  margin: 0 0 calc(8px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-areas-comma-list {
+  font-size: calc(0.84rem * var(--public-section-scale, 1));
+  color: var(--text-main);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Right side: Portions Of with bullets */
+.feed-expanded-areas-right .feed-expanded-area-list {
+  display: block;
+  list-style-type: disc;
+  padding-left: calc(18px * var(--public-section-scale, 1));
+}
+
+.feed-expanded-areas-right .feed-expanded-area-list li {
+  white-space: pre-wrap;
+  margin-bottom: calc(2px * var(--public-section-scale, 1));
+}
+
+/* Mobile responsive for dual-pane */
+@media (max-width: 600px) {
+  .feed-expanded-areas-dual-pane {
+    flex-direction: column;
+    gap: calc(16px * var(--public-section-scale, 1));
+  }
+}
+
 .feed-expanded-attached-image-wrap {
   background: var(--bg-body);
   border: 1px solid var(--border-color);

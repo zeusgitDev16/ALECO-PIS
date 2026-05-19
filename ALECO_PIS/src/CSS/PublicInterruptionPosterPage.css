@@ -179,6 +179,53 @@
   margin: 8px 0 4px;
 }
 
+/* ── Dual-pane affected areas layout ────────────────────────────────────── */
+.pp-areas-dual-pane {
+  display: flex;
+  gap: 24px;
+}
+
+.pp-areas-left,
+.pp-areas-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.pp-areas-subtitle {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #666;
+  margin: 0 0 8px;
+}
+
+.pp-areas-comma-list {
+  font-size: 0.88rem;
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Right side: Portions Of with bullets */
+.pp-areas-right .pp-area-list {
+  display: block;
+  list-style-type: disc;
+}
+
+.pp-areas-right .pp-area-list li {
+  white-space: pre-wrap;
+  margin-bottom: 2px;
+}
+
+/* Mobile responsive for dual-pane */
+@media (max-width: 600px) {
+  .pp-areas-dual-pane {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
 /* ── Body text ──────────────────────────────────────────────────────────── */
 .pp-body-text {
   font-size: 0.88rem;

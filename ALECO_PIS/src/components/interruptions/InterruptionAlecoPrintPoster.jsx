@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   getPosterHeadlineText,
-  getPosterReasonTextUpper,
+  getPosterReasonText,
   getPosterAffectedAreasGrouped,
   getPosterReferenceDisplay,
 } from '../../utils/interruptionPosterFields';
@@ -28,7 +28,7 @@ export default function InterruptionAlecoPrintPoster({ item }) {
   const dayNumBadge = formatToPhilippineDayNumberRange(item.dateTimeStart, item.dateTimeEndEstimated);
   const timeBadge = formatToPhilippineTimeRangeShort(item.dateTimeStart, item.dateTimeEndEstimated);
   const dayBadge = formatToPhilippineDayRangeShort(item.dateTimeStart, item.dateTimeEndEstimated);
-  const reasonText = getPosterReasonTextUpper(item);
+  const reasonText = getPosterReasonText(item);
   const feederText = item.feeder || '—';
   const groupedAreas = getPosterAffectedAreasGrouped(item);
   const areas = item.affectedAreas || [];
@@ -85,26 +85,38 @@ export default function InterruptionAlecoPrintPoster({ item }) {
 
         </div>
 
-        {/* ── Affected Areas — full width ── */}
-        {(groupedAreas.length > 0 || areas.length > 0) && (
+        {/* ── Affected Areas — dual pane layout ── */}
+        {(areas.length > 0 || groupedAreas.length > 0) && (
           <section className="aleco-print-poster-areas">
-            <h2 className="aleco-print-poster-areas-title">AFFECTED AREAS</h2>
-            {groupedAreas.length > 0 ? (
-              groupedAreas.map((block, bi) => (
-                <div key={bi} className="aleco-print-poster-area-block">
-                  {block.heading && <h3 className="aleco-print-poster-area-heading">{block.heading}</h3>}
+            <div className="aleco-print-poster-areas-dual-pane">
+              {/* Left pane: Affected Areas (comma separated) */}
+              <div className="aleco-print-poster-areas-left">
+                <h2 className="aleco-print-poster-areas-title">AFFECTED AREAS</h2>
+                <p className="aleco-print-poster-areas-list">
+                  {areas.join(', ')}
+                </p>
+              </div>
+              {/* Right pane: Portions of (bullets) */}
+              <div className="aleco-print-poster-areas-right">
+                <h2 className="aleco-print-poster-areas-title">PORTIONS OF</h2>
+                {groupedAreas.length > 0 ? (
+                  groupedAreas.map((block, bi) => (
+                    <div key={bi} className="aleco-print-poster-area-block">
+                      {block.heading && <h3 className="aleco-print-poster-area-heading">{block.heading}</h3>}
+                      <ul>
+                        {block.items.map((line, li) => (
+                          <li key={`${bi}-${li}`}>{line}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                ) : (
                   <ul>
-                    {block.items.map((line, li) => (
-                      <li key={`${bi}-${li}`}>{line}</li>
-                    ))}
+                    {areas.map((a, i) => <li key={i}>{a}</li>)}
                   </ul>
-                </div>
-              ))
-            ) : (
-              <ul>
-                {areas.map((a, i) => <li key={i}>{a}</li>)}
-              </ul>
-            )}
+                )}
+              </div>
+            </div>
           </section>
         )}
 

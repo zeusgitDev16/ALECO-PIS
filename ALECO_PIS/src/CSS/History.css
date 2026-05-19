@@ -223,6 +223,47 @@
   color: var(--text-secondary);
 }
 
+/* Severity tag styling for audit logs */
+.history-severity-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: clamp(0.5rem, calc(0.75rem * var(--history-ui-scale)), 0.8rem);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.history-severity-tag.danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.history-severity-tag.success {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.history-severity-tag.warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.history-severity-tag.info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.history-severity-tag.neutral {
+  background: rgba(100, 116, 139, 0.12);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
 .history-event-meta {
   display: flex;
   gap: 14px;

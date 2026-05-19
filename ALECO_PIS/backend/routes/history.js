@@ -149,6 +149,23 @@ function buildHistoryUnionSql() {
       UNION ALL
 
       SELECT
+        ${C("CONCAT('interruption-logs-', l.id)")} AS id,
+        ${C("'interruptions'")} AS module,
+        ${C("CASE WHEN l.actor_type = 'system' THEN 'system' ELSE 'user' END")} AS action,
+        ${C("CONCAT('Interruption audit: ', l.action)")} AS title,
+        ${C("COALESCE(l.field_changed, l.action)")} AS detail,
+        ${C('l.actor_email')} AS actorEmail,
+        ${C('l.actor_name')} AS actorName,
+        ${C("CAST(l.interruption_id AS CHAR)")} AS entityId,
+        ${C("COALESCE(i.control_no, CONCAT('Interruption #', l.interruption_id))")} AS entityLabel,
+        l.created_at AS createdAt,
+        ${C("CASE WHEN l.action IN ('delete', 'status_change') THEN 'danger' WHEN l.action = 'create' THEN 'success' WHEN l.action = 'restore' THEN 'warning' ELSE 'info' END")} AS severityTag
+      FROM aleco_interruption_logs l
+      LEFT JOIN aleco_interruptions i ON i.id = l.interruption_id
+
+      UNION ALL
+
+      SELECT
         ${C("CONCAT('personnel-', p.id)")} AS id,
         ${C("'personnel'")} AS module,
         ${C('p.action')} AS action,

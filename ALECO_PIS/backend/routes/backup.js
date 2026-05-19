@@ -774,6 +774,7 @@ router.get('/interruptions/export/preview', requireStaff, async (req, res) => {
         const [interruptionRows] = await pool.execute(query, params);
         const interruptionIds = interruptionRows.map((r) => r.id);
         let updateRows = [];
+        let logRows = [];
         if (interruptionIds.length > 0) {
             const placeholders = interruptionIds.map(() => '?').join(', ');
             const [updResult] = await pool.execute(
@@ -784,6 +785,14 @@ router.get('/interruptions/export/preview', requireStaff, async (req, res) => {
                 interruptionIds
             );
             updateRows = updResult;
+            const [logResult] = await pool.execute(
+                `SELECT id, interruption_id, action, field_changed, old_value, new_value, from_status, to_status, actor_type, actor_email, actor_name, metadata, created_at
+                 FROM aleco_interruption_logs
+                 WHERE interruption_id IN (${placeholders})
+                 ORDER BY interruption_id, created_at ASC`,
+                interruptionIds
+            );
+            logRows = logResult;
         }
         const latestUpdateByInterruptionId = new Map();
         updateRows.forEach((u) => {
@@ -800,8 +809,9 @@ router.get('/interruptions/export/preview', requireStaff, async (req, res) => {
             dateEnd: de,
             interruptionCount: interruptionRows.length,
             updateCount: updateRows.length,
+            logCount: logRows.length,
         };
-        res.json({ success: true, metadata, interruptions: interruptionRows, alecoInterruptions, updates: updateRows });
+        res.json({ success: true, metadata, interruptions: interruptionRows, alecoInterruptions, updates: updateRows, logs: logRows });
     } catch (error) {
         console.error('❌ Interruptions export preview error:', error);
         res.status(500).json({ success: false, message: error.message || 'Preview failed' });
@@ -826,6 +836,7 @@ router.get('/interruptions/export', requireStaff, async (req, res) => {
         const [interruptionRows] = await pool.execute(query, params);
         const interruptionIds = interruptionRows.map((r) => r.id);
         let updateRows = [];
+        let logRows = [];
         if (interruptionIds.length > 0) {
             const placeholders = interruptionIds.map(() => '?').join(', ');
             const [updResult] = await pool.execute(
@@ -836,6 +847,14 @@ router.get('/interruptions/export', requireStaff, async (req, res) => {
                 interruptionIds
             );
             updateRows = updResult;
+            const [logResult] = await pool.execute(
+                `SELECT id, interruption_id, action, field_changed, old_value, new_value, from_status, to_status, actor_type, actor_email, actor_name, metadata, created_at
+                 FROM aleco_interruption_logs
+                 WHERE interruption_id IN (${placeholders})
+                 ORDER BY interruption_id, created_at ASC`,
+                interruptionIds
+            );
+            logRows = logResult;
         }
         const latestUpdateByInterruptionId = new Map();
         updateRows.forEach((u) => {
@@ -855,7 +874,7 @@ router.get('/interruptions/export', requireStaff, async (req, res) => {
         await pool.execute(
             `INSERT INTO aleco_export_log (export_date, date_start, date_end, ticket_count, log_count, format, exported_by)
              VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
-            [ds, de, interruptionRows.length, updateRows.length, fmt, exportedBy]
+            [ds, de, interruptionRows.length, updateRows.length + logRows.length, fmt, exportedBy]
         );
 
         if (fmt === 'excel') {
@@ -869,6 +888,7 @@ router.get('/interruptions/export', requireStaff, async (req, res) => {
             metaSheet.addRow(['Date Range', `${ds} to ${de}`]);
             metaSheet.addRow(['Interruption Count', interruptionRows.length]);
             metaSheet.addRow(['Update Count', updateRows.length]);
+            metaSheet.addRow(['Log Count', logRows.length]);
             metaSheet.addRow(['Format', 'excel']);
             metaSheet.addRow(['Exported By', exportedBy || '']);
 
@@ -912,6 +932,28 @@ router.get('/interruptions/export', requireStaff, async (req, res) => {
             updCols.forEach((col, i) => {
                 const vals = [col, ...updateRows.map((r) => String(r[col] ?? ''))];
                 updSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
+            });
+
+            const logCols = logRows.length > 0 ? Object.keys(logRows[0]) : [];
+            const logSheet = workbook.addWorksheet('InterruptionLogs', {
+                properties: { tabColor: { argb: 'FF8B1A1A' } },
+            });
+            const logHeaderRow = logSheet.addRow(logCols);
+            logHeaderRow.font = { bold: true };
+            logRows.forEach((row) => {
+                logSheet.addRow(
+                    logCols.map((c) => {
+                        const v = row[c];
+                        if (v instanceof Date) return v;
+                        if (Buffer.isBuffer(v)) return v.toString();
+                        if (c === 'metadata' && v) return JSON.stringify(v);
+                        return v;
+                    })
+                );
+            });
+            logCols.forEach((col, i) => {
+                const vals = [col, ...logRows.map((r) => String(r[col] ?? ''))];
+                logSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
             });
 
             const alecoSheet = workbook.addWorksheet('ALECO_Interruptions', {

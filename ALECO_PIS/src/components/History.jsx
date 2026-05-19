@@ -176,7 +176,16 @@ const AdminHistory = () => {
                             </td>
                             <td className="history-col-action">
                                 <button type="button" className="history-cell-popup-trigger" onClick={(e) => openCellPopup(e, row.title || row.action || '—')}>
-                                    {loading ? <Skeleton width={90} height={14} /> : row.title || row.action || '—'}
+                                    {loading ? <Skeleton width={90} height={14} /> : (
+                                        <>
+                                            {row.title || row.action || '—'}
+                                            {row.severityTag && (
+                                                <span className={`history-severity-tag ${row.severityTag}`} style={{ marginLeft: '8px' }}>
+                                                    {row.severityTag}
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
                                 </button>
                             </td>
                             <td className="history-col-details">
@@ -207,7 +216,14 @@ const AdminHistory = () => {
                 <article key={row.id} className="history-event-card">
                     <div className="history-event-header">
                         <span className={`history-module-badge module-${row.module}`}>{loading ? <Skeleton width={55} height={14} /> : MODULE_META[row.module]?.label || row.module}</span>
-                        <time>{loading ? <Skeleton width={95} height={11} /> : formatDate(row.createdAt)}</time>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {row.severityTag && (
+                                <span className={`history-severity-tag ${row.severityTag}`}>
+                                    {row.severityTag}
+                                </span>
+                            )}
+                            <time>{loading ? <Skeleton width={95} height={11} /> : formatDate(row.createdAt)}</time>
+                        </div>
                     </div>
                     <h4>{loading ? <Skeleton width="50%" height={15} /> : row.title || row.action || 'Activity'}</h4>
                     <p>{loading ? <Skeleton width="85%" height={12} count={2} /> : row.detail || 'No extra details.'}</p>

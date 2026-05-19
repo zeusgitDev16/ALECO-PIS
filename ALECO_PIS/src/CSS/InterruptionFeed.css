@@ -1425,10 +1425,10 @@
 }
 
 .feed-expanded-areas-subtitle {
-  font-size: calc(0.7rem * var(--public-section-scale, 1));
-  font-weight: 700;
+  font-size: max(0.62rem, calc(0.72rem * var(--public-section-scale, 1)));
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.06em;
   color: var(--text-secondary);
   margin: 0 0 calc(8px * var(--public-section-scale, 1));
 }

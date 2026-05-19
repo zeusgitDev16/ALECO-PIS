@@ -6,6 +6,7 @@ import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconRefreshCw } fr
 import { getSafeResourceUrl } from '../../utils/safeUrl';
 import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
 import InterruptionNgcpPrintPoster from './InterruptionNgcpPrintPoster';
+import InterruptionHistoryLogs from './InterruptionHistoryLogs';
 
 /**
  * InterruptionAdvisoryDetailModal - Full advisory view in a modal (read-only).
@@ -25,6 +26,7 @@ export default function InterruptionAdvisoryDetailModal({
 }) {
   if (!item) return null;
   const [showPosterFullImage, setShowPosterFullImage] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   const archived = Boolean(item.deletedAt);
   const statusLabel = getStatusDisplayLabel(item.status);
@@ -38,6 +40,12 @@ export default function InterruptionAdvisoryDetailModal({
   const hasBody = item.body && String(item.body).trim();
   const bodyDisplay = hasBody ? String(item.body).trim() : '';
   const safeAdvisoryImageUrl = item.imageUrl ? getSafeResourceUrl(item.imageUrl) : null;
+  // Outage metadata (optional legacy fields)
+  const hasOutageMetadata = item.substationRecloser || item.indicationMagnitude || item.possibleFaultLocation || item.linemenOnDuty;
+  const substationDisplay = item.substationRecloser ? String(item.substationRecloser).trim() : '';
+  const indicationDisplay = item.indicationMagnitude ? String(item.indicationMagnitude).trim() : '';
+  const faultLocationDisplay = item.possibleFaultLocation ? String(item.possibleFaultLocation).trim() : '';
+  const linemenDisplay = item.linemenOnDuty ? String(item.linemenOnDuty).trim() : '';
   const isBlankStub =
     typeof item.posterImageUrl === 'string' && item.posterImageUrl.includes('_stub');
   const safePosterUrl =
@@ -61,8 +69,10 @@ export default function InterruptionAdvisoryDetailModal({
           ×
         </button>
 
-        <div className="interruption-detail-modal-inner interruption-detail-modal-inner--dashboard">
-          <article className={`interruptions-admin-card interruptions-admin-card--detail-modal interruption-detail-dashboard${archived ? ' interruptions-admin-card--archived' : ''}`}>
+        <div className="interruption-detail-modal-inner interruption-detail-modal-inner--dashboard interruption-detail-flip-container">
+          <div className={`interruption-detail-flip-inner${isFlipped ? ' flipped' : ''}`}>
+            <div className="interruption-detail-front">
+              <article className={`interruptions-admin-card interruptions-admin-card--detail-modal interruption-detail-dashboard${archived ? ' interruptions-admin-card--archived' : ''}`}>
             <div className="interruption-detail-dashboard-head">
               <div className="interruption-detail-dashboard-head-left">
                 <span className={`interruptions-admin-status-chip status-${statusClass}`}>{statusLabel}</span>
@@ -146,26 +156,75 @@ export default function InterruptionAdvisoryDetailModal({
                 </p>
               </section>
 
+              {hasOutageMetadata && (
+                <section className="interruption-detail-dashboard-section">
+                  <h4 className="interruptions-admin-card-section-label">Outage metadata</h4>
+                  <dl className="interruptions-admin-card-dates interruptions-admin-card-dates--metadata">
+                    {substationDisplay && (
+                      <div>
+                        <dt>Substation / recloser</dt>
+                        <dd>{substationDisplay}</dd>
+                      </div>
+                    )}
+                    {indicationDisplay && (
+                      <div>
+                        <dt>Indication & magnitude</dt>
+                        <dd>{indicationDisplay}</dd>
+                      </div>
+                    )}
+                    {faultLocationDisplay && (
+                      <div>
+                        <dt>Possible fault location</dt>
+                        <dd>{faultLocationDisplay}</dd>
+                      </div>
+                    )}
+                    {linemenDisplay && (
+                      <div>
+                        <dt>Linemen on duty</dt>
+                        <dd>{linemenDisplay}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </section>
+              )}
+
               <section className="interruption-detail-dashboard-section">
                 <h4 className="interruptions-admin-card-section-label">Affected areas</h4>
-                {groupedAreas ? (
-                  <div className="interruption-detail-dashboard-grouped-areas">
-                    {groupedAreas.map((g, i) => (
-                      <div key={i} className="interruption-detail-dashboard-group">
-                        {g.heading ? <p className="interruption-detail-dashboard-group-heading">{g.heading}</p> : null}
-                        <ul className="interruption-detail-dashboard-area-list">
-                          {(g.items || []).map((a, ai) => (
-                            <li key={ai} style={{ whiteSpace: 'pre-wrap', listStyleType: a.trim() === '' ? 'none' : 'inherit' }}>
-                              {a.trim() === '' ? '\u200B' : a}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
+                <div className="interruption-detail-dashboard-areas-dual-pane">
+                  {/* Left: Comma-separated areas */}
+                  <div className="interruption-detail-dashboard-areas-left">
+                    <h5 className="interruption-detail-dashboard-areas-subtitle">Areas</h5>
+                    <p className="interruption-detail-dashboard-areas-comma-list">
+                      {areasFull}
+                    </p>
                   </div>
-                ) : (
-                  <p className="interruptions-admin-card-areas-value">{areasFull}</p>
-                )}
+                  {/* Right: Portions of with bullets */}
+                  <div className="interruption-detail-dashboard-areas-right">
+                    <h5 className="interruption-detail-dashboard-areas-subtitle">Portions Of</h5>
+                    {groupedAreas ? (
+                      <div className="interruption-detail-dashboard-grouped-areas">
+                        {groupedAreas.map((g, i) => (
+                          <div key={i} className="interruption-detail-dashboard-group">
+                            {g.heading ? <p className="interruption-detail-dashboard-group-heading">{g.heading}</p> : null}
+                            <ul className="interruption-detail-dashboard-area-list">
+                              {(g.items || []).map((a, ai) => (
+                                <li key={ai} style={{ whiteSpace: 'pre-wrap', listStyleType: a.trim() === '' ? 'none' : 'inherit' }}>
+                                  {a.trim() === '' ? '\u200B' : a}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <ul className="interruption-detail-dashboard-area-list">
+                        {(item.affectedAreas || []).length > 0
+                          ? (item.affectedAreas || []).map((a, i) => <li key={i}>{a}</li>)
+                          : <li>—</li>}
+                      </ul>
+                    )}
+                  </div>
+                </div>
               </section>
 
               {hasBody && (
@@ -227,6 +286,15 @@ export default function InterruptionAdvisoryDetailModal({
             </div>
 
             <div className="interruptions-admin-card-actions interruption-detail-dashboard-actions">
+              <button
+                type="button"
+                className="interruptions-admin-btn interruptions-admin-btn--icon"
+                onClick={() => setIsFlipped((f) => !f)}
+                title={isFlipped ? 'View advisory details' : 'View history'}
+                aria-label={isFlipped ? 'View advisory details' : 'View history'}
+              >
+                <span style={{ fontSize: '16px' }}>{isFlipped ? '📄' : '📋'}</span>
+              </button>
               {!archived && isCurrentlyOnPublicFeed(item) && onPullFromFeed && (
                 <button
                   type="button"
@@ -285,16 +353,33 @@ export default function InterruptionAdvisoryDetailModal({
             </div>
           </article>
         </div>
+
+        {/* Back side - History */}
+        <div className="interruption-detail-back">
+          <div className="interruption-history-header">
+            <h3 className="interruption-history-title">Advisory History</h3>
+            <p className="interruption-history-subtitle">#{item.id} — All actions and changes</p>
+          </div>
+          <div className="interruption-detail-back-scroll">
+            <InterruptionHistoryLogs interruptionId={item.id} isVisible={isFlipped} />
+          </div>
+        </div>
       </div>
-      {safePosterUrl && showPosterFullImage && createPortal(
-        <div
-          className="full-screen-image-overlay"
-          onClick={() => setShowPosterFullImage(false)}
-        >
-          <img src={safePosterUrl} alt="Poster full view" />
-        </div>,
-        document.body
-      )}
+
+      <button type="button" className="flip-toggle-btn" onClick={() => setIsFlipped((v) => !v)} title={isFlipped ? 'View Details' : 'View History'}>
+        {isFlipped ? 'View Details' : 'View History'}
+      </button>
     </div>
+  </div>
+  {safePosterUrl && showPosterFullImage && createPortal(
+    <div
+      className="full-screen-image-overlay"
+      onClick={() => setShowPosterFullImage(false)}
+    >
+      <img src={safePosterUrl} alt="Poster full view" />
+    </div>,
+    document.body
+  )}
+</div>
   );
 }

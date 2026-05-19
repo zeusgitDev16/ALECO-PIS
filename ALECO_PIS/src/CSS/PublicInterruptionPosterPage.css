@@ -192,10 +192,10 @@
 }
 
 .pp-areas-subtitle {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: max(0.62rem, calc(0.72rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.06em;
   color: #666;
   margin: 0 0 8px;
 }

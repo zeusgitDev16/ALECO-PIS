@@ -145,6 +145,10 @@ export const INTERRUPTIONS_EVENT = {
   TYPE_CHANGED: 'interruption_type_changed',
   /** Pending / Ongoing / Energized transition */
   STATUS_CHANGED: 'interruption_status_changed',
+  /** Advisory fields updated */
+  UPDATED: 'interruption_updated',
+  /** Restored from archive */
+  RESTORED: 'interruption_restored',
 };
 
 /**

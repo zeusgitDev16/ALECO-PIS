@@ -60,6 +60,8 @@ const INTERRUPTIONS_EVENT_LABELS = {
   interruption_archived: 'Archived',
   interruption_type_changed: 'Type changed',
   interruption_status_changed: 'Status changed',
+  interruption_updated: 'Advisory updated',
+  interruption_restored: 'Restored from archive',
 };
 
 const MEMO_EVENT_LABELS = {

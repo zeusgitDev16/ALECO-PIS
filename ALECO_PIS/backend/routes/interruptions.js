@@ -36,6 +36,11 @@ import {
   deleteCloudinaryAssetsForAdvisory,
 } from '../services/interruptionPosterCapture.js';
 import { escapeHtmlAttr, shareHeadlineFromType, shareDescriptionFromDto } from '../utils/interruptionShareHtml.js';
+import {
+  insertInterruptionLog,
+  logFieldChanges,
+  listInterruptionLogs,
+} from '../utils/interruptionLogHelper.js';
 
 const router = express.Router();
 
@@ -423,6 +428,21 @@ function requireStaffIfListQueryFlags(req, res, next) {
   if (adminList) return requireStaff(req, res, next);
   return next();
 }
+
+/** Get audit logs for an interruption (admin) - MUST be before /interruptions/:id */
+router.get('/interruptions/:id/logs', requireStaff, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  try {
+    const logs = await listInterruptionLogs(pool, id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: logs });
+  } catch (error) {
+    console.error('Interruptions logs error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch interruption logs.' });
+  }
+});
 
 /** Public + admin list (default: non-deleted only; admin archive via query flags). */
 router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
@@ -919,6 +939,16 @@ router.post('/interruptions', requireStaff, async (req, res) => {
       actorEmail: actorEmail != null && String(actorEmail).trim() ? String(actorEmail).trim() : null,
     });
 
+    // Log create action
+    await insertInterruptionLog(pool, {
+      interruption_id: insertHeader.insertId,
+      action: 'create',
+      actor_type: 'user',
+      actor_email: actorEmail,
+      actor_name: actorName,
+      metadata: { type: req.body.type, feeder: feederLabelVal },
+    });
+
     const newId = insertHeader.insertId;
     setImmediate(() => {
       maybeRegeneratePosterAfterMutation(pool, newId, null, row).catch((e) =>
@@ -1256,6 +1286,25 @@ router.put('/interruptions/:id', requireStaff, async (req, res) => {
       }
     }
 
+    // Log status change
+    if (statusIsChanging) {
+      await insertInterruptionLog(pool, {
+        interruption_id: id,
+        action: 'status_change',
+        from_status: ex.status,
+        to_status: nextStatus,
+        actor_type: 'user',
+        actor_email: actorEmail,
+        actor_name: actorName,
+        metadata: { remark: statusChangeRemark },
+      });
+    }
+
+    // Log field changes
+    const actorForLogging = { actor_email: actorEmail, actor_name: actorName };
+    const oldItem = mapRowToDto(ex);
+    await logFieldChanges(pool, id, oldItem, req.body, actorForLogging);
+
     const actorForNotif =
       actorEmail != null && String(actorEmail).trim() ? String(actorEmail).trim() : null;
     if (type !== undefined && type !== ex.type) {
@@ -1271,6 +1320,15 @@ router.put('/interruptions/:id', requireStaff, async (req, res) => {
         eventType: INTERRUPTIONS_EVENT.STATUS_CHANGED,
         subjectName: String(id),
         detail: `${ex.status} → ${nextStatus}`,
+        actorEmail: actorForNotif,
+      });
+    }
+    // General update notification for other field changes
+    if (fields.length > 1 && (type === undefined || type === ex.type) && (status === undefined || status === ex.status)) {
+      await recordInterruptionNotification(pool, {
+        eventType: INTERRUPTIONS_EVENT.UPDATED,
+        subjectName: String(id),
+        detail: `Advisory #${id} updated`,
         actorEmail: actorForNotif,
       });
     }
@@ -1343,6 +1401,15 @@ router.delete('/interruptions/:id', requireStaff, async (req, res) => {
         subjectName: String(id),
         detail: 'Advisory archived',
         actorEmail: archiver,
+      });
+      // Log archive action
+      await insertInterruptionLog(pool, {
+        interruption_id: id,
+        action: 'delete',
+        actor_type: 'user',
+        actor_email: archiver,
+        actor_name: req.body?.actorName || null,
+        metadata: { operation: 'soft_delete' },
       });
       res.json({ success: true, message: 'Archived.' });
       return;
@@ -1448,6 +1515,22 @@ router.patch('/interruptions/:id/restore', requireStaff, async (req, res) => {
     if (!dto) {
       return res.status(500).json({ success: false, message: 'Failed to load restored interruption.' });
     }
+    // Log restore action
+    const restorerEmail = req.body?.actorEmail || req.authUser?.email || null;
+    const restorerName = req.body?.actorName || null;
+    await insertInterruptionLog(pool, {
+      interruption_id: id,
+      action: 'restore',
+      actor_type: 'user',
+      actor_email: restorerEmail,
+      actor_name: restorerName,
+    });
+    await recordInterruptionNotification(pool, {
+      eventType: INTERRUPTIONS_EVENT.RESTORED,
+      subjectName: String(id),
+      detail: `Advisory #${id} restored from archive`,
+      actorEmail: restorerEmail,
+    });
     res.json({ success: true, data: dto });
   } catch (error) {
     console.error('Interruptions restore error:', error);
@@ -1516,6 +1599,16 @@ router.patch('/interruptions/:id/pull-from-feed', requireStaff, async (req, res)
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+    // Log pull from feed action
+    const pullActorEmail = req.body?.actorEmail || req.authUser?.email || null;
+    const pullActorName = req.body?.actorName || null;
+    await insertInterruptionLog(pool, {
+      interruption_id: id,
+      action: 'pull_feed',
+      actor_type: 'user',
+      actor_email: pullActorEmail,
+      actor_name: pullActorName,
+    });
     res.json({ success: true, data: dto, message: 'Advisory pulled from public feed.' });
   } catch (error) {
     console.error('Pull from feed error:', error);
@@ -1583,6 +1676,16 @@ router.patch('/interruptions/:id/push-to-feed', requireStaff, async (req, res) =
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, true, hasPoster)} WHERE id = ?`, [id]);
     const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+    // Log push to feed action
+    const pushActorEmail = req.body?.actorEmail || req.authUser?.email || null;
+    const pushActorName = req.body?.actorName || null;
+    await insertInterruptionLog(pool, {
+      interruption_id: id,
+      action: 'push_feed',
+      actor_type: 'user',
+      actor_email: pushActorEmail,
+      actor_name: pushActorName,
+    });
     res.json({ success: true, data: dto, message: 'Advisory pushed back to public feed.' });
   } catch (error) {
     console.error('Push to feed error:', error);

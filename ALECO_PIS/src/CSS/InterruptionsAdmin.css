@@ -2811,6 +2811,18 @@
   overflow: hidden;
   background: var(--bg-card);
   border-radius: calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  padding: calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruption-detail-back .interruption-history-header {
+  flex-shrink: 0;
+}
+
+.interruption-detail-back-scroll {
+  flex: 1 1 0;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: calc(4px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
 .interruption-detail-modal-back-scroll {

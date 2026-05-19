@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { formatToPhilippineTime } from '../../utils/dateUtils';
+import { formatToPhilippineTime, formatPhilippineWallClock } from '../../utils/dateUtils';
 import { authFetch } from '../../utils/authFetch';
 import { apiUrl } from '../../utils/api';
 
@@ -44,6 +44,10 @@ const InterruptionHistoryLogs = ({ interruptionId, isVisible }) => {
   }
 
   function getActionLabel(log) {
+    if (log.action === 'update' && log.field_changed) {
+      const label = FIELD_LABELS[log.field_changed] || log.field_changed;
+      return `Updated: ${label}`;
+    }
     const labels = {
       create: 'Created advisory',
       update: 'Updated field',
@@ -61,10 +65,47 @@ const InterruptionHistoryLogs = ({ interruptionId, isVisible }) => {
     return log.actor_name || log.actor_email || 'System';
   }
 
+  const DATETIME_FIELDS = new Set([
+    'dateTimeStart', 'dateTimeEndEstimated', 'dateTimeRestored',
+    'scheduledRestoreAt', 'publicVisibleAt',
+  ]);
+
+  function formatFieldValue(field, val) {
+    if (val == null || String(val).trim() === '') return '—';
+    if (DATETIME_FIELDS.has(field)) {
+      try {
+        return formatPhilippineWallClock(val);
+      } catch {
+        return String(val);
+      }
+    }
+    return String(val);
+  }
+
+  const FIELD_LABELS = {
+    type: 'Type',
+    status: 'Status',
+    feeder: 'Feeder',
+    controlNo: 'Control No.',
+    cause: 'Cause',
+    causeCategory: 'Cause Category',
+    dateTimeStart: 'Date/Time Start',
+    dateTimeEndEstimated: 'ERT',
+    dateTimeRestored: 'Date/Time Restored',
+    substationRecloser: 'Substation/Recloser',
+    indicationMagnitude: 'Indication/Magnitude',
+    possibleFaultLocation: 'Possible Fault Location',
+    linemenOnDuty: 'Linemen on Duty',
+    scheduledRestoreAt: 'Scheduled Restore',
+    scheduledRestoreRemark: 'Scheduled Remark',
+    publicVisibleAt: 'Public Visible At',
+  };
+
   function getMetadataSummary(log) {
-    if (!log.metadata) return null;
     if (log.action === 'update' && log.field_changed) {
-      return `${log.field_changed}: ${log.old_value || '—'} → ${log.new_value || '—'}`;
+      const oldDisplay = formatFieldValue(log.field_changed, log.old_value);
+      const newDisplay = formatFieldValue(log.field_changed, log.new_value);
+      return `${oldDisplay} → ${newDisplay}`;
     }
     if (log.metadata?.remark) {
       return `Remark: ${log.metadata.remark}`;

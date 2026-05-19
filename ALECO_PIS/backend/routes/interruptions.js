@@ -1288,11 +1288,17 @@ router.put('/interruptions/:id', requireStaff, async (req, res) => {
 
     // Log status change
     if (statusIsChanging) {
+      const normalizeStatus = (s) => {
+        if (!s) return s;
+        if (s === 'Restored') return 'Energized';
+        if (s === 'Unscheduled') return 'Emergency';
+        return s;
+      };
       await insertInterruptionLog(pool, {
         interruption_id: id,
         action: 'status_change',
-        from_status: ex.status,
-        to_status: nextStatus,
+        from_status: normalizeStatus(ex.status),
+        to_status: normalizeStatus(nextStatus),
         actor_type: 'user',
         actor_email: actorEmail,
         actor_name: actorName,

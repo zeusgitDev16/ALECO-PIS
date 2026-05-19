@@ -2,8 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNow } from '../../hooks/useNow';
 import { getStatusDisplayLabel, getTypeDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
+import { shareToFacebook, shareNative } from '../../utils/advisoryShare';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw, IconShare } from './AdvisoryActionIcons';
 import InterruptionAdvisoryDetailModal from './InterruptionAdvisoryDetailModal';
+import InterruptionCardActionModal from './InterruptionCardActionModal';
 import '../../CSS/InterruptionCompactView.css';
 
 function useMatchMedia(query) {
@@ -67,9 +69,12 @@ export default function InterruptionCompactView({
     setDetailItemFallback(item || null);
   };
   const detailItem = (items || []).find((it) => it.id === detailItemId) || detailItemFallback;
+  const [actionModalItemId, setActionModalItemId] = useState(null);
+  const [actionModalItemFallback, setActionModalItemFallback] = useState(null);
+  const actionModalItem = (items || []).find((it) => it.id === actionModalItemId) || actionModalItemFallback;
+  const isClickableLayout = useMatchMedia('(max-width: 767px)');
   const [sortConfig, setSortConfig] = useState({ key: 'dateTimeStart', direction: 'desc' });
   const now = useNow([]);
-  const isClickableLayout = useMatchMedia('(max-width: 767px)');
 
   const sortedItems = useMemo(() => {
     const sorted = [...(items || [])];
@@ -165,7 +170,7 @@ export default function InterruptionCompactView({
                 ERT{getSortIndicator('dateTimeEndEstimated')}
               </th>
               <th className="col-affected">Affected</th>
-              <th className="col-actions">Actions</th>
+              <th className={`col-actions${isClickableLayout ? ' col-actions--mobile-hidden' : ''}`}>Actions</th>
             </tr>
           </thead>
           <tbody className="interruptions-compact-table-body">
@@ -179,10 +184,14 @@ export default function InterruptionCompactView({
                 <tr
                   key={item.id}
                   className={`interruptions-compact-row ${archived ? 'interruptions-compact-row--archived' : ''} interruptions-compact-row--feed-${feedIndicator} ${index % 2 === 0 ? 'even' : 'odd'}${isClickableLayout ? ' interruptions-compact-row--clickable' : ''}`}
-                  onClick={isClickableLayout ? () => openDetail(item) : undefined}
+                  onClick={isClickableLayout ? () => {
+                    // On mobile, open sliding action menu
+                    setActionModalItemId(item?.id ?? null);
+                    setActionModalItemFallback(item || null);
+                  } : undefined}
                   role={isClickableLayout ? 'button' : undefined}
                   tabIndex={isClickableLayout ? 0 : undefined}
-                  onKeyDown={isClickableLayout ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } } : undefined}
+                  onKeyDown={isClickableLayout ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActionModalItemId(item?.id ?? null); setActionModalItemFallback(item || null); } } : undefined}
                 >
                   <td className="col-feeder">{String(item.feeder || '').trim() || '—'}</td>
                   <td className="col-type">{getTypeDisplayLabel(item.type)}</td>
@@ -196,7 +205,22 @@ export default function InterruptionCompactView({
                   <td className="col-affected" title={areasFull !== areasShort ? areasFull : undefined}>
                     {areasShort}
                   </td>
-                  <td className="col-actions" onClick={(e) => e.stopPropagation()}>
+                  <td className={`col-actions${isClickableLayout ? ' col-actions--mobile-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
+                    {/* Share button - same behavior as public feed */}
+                    <button
+                      type="button"
+                      className="interruptions-compact-btn interruptions-compact-btn--icon interruptions-compact-btn--share"
+                      onClick={() => {
+                        shareNative(item).then((usedNative) => {
+                          if (!usedNative) shareToFacebook(item.id);
+                        });
+                      }}
+                      disabled={saving}
+                      title="Share this advisory"
+                      aria-label="Share this advisory"
+                    >
+                      <IconShare />
+                    </button>
                     {!archived && feedIndicator === 'on-feed' && onPullFromFeed && (
                       <button
                         type="button"
@@ -316,6 +340,41 @@ export default function InterruptionCompactView({
               : undefined
           }
           listArchiveFilter={listArchiveFilter}
+          saving={saving}
+        />
+      )}
+
+      {actionModalItem && (
+        <InterruptionCardActionModal
+          item={actionModalItem}
+          onClose={() => {
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
+          }}
+          onViewFull={() => {
+            const it = actionModalItem;
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
+            openDetail(it);
+          }}
+          onEdit={(it) => {
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
+            onEdit(it);
+          }}
+          onUpdate={onUpdate ? (it) => {
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
+            onUpdate(it);
+          } : undefined}
+          onArchive={(id) => {
+            setActionModalItemId(null);
+            setActionModalItemFallback(null);
+            onDelete(id);
+          }}
+          onPermanentDelete={onPermanentDelete || undefined}
+          onPullFromFeed={onPullFromFeed}
+          onPushToFeed={onPushToFeed}
           saving={saving}
         />
       )}

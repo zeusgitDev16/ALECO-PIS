@@ -2,7 +2,7 @@ import React from 'react';
 import { getStatusDisplayLabel, interruptionStatusForCssClass } from '../../utils/interruptionLabels';
 import { formatToPhilippineTime, isPublicVisibilityPending } from '../../utils/dateUtils';
 import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw, IconShare } from './AdvisoryActionIcons';
-import { shareToFacebook, shareToMessenger, copyAdvisoryLink } from '../../utils/advisoryShare';
+import { shareToFacebook, shareNative } from '../../utils/advisoryShare';
 
 const CARD_PREVIEW_LEN = 80;
 
@@ -42,6 +42,14 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onUpdate, onDel
 
   const handleCardClick = () => {
     if (onCardClick) onCardClick(item);
+  };
+
+  const handleShare = (e) => {
+    e.stopPropagation();
+    // Same behavior as public feed: try native share, fallback to Facebook
+    shareNative(item).then((usedNative) => {
+      if (!usedNative) shareToFacebook(item.id);
+    });
   };
 
   return (
@@ -103,14 +111,14 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onUpdate, onDel
             <IconExpand />
           </button>
         )}
-        {/* Share button - available for all advisories */}
+        {/* Share button - same behavior as public feed: native share then Facebook fallback */}
         <button
           type="button"
           className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--share"
-          onClick={() => shareToFacebook(item.id)}
+          onClick={handleShare}
           disabled={saving}
-          title="Share to Facebook"
-          aria-label="Share to Facebook"
+          title="Share this advisory"
+          aria-label="Share this advisory"
         >
           <IconShare />
         </button>

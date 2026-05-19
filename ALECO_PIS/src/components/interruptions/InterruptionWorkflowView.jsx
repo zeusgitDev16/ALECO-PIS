@@ -3,7 +3,8 @@ import { useNow } from '../../hooks/useNow';
 import { groupInterruptionsByStatus, getInterruptionColumnConfig } from '../../utils/interruptionWorkflowHelpers';
 import { formatToPhilippineTime, isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
 import { getTypeDisplayLabel } from '../../utils/interruptionLabels';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw, IconShare } from './AdvisoryActionIcons';
+import { shareToFacebook, shareNative } from '../../utils/advisoryShare';
 import InterruptionAdvisoryDetailModal from './InterruptionAdvisoryDetailModal';
 import InterruptionCardActionModal from './InterruptionCardActionModal';
 import '../../CSS/InterruptionWorkflowView.css';
@@ -74,14 +75,16 @@ export default function InterruptionWorkflowView({
   const [actionModalItemFallback, setActionModalItemFallback] = useState(null);
   const detailItem = (items || []).find((it) => it.id === detailItemId) || detailItemFallback;
   const actionModalItem = (items || []).find((it) => it.id === actionModalItemId) || actionModalItemFallback;
-  const isMobile = useMatchMedia('(max-width: 320px)');
   const isClickableLayout = useMatchMedia('(max-width: 767px)');
   const now = useNow([]);
 
   if (loading) {
     return (
       <div className="interruption-workflow-wrapper">
-        <p className="interruption-workflow-loading">Loading advisories…</p>
+        <div className="interruption-workflow-loading">
+          <div className="interruption-workflow-spinner" aria-hidden="true" />
+          <span>Loading advisories…</span>
+        </div>
       </div>
     );
   }
@@ -116,7 +119,7 @@ export default function InterruptionWorkflowView({
     );
   }
 
-  const columns = ['Pending', 'Ongoing', 'Energized'];
+  const columns = ['Pending', 'Ongoing', 'Energized', 'Cancelled', 'Rescheduled'];
 
   return (
     <div className="interruption-workflow-wrapper">
@@ -151,17 +154,17 @@ export default function InterruptionWorkflowView({
                     const bodyOrCause = hasBody ? item.body : item.cause || '—';
                     const bodyShort = truncate(bodyOrCause, 80);
                     const handleCardClick = isClickableLayout
-                      ? (isMobile
-                        ? () => {
-                            setActionModalItemId(item?.id ?? null);
-                            setActionModalItemFallback(item || null);
-                          }
-                        : () => openDetail(item))
+                      ? () => {
+                          // Open sliding action menu on all mobile sizes (≤767px)
+                          setActionModalItemId(item?.id ?? null);
+                          setActionModalItemFallback(item || null);
+                        }
                       : undefined;
+                    const statusClass = item.status?.toLowerCase() || '';
                     return (
                       <div
                         key={item.id}
-                        className={`interruption-workflow-card${archived ? ' interruption-workflow-card--archived' : ''} interruption-workflow-card--feed-${feedIndicator}${isClickableLayout ? ' interruption-workflow-card--mobile-clickable' : ''}`}
+                        className={`interruption-workflow-card${archived ? ' interruption-workflow-card--archived' : ''} interruption-workflow-card--feed-${feedIndicator}${statusClass ? ` interruption-workflow-card--status-${statusClass}` : ''}${isClickableLayout ? ' interruption-workflow-card--mobile-clickable' : ''}`}
                         onClick={handleCardClick}
                         role={isClickableLayout ? 'button' : undefined}
                         tabIndex={isClickableLayout ? 0 : undefined}
@@ -187,6 +190,22 @@ export default function InterruptionWorkflowView({
                           {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
                         </div>
                         <div className="interruption-workflow-card-actions">
+                          {/* Share button - same behavior as public feed */}
+                          <button
+                            type="button"
+                            className="interruptions-admin-btn interruptions-admin-btn--icon interruptions-admin-btn--share"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              shareNative(item).then((usedNative) => {
+                                if (!usedNative) shareToFacebook(item.id);
+                              });
+                            }}
+                            disabled={saving}
+                            title="Share this advisory"
+                            aria-label="Share this advisory"
+                          >
+                            <IconShare />
+                          </button>
                           {!archived && feedIndicator === 'on-feed' && onPullFromFeed && (
                             <button
                               type="button"
@@ -297,6 +316,13 @@ export default function InterruptionWorkflowView({
             </div>
           );
         })}
+        {/* Scroll hint for desktop users */}
+        <div className="interruption-workflow-scroll-hint" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+          <span>Scroll to see more</span>
+        </div>
       </div>
 
       {detailItem && (

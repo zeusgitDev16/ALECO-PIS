@@ -251,11 +251,13 @@ function validatePayload(body, { partial = false } = {}) {
     }
   }
   const hasBody = bodyText !== undefined && bodyText !== null && String(bodyText).trim() !== '';
-  const hasLegacy = cause !== undefined && cause !== null && String(cause).trim() !== '';
+  const hasCause = cause !== undefined && cause !== null && String(cause).trim() !== '';
   if (!partial) {
-    if (!isCustomPoster && !hasBody && !hasLegacy) {
-      errors.push('Provide either body (free-form post) or cause (legacy). At least one is required.');
+    // Cause / reason is required for all non-NGCP advisories
+    if (!isNgcpScheduled && !hasCause) {
+      errors.push('Cause / reason is required.');
     }
+    // Body (What do you want to say) remains optional
     if (type === 'NgcScheduled' || type === 'CustomPoster') {
       const img = body.imageUrl;
       if (img == null || String(img).trim() === '') {

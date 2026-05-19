@@ -1064,6 +1064,17 @@
   background: rgba(236, 72, 153, 0.35);
 }
 
+.interruption-card-action-btn--share {
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.interruption-card-action-btn--share:hover:not(:disabled) {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.3);
+}
+
 .interruption-card-action-btn--archive {
   border-color: rgba(107, 114, 128, 0.4);
   color: #4b5563;
@@ -2702,7 +2713,7 @@
 }
 
 .interruptions-admin-modal-backdrop--confirm {
-  z-index: 1100;
+  z-index: 11000;
 }
 
 .interruptions-admin-confirm-dialog {
@@ -2835,7 +2846,8 @@
   flex-wrap: wrap;
 }
 
-.interruptions-admin-image-upload--ngcp {
+.interruptions-admin-image-upload--ngcp,
+.interruptions-admin-image-upload--custom {
   border: 1px solid rgba(29, 78, 216, 0.35);
   border-radius: 10px;
   padding: 10px 12px;

@@ -193,6 +193,37 @@ body.modal-open .interruptions-compact-table-header {
   color: #15803d;
 }
 
+/* Hide actions column on mobile - use sliding menu instead */
+@media (max-width: 767px) {
+  .col-actions--mobile-hidden {
+    display: none !important;
+  }
+  
+  /* Make rows more obviously clickable on mobile */
+  .interruptions-compact-row--clickable {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(124, 58, 237, 0.15);
+  }
+  
+  .interruptions-compact-row--clickable:active {
+    background: var(--bg-muted, rgba(0, 0, 0, 0.04));
+  }
+  
+  /* Add a subtle indicator that row is clickable */
+  .interruptions-compact-row--clickable td:last-child::after {
+    content: '›';
+    position: absolute;
+    right: 8px;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    opacity: 0.5;
+  }
+  
+  .interruptions-compact-row--clickable td {
+    position: relative;
+  }
+}
+
 /* Action buttons - smaller than default admin btn */
 .interruptions-compact-btn {
   font-size: 0.6rem !important;
@@ -240,6 +271,17 @@ body.modal-open .interruptions-compact-table-header {
 .interruptions-compact-btn--pull:hover:not(:disabled) {
   background: rgba(236, 72, 153, 0.35);
   border-color: #ec4899;
+}
+
+.interruptions-compact-btn--share {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #1d4ed8;
+}
+
+.interruptions-compact-btn--share:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: #3b82f6;
 }
 
 .interruptions-compact-btn--archive {

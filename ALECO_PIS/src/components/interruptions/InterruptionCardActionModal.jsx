@@ -1,6 +1,7 @@
 import React from 'react';
 import { isCurrentlyOnPublicFeed } from '../../utils/dateUtils';
-import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw } from './AdvisoryActionIcons';
+import { IconArrowUp, IconArrowDown, IconPencil, IconArchive, IconTrash, IconExpand, IconRefreshCw, IconShare } from './AdvisoryActionIcons';
+import { shareToFacebook, shareNative } from '../../utils/advisoryShare';
 
 /**
  * InterruptionCardActionModal - Action menu for mobile (320px).
@@ -18,6 +19,12 @@ export default function InterruptionCardActionModal({
   onPushToFeed,
   saving,
 }) {
+  const handleShare = () => {
+    // Same behavior as public feed: try native share, fallback to Facebook
+    shareNative(item).then((usedNative) => {
+      if (!usedNative) shareToFacebook(item.id);
+    });
+  };
   if (!item) return null;
 
   const archived = Boolean(item.deletedAt);
@@ -66,6 +73,21 @@ export default function InterruptionCardActionModal({
               <span>View Full</span>
             </button>
           )}
+          {/* Share button - same behavior as public feed */}
+          <button
+            type="button"
+            className="interruption-card-action-btn interruption-card-action-btn--icon interruption-card-action-btn--share"
+            onClick={() => {
+              onClose();
+              handleShare();
+            }}
+            disabled={saving}
+            title="Share this advisory"
+            aria-label="Share this advisory"
+          >
+            <IconShare />
+            <span>Share</span>
+          </button>
           {!archived && isCurrentlyOnPublicFeed(item) && onPullFromFeed && (
             <button
               type="button"

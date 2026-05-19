@@ -387,9 +387,9 @@ export default function InterruptionAdvisoryForm({
                 </p>
               )}
               {isCustomPoster && (
-                <p className="interruptions-admin-field-hint interruptions-admin-image-upload-note--custom">
-                  Upload your custom poster (e.g. from Canva). This image is shown directly in the public feed as
-                  the poster — no template is generated. All other fields below are optional.
+                <p className="interruptions-admin-field-hint interruptions-admin-image-upload-note--ngcp">
+                  Attach your custom poster image (e.g. from Canva or Photoshop). This is required and will be
+                  shown directly in the public feed as the poster. Use high-resolution source files (recommended 1800x1100+).
                 </p>
               )}
               {imageUploadHint && (
@@ -420,7 +420,7 @@ export default function InterruptionAdvisoryForm({
                 )}
                 <button
                   type="button"
-                  className={`interruptions-admin-btn interruptions-admin-btn--secondary${isNgcpScheduled ? ' interruptions-admin-btn--ngcp-image' : ''}`}
+                  className={`interruptions-admin-btn interruptions-admin-btn--secondary${isNgcpScheduled || isCustomPoster ? ' interruptions-admin-btn--ngcp-image' : ''}`}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={imageUploading}
                 >
@@ -535,15 +535,18 @@ export default function InterruptionAdvisoryForm({
               </button>
             </div>
             <label className="interruptions-admin-span2">
-              Cause / reason
+              <span>
+                Cause / reason <strong className="interruptions-admin-status-remark-required">(required)</strong>
+              </span>
               <input
                 type="text"
                 value={form.cause}
                 onChange={(ev) => setForm((f) => ({ ...f, cause: ev.target.value }))}
                 placeholder="Maintenance, fault, weather…"
+                required
               />
               <span className="interruptions-admin-field-hint">
-                Shown on the poster as REASON when filled; otherwise the advisory body is used.
+                Shown on the poster as REASON. Required for all advisory types except NGCP scheduled.
               </span>
             </label>
             <label>

@@ -41,15 +41,15 @@ export function getPosterHeadlineText(item) {
 }
 
 /**
- * REASON line: non-empty `cause` first; else first paragraph of `body`; else cause category label; else em dash.
- * @param {{ cause?: string|null, body?: string|null, causeCategory?: string|null }} item
+ * REASON line: uses `cause` field only (now required for non-NGCP advisories).
+ * Falls back to cause category label only if cause is empty; never uses body.
+ * @param {{ cause?: string|null, causeCategory?: string|null }} item
  * @returns {string}
  */
 export function getPosterReasonText(item) {
   const cause = item?.cause != null ? String(item.cause).trim() : '';
   if (cause) return cause;
-  const bodyBit = firstParagraphOrFull(item?.body);
-  if (bodyBit) return bodyBit;
+  // Never fall back to body - cause is now required for poster
   const cat = getCauseCategoryLabel(item?.causeCategory);
   if (cat) return cat;
   return EM_DASH;

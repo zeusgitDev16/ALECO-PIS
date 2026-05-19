@@ -1,8 +1,10 @@
 import { mapUpdateRowToDto } from '../utils/interruptionsDto.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
-import { getAlecoInterruptionsDeletedAtSupported } from '../utils/interruptionsDbSupport.js';
+import { getAlecoInterruptionsDeletedAtSupported, getAlecoInterruptionsStatusDbEnum } from '../utils/interruptionsDbSupport.js';
 import { RESOLVED_ARCHIVE_HOURS } from '../constants/interruptionConstants.js';
 import { INTERRUPTION_SCHEDULED_LIKE_TYPES } from '../constants/interruptionFieldEnums.js';
+import { insertInterruptionLog } from '../utils/interruptionLogHelper.js';
+import { apiInterruptionStatusToDbLiteral } from '../utils/interruptionTypeDbEnum.js';
 
 const SYSTEM_START_REMARK =
   'Status set to Ongoing automatically at scheduled outage start time.';
@@ -116,39 +118,88 @@ export async function autoArchiveResolvedInterruptions(pool) {
 }
 
 /**
- * Scheduled advisories: Pending → Ongoing when start time reached; one system memo each.
+ * Transactionally transitions Pending -> Ongoing (auto-live) and Ongoing/Pending -> Energized (auto-restore)
+ * when their scheduled times pass.
  * @param {import('mysql2/promise').Pool} pool
  */
-export async function transitionScheduledStarts(pool) {
+export async function runAutoTransitions(pool) {
   const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
   const delClause = hasDel ? ' AND deleted_at IS NULL' : '';
+  const statusDbEnum = await getAlecoInterruptionsStatusDbEnum(pool);
+  const energizedDbLiteral = apiInterruptionStatusToDbLiteral('Energized', statusDbEnum).status ?? 'Energized';
+  const phNow = nowPhilippineForMysql();
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const scheduledTypes = Array.from(INTERRUPTION_SCHEDULED_LIKE_TYPES)
-      .map((t) => `'${t}'`)
-      .join(',');
-    const [pending] = await conn.query(
-      `SELECT id FROM aleco_interruptions
-       WHERE type IN (${scheduledTypes}) AND status = 'Pending' AND date_time_start <= NOW()${delClause}
-       FOR UPDATE`
+
+    // 1. Pending -> Ongoing (auto-live)
+    const upgradeWhere = `status = 'Pending'${delClause} AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))`;
+    const [upgradeCandidates] = await conn.query(
+      `SELECT id, type, status, feeder, date_time_start, public_visible_at, poster_image_url 
+       FROM aleco_interruptions 
+       WHERE ${upgradeWhere} FOR UPDATE`
     );
-    const rows = Array.isArray(pending) ? pending : [];
-    if (rows.length === 0) {
-      await conn.commit();
-      return { transitioned: 0 };
+    
+    let goLivePosterCandidates = [];
+    if (upgradeCandidates.length > 0) {
+      const upgradeIds = upgradeCandidates.map(c => c.id);
+      const upgradePlaceholders = upgradeIds.map(() => '?').join(',');
+      await conn.query(
+        `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = ? WHERE id IN (${upgradePlaceholders})`,
+        [phNow, ...upgradeIds]
+      );
+      for (const c of upgradeCandidates) {
+        await insertSystemUpdateConn(conn, c.id, SYSTEM_START_REMARK);
+        await insertInterruptionLog(conn, {
+          interruption_id: c.id,
+          action: 'status_change',
+          from_status: 'Pending',
+          to_status: 'Ongoing',
+          actor_type: 'system',
+          actor_name: 'System',
+          metadata: { remark: 'Advisory automatically marked as Ongoing (go-live time reached).' }
+        });
+        
+        if (!c.poster_image_url || !String(c.poster_image_url).trim()) {
+          goLivePosterCandidates.push(c);
+        }
+      }
     }
-    const ids = rows.map((r) => r.id);
-    const placeholders = ids.map(() => '?').join(',');
-    await conn.query(
-      `UPDATE aleco_interruptions SET status = 'Ongoing' WHERE id IN (${placeholders})`,
-      ids
+
+    // 2. Ongoing/Pending -> Energized (auto-restore)
+    const autoRestoreWhere = `status IN ('Pending','Ongoing')${delClause} AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)`;
+    const [dueRows] = await conn.query(
+      `SELECT id, status, scheduled_restore_remark, feeder FROM aleco_interruptions WHERE ${autoRestoreWhere} FOR UPDATE`
     );
-    for (const id of ids) {
-      await insertSystemUpdateConn(conn, id, SYSTEM_START_REMARK);
+    for (const due of dueRows) {
+      await conn.execute(
+        `UPDATE aleco_interruptions SET status = ?, date_time_restored = ?, scheduled_restore_at = NULL, updated_at = ? WHERE id = ?`,
+        [energizedDbLiteral, phNow, phNow, due.id]
+      );
+      const remark = due.scheduled_restore_remark
+        ? String(due.scheduled_restore_remark).trim()
+        : 'Automatically restored per schedule.';
+      
+      await insertSystemUpdateConn(conn, due.id, `Auto-restored: ${remark}`);
+
+      await insertInterruptionLog(conn, {
+        interruption_id: due.id,
+        action: 'status_change',
+        from_status: due.status === 'Restored' ? 'Energized' : due.status,
+        to_status: energizedDbLiteral === 'Restored' ? 'Energized' : energizedDbLiteral,
+        actor_type: 'system',
+        actor_name: 'System',
+        metadata: { remark: remark }
+      });
     }
+
     await conn.commit();
-    return { transitioned: ids.length };
+    return {
+      transitioned: upgradeCandidates.length,
+      restored: dueRows.length,
+      goLivePosterCandidates
+    };
   } catch (e) {
     await conn.rollback();
     throw e;

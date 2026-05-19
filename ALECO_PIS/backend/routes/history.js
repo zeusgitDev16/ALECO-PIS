@@ -503,6 +503,9 @@ router.delete('/history/flush', requireAdmin, async (req, res) => {
     // 5. Export log (no FK — pure log table)
     const [r5] = await connection.execute('DELETE FROM aleco_export_log');
 
+    // 6. Interruption logs (FK to aleco_interruptions ON DELETE CASCADE)
+    const [r6] = await connection.execute('DELETE FROM aleco_interruption_logs');
+
     await connection.commit();
 
     const totalDeleted =
@@ -510,14 +513,15 @@ router.delete('/history/flush', requireAdmin, async (req, res) => {
       (r2.affectedRows ?? 0) +
       (r3.affectedRows ?? 0) +
       (r4.affectedRows ?? 0) +
-      (r5.affectedRows ?? 0);
+      (r5.affectedRows ?? 0) +
+      (r6.affectedRows ?? 0);
 
     const actorEmail = req.authUser?.email || 'unknown';
     console.log(
       `--- [GLOBAL HISTORY FLUSH] ${totalDeleted} log records permanently purged by ${actorEmail} ---`
     );
     console.log(
-      `    ticket_logs: ${r1.affectedRows} | b2b_audit: ${r2.affectedRows} | interruption_updates: ${r3.affectedRows} | personnel_audit: ${r4.affectedRows} | export_log: ${r5.affectedRows}`
+      `    ticket_logs: ${r1.affectedRows} | b2b_audit: ${r2.affectedRows} | interruption_updates: ${r3.affectedRows} | personnel_audit: ${r4.affectedRows} | export_log: ${r5.affectedRows} | interruption_logs: ${r6.affectedRows}`
     );
 
     res.setHeader('Cache-Control', 'no-store');
@@ -530,6 +534,7 @@ router.delete('/history/flush', requireAdmin, async (req, res) => {
         interruption_updates: r3.affectedRows ?? 0,
         personnel_audit_logs: r4.affectedRows ?? 0,
         export_log: r5.affectedRows ?? 0,
+        interruption_logs: r6.affectedRows ?? 0,
         total: totalDeleted,
       },
     });

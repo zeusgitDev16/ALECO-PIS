@@ -15,6 +15,7 @@ import {
   listUpdates,
   addUserUpdate,
   insertSystemUpdate,
+  runAutoTransitions,
 } from '../services/interruptionLifecycle.js';
 import {
   getAlecoInterruptionsDeletedAtSupported,
@@ -454,30 +455,8 @@ router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
     // Resolve 'Energized' vs 'Restored' depending on what the DB ENUM actually contains
     const statusDbEnum = await getAlecoInterruptionsStatusDbEnum(pool);
     const energizedDbLiteral = apiInterruptionStatusToDbLiteral('Energized', statusDbEnum).status ?? 'Energized';
-    // Auto-upgrade Pending -> Ongoing when go-live (publicVisibleAt or dateTimeStart) has passed
-    const upgradeWhere = hasDel
-      ? "status = 'Pending' AND deleted_at IS NULL AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))"
-      : "status = 'Pending' AND (COALESCE(public_visible_at, date_time_start) <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))";
-    const phNow = nowPhilippineForMysql();
+    const { goLivePosterCandidates } = await runAutoTransitions(pool);
 
-    // If a scheduled advisory goes live now and still has no poster URL, queue poster generation.
-    // This fills the same gap as "display immediately" advisories that generate poster on create.
-    let goLivePosterCandidates = [];
-    if (hasPoster) {
-      const goLivePosterWhere = `${upgradeWhere} AND (poster_image_url IS NULL OR TRIM(poster_image_url) = '')`;
-      const [candRows] = await pool.query(
-        `SELECT ${listInterruptionCols(hasDel, hasPulled, hasPoster)}
-         FROM aleco_interruptions
-         WHERE ${goLivePosterWhere}
-         LIMIT 80`
-      );
-      goLivePosterCandidates = Array.isArray(candRows) ? candRows : [];
-    }
-
-    await pool.query(
-      `UPDATE aleco_interruptions SET status = 'Ongoing', updated_at = ? WHERE ${upgradeWhere}`,
-      [phNow]
-    );
     if (goLivePosterCandidates.length > 0) {
       setImmediate(async () => {
         try {
@@ -498,30 +477,7 @@ router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
         }
       });
     }
-    // Auto-restore: mark as Energized when scheduled_restore_at has passed
-    {
-      const autoRestoreWhere = hasDel
-        ? "status IN ('Pending','Ongoing') AND deleted_at IS NULL AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)"
-        : "status IN ('Pending','Ongoing') AND scheduled_restore_at IS NOT NULL AND scheduled_restore_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)";
-      const [dueRows] = await pool.query(
-        `SELECT id, scheduled_restore_remark, feeder FROM aleco_interruptions WHERE ${autoRestoreWhere}`
-      );
-      for (const due of dueRows) {
-        await pool.execute(
-          `UPDATE aleco_interruptions SET status = '${energizedDbLiteral}', date_time_restored = ?, scheduled_restore_at = NULL, updated_at = ? WHERE id = ?`,
-          [phNow, phNow, due.id]
-        );
-        const remark = due.scheduled_restore_remark
-          ? String(due.scheduled_restore_remark).trim()
-          : 'Automatically restored per schedule.';
-        await insertSystemUpdate(
-          pool,
-          due.id,
-          `Auto-restored: ${remark}`,
-          { actorEmail: null, actorName: 'System' }
-        );
-      }
-    }
+    const phNow = nowPhilippineForMysql();
     // Auto-archive Energized advisories after 1 day 12 hours from restoration time
     if (hasDel) {
       await pool.query(

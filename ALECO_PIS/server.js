@@ -27,7 +27,7 @@ import historyRoutes from './backend/routes/history.js';
 import siteSettingsRoutes from './backend/routes/site-settings.js';
 import pool, { getHeartbeatStats } from './backend/config/db.js';
 import {
-  transitionScheduledStarts,
+  runAutoTransitions,
   autoArchiveResolvedInterruptions,
 } from './backend/services/interruptionLifecycle.js';
 import { pollB2BInboundOnce } from './backend/services/b2bInboundImapPoll.js';
@@ -461,7 +461,7 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on port ${PORT}`);
 
   const runScheduledInterruptionTransition = () => {
-    transitionScheduledStarts(pool).catch((err) =>
+    runAutoTransitions(pool).catch((err) =>
       console.error('[interruptions] scheduled start transition:', err.message || err)
     );
   };

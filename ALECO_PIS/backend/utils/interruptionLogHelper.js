@@ -141,7 +141,8 @@ export async function logFieldChanges(pool, interruption_id, oldItem, newItem, a
     'type', 'feeder', 'controlNo', 'cause', 'causeCategory',
     'dateTimeStart', 'dateTimeEndEstimated', 'dateTimeRestored',
     'substationRecloser', 'indicationMagnitude', 'possibleFaultLocation', 'linemenOnDuty',
-    'scheduledRestoreAt', 'scheduledRestoreRemark', 'publicVisibleAt'
+    'scheduledRestoreAt', 'scheduledRestoreRemark', 'publicVisibleAt',
+    'body', 'affectedAreas', 'affectedAreasGrouped', 'imageUrl', 'posterImageUrl'
   ];
 
   for (const field of fieldsToTrack) {
@@ -151,27 +152,59 @@ export async function logFieldChanges(pool, interruption_id, oldItem, newItem, a
     const oldVal = oldItem?.[field] ?? null;
     const newVal = newItem?.[field] ?? null;
 
-    // Normalize datetime fields to a common format before comparing
-    const oldCmp = DATETIME_FIELDS.has(field) ? normalizeDateTimeForCompare(oldVal) : (oldVal != null ? String(oldVal) : null);
-    const newCmp = DATETIME_FIELDS.has(field) ? normalizeDateTimeForCompare(newVal) : (newVal != null ? String(newVal) : null);
+    let isChanged = false;
+    let storedOldVal = null;
+    let storedNewVal = null;
 
-    if (oldCmp !== newCmp) {
-      // Store datetime new_value as ISO UTC to match the old_value format from mapRowToDto
-      const storedNewVal = DATETIME_FIELDS.has(field)
-        ? phWallClockToIso(newVal)
-        : (newVal != null ? String(newVal) : null);
+    if (DATETIME_FIELDS.has(field)) {
+      const oldCmp = normalizeDateTimeForCompare(oldVal);
+      const newCmp = normalizeDateTimeForCompare(newVal);
+      isChanged = (oldCmp !== newCmp);
+      storedOldVal = oldVal != null ? String(oldVal) : null;
+      storedNewVal = newVal != null ? phWallClockToIso(newVal) : null;
+    } else if (field === 'affectedAreas') {
+      const oldArr = Array.isArray(oldVal) ? oldVal : [];
+      const newArr = Array.isArray(newVal) ? newVal : [];
+      const oldStr = oldArr.map((x) => String(x).trim()).filter(Boolean).join(', ');
+      const newStr = newArr.map((x) => String(x).trim()).filter(Boolean).join(', ');
+      isChanged = (oldStr !== newStr);
+      storedOldVal = oldStr || null;
+      storedNewVal = newStr || null;
+    } else if (field === 'affectedAreasGrouped') {
+      const oldGrouped = Array.isArray(oldVal) ? oldVal : [];
+      const newGrouped = Array.isArray(newVal) ? newVal : [];
+      const cleanGrouped = (arr) =>
+        arr
+          .map((g) => ({
+            heading: String(g?.heading || '').trim(),
+            items: Array.isArray(g?.items) ? g.items.map((x) => String(x).trim()).filter(Boolean) : [],
+          }))
+          .filter((g) => g.heading || g.items.length > 0);
+      const oldCleanStr = JSON.stringify(cleanGrouped(oldGrouped));
+      const newCleanStr = JSON.stringify(cleanGrouped(newGrouped));
+      isChanged = (oldCleanStr !== newCleanStr);
+      storedOldVal = oldCleanStr;
+      storedNewVal = newCleanStr;
+    } else {
+      const oldCmp = oldVal != null ? String(oldVal).trim() : '';
+      const newCmp = newVal != null ? String(newVal).trim() : '';
+      isChanged = (oldCmp !== newCmp);
+      storedOldVal = oldVal != null ? String(oldVal) : null;
+      storedNewVal = newVal != null ? String(newVal) : null;
+    }
 
+    if (isChanged) {
       await insertInterruptionLog(pool, {
         interruption_id,
         action: 'update',
         field_changed: field,
-        old_value: oldVal != null ? String(oldVal) : null,
+        old_value: storedOldVal,
         new_value: storedNewVal,
         actor_type: 'user',
         actor_id: actor?.actor_id || null,
         actor_email: actor?.actor_email || null,
         actor_name: actor?.actor_name || null,
-        ip_address
+        ip_address,
       });
     }
   }

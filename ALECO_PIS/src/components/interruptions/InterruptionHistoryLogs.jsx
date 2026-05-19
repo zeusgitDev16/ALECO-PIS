@@ -79,6 +79,19 @@ const InterruptionHistoryLogs = ({ interruptionId, isVisible }) => {
         return String(val);
       }
     }
+    if (field === 'affectedAreasGrouped') {
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) {
+          if (parsed.length === 0) return '—';
+          return parsed
+            .map((p) => `${p.heading || 'Section'}: ${(p.items || []).join(', ')}`)
+            .join(' | ');
+        }
+      } catch {
+        return String(val);
+      }
+    }
     return String(val);
   }
 
@@ -99,6 +112,11 @@ const InterruptionHistoryLogs = ({ interruptionId, isVisible }) => {
     scheduledRestoreAt: 'Scheduled Restore',
     scheduledRestoreRemark: 'Scheduled Remark',
     publicVisibleAt: 'Public Visible At',
+    body: 'Description',
+    affectedAreas: 'Affected Areas',
+    affectedAreasGrouped: 'Poster Sections',
+    imageUrl: 'Advisory Image',
+    posterImageUrl: 'Poster Image',
   };
 
   function getMetadataSummary(log) {

@@ -36,15 +36,33 @@ router.patch('/site-settings', requireAdmin, async (req, res) => {
   try {
     await conn.beginTransaction();
     const allowedKeys = [
-      'site_title', 
-      'site_description', 
-      'contact_email', 
-      'phone_number', 
-      'site_logo_url', 
-      'site_favicon_url'
+      'site_title',
+      'site_description',
+      'contact_email',
+      'phone_number',
+      'site_logo_url',
+      'site_favicon_url',
+      // Public View text configurations
+      'public_banner_title',
+      'public_advisories_title',
+      'public_advisories_subtitle',
+      'public_report_title',
+      'public_report_subtitle',
+      'public_track_title',
+      'public_track_subtitle',
+      'public_about_title',
+      'public_about_para1',
+      'public_about_para2',
+      'public_about_para3',
+      'public_about_images',
+      'public_privacy_title',
+      'public_privacy_content',
+      'public_footer_copyright'
     ];
-    const filteredUpdates = Object.entries(updates).filter(([key]) => 
-      allowedKeys.includes(key) || key.startsWith('sidebar_label_')
+    const filteredUpdates = Object.entries(updates).filter(([key]) =>
+      allowedKeys.includes(key) ||
+      key.startsWith('sidebar_label_') ||
+      key.startsWith('public_')  // Future-proof: allows any public_* keys
     );
 
     if (filteredUpdates.length === 0) {
@@ -193,6 +211,46 @@ router.delete('/site-settings/labels', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('[site-settings] labels reset error:', error);
     res.status(500).json({ success: false, message: 'Failed to reset navigation labels.' });
+  }
+});
+
+/**
+ * Admin: Delete multiple Cloudinary assets by their URLs.
+ * Used when resetting About carousel images to clean up storage.
+ */
+router.post('/site-settings/delete-cloudinary-images', requireAdmin, async (req, res) => {
+  const { urls } = req.body;
+  if (!Array.isArray(urls) || urls.length === 0) {
+    return res.json({ success: true, deleted: 0, message: 'No images to delete.' });
+  }
+
+  try {
+    const results = await Promise.allSettled(
+      urls.map(async (url) => {
+        const publicId = extractCloudinaryPublicId(url);
+        if (!publicId) return { url, status: 'skipped', reason: 'not_cloudinary_url' };
+        
+        try {
+          await cloudinary.uploader.destroy(publicId, { invalidate: true });
+          return { url, status: 'deleted', publicId };
+        } catch (err) {
+          return { url, status: 'error', error: err.message };
+        }
+      })
+    );
+
+    const deleted = results.filter(r => r.value?.status === 'deleted').length;
+    const errors = results.filter(r => r.value?.status === 'error').length;
+
+    res.json({ 
+      success: true, 
+      deleted, 
+      errors,
+      details: results.map(r => r.value)
+    });
+  } catch (error) {
+    console.error('[site-settings] bulk delete error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete images.' });
   }
 });
 

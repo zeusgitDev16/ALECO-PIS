@@ -10,6 +10,7 @@ import { isInterruptionEnergizedStatus } from './utils/interruptionLabels';
 import InterruptionFeedPost from './components/interruptions/InterruptionFeedPost';
 import VerticalProgressIndicator from './components/interruptions/VerticalProgressIndicator';
 import AsOfDateTracker from './components/interruptions/AsOfDateTracker';
+import { useSiteSettings } from './context/SiteSettingsContext';
 
 /** True if an Energized advisory should be hidden (past the display window). */
 function isResolvedPastDisplayWindow(item, now) {
@@ -26,11 +27,15 @@ function InterruptionList() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [expandedItem, setExpandedItem] = useState(null);
+  const { settings } = useSiteSettings();
 
   const handleExpand = useCallback((item) => setExpandedItem(item), []);
   const handleClose = useCallback(() => setExpandedItem(null), []);
 
   const { interruptions, loading, listUnavailable, refetch } = usePublicInterruptions();
+
+  const advisoriesTitle = settings?.public_advisories_title || 'Power Outage Advisories';
+  const advisoriesSubtitle = settings?.public_advisories_subtitle || 'Published by Albay Electric Cooperative, Inc.';
   const upcomingItems = useMemo(
     () => interruptions.filter((i) => i.status === 'Pending'),
     [interruptions]
@@ -79,8 +84,8 @@ function InterruptionList() {
 
       {/* ── Section heading: title + subtitle both above separator ────── */}
       <div className="feed-section-heading">
-        <h2 className="feed-section-heading-title">Power Outage Advisories</h2>
-        <p className="feed-section-heading-sub">Published by Albay Electric Cooperative, Inc.</p>
+        <h2 className="feed-section-heading-title">{advisoriesTitle}</h2>
+        <p className="feed-section-heading-sub">{advisoriesSubtitle}</p>
       </div>
 
       {/* ── Advisory cards feed ───────────────────────────────────────── */}

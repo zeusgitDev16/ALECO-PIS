@@ -55,6 +55,31 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   const [flushResponsibilityChecked, setFlushResponsibilityChecked] = useState(false);
   const [flushConfirmEmail, setFlushConfirmEmail] = useState('');
 
+  // ── Public View Settings state ──
+  const [publicSettings, setPublicSettings] = useState({
+    bannerTitle: 'Albay Electric Cooperative, INC',
+    advisoriesTitle: 'Power Outage Advisories',
+    advisoriesSubtitle: 'Published by Albay Electric Cooperative, Inc.',
+    reportTitle: 'Report a Problem',
+    reportSubtitle: 'Brownouts, damaged posts, broken wires, etc.',
+    trackTitle: 'Track Your Ticket',
+    trackSubtitle: 'See the real-time status of your concern.',
+    aboutTitle: 'About ALECO',
+    aboutPara1: 'Welcome to Albay Electric Cooperative, Inc. (ALECO), the driving force behind reliable and efficient electricity distribution in the captivating province of Albay. Established with a commitment to empower communities through electrification, ALECO is a member-owned electric cooperative that proudly serves three cities and fifteen municipalities across the region.',
+    aboutPara2: 'We envision a future where every household and business in Albay enjoys uninterrupted access to sustainable, affordable, and high-quality electrical services. By fostering innovation and community collaboration, we strive to be at the forefront of the energy sector, contributing to the growth and prosperity of the province.',
+    aboutPara3: 'Our footprint spans across Albay, reaching into the heart of urban centers and the farthest corners of rural landscapes. ALECO\'s influence extends through nine electrification districts, ensuring that electricity is not just a utility but a catalyst for progress and development.',
+    aboutImages: [],
+    privacyTitle: 'Privacy Notice',
+    privacyContent: 'We, at the Albay Electric Cooperative Inc. (ALECO), respect your privacy and will keep secure and confidential the personal data which you shall provide in our Service Application Form. We shall collect, use, and store your Personal Data and dispose of it in accordance with our policies and applicable laws, and regulations. We may disclose your Personal Data to authorized subsidiaries, affiliates, service providers, government agencies and third-parties.',
+    footerCopyright: "ALECO's Power Information System, all rights reserved.",
+  });
+  const [isSavingPublic, setIsSavingPublic] = useState(false);
+  const [isResettingPublic, setIsResettingPublic] = useState(false);
+
+  // ── About Images Widget ──
+  const aboutWidgetRef = useRef(null);
+  const [isAboutWidgetReady, setIsAboutWidgetReady] = useState(false);
+
   // ── Body scroll-lock while any layer of this modal is open ──
   useEffect(() => {
     if (isOpen || showFlushConfirmModal) {
@@ -90,6 +115,29 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
         { id: 'history', label: settings.sidebar_label_history || 'History' },
         { id: 'backup', label: settings.sidebar_label_backup || 'Data Management' },
       ]);
+    }
+  }, [isOpen, settings]);
+
+  // Synchronize Public View settings on open or load
+  useEffect(() => {
+    if (isOpen && settings) {
+      setPublicSettings({
+        bannerTitle: settings.public_banner_title || 'Albay Electric Cooperative, INC',
+        advisoriesTitle: settings.public_advisories_title || 'Power Outage Advisories',
+        advisoriesSubtitle: settings.public_advisories_subtitle || 'Published by Albay Electric Cooperative, Inc.',
+        reportTitle: settings.public_report_title || 'Report a Problem',
+        reportSubtitle: settings.public_report_subtitle || 'Brownouts, damaged posts, broken wires, etc.',
+        trackTitle: settings.public_track_title || 'Track Your Ticket',
+        trackSubtitle: settings.public_track_subtitle || 'See the real-time status of your concern.',
+        aboutTitle: settings.public_about_title || 'About ALECO',
+        aboutPara1: settings.public_about_para1 || 'Welcome to Albay Electric Cooperative, Inc. (ALECO), the driving force behind reliable and efficient electricity distribution in the captivating province of Albay. Established with a commitment to empower communities through electrification, ALECO is a member-owned electric cooperative that proudly serves three cities and fifteen municipalities across the region.',
+        aboutPara2: settings.public_about_para2 || 'We envision a future where every household and business in Albay enjoys uninterrupted access to sustainable, affordable, and high-quality electrical services. By fostering innovation and community collaboration, we strive to be at the forefront of the energy sector, contributing to the growth and prosperity of the province.',
+        aboutPara3: settings.public_about_para3 || 'Our footprint spans across Albay, reaching into the heart of urban centers and the farthest corners of rural landscapes. ALECO\'s influence extends through nine electrification districts, ensuring that electricity is not just a utility but a catalyst for progress and development.',
+        aboutImages: JSON.parse(settings.public_about_images || '[]'),
+        privacyTitle: settings.public_privacy_title || 'Privacy Notice',
+        privacyContent: settings.public_privacy_content || 'We, at the Albay Electric Cooperative Inc. (ALECO), respect your privacy and will keep secure and confidential the personal data which you shall provide in our Service Application Form. We shall collect, use, and store your Personal Data and dispose of it in accordance with our policies and applicable laws, and regulations. We may disclose your Personal Data to authorized subsidiaries, affiliates, service providers, government agencies and third-parties.',
+        footerCopyright: settings.public_footer_copyright || "ALECO's Power Information System, all rights reserved.",
+      });
     }
   }, [isOpen, settings]);
 
@@ -433,6 +481,228 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     }
   };
 
+  // ── Public View Settings handlers ──
+  const handleSavePublicSettings = async () => {
+    setIsSavingPublic(true);
+    try {
+      const updates = {
+        public_banner_title: publicSettings.bannerTitle,
+        public_advisories_title: publicSettings.advisoriesTitle,
+        public_advisories_subtitle: publicSettings.advisoriesSubtitle,
+        public_report_title: publicSettings.reportTitle,
+        public_report_subtitle: publicSettings.reportSubtitle,
+        public_track_title: publicSettings.trackTitle,
+        public_track_subtitle: publicSettings.trackSubtitle,
+        public_about_title: publicSettings.aboutTitle,
+        public_about_para1: publicSettings.aboutPara1,
+        public_about_para2: publicSettings.aboutPara2,
+        public_about_para3: publicSettings.aboutPara3,
+        public_about_images: JSON.stringify(publicSettings.aboutImages),
+        public_privacy_title: publicSettings.privacyTitle,
+        public_privacy_content: publicSettings.privacyContent,
+        public_footer_copyright: publicSettings.footerCopyright,
+      };
+
+      const response = await fetch(apiUrl('/api/site-settings'), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Public page settings saved successfully.');
+        refreshSettings();
+      } else {
+        toast.error(result.message || 'Failed to save public settings.');
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] save public settings error:', error);
+      toast.error('An error occurred while saving public settings.');
+    } finally {
+      setIsSavingPublic(false);
+    }
+  };
+
+  const handleResetPublicSettings = async () => {
+    setIsResettingPublic(true);
+    try {
+      // 1. Delete uploaded Cloudinary images if any exist
+      const imagesToDelete = publicSettings.aboutImages || [];
+      if (imagesToDelete.length > 0) {
+        try {
+          const deleteResponse = await fetch(apiUrl('/api/site-settings/delete-cloudinary-images'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-User-Email': localStorage.getItem('userEmail'),
+              'X-Token-Version': localStorage.getItem('tokenVersion'),
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            },
+            body: JSON.stringify({ urls: imagesToDelete }),
+          });
+          const deleteResult = await deleteResponse.json();
+          if (deleteResult.success && deleteResult.deleted > 0) {
+            toast.info(`Cleaned up ${deleteResult.deleted} image(s) from storage.`);
+          }
+        } catch (deleteErr) {
+          console.warn('[ManageSiteModal] Failed to delete Cloudinary images:', deleteErr);
+          // Continue with reset even if image deletion fails
+        }
+      }
+
+      // 2. Reset all settings in DB
+      const response = await fetch(apiUrl('/api/site-settings'), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          public_banner_title: '',
+          public_advisories_title: '',
+          public_advisories_subtitle: '',
+          public_report_title: '',
+          public_report_subtitle: '',
+          public_track_title: '',
+          public_track_subtitle: '',
+          public_about_title: '',
+          public_about_para1: '',
+          public_about_para2: '',
+          public_about_para3: '',
+          public_about_images: '[]',
+          public_privacy_title: '',
+          public_privacy_content: '',
+          public_footer_copyright: '',
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Public settings reset to defaults.');
+        // Reset local state to defaults
+        setPublicSettings({
+          bannerTitle: 'Albay Electric Cooperative, INC',
+          advisoriesTitle: 'Power Outage Advisories',
+          advisoriesSubtitle: 'Published by Albay Electric Cooperative, Inc.',
+          reportTitle: 'Report a Problem',
+          reportSubtitle: 'Brownouts, damaged posts, broken wires, etc.',
+          trackTitle: 'Track Your Ticket',
+          trackSubtitle: 'See the real-time status of your concern.',
+          aboutTitle: 'About ALECO',
+          aboutPara1: 'Welcome to Albay Electric Cooperative, Inc. (ALECO), the driving force behind reliable and efficient electricity distribution in the captivating province of Albay. Established with a commitment to empower communities through electrification, ALECO is a member-owned electric cooperative that proudly serves three cities and fifteen municipalities across the region.',
+          aboutPara2: 'We envision a future where every household and business in Albay enjoys uninterrupted access to sustainable, affordable, and high-quality electrical services. By fostering innovation and community collaboration, we strive to be at the forefront of the energy sector, contributing to the growth and prosperity of the province.',
+          aboutPara3: 'Our footprint spans across Albay, reaching into the heart of urban centers and the farthest corners of rural landscapes. ALECO\'s influence extends through nine electrification districts, ensuring that electricity is not just a utility but a catalyst for progress and development.',
+          aboutImages: [],
+          privacyTitle: 'Privacy Notice',
+          privacyContent: 'We, at the Albay Electric Cooperative Inc. (ALECO), respect your privacy and will keep secure and confidential the personal data which you shall provide in our Service Application Form. We shall collect, use, and store your Personal Data and dispose of it in accordance with our policies and applicable laws, and regulations. We may disclose your Personal Data to authorized subsidiaries, affiliates, service providers, government agencies and third-parties.',
+          footerCopyright: "ALECO's Power Information System, all rights reserved.",
+        });
+        refreshSettings();
+      } else {
+        toast.error(result.message || 'Failed to reset public settings.');
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] reset public settings error:', error);
+      toast.error('Failed to reset public settings.');
+    } finally {
+      setIsResettingPublic(false);
+    }
+  };
+
+  // ── About Images Widget Handler ──
+  const openAboutImageWidget = async () => {
+    if (!window.cloudinary) {
+      toast.error('Cloudinary widget is still loading...');
+      return;
+    }
+
+    if (aboutWidgetRef.current) {
+      aboutWidgetRef.current.open();
+      return;
+    }
+
+    setIsAboutWidgetReady(true);
+    try {
+      const configResponse = await fetch(apiUrl('/api/site-settings/cloudinary-config'), {
+        headers: {
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const configData = await configResponse.json();
+
+      if (!configData.success) {
+        toast.error('Failed to get upload configuration.');
+        return;
+      }
+
+      aboutWidgetRef.current = window.cloudinary.createUploadWidget(
+        {
+          cloudName: configData.cloudName,
+          apiKey: configData.apiKey,
+          uploadPreset: 'power_interruption_posters',
+          sources: ['local', 'url', 'camera'],
+          multiple: false,
+          maxFiles: 1,
+          clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+          maxFileSize: 5000000,
+          theme: 'minimal',
+          uploadSignature: function(callback, params_to_sign) {
+            fetch(apiUrl('/api/site-settings/cloudinary-signature'), {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-User-Email': localStorage.getItem('userEmail'),
+                'X-Token-Version': localStorage.getItem('tokenVersion'),
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              },
+              body: JSON.stringify(params_to_sign)
+            })
+              .then(res => res.json())
+              .then(data => callback(data.signature))
+              .catch(() => callback(''));
+          }
+        },
+        (error, result) => {
+          if (result?.event === 'success') {
+            const imageUrl = result.info.secure_url;
+            setPublicSettings(s => ({
+              ...s,
+              aboutImages: [...s.aboutImages, imageUrl]
+            }));
+            toast.success('Image uploaded successfully!');
+          }
+          if (error) {
+            console.error('[Cloudinary Widget Error]', error);
+          }
+        }
+      );
+
+      aboutWidgetRef.current.open();
+    } catch (err) {
+      console.error('[ManageSiteModal] openAboutImageWidget error:', err);
+      toast.error('Failed to initialize upload widget.');
+    } finally {
+      setIsAboutWidgetReady(false);
+    }
+  };
+
+  const removeAboutImage = (index) => {
+    setPublicSettings(s => ({
+      ...s,
+      aboutImages: s.aboutImages.filter((_, i) => i !== index)
+    }));
+  };
+
   // ── Close flush sub-modal helper ──
   const closeFlushConfirmModal = useCallback(() => {
     setShowFlushConfirmModal(false);
@@ -721,10 +991,10 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
               </div>
             )}
 
-            {/* ── Public View Tab ── */}
+            {/* ── Public View Tab (Text-Only Configurations) ── */}
             {manageSiteTab === 'public' && (
               <div className="manage-site-tab-panel">
-                {/* Page Header / Banner */}
+                {/* Banner Title */}
                 <div className="settings-section">
                   <h4 className="settings-section-title">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
@@ -732,26 +1002,20 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                       <line x1="3" y1="9" x2="21" y2="9"></line>
                       <line x1="9" y1="21" x2="9" y2="9"></line>
                     </svg>
-                    Page Header Banner
+                    Banner Title
                   </h4>
                   <p className="settings-section-description">
-                    Configure the top banner displaying the cooperative name.
+                    The main title displayed in the page header.
                   </p>
                   <div className="public-section-config">
                     <div className="config-row stacked">
-                      <label className="config-label-block">Banner Title:</label>
-                      <input type="text" className="nav-item-input" defaultValue="Albay Electric Cooperative, INC" />
-                    </div>
-                    <div className="config-row stacked">
-                      <label className="config-label-block">Banner Subtitle (Optional):</label>
-                      <input type="text" className="nav-item-input" defaultValue="" placeholder="e.g., Serving Albay since 1975" />
-                    </div>
-                    <div className="config-row">
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Navigation Bar</span>
-                      </label>
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.bannerTitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, bannerTitle: e.target.value }))}
+                        placeholder="Albay Electric Cooperative, INC"
+                      />
                     </div>
                   </div>
                 </div>
@@ -765,67 +1029,33 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                     Power Outage Advisories
                   </h4>
                   <p className="settings-section-description">
-                    Configure the horizontal advisory feed displayed below the header.
+                    Configure the section heading and subtitle for the advisory feed.
                   </p>
                   <div className="public-section-config">
-                    <div className="config-row">
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Enable Advisory Feed</span>
-                      </label>
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Section Title:</label>
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.advisoriesTitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, advisoriesTitle: e.target.value }))}
+                        placeholder="Power Outage Advisories"
+                      />
                     </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Scheduled Maintenance Advisories</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Emergency Outage Advisories</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show NGCP Grid Advisories</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show "Good News" Card (when no advisories)</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Live Countdown Timers</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-inline">Max visible advisories:</label>
-                      <input type="number" className="nav-item-input" defaultValue={6} min={1} max={12} style={{ width: '70px' }} />
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Section Heading:</label>
-                      <input type="text" className="nav-item-input" defaultValue="Power Outage Advisories" />
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                    <div className="config-row stacked">
                       <label className="config-label-block">Publisher Subtitle:</label>
-                      <input type="text" className="nav-item-input" defaultValue="Published by Albay Electric Cooperative, Inc." />
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.advisoriesSubtitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, advisoriesSubtitle: e.target.value }))}
+                        placeholder="Published by Albay Electric Cooperative, Inc."
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Report a Problem (Front of Flip Card) */}
+                {/* Report a Problem */}
                 <div className="settings-section">
                   <h4 className="settings-section-title">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
@@ -835,75 +1065,33 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                     Report a Problem
                   </h4>
                   <p className="settings-section-description">
-                    Configure the 6-step wizard for submitting power outage reports.
+                    Configure the report form title and subtitle (front of flip card).
                   </p>
                   <div className="public-section-config">
-                    <div className="config-row">
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Enable Report Form</span>
-                      </label>
-                      <span className="config-status active">Active</span>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Require Account Number</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Enable Photo Upload</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Enable GPS "Find My Location"</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Enable Map Pin Selection</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Enable Duplicate Detection</span>
-                      </label>
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Wizard Step Labels:</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <input type="text" className="nav-item-input" defaultValue="Contact" />
-                        <input type="text" className="nav-item-input" defaultValue="Explain" />
-                        <input type="text" className="nav-item-input" defaultValue="Upload" />
-                        <input type="text" className="nav-item-input" defaultValue="Category" />
-                        <input type="text" className="nav-item-input" defaultValue="Location" />
-                        <input type="text" className="nav-item-input" defaultValue="Submit" />
-                      </div>
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                    <div className="config-row stacked">
                       <label className="config-label-block">Form Title:</label>
-                      <input type="text" className="nav-item-input" defaultValue="Report a Problem" />
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.reportTitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, reportTitle: e.target.value }))}
+                        placeholder="Report a Problem"
+                      />
                     </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Form Description:</label>
-                      <textarea className="nav-item-input" rows={2} defaultValue="Experiencing a power issue? Let us know and we'll look into it." style={{ resize: 'vertical' }} />
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Form Subtitle:</label>
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.reportSubtitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, reportSubtitle: e.target.value }))}
+                        placeholder="Brownouts, damaged posts, broken wires, etc."
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Track Your Ticket (Back of Flip Card) */}
+                {/* Track Your Ticket */}
                 <div className="settings-section">
                   <h4 className="settings-section-title">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
@@ -913,56 +1101,28 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                     Track Your Ticket
                   </h4>
                   <p className="settings-section-description">
-                    Configure the ticket tracking interface (back side of the flip card).
+                    Configure the tracking interface title and subtitle (back of flip card).
                   </p>
                   <div className="public-section-config">
-                    <div className="config-row">
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Enable Ticket Tracking</span>
-                      </label>
-                      <span className="config-status active">Active</span>
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Tracking Title:</label>
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.trackTitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, trackTitle: e.target.value }))}
+                        placeholder="Track Your Ticket"
+                      />
                     </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Crew Assignment Details</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show ETA Information</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Lineman Remarks (for closed tickets)</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Allow "Report Again" for Unresolved</span>
-                      </label>
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Tracking Section Title:</label>
-                      <input type="text" className="nav-item-input" defaultValue="Track Your Ticket" />
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Input Field Label:</label>
-                      <input type="text" className="nav-item-input" defaultValue="Tracking Number" />
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Input Placeholder:</label>
-                      <input type="text" className="nav-item-input" defaultValue="e.g. ALECO-X892J" />
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Tracking Subtitle:</label>
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.trackSubtitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, trackSubtitle: e.target.value }))}
+                        placeholder="See the real-time status of your concern."
+                      />
                     </div>
                   </div>
                 </div>
@@ -978,46 +1138,102 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                     About ALECO
                   </h4>
                   <p className="settings-section-description">
-                    Configure the About section with image carousel and company description.
+                    Configure the About section title and content paragraphs.
                   </p>
                   <div className="public-section-config">
-                    <div className="config-row">
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show About Section</span>
-                      </label>
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Section Title:</label>
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.aboutTitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, aboutTitle: e.target.value }))}
+                        placeholder="About ALECO"
+                      />
                     </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Enable Image Carousel</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(76px * var(--nav-scale))' }}>
-                      <label className="config-label-inline">Slide interval (seconds):</label>
-                      <input type="number" className="nav-item-input" defaultValue={3} min={1} max={30} style={{ width: '70px' }} />
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Section Heading:</label>
-                      <input type="text" className="nav-item-input" defaultValue="About ALECO" />
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Subheading:</label>
-                      <input type="text" className="nav-item-input" defaultValue="Albay Electric Cooperative, Inc. (ALECO)" />
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                    <div className="config-row stacked">
                       <label className="config-label-block">Paragraph 1:</label>
-                      <textarea className="nav-item-input" rows={2} defaultValue="Welcome to Albay Electric Cooperative, Inc. (ALECO), the driving force behind reliable electricity distribution in Albay province." style={{ resize: 'vertical' }} />
+                      <textarea
+                        className="nav-item-input"
+                        rows={3}
+                        value={publicSettings.aboutPara1}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, aboutPara1: e.target.value }))}
+                        style={{ resize: 'vertical' }}
+                      />
                     </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                    <div className="config-row stacked">
                       <label className="config-label-block">Paragraph 2:</label>
-                      <textarea className="nav-item-input" rows={2} defaultValue="We envision a future where every household enjoys uninterrupted access to sustainable, affordable, and high-quality electrical services." style={{ resize: 'vertical' }} />
+                      <textarea
+                        className="nav-item-input"
+                        rows={3}
+                        value={publicSettings.aboutPara2}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, aboutPara2: e.target.value }))}
+                        style={{ resize: 'vertical' }}
+                      />
                     </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                    <div className="config-row stacked">
                       <label className="config-label-block">Paragraph 3:</label>
-                      <textarea className="nav-item-input" rows={2} defaultValue="Our footprint spans 3 cities and 15 municipalities across 9 electrification districts." style={{ resize: 'vertical' }} />
+                      <textarea
+                        className="nav-item-input"
+                        rows={3}
+                        value={publicSettings.aboutPara3}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, aboutPara3: e.target.value }))}
+                        style={{ resize: 'vertical' }}
+                      />
+                    </div>
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Carousel Images:</label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                        {publicSettings.aboutImages.map((url, idx) => (
+                          <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                            <img
+                              src={url}
+                              alt={`About ${idx + 1}`}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeAboutImage(idx)}
+                              style={{
+                                position: 'absolute',
+                                top: '-6px',
+                                right: '-6px',
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                background: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          className="settings-btn settings-btn--outline"
+                          onClick={openAboutImageWidget}
+                          disabled={isAboutWidgetReady || publicSettings.aboutImages.length >= 8}
+                          style={{ width: '80px', height: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                          </svg>
+                          <span style={{ fontSize: '10px', marginTop: '4px' }}>Add</span>
+                        </button>
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                        {publicSettings.aboutImages.length}/8 images. Click + to upload, × to remove.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1032,30 +1248,28 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                     Privacy Notice
                   </h4>
                   <p className="settings-section-description">
-                    Configure the privacy notice section displayed before the footer.
+                    Configure the privacy section title and full content text.
                   </p>
                   <div className="public-section-config">
-                    <div className="config-row">
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Privacy Section</span>
-                      </label>
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Section Title:</label>
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.privacyTitle}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, privacyTitle: e.target.value }))}
+                        placeholder="Privacy Notice"
+                      />
                     </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Section Heading:</label>
-                      <input type="text" className="nav-item-input" defaultValue="Privacy Notice" />
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-label-block">Privacy Statement:</label>
-                      <textarea className="nav-item-input" rows={3} defaultValue="We respect your privacy and will keep secure and confidential the personal data you provide. We collect, use, and store your Personal Data in accordance with applicable laws." style={{ resize: 'vertical' }} />
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Require "Agree" Button</span>
-                      </label>
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Privacy Content:</label>
+                      <textarea
+                        className="nav-item-input"
+                        rows={5}
+                        value={publicSettings.privacyContent}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, privacyContent: e.target.value }))}
+                        style={{ resize: 'vertical' }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1072,64 +1286,60 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                     Footer
                   </h4>
                   <p className="settings-section-description">
-                    Configure the page footer and global cookie consent.
+                    Configure the page footer copyright text.
                   </p>
                   <div className="public-section-config">
-                    <div className="config-row">
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Footer</span>
-                      </label>
-                    </div>
-                    <div className="config-row stacked" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
+                    <div className="config-row stacked">
                       <label className="config-label-block">Copyright Text:</label>
-                      <input type="text" className="nav-item-input" defaultValue="ALECO's Power Information System, all rights reserved." />
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Cookie Consent Banner</span>
-                      </label>
-                    </div>
-                    <div className="config-row" style={{ paddingLeft: 'calc(52px * var(--nav-scale))' }}>
-                      <label className="config-toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                        <span className="config-label">Show Theme Toggle Button</span>
-                      </label>
+                      <input
+                        type="text"
+                        className="nav-item-input"
+                        value={publicSettings.footerCopyright}
+                        onChange={(e) => setPublicSettings(s => ({ ...s, footerCopyright: e.target.value }))}
+                        placeholder="ALECO's Power Information System, all rights reserved."
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Preview & Save */}
+                {/* Save Actions */}
                 <div className="settings-section" style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
                   <h4 className="settings-section-title" style={{ color: 'var(--accent-primary)' }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
                     </svg>
-                    Preview & Publish
+                    Save Changes
                   </h4>
                   <p className="settings-section-description">
-                    Review and save changes to the public landing page. Changes take effect immediately.
+                    Save or reset all public page text configurations. Changes take effect immediately.
                   </p>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <button className="settings-btn settings-btn--outline">
+                    <button
+                      type="button"
+                      className="settings-btn settings-btn--danger"
+                      onClick={handleResetPublicSettings}
+                      disabled={isSavingPublic || isResettingPublic}
+                    >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
                       </svg>
-                      Open Preview
+                      {isResettingPublic ? 'Resetting...' : 'Reset to Default'}
                     </button>
-                    <button className="settings-btn settings-btn--primary">
+                    <button
+                      type="button"
+                      className={`settings-btn settings-btn--primary ${isSavingPublic ? 'loading' : ''}`}
+                      onClick={handleSavePublicSettings}
+                      disabled={isSavingPublic || isResettingPublic}
+                    >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                         <polyline points="17 21 17 13 7 13 7 21"></polyline>
                         <polyline points="7 3 7 8 15 8"></polyline>
                       </svg>
-                      Save Public Settings
+                      {isSavingPublic ? 'Saving...' : 'Save Public Settings'}
                     </button>
                     <span className="config-status active" style={{ marginLeft: 'auto' }}>● Live</span>
                   </div>

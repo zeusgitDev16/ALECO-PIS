@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 import './CSS/ReportaProblem.css';
 import { apiUrl } from './utils/api';
+import { useSiteSettings } from './context/SiteSettingsContext';
 import { formatPhoneDisplay, INVALID_PHONE_HINT } from './utils/phoneUtils';
 import { formatToPhilippineTime, formatToPhilippineTimeShort } from './utils/dateUtils';
 import { formatTicketStatusLabel } from './utils/ticketStatusDisplay';
@@ -30,6 +31,12 @@ import './CSS/ReportaProblemViewportFix.css';
 const TOTAL_STEPS = 6;
 
 const ReportaProblem = () => {
+    const { settings } = useSiteSettings();
+    const reportTitle = settings?.public_report_title || 'Report a Problem';
+    const reportSubtitle = settings?.public_report_subtitle || 'Brownouts, damaged posts, broken wires, etc.';
+    const trackTitle = settings?.public_track_title || 'Track Your Ticket';
+    const trackSubtitle = settings?.public_track_subtitle || 'See the real-time status of your concern.';
+
     // --- Wizard State ---
     const [currentStep, setCurrentStep] = useState(1);
     const stepContentRef = useRef(null);
@@ -591,8 +598,8 @@ const ReportaProblem = () => {
                 {/* --- FRONT SIDE: REPORT FORM --- */}
                 <div className="report-card-front">
                     <div className="report-header-section">
-                        <h2 className="report-title">Report a Problem</h2>
-                        <p className="report-description">Brownouts, damaged posts, broken wires, etc.</p>
+                        <h2 className="report-title">{reportTitle}</h2>
+                        <p className="report-description">{reportSubtitle}</p>
                         <div style={{ marginTop: '15px', display: 'flex' }}>
                             <button type="button" className="flip-button-style" onClick={() => setIsFlipped(true)}>
                                 Track Your Ticket 
@@ -824,8 +831,8 @@ const ReportaProblem = () => {
                 {/* --- BACK SIDE: TRACKING UI --- */}
                 <div className="report-card-back">
                     <div className="report-header-section">
-                        <h2 className="report-title">Track Your Ticket</h2>
-                        <p className="report-description">See the real-time status of your concern.</p>
+                        <h2 className="report-title">{trackTitle}</h2>
+                        <p className="report-description">{trackSubtitle}</p>
                         <div style={{ marginTop: '15px', display: 'flex' }}>
                             <button type="button" className="flip-button-style" onClick={() => setIsFlipped(false)}>
                                 <svg className="flip-icon" style={{ transform: 'rotate(180deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>

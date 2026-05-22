@@ -392,7 +392,9 @@ router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, re
         }
 
         const [members] = await connection.execute(
-            `SELECT ticket_id, phone_number, visit_order FROM aleco_tickets WHERE parent_ticket_id = ? AND status IN ('Pending', 'Unresolved')`,
+            `SELECT ticket_id, phone_number, visit_order, first_name, middle_name, last_name, address, action_desired
+             FROM aleco_tickets
+             WHERE parent_ticket_id = ? AND status IN ('Pending', 'Unresolved')`,
             [mainTicketId]
         );
 
@@ -424,15 +426,22 @@ router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, re
             ? [...members].sort((a, b) => (a.visit_order || 999) - (b.visit_order || 999))
             : members;
 
-        // Single SMS to lineman for the whole group
-        const ticketList = sortedMembers.map(m => m.ticket_id).join(', ');
-        const linemanMsg = `Hi crew ${assigned_crew}, your assigned ticket is ${mainTicketId}
+        // Single SMS to lineman for the whole group.
+        // New template: deliver per-ticket details. Keyword reply flow has been retired.
+        const buildMemberBlock = (m) => {
+            const fullName = [m.first_name, m.middle_name, m.last_name]
+                .filter((part) => part && String(part).trim() !== '')
+                .join(' ');
+            return `${m.ticket_id}
+name of consumer: ${fullName || 'N/A'}
+address: ${m.address || 'N/A'}
+action desired: ${m.action_desired || 'N/A'}
+phone number: ${m.phone_number || 'N/A'}`;
+        };
+        const memberDetails = sortedMembers.map(buildMemberBlock).join('\n\n');
+        const linemanMsg = `Hi crew/linemen ${assigned_crew} this is your assigned tickets:
 
-keywords to reply (per ticket):
-{ticket_id} fixed | unfixed | nofault | nores
-Tickets: ${ticketList}
-
-or bulk: all fixed | all unfixed | all nofault | all nores
+${memberDetails}
 
 keep safe!`;
         const linemanSmsResult = await sendPhilSMS(linemanPhone, linemanMsg);

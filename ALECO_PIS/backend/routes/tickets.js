@@ -400,10 +400,17 @@ router.put('/tickets/:ticket_id/dispatch', requireStaff, async (req, res) => {
     console.log(`\n🚀 STARTING DYNAMIC DISPATCH for Ticket: ${ticket_id}`);
 
     try {
-        // --- PHASE 1: DYNAMIC PHONE LOOKUP ---
-        // We join the ticket with personnel to get both numbers in one hit
+        // --- PHASE 1: DYNAMIC PHONE LOOKUP + TICKET DETAILS ---
+        // Join the ticket with personnel to get both numbers + consumer details for the SMS body
         const [contactData] = await pool.execute(`
-            SELECT t.phone_number AS consumer_phone, p.phone_number AS lineman_phone
+            SELECT
+                t.phone_number AS consumer_phone,
+                t.first_name,
+                t.middle_name,
+                t.last_name,
+                t.address,
+                t.action_desired,
+                p.phone_number AS lineman_phone
             FROM aleco_tickets t
             LEFT JOIN aleco_personnel p ON p.crew_name = ?
             WHERE t.ticket_id = ?
@@ -413,7 +420,15 @@ router.put('/tickets/:ticket_id/dispatch', requireStaff, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Ticket not found.' });
         }
 
-        const { consumer_phone, lineman_phone } = contactData[0];
+        const {
+            consumer_phone,
+            lineman_phone,
+            first_name,
+            middle_name,
+            last_name,
+            address,
+            action_desired
+        } = contactData[0];
 
         // Validation: Ensure the selected crew actually has a number in the DB
         if (!lineman_phone) {
@@ -423,13 +438,17 @@ router.put('/tickets/:ticket_id/dispatch', requireStaff, async (req, res) => {
 
         // --- PHASE 2: SMS PHASE ---
         // 1. Notify Lineman (Using number from aleco_personnel)
-        const linemanMsg = `Hi crew ${assigned_crew}, your assigned ticket is ${ticket_id}
+        // New template: deliver ticket details only. Keyword reply flow has been retired.
+        const consumerFullName = [first_name, middle_name, last_name]
+            .filter((part) => part && String(part).trim() !== '')
+            .join(' ');
+        const linemanMsg = `Hi crew/linemen ${assigned_crew} this is your assigned ticket:
 
-keywords to reply:
-fixed
-unfixed
-nofault
-nores
+${ticket_id}
+name of consumer: ${consumerFullName || 'N/A'}
+address: ${address || 'N/A'}
+action desired: ${action_desired || 'N/A'}
+phone number: ${consumer_phone || 'N/A'}
 
 keep safe!`;
         const linemanSmsResult = await sendPhilSMS(lineman_phone, linemanMsg);
@@ -799,13 +818,35 @@ router.put('/tickets/:ticket_id/resume-hold', requireStaff, async (req, res) => 
 
 
 // ============================================================================
-// INBOUND SMS RECEIVER (YEASTAR WEBHOOK)
+// INBOUND SMS RECEIVER (YEASTAR WEBHOOK) — RETIRED
+// ----------------------------------------------------------------------------
+// The keyword-reply flow (fixed / unfixed / nofault / nores / hold / enroute /
+// arrived / all <keyword>) has been retired. Linemen no longer change ticket
+// status via SMS — status transitions are now handled exclusively through the
+// admin UI.
+//
+// The endpoint is intentionally kept as a 200-OK no-op so any external SMS
+// gateway still configured to POST/GET here will not retry or error. All
+// inbound messages are logged for visibility and discarded.
 // ============================================================================
 
 router.get('/tickets/sms/receive', async (req, res) => {
     try {
-        // Yeastar will send the data in the URL query string
-        // Example: /api/tickets/sms/receive?number=09123456789&text=FIXED ALECO-12345
+        const senderNumber = req.query.number || req.query.sender;
+        const messageText = req.query.text || req.query.content;
+        console.log(`📩 [SMS-RECEIVE retired] From: ${senderNumber || 'unknown'} | Text: "${messageText || ''}" — ignored (keyword flow disabled).`);
+        return res.status(200).send('OK');
+    } catch (error) {
+        console.error('❌ INBOUND SMS no-op handler error:', error);
+        return res.status(200).send('OK');
+    }
+});
+
+// Legacy keyword-parsing block kept below for historical reference only.
+// It is unreachable because the handler above returns first.
+// eslint-disable-next-line no-unused-vars
+const _retiredInboundKeywordHandler = async (req, res) => {
+    try {
         const senderNumber = req.query.number || req.query.sender;
         const messageText = req.query.text || req.query.content;
 
@@ -1134,7 +1175,7 @@ router.get('/tickets/sms/receive', async (req, res) => {
         console.error("❌ YEASTAR WEBHOOK ERROR:", error);
         res.status(500).send("Internal Server Error");
     }
-});
+};
 
 // ============================================================================
 // DUPLICATE DETECTION ROUTE (Check for similar tickets before creation)

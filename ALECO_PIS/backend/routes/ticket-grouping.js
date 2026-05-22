@@ -392,7 +392,7 @@ router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, re
         }
 
         const [members] = await connection.execute(
-            `SELECT ticket_id, phone_number, visit_order, first_name, middle_name, last_name, address, action_desired
+            `SELECT ticket_id, phone_number, visit_order, first_name, middle_name, last_name, address, concern, action_desired
              FROM aleco_tickets
              WHERE parent_ticket_id = ? AND status IN ('Pending', 'Unresolved')`,
             [mainTicketId]
@@ -435,6 +435,7 @@ router.put('/tickets/group/:mainTicketId/dispatch', requireStaff, async (req, re
             return `${m.ticket_id}
 name of consumer: ${fullName || 'N/A'}
 address: ${m.address || 'N/A'}
+concern: ${m.concern || 'N/A'}
 action desired: ${m.action_desired || 'N/A'}
 phone number: ${m.phone_number || 'N/A'}`;
         };

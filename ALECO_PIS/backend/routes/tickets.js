@@ -409,6 +409,7 @@ router.put('/tickets/:ticket_id/dispatch', requireStaff, async (req, res) => {
                 t.middle_name,
                 t.last_name,
                 t.address,
+                t.concern,
                 t.action_desired,
                 p.phone_number AS lineman_phone
             FROM aleco_tickets t
@@ -427,6 +428,7 @@ router.put('/tickets/:ticket_id/dispatch', requireStaff, async (req, res) => {
             middle_name,
             last_name,
             address,
+            concern,
             action_desired
         } = contactData[0];
 
@@ -447,6 +449,7 @@ router.put('/tickets/:ticket_id/dispatch', requireStaff, async (req, res) => {
 ${ticket_id}
 name of consumer: ${consumerFullName || 'N/A'}
 address: ${address || 'N/A'}
+concern: ${concern || 'N/A'}
 action desired: ${action_desired || 'N/A'}
 phone number: ${consumer_phone || 'N/A'}
 

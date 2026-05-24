@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiUrl } from '../../utils/api';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import { formatTicketStatusLabel } from '../../utils/ticketStatusDisplay';
@@ -6,7 +7,6 @@ import TicketLocationMap from '../maps/TicketLocationMap';
 import '../../CSS/TicketDetailPane.css';
 import '../../CSS/TicketDashboard.css';
 import DispatchTicketModal from './DispatchTicketModal';
-import HoldTicketModal from './HoldTicketModal';
 import EditTicketModal from './EditTicketModal';
 import ConfirmModal from './ConfirmModal';
 import TicketHistoryLogs from './TicketHistoryLogs';
@@ -16,20 +16,23 @@ import { authFetch } from '../../utils/authFetch';
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
-const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
+const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
+    const navigate = useNavigate();
     const [copiedField, setCopiedField] = useState(null);
     const [uiScale, setUiScale] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
-    const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
     const [isGroupDispatchOpen, setIsGroupDispatchOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isUngroupConfirmOpen, setIsUngroupConfirmOpen] = useState(false);
     const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
-    const [isRevertConfirmOpen, setIsRevertConfirmOpen] = useState(false);
+    const [isMemoCreating, setIsMemoCreating] = useState(false);
+    const [memoCreatedData, setMemoCreatedData] = useState(null);
+    const [memoCreationError, setMemoCreationError] = useState(null);
     const [isUnresolvedConfirmOpen, setIsUnresolvedConfirmOpen] = useState(false);
     const [isNoFaultFoundConfirmOpen, setIsNoFaultFoundConfirmOpen] = useState(false);
     const [isAccessDeniedConfirmOpen, setIsAccessDeniedConfirmOpen] = useState(false);
+    const [resolutionRemarks, setResolutionRemarks] = useState('');
     const [groupData, setGroupData] = useState(null);
     const [memoControlNumber, setMemoControlNumber] = useState('');
     const [isMemoLoading, setIsMemoLoading] = useState(false);
@@ -129,6 +132,71 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
         }).catch(err => console.error("Failed to copy text: ", err));
     };
 
+    // 4. One-click Create Service Memo Handler
+    const handleCreateServiceMemo = async () => {
+        setIsMemoCreating(true);
+        setMemoCreationError(null);
+        setMemoCreatedData(null);
+
+        try {
+            if (isGroupMaster) {
+                // Group ticket: fetch children and create bulk memos
+                const groupRes = await authFetch(apiUrl(`/api/tickets/group/${ticket.ticket_id}`));
+                const groupData = await groupRes.json();
+                
+                if (!groupData.success || !groupData.data?.children) {
+                    throw new Error('Failed to fetch group children');
+                }
+
+                const childTicketIds = groupData.data.children.map(c => c.ticket_id);
+                
+                const bulkRes = await authFetch(apiUrl('/api/service-memos/bulk'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket_ids: childTicketIds }),
+                });
+                
+                const bulkResult = await bulkRes.json();
+                
+                if (bulkResult.success) {
+                    setMemoCreatedData({
+                        type: 'bulk',
+                        created: bulkResult.data.created || [],
+                        skipped: bulkResult.data.skipped || [],
+                    });
+                    if (onRefetch) onRefetch();
+                } else {
+                    setMemoCreationError(bulkResult.message || 'Failed to create service memos');
+                }
+            } else {
+                // Individual ticket: create single memo
+                const res = await authFetch(apiUrl('/api/service-memos'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket_id: ticket.ticket_id }),
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    setMemoCreatedData({
+                        type: 'single',
+                        control_number: result.data.control_number,
+                        id: result.data.id,
+                    });
+                    if (onRefetch) onRefetch();
+                } else {
+                    setMemoCreationError(result.message || 'Failed to create service memo');
+                }
+            }
+        } catch (error) {
+            console.error('Create service memo error:', error);
+            setMemoCreationError('Network error. Please try again.');
+        } finally {
+            setIsMemoCreating(false);
+        }
+    };
+
     return (
         <div
             className="ticket-modal-overlay"
@@ -155,9 +223,11 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                             >
                                 {ticket.ticket_id}
                             </h2>
-                            <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
-                                {ticket.status}
-                            </span>
+                            <div className="header-badges">
+                                <span className={`status-tag ${ticket.status?.toLowerCase()}`}>
+                                    {ticket.status}
+                                </span>
+                            </div>
                         </div>
                         <div className="header-right">
                             <div className="reported-date">{formattedDate}</div>
@@ -167,13 +237,13 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
 
                 {/* Resolution stepper: 1) Dispatch → 2) In Progress → 3) Resolved */}
                 <div className="resolution-stepper">
-                    <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
+                    <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
                         <span className="stepper-num">1</span>
                         <span className="stepper-label stepper-label-full">Dispatch</span>
                         <span className="stepper-label stepper-label-short" aria-hidden="true">Disp</span>
                     </div>
                     <div className="stepper-connector" />
-                    <div className={`stepper-step ${['Ongoing', 'OnHold'].includes(ticket.status) ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
+                    <div className={`stepper-step ${['Ongoing'].includes(ticket.status) ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
                         <span className="stepper-num">2</span>
                         <span className="stepper-label stepper-label-full">In Progress</span>
                         <span className="stepper-label stepper-label-short" aria-hidden="true">Prog</span>
@@ -195,6 +265,13 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 <div className="detail-grid">
                     {!isGroupMaster && (
                         <>
+                            {ticket.is_manual === 1 && (
+                                <div className="detail-group">
+                                    <span className="manual-badge" title="Created manually by dispatcher" style={{ display: 'inline-block' }}>
+                                        Manually Created
+                                    </span>
+                                </div>
+                            )}
                             <div className="detail-group">
                                 <label>Memo Link</label>
                                 <p className="detail-value memo-link-highlight">
@@ -348,7 +425,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                         </div>
                     )}
 
-                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes || ticket.concern_resolution_notes) && ['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
+                    {(ticket.assigned_crew || ticket.eta || ticket.dispatch_notes || ticket.concern_resolution_notes) && ['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
                         <div className="detail-group dispatch-info-section">
                             <label>{ticket.concern_resolution_notes ? 'Resolution Info' : 'Dispatch Info'}</label>
                             <div className="dispatch-info-box">
@@ -356,9 +433,6 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                                 {ticket.eta && <p><strong>ETA:</strong> {ticket.eta}</p>}
                                 {ticket.dispatch_notes && <p><strong>Notes:</strong> {ticket.dispatch_notes}</p>}
                                 {ticket.concern_resolution_notes && <p><strong>Concern Notes:</strong> {ticket.concern_resolution_notes}</p>}
-                                {ticket.hold_reason && (
-                                    <p className="hold-info"><strong>On Hold:</strong> {ticket.hold_reason}{ticket.hold_since ? ` (since ${formatToPhilippineTime(ticket.hold_since)})` : ''}</p>
-                                )}
                             </div>
                         </div>
                     )}
@@ -376,7 +450,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 </div>
 
                 {/* --- SECTION 4: ADMIN ACTIONS (fixed footer, never scrolls) --- */}
-                <div className="action-footer">
+                <div className={`action-footer ${ticket.status === 'Pending' ? 'pending' : ''}`}>
                     {!isGroupMaster && !isGroupChild && (
                         <>
                             <button
@@ -399,146 +473,103 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                             )}
                         </>
                     )}
-                    {ticket.status === 'Pending' && (
-                        <>
-                            {isGroupMaster ? (
-                                onDispatchGroup && (
-                                    <button
-                                        className="btn-action btn-ongoing"
-                                        onClick={() => setIsGroupDispatchOpen(true)}
-                                        title="Start Resolution (Dispatch All)"
-                                    >
-                                        Start Resolution (Dispatch All)
-                                    </button>
-                                )
-                            ) : (
-                                <>
-                                    <button
-                                        className="btn-action btn-ongoing"
-                                        onClick={() => setIsDispatchModalOpen(true)}
-                                        title="Start Resolution"
-                                    >
-                                        Start Resolution
-                                    </button>
-                                    {isGroupChild && onDispatchGroup && (
-                                        <button
-                                            className="btn-action btn-ongoing"
-                                            onClick={() => setIsGroupDispatchOpen(true)}
-                                            title="Dispatch All"
-                                        >
-                                            Dispatch All
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </>
-                    )}
-
-                    {['Unresolved', 'OnHold'].includes(ticket.status) && (
-                        <>
-                            {isGroupMaster ? (
-                                onDispatchGroup && (
-                                    <button
-                                        className="btn-action btn-ongoing"
-                                        onClick={() => setIsGroupDispatchOpen(true)}
-                                        title="Re-dispatch (Dispatch All)"
-                                    >
-                                        Re-dispatch (Dispatch All)
-                                    </button>
-                                )
-                            ) : (
-                                <>
-                                    <button
-                                        className="btn-action btn-ongoing"
-                                        onClick={() => setIsDispatchModalOpen(true)}
-                                        title="Re-dispatch"
-                                    >
-                                        Re-dispatch
-                                    </button>
-                                    {isGroupChild && onDispatchGroup && (
-                                        <button
-                                            className="btn-action btn-ongoing"
-                                            onClick={() => setIsGroupDispatchOpen(true)}
-                                            title="Dispatch All"
-                                        >
-                                            Dispatch All
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </>
-                    )}
-
-                    {(isGroupMaster || isGroupChild) && mainTicketId && onUngroup && (
-                        <button
-                            className="btn-action btn-ungroup"
-                            onClick={() => setIsUngroupConfirmOpen(true)}
-                            title="Ungroup"
-                        >
-                            Ungroup
-                        </button>
-                    )}
-
-                    {['Pending', 'Ongoing', 'OnHold', 'Unresolved'].includes(ticket.status) && (
-                        <button
-                            className="btn-action btn-resolved"
-                            onClick={() => setIsRestoreConfirmOpen(true)}
-                            title="Mark as Restored"
-                        >
-                            Mark as Restored
-                        </button>
-                    )}
-
-                    {['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) && (
-                        <button
-                            className="btn-action btn-revert-pending"
-                            onClick={() => setIsRevertConfirmOpen(true)}
-                            title="Revert to Pending"
-                        >
-                            Revert to Pending
-                        </button>
-                    )}
-
-                    {ticket.status === 'Ongoing' && !isGroupMaster && (
-                        <button
-                            className="btn-action btn-hold"
-                            onClick={() => setIsHoldModalOpen(true)}
-                            title="Put on Hold"
-                        >
-                            Put on Hold
-                        </button>
-                    )}
-
-                    {ticket.status === 'OnHold' && onResumeFromHold && (
+                    
+                    {!isGroupChild && (!ticket.service_memo_id || isGroupMaster) && (
                         <button
                             type="button"
-                            className="btn-action btn-ongoing"
-                            onClick={() => onResumeFromHold(ticket.ticket_id)}
-                            title="Clear hold and continue work"
+                            className="btn-action btn-create-memo"
+                            onClick={handleCreateServiceMemo}
+                            disabled={isMemoCreating}
+                            title="Create Service Memo"
                         >
-                            Resume work
+                            {isMemoCreating ? 'Creating...' : 'Create Service Memo'}
                         </button>
                     )}
-
-                    {['Ongoing', 'OnHold'].includes(ticket.status) && (
+                    
+                    {ticket.status !== 'Pending' && (
                         <>
+                            {['Unresolved'].includes(ticket.status) && (
+                                <>
+                                    {isGroupMaster ? (
+                                        onDispatchGroup && (
+                                            <button
+                                                className="btn-action btn-ongoing"
+                                                onClick={() => setIsGroupDispatchOpen(true)}
+                                                title="Re-dispatch (Dispatch All)"
+                                            >
+                                                Re-dispatch (Dispatch All)
+                                            </button>
+                                        )
+                                    ) : (
+                                        <>
+                                            <button
+                                                className="btn-action btn-ongoing"
+                                                onClick={() => setIsDispatchModalOpen(true)}
+                                                title="Re-dispatch"
+                                            >
+                                                Re-dispatch
+                                            </button>
+                                            {isGroupChild && onDispatchGroup && (
+                                                <button
+                                                    className="btn-action btn-ongoing"
+                                                    onClick={() => setIsGroupDispatchOpen(true)}
+                                                    title="Dispatch All"
+                                                >
+                                                    Dispatch All
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </>
+                            )}
+
+                            {(isGroupMaster || isGroupChild) && mainTicketId && onUngroup && (
+                                <button
+                                    className="btn-action btn-ungroup"
+                                    onClick={() => setIsUngroupConfirmOpen(true)}
+                                    title="Ungroup"
+                                >
+                                    Ungroup
+                                </button>
+                            )}
+
+                            <button
+                                className="btn-action btn-resolved"
+                                onClick={() => {
+                                    setResolutionRemarks('');
+                                    setIsRestoreConfirmOpen(true);
+                                }}
+                                title="Mark as Restored"
+                            >
+                                Mark as Restored
+                            </button>
+
                             <button
                                 className="btn-action btn-unresolved"
-                                onClick={() => setIsUnresolvedConfirmOpen(true)}
+                                onClick={() => {
+                                    setResolutionRemarks('');
+                                    setIsUnresolvedConfirmOpen(true);
+                                }}
                                 title="Mark as Unresolved"
                             >
                                 Mark as Unresolved
                             </button>
                             <button
                                 className="btn-action btn-nff"
-                                onClick={() => setIsNoFaultFoundConfirmOpen(true)}
+                                onClick={() => {
+                                    setResolutionRemarks('');
+                                    setIsNoFaultFoundConfirmOpen(true);
+                                }}
                                 title="No Fault Found"
                             >
                                 No Fault Found
                             </button>
                             <button
                                 className="btn-action btn-access-denied"
-                                onClick={() => setIsAccessDeniedConfirmOpen(true)}
+                                onClick={() => {
+                                    setResolutionRemarks('');
+                                    setIsAccessDeniedConfirmOpen(true);
+                                }}
                                 title="Access Denied"
                             >
                                 Access Denied
@@ -573,17 +604,6 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                     onUpdateTicket(ticket.ticket_id, 'Ongoing', dispatchData);
                     setIsDispatchModalOpen(false);
                     onClose(); 
-                }}
-            />
-
-            <HoldTicketModal
-                isOpen={isHoldModalOpen}
-                onClose={() => setIsHoldModalOpen(false)}
-                ticket={ticket}
-                onSubmit={(holdData) => {
-                    onPutHold(ticket.ticket_id, holdData);
-                    setIsHoldModalOpen(false);
-                    onClose();
                 }}
             />
 
@@ -627,7 +647,11 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 isOpen={isRestoreConfirmOpen}
                 onClose={() => setIsRestoreConfirmOpen(false)}
                 onConfirm={async () => {
-                    await onUpdateTicket(ticket.ticket_id, 'Restored');
+                    if (!resolutionRemarks.trim()) {
+                        alert('Resolution remarks are required.');
+                        return;
+                    }
+                    await onUpdateTicket(ticket.ticket_id, 'Restored', null, resolutionRemarks);
                     setIsRestoreConfirmOpen(false);
                     onClose();
                 }}
@@ -636,28 +660,40 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 confirmLabel="Mark Restored"
                 cancelLabel="Cancel"
                 variant="success"
-            />
-
-            <ConfirmModal
-                isOpen={isRevertConfirmOpen}
-                onClose={() => setIsRevertConfirmOpen(false)}
-                onConfirm={async () => {
-                    await onUpdateTicket(ticket.ticket_id, 'Pending');
-                    setIsRevertConfirmOpen(false);
-                    onClose();
-                }}
-                title="Revert to Pending"
-                message={`Revert ticket ${ticket.ticket_id} to Pending? The ticket will be reopened and you can start resolution again. Use this if the ticket was closed by mistake or needs further action.`}
-                confirmLabel="Revert to Pending"
-                cancelLabel="Cancel"
-                variant="revert-pending"
-            />
+            >
+                <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Resolution Remarks (Required)
+                    </label>
+                    <textarea
+                        value={resolutionRemarks}
+                        onChange={(e) => setResolutionRemarks(e.target.value)}
+                        placeholder="Describe the resolution details..."
+                        rows={3}
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #ccc',
+                            borderRadius: '6px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                            resize: 'vertical',
+                        }}
+                        autoFocus
+                    />
+                </div>
+            </ConfirmModal>
 
             <ConfirmModal
                 isOpen={isUnresolvedConfirmOpen}
                 onClose={() => setIsUnresolvedConfirmOpen(false)}
                 onConfirm={async () => {
-                    await onUpdateTicket(ticket.ticket_id, 'Unresolved');
+                    if (!resolutionRemarks.trim()) {
+                        alert('Resolution remarks are required.');
+                        return;
+                    }
+                    await onUpdateTicket(ticket.ticket_id, 'Unresolved', null, resolutionRemarks);
                     setIsUnresolvedConfirmOpen(false);
                     onClose();
                 }}
@@ -666,13 +702,40 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 confirmLabel="Mark Unresolved"
                 cancelLabel="Cancel"
                 variant="unresolved"
-            />
+            >
+                <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Resolution Remarks (Required)
+                    </label>
+                    <textarea
+                        value={resolutionRemarks}
+                        onChange={(e) => setResolutionRemarks(e.target.value)}
+                        placeholder="Describe why the ticket could not be resolved..."
+                        rows={3}
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #ccc',
+                            borderRadius: '6px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                            resize: 'vertical',
+                        }}
+                        autoFocus
+                    />
+                </div>
+            </ConfirmModal>
 
             <ConfirmModal
                 isOpen={isNoFaultFoundConfirmOpen}
                 onClose={() => setIsNoFaultFoundConfirmOpen(false)}
                 onConfirm={async () => {
-                    await onUpdateTicket(ticket.ticket_id, 'NoFaultFound');
+                    if (!resolutionRemarks.trim()) {
+                        alert('Resolution remarks are required.');
+                        return;
+                    }
+                    await onUpdateTicket(ticket.ticket_id, 'NoFaultFound', null, resolutionRemarks);
                     setIsNoFaultFoundConfirmOpen(false);
                     onClose();
                 }}
@@ -681,13 +744,40 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 confirmLabel="No Fault Found"
                 cancelLabel="Cancel"
                 variant="nff"
-            />
+            >
+                <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Resolution Remarks (Required)
+                    </label>
+                    <textarea
+                        value={resolutionRemarks}
+                        onChange={(e) => setResolutionRemarks(e.target.value)}
+                        placeholder="Describe the verification results..."
+                        rows={3}
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #ccc',
+                            borderRadius: '6px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                            resize: 'vertical',
+                        }}
+                        autoFocus
+                    />
+                </div>
+            </ConfirmModal>
 
             <ConfirmModal
                 isOpen={isAccessDeniedConfirmOpen}
                 onClose={() => setIsAccessDeniedConfirmOpen(false)}
                 onConfirm={async () => {
-                    await onUpdateTicket(ticket.ticket_id, 'AccessDenied');
+                    if (!resolutionRemarks.trim()) {
+                        alert('Resolution remarks are required.');
+                        return;
+                    }
+                    await onUpdateTicket(ticket.ticket_id, 'AccessDenied', null, resolutionRemarks);
                     setIsAccessDeniedConfirmOpen(false);
                     onClose();
                 }}
@@ -696,7 +786,94 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onPutHold, onResumeFromHold,
                 confirmLabel="Access Denied"
                 cancelLabel="Cancel"
                 variant="access-denied"
-            />
+            >
+                <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Resolution Remarks (Required)
+                    </label>
+                    <textarea
+                        value={resolutionRemarks}
+                        onChange={(e) => setResolutionRemarks(e.target.value)}
+                        placeholder="Describe why access was denied..."
+                        rows={3}
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #ccc',
+                            borderRadius: '6px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                            resize: 'vertical',
+                        }}
+                        autoFocus
+                    />
+                </div>
+            </ConfirmModal>
+
+            {/* Memo Creation Success Modal */}
+            {memoCreatedData && (
+                <ConfirmModal
+                    isOpen={!!memoCreatedData}
+                    onClose={() => {
+                        setMemoCreatedData(null);
+                        onClose();
+                    }}
+                    onConfirm={() => {
+                        if (memoCreatedData.type === 'single') {
+                            // Dispatch custom event to open service memo modal
+                            window.dispatchEvent(new CustomEvent('aleco:open-service-memo', { 
+                                detail: { memoId: memoCreatedData.id, mode: 'edit' }
+                            }));
+                            setMemoCreatedData(null);
+                            onClose();
+                        } else {
+                            setMemoCreatedData(null);
+                            onClose();
+                        }
+                    }}
+                    title={memoCreatedData.type === 'single' ? 'Service Memo Created' : 'Service Memos Created'}
+                    message={
+                        memoCreatedData.type === 'single' 
+                            ? `Memo #${memoCreatedData.control_number} has been created successfully.`
+                            : `${memoCreatedData.created.length} memo(s) created successfully.\n\nCreated: ${memoCreatedData.created.map(m => m.control_number).join(', ')}${memoCreatedData.skipped.length > 0 ? `\n\nSkipped: ${memoCreatedData.skipped.length} ticket(s) (already have memos)` : ''}`
+                    }
+                    confirmLabel={memoCreatedData.type === 'single' ? 'View Memo' : 'Close'}
+                    cancelLabel="Close"
+                    variant="success"
+                />
+            )}
+
+            {/* Memo Creation Error Toast */}
+            {memoCreationError && (
+                <div style={{
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    padding: '12px 20px',
+                    borderRadius: '6px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 10000,
+                    maxWidth: '400px',
+                }}>
+                    {memoCreationError}
+                    <button 
+                        onClick={() => setMemoCreationError(null)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'white',
+                            marginLeft: '10px',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                        }}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
 
             {mainTicketId && (
                 <DispatchTicketModal

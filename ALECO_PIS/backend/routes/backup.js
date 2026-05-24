@@ -1895,7 +1895,8 @@ router.post('/tickets/import', requireStaff, upload.single('file'), async (req, 
                         if (c === 'image_url') {
                             vals.push(null);
                         } else {
-                            vals.push(t[c] === '' || t[c] === null ? null : t[c]);
+                            // Normalize string 'null' to actual SQL NULL to prevent decimal field errors
+                            vals.push((t[c] === '' || t[c] === null || t[c] === 'null') ? null : t[c]);
                         }
                     }
                 }

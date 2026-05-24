@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import IssueCategoryDropdown from '../dropdowns/IssueCategoryDropdown';
+import { apiUrl } from '../../utils/api';
+import { authFetch } from '../../utils/authFetch';
 import {
     DndContext,
     closestCenter,
@@ -90,6 +92,9 @@ const GroupIncidentModal = ({ isOpen, onClose, selectedTickets, onSubmit }) => {
     const [remarks, setRemarks] = useState('');
     const [groupType, setGroupType] = useState('similar_incident');
     const [orderedTickets, setOrderedTickets] = useState([]);
+    const [activeTab, setActiveTab] = useState('group'); // 'group' or 'service-memo'
+    const [isCreatingMemos, setIsCreatingMemos] = useState(false);
+    const [memoError, setMemoError] = useState(null);
 
     const modalRef = useRef(null);
     const { x, y, onStart } = useDraggable();
@@ -104,6 +109,8 @@ const GroupIncidentModal = ({ isOpen, onClose, selectedTickets, onSubmit }) => {
         if (isOpen && selectedTickets?.length) {
             setOrderedTickets([...selectedTickets]);
             setGroupType('similar_incident');
+            setActiveTab('group');
+            setMemoError(null);
 
             const first = selectedTickets[0];
             const sameBarangay = selectedTickets.every(t => (t.barangay || '').trim() === (first.barangay || '').trim());
@@ -118,6 +125,44 @@ const GroupIncidentModal = ({ isOpen, onClose, selectedTickets, onSubmit }) => {
             }
         }
     }, [isOpen, selectedTickets]);
+
+    const handleBulkServiceMemo = async () => {
+        setIsCreatingMemos(true);
+        setMemoError(null);
+        try {
+            const firstTicket = selectedTickets[0];
+            const municipality = firstTicket?.municipality;
+            
+            if (!municipality) {
+                setMemoError('Municipality is required for memo number generation.');
+                return;
+            }
+
+            const response = await authFetch(apiUrl('/api/service-memos/bulk'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ticket_ids: selectedTickets.map(t => t.ticket_id),
+                    municipality: municipality,
+                }),
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`Successfully created ${result.data.length} service memos.`);
+                onClose();
+            } else {
+                setMemoError(result.message || 'Failed to create service memos.');
+            }
+        } catch (error) {
+            setMemoError('Network error. Please try again.');
+        } finally {
+            setIsCreatingMemos(false);
+        }
+    };
 
     const moveTicket = (index, direction) => {
         const newOrder = [...orderedTickets];
@@ -200,78 +245,134 @@ const GroupIncidentModal = ({ isOpen, onClose, selectedTickets, onSubmit }) => {
                     <span className="group-modal-header-grip">⋮⋮</span>
                     <div>
                         <h2 className="group-modal-title">Group {selectedTickets?.length || 0} Tickets</h2>
-                        <p className="group-modal-desc">Link selected tickets under one master incident.</p>
+                        <p className="group-modal-desc">Link selected tickets under one master incident or create bulk service memos.</p>
                     </div>
+                </div>
+
+                {/* Action Tabs */}
+                <div className="group-modal-action-tabs">
+                    <button
+                        type="button"
+                        className={`group-modal-action-tab ${activeTab === 'group' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('group')}
+                    >
+                        Group Tickets
+                    </button>
+                    <button
+                        type="button"
+                        className={`group-modal-action-tab ${activeTab === 'service-memo' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('service-memo')}
+                    >
+                        Create Service Memos
+                    </button>
                 </div>
 
                 {/* Scrollable middle only (same spine as Ticket Detail Pane) */}
                 <div className="group-modal-scroll-outer">
                     <div className="group-modal-body-scroll">
                         <div className="group-modal-body">
-                            <div className="group-modal-section">
-                                <label className="group-modal-label">Group Type</label>
-                                <div className="group-modal-type-tabs">
-                                    <button
-                                        type="button"
-                                        className={`group-modal-type-tab ${groupType === 'similar_incident' ? 'active' : ''}`}
-                                        onClick={() => setGroupType('similar_incident')}
-                                    >
-                                        <span className="tab-title">Similar Incident</span>
-                                        <span className="tab-desc">Same area, one crew</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`group-modal-type-tab ${groupType === 'routing_batch' ? 'active' : ''}`}
-                                        onClick={() => setGroupType('routing_batch')}
-                                    >
-                                        <span className="tab-title">Routing Batch</span>
-                                        <span className="tab-desc">Visit in order</span>
-                                    </button>
-                                </div>
-                            </div>
+                            {activeTab === 'group' ? (
+                                <>
+                                    <div className="group-modal-section">
+                                        <label className="group-modal-label">Group Type</label>
+                                        <div className="group-modal-type-tabs">
+                                            <button
+                                                type="button"
+                                                className={`group-modal-type-tab ${groupType === 'similar_incident' ? 'active' : ''}`}
+                                                onClick={() => setGroupType('similar_incident')}
+                                            >
+                                                <span className="tab-title">Similar Incident</span>
+                                                <span className="tab-desc">Same area, one crew</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`group-modal-type-tab ${groupType === 'routing_batch' ? 'active' : ''}`}
+                                                onClick={() => setGroupType('routing_batch')}
+                                            >
+                                                <span className="tab-title">Routing Batch</span>
+                                                <span className="tab-desc">Visit in order</span>
+                                            </button>
+                                        </div>
+                                    </div>
 
-                            <div className="group-modal-section">
-                                <label className="group-modal-label">
-                                    {groupType === 'routing_batch' ? 'Visit order — drag to reorder' : 'Selected tickets'}
-                                </label>
-                                <div className="group-modal-ticket-list">
-                                    {ticketListContent}
-                                </div>
-                            </div>
+                                    <div className="group-modal-section">
+                                        <label className="group-modal-label">
+                                            {groupType === 'routing_batch' ? 'Visit order — drag to reorder' : 'Selected tickets'}
+                                        </label>
+                                        <div className="group-modal-ticket-list">
+                                            {ticketListContent}
+                                        </div>
+                                    </div>
 
-                            <form id="group-modal-form" onSubmit={handleSubmit} className="group-modal-form">
-                                <div className="group-modal-field group-modal-category-field">
-                                    <label className="group-modal-label">Master Category</label>
-                                    <IssueCategoryDropdown
-                                        value={category}
-                                        onChange={(val) => setCategory(val)}
-                                        isFilter={false}
-                                        layoutMode="form"
-                                    />
-                                </div>
+                                    <form id="group-modal-form" onSubmit={handleSubmit} className="group-modal-form">
+                                        <div className="group-modal-field group-modal-category-field">
+                                            <label className="group-modal-label">Master Category</label>
+                                            <IssueCategoryDropdown
+                                                value={category}
+                                                onChange={(val) => setCategory(val)}
+                                                isFilter={false}
+                                                layoutMode="form"
+                                            />
+                                        </div>
 
-                                <div className="group-modal-field">
-                                    <label className="group-modal-label">Incident Title / Location</label>
-                                    <input
-                                        type="text"
-                                        className="group-modal-input"
-                                        placeholder="e.g., Blown 50kVA Transformer - Brgy Rawis"
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        required
-                                    />
-                                </div>
+                                        <div className="group-modal-field">
+                                            <label className="group-modal-label">Incident Title / Location</label>
+                                            <input
+                                                type="text"
+                                                className="group-modal-input"
+                                                placeholder="e.g., Blown 50kVA Transformer - Brgy Rawis"
+                                                value={title}
+                                                onChange={(e) => setTitle(e.target.value)}
+                                                required
+                                            />
+                                        </div>
 
-                                <div className="group-modal-field">
-                                    <label className="group-modal-label">Remarks</label>
-                                    <textarea
-                                        className="group-modal-textarea"
-                                        placeholder="Optional notes"
-                                        value={remarks}
-                                        onChange={(e) => setRemarks(e.target.value)}
-                                    />
-                                </div>
-                            </form>
+                                        <div className="group-modal-field">
+                                            <label className="group-modal-label">Remarks</label>
+                                            <textarea
+                                                className="group-modal-textarea"
+                                                placeholder="Optional notes"
+                                                value={remarks}
+                                                onChange={(e) => setRemarks(e.target.value)}
+                                            />
+                                        </div>
+                                    </form>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="group-modal-section">
+                                        <label className="group-modal-label">Selected Tickets</label>
+                                        <div className="group-modal-ticket-list">
+                                            {displayTickets.map((ticket, index) => (
+                                                <div key={ticket.ticket_id} className="group-modal-ticket-row">
+                                                    <div className="group-modal-ticket-row-inner">
+                                                        <div className="group-modal-ticket-info">
+                                                            <span className="group-modal-ticket-id">{ticket.ticket_id}</span>
+                                                            <span className="group-modal-ticket-meta">{ticket.category}{ticket.status ? ` · ${ticket.status}` : ''}</span>
+                                                        </div>
+                                                        <div className="group-modal-ticket-location" title={`${ticket.barangay || ticket.address || '—'}, ${ticket.municipality || '—'}`}>
+                                                            <span className="location-icon">📍</span>
+                                                            {`${ticket.barangay || ticket.address || '—'}, ${ticket.municipality || '—'}`}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="group-modal-section">
+                                        <label className="group-modal-label">Bulk Service Memo Creation</label>
+                                        <p className="group-modal-desc">
+                                            Creates a service memo for each ticket with auto-generated numbers. Tickets will be set to "Ongoing".
+                                        </p>
+                                        {memoError && (
+                                            <div className="group-modal-error" style={{ color: '#d32f2f', marginBottom: '12px' }}>
+                                                {memoError}
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -281,9 +382,20 @@ const GroupIncidentModal = ({ isOpen, onClose, selectedTickets, onSubmit }) => {
                     <button type="button" className="group-modal-btn group-modal-btn-cancel" onClick={onClose}>
                         Cancel
                     </button>
-                    <button type="submit" form="group-modal-form" className="group-modal-btn group-modal-btn-submit">
-                        Confirm & Group
-                    </button>
+                    {activeTab === 'group' ? (
+                        <button type="submit" form="group-modal-form" className="group-modal-btn group-modal-btn-submit">
+                            Confirm & Group
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            className="group-modal-btn group-modal-btn-submit"
+                            onClick={handleBulkServiceMemo}
+                            disabled={isCreatingMemos}
+                        >
+                            {isCreatingMemos ? 'Creating...' : 'Create Service Memos'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

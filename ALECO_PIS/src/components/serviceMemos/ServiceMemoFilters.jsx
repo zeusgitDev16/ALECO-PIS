@@ -71,13 +71,16 @@ const ServiceMemoFilters = ({ filters, onFilterChange, onClose }) => {
           </div>
 
           <div className="service-memo-filter-group">
-            <label htmlFor="status">Ticket Status</label>
+            <label htmlFor="status">Memo Status</label>
             <select id="status" value={filters.status} onChange={handleStatusChange}>
               <option value="">All Statuses</option>
-              <option value="Restored">Restored</option>
-              <option value="Unresolved">Unresolved</option>
-              <option value="NoFaultFound">No Fault Found</option>
-              <option value="AccessDenied">Access Denied</option>
+              <option value="saved">Saved</option>
+              <option value="deployed">Deployed</option>
+              <option value="resolved">Resolved</option>
+              <option value="unresolved">Unresolved</option>
+              <option value="nofaultfound">No Fault Found</option>
+              <option value="accessdenied">Access Denied</option>
+              <option value="closed">Closed</option>
             </select>
           </div>
 

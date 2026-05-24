@@ -69,14 +69,11 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
         if (ticket.status === newStatus) return;
 
         const targetStatusEarly = newStatus.toLowerCase();
-        // Ongoing + On Hold share the "In progress" column (id: ongoing) â€” not a status change
-        if (ticket.status === 'OnHold' && targetStatusEarly === 'ongoing') return;
 
         // Validate status transition
         const validTransitions = {
             pending: ['ongoing', 'unresolved'],
             ongoing: ['restored', 'unresolved', 'nofaultfound', 'accessdenied'],
-            onhold: ['restored', 'unresolved', 'nofaultfound', 'accessdenied'],
             restored: [],
             unresolved: ['pending', 'ongoing'],
             nofaultfound: [],
@@ -105,8 +102,7 @@ const TicketKanbanView = ({ tickets, isLoading, selectedTicket, onSelectTicket, 
             restored: 'Restored',
             unresolved: 'Unresolved',
             nofaultfound: 'NoFaultFound',
-            accessdenied: 'AccessDenied',
-            onhold: 'OnHold'
+            accessdenied: 'AccessDenied'
         };
         const capitalizedStatus = statusMap[targetStatus] || newStatus;
 

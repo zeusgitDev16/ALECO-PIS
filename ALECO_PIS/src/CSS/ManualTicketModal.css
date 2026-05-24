@@ -1,0 +1,499 @@
+/* Manual Ticket Modal - Large modal similar to Service Memo Modal */
+
+.manual-ticket-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    padding: calc(20px * var(--manual-ticket-ui-scale, 1));
+    pointer-events: auto;
+}
+
+/* When map picker is open, disable pointer events on manual ticket modal */
+body.map-picker-open .manual-ticket-modal-backdrop,
+body.map-picker-open .manual-ticket-modal-container {
+    pointer-events: none;
+}
+
+.manual-ticket-modal-container {
+    background: var(--bg-card, #ffffff);
+    border-radius: calc(16px * var(--manual-ticket-ui-scale, 1));
+    max-width: min(1300px, 95vw);
+    width: 100%;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 calc(10px * var(--manual-ticket-ui-scale, 1)) calc(40px * var(--manual-ticket-ui-scale, 1)) rgba(0, 0, 0, 0.2);
+}
+
+/* Fixed Header */
+.manual-ticket-modal-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(16px * var(--manual-ticket-ui-scale, 1)) calc(20px * var(--manual-ticket-ui-scale, 1));
+    gap: calc(12px * var(--manual-ticket-ui-scale, 1));
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    background: var(--bg-card, #ffffff);
+}
+
+.header-text-group {
+    display: flex;
+    flex-direction: column;
+    gap: calc(2px * var(--manual-ticket-ui-scale, 1));
+    min-width: 0;
+}
+
+.header-title {
+    margin: 0;
+    font-size: calc(1.1rem * var(--manual-ticket-ui-scale, 1));
+    font-weight: 700;
+    color: var(--text-primary, #111);
+    line-height: 1.25;
+}
+
+.header-subtitle {
+    margin: 0;
+    font-size: calc(0.8rem * var(--manual-ticket-ui-scale, 1));
+    color: var(--text-secondary, #666);
+    line-height: 1.3;
+}
+
+.header-actions {
+    display: flex;
+    gap: calc(8px * var(--manual-ticket-ui-scale, 1));
+    align-items: center;
+}
+
+.header-minimize-btn,
+.header-close-btn {
+    width: calc(32px * var(--manual-ticket-ui-scale, 1));
+    height: calc(32px * var(--manual-ticket-ui-scale, 1));
+    border: none;
+    background: var(--bg-secondary, #f5f5f5);
+    border-radius: calc(6px * var(--manual-ticket-ui-scale, 1));
+    font-size: calc(20px * var(--manual-ticket-ui-scale, 1));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary, #666);
+    transition: all 0.2s;
+}
+
+.header-minimize-btn:hover,
+.header-close-btn:hover {
+    background: var(--border-color, rgba(0, 0, 0, 0.1));
+    color: var(--text-primary, #111);
+}
+
+/* Scrollable Content */
+.manual-ticket-modal-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: calc(24px * var(--manual-ticket-ui-scale, 1));
+    padding-bottom: calc(48px * var(--manual-ticket-ui-scale, 1));
+}
+
+.manual-ticket-form-layout {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: calc(24px * var(--manual-ticket-ui-scale, 1));
+}
+
+.manual-ticket-form-column {
+    display: flex;
+    flex-direction: column;
+    gap: calc(16px * var(--manual-ticket-ui-scale, 1));
+}
+
+.form-column-title {
+    margin: 0 0 calc(8px * var(--manual-ticket-ui-scale, 1)) 0;
+    font-size: calc(0.95rem * var(--manual-ticket-ui-scale, 1));
+    font-weight: 600;
+    color: var(--text-primary, #111);
+    padding-bottom: calc(8px * var(--manual-ticket-ui-scale, 1));
+    border-bottom: calc(2px * var(--manual-ticket-ui-scale, 1)) solid var(--accent-primary, #3b82f6);
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: calc(6px * var(--manual-ticket-ui-scale, 1));
+}
+
+.form-field label {
+    font-size: calc(0.85rem * var(--manual-ticket-ui-scale, 1));
+    font-weight: 500;
+    color: var(--text-secondary, #666);
+}
+
+.form-field input[type="text"],
+.form-field textarea {
+    padding: calc(10px * var(--manual-ticket-ui-scale, 1)) calc(12px * var(--manual-ticket-ui-scale, 1));
+    font-size: calc(0.9rem * var(--manual-ticket-ui-scale, 1));
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: calc(8px * var(--manual-ticket-ui-scale, 1));
+    background: var(--bg-body, #f8f9fa);
+    color: var(--text-main, #111);
+    transition: all 0.2s;
+}
+
+.form-field input[type="text"]:focus,
+.form-field textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary, #3b82f6);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.form-field textarea {
+    resize: vertical;
+    min-height: calc(60px * var(--manual-ticket-ui-scale, 1));
+}
+
+.form-field input[type="checkbox"] {
+    margin-right: calc(8px * var(--manual-ticket-ui-scale, 1));
+}
+
+.form-field label:has(input[type="checkbox"]) {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* GPS Actions */
+.gps-actions {
+    display: flex;
+    gap: calc(8px * var(--manual-ticket-ui-scale, 1));
+    flex-wrap: wrap;
+}
+
+.btn-gps,
+.btn-gps-clear {
+    padding: calc(8px * var(--manual-ticket-ui-scale, 1)) calc(12px * var(--manual-ticket-ui-scale, 1));
+    font-size: calc(0.85rem * var(--manual-ticket-ui-scale, 1));
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: calc(6px * var(--manual-ticket-ui-scale, 1));
+    background: var(--bg-body, #f8f9fa);
+    color: var(--text-main, #111);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-gps:hover,
+.btn-gps-clear:hover {
+    background: var(--bg-secondary, #f5f5f5);
+    border-color: var(--accent-primary, #3b82f6);
+}
+
+.gps-status {
+    margin-top: calc(8px * var(--manual-ticket-ui-scale, 1));
+    font-size: calc(0.8rem * var(--manual-ticket-ui-scale, 1));
+    color: var(--text-secondary, #666);
+}
+
+.map-picker-wrapper {
+    margin-top: calc(12px * var(--manual-ticket-ui-scale, 1));
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: calc(8px * var(--manual-ticket-ui-scale, 1));
+    overflow: hidden;
+}
+
+/* Draft Preview */
+.draft-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(8px * var(--manual-ticket-ui-scale, 1));
+    max-height: calc(300px * var(--manual-ticket-ui-scale, 1));
+    overflow-y: auto;
+}
+
+.draft-empty {
+    font-size: calc(0.85rem * var(--manual-ticket-ui-scale, 1));
+    color: var(--text-secondary, #666);
+    text-align: center;
+    padding: calc(20px * var(--manual-ticket-ui-scale, 1));
+    background: var(--bg-body, #f8f9fa);
+    border-radius: calc(8px * var(--manual-ticket-ui-scale, 1));
+}
+
+.draft-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(10px * var(--manual-ticket-ui-scale, 1)) calc(12px * var(--manual-ticket-ui-scale, 1));
+    background: var(--bg-body, #f8f9fa);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: calc(8px * var(--manual-ticket-ui-scale, 1));
+    gap: calc(12px * var(--manual-ticket-ui-scale, 1));
+}
+
+.draft-info {
+    display: flex;
+    flex-direction: column;
+    gap: calc(2px * var(--manual-ticket-ui-scale, 1));
+    flex: 1;
+    min-width: 0;
+}
+
+.draft-id {
+    font-size: calc(0.75rem * var(--manual-ticket-ui-scale, 1));
+    font-weight: 600;
+    color: var(--accent-primary, #3b82f6);
+}
+
+.draft-name {
+    font-size: calc(0.85rem * var(--manual-ticket-ui-scale, 1));
+    font-weight: 500;
+    color: var(--text-primary, #111);
+}
+
+.draft-address {
+    font-size: calc(0.75rem * var(--manual-ticket-ui-scale, 1));
+    color: var(--text-secondary, #666);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.draft-actions {
+    display: flex;
+    gap: calc(6px * var(--manual-ticket-ui-scale, 1));
+    flex-shrink: 0;
+}
+
+.draft-edit-btn,
+.draft-delete-btn {
+    padding: calc(6px * var(--manual-ticket-ui-scale, 1)) calc(10px * var(--manual-ticket-ui-scale, 1));
+    font-size: calc(0.75rem * var(--manual-ticket-ui-scale, 1));
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: calc(4px * var(--manual-ticket-ui-scale, 1));
+    background: var(--bg-card, #ffffff);
+    color: var(--text-main, #111);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.draft-edit-btn:hover {
+    background: var(--accent-primary, #3b82f6);
+    color: white;
+    border-color: var(--accent-primary, #3b82f6);
+}
+
+.draft-delete-btn:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+/* Fixed Footer */
+.manual-ticket-modal-footer {
+    flex-shrink: 0;
+    display: flex;
+    gap: calc(10px * var(--manual-ticket-ui-scale, 1));
+    padding: calc(14px * var(--manual-ticket-ui-scale, 1)) calc(20px * var(--manual-ticket-ui-scale, 1));
+    border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    background: var(--bg-card, #ffffff);
+}
+
+.btn-footer {
+    padding: calc(8px * var(--manual-ticket-ui-scale, 1)) calc(16px * var(--manual-ticket-ui-scale, 1));
+    font-size: calc(0.9rem * var(--manual-ticket-ui-scale, 1));
+    font-weight: 500;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: calc(6px * var(--manual-ticket-ui-scale, 1));
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-footer:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-cancel {
+    background: var(--bg-body, #f8f9fa);
+    color: var(--text-main, #111);
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background: var(--bg-secondary, #f5f5f5);
+}
+
+.btn-save-another {
+    background: var(--accent-primary, #3b82f6);
+    color: white;
+    border-color: var(--accent-primary, #3b82f6);
+}
+
+.btn-save-another:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.btn-save {
+    background: #22c55e;
+    color: white;
+    border-color: #22c55e;
+}
+
+.btn-save:hover:not(:disabled) {
+    background: #16a34a;
+}
+
+/* Responsive Design */
+@media (max-width: 1023px) and (min-width: 768px) {
+    .manual-ticket-modal-container {
+        max-height: 95vh;
+        margin: calc(10px * var(--manual-ticket-ui-scale, 1));
+    }
+
+    .manual-ticket-form-layout {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .manual-ticket-modal-container {
+        max-height: 95vh;
+        margin: calc(10px * var(--manual-ticket-ui-scale, 1));
+        border-radius: calc(12px * var(--manual-ticket-ui-scale, 1));
+    }
+
+    .manual-ticket-modal-header {
+        padding: calc(12px * var(--manual-ticket-ui-scale, 1)) calc(16px * var(--manual-ticket-ui-scale, 1));
+        flex-direction: column;
+        align-items: flex-start;
+        gap: calc(8px * var(--manual-ticket-ui-scale, 1));
+    }
+
+    .header-text-group {
+        width: 100%;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .manual-ticket-modal-content {
+        padding: calc(16px * var(--manual-ticket-ui-scale, 1));
+        padding-bottom: calc(32px * var(--manual-ticket-ui-scale, 1));
+    }
+
+    .manual-ticket-form-layout {
+        grid-template-columns: 1fr;
+        gap: calc(16px * var(--manual-ticket-ui-scale, 1));
+    }
+
+    .manual-ticket-modal-footer {
+        flex-direction: column;
+        padding: calc(12px * var(--manual-ticket-ui-scale, 1)) calc(16px * var(--manual-ticket-ui-scale, 1));
+    }
+
+    .btn-footer {
+        width: 100%;
+    }
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] .manual-ticket-modal-container,
+[data-theme="dark"] .manual-ticket-modal-header,
+[data-theme="dark"] .manual-ticket-modal-footer {
+    background: #1a1a1a;
+    border-color: #333;
+}
+
+[data-theme="dark"] .header-title {
+    color: #e5e5e5;
+}
+
+[data-theme="dark"] .header-subtitle {
+    color: #a3a3a3;
+}
+
+[data-theme="dark"] .form-field input[type="text"],
+[data-theme="dark"] .form-field textarea {
+    background: #2a2a2a;
+    border-color: #333;
+    color: #e5e5e5;
+}
+
+[data-theme="dark"] .form-field input[type="text"]:focus,
+[data-theme="dark"] .form-field textarea:focus {
+    border-color: #3b82f6;
+}
+
+[data-theme="dark"] .btn-gps,
+[data-theme="dark"] .btn-gps-clear,
+[data-theme="dark"] .draft-edit-btn,
+[data-theme="dark"] .draft-delete-btn {
+    background: #2a2a2a;
+    border-color: #333;
+    color: #e5e5e5;
+}
+
+[data-theme="dark"] .draft-item {
+    background: #2a2a2a;
+    border-color: #333;
+}
+
+[data-theme="dark"] .draft-empty {
+    background: #2a2a2a;
+}
+
+/* UploadTheProblem Component - Modular Scale Overrides for ManualTicketModal */
+.manual-ticket-modal-container .upload-modal {
+    border-radius: calc(8px * var(--manual-ticket-ui-scale, 1));
+    padding: calc(20px * var(--manual-ticket-ui-scale, 1));
+    box-shadow: 0 calc(4px * var(--manual-ticket-ui-scale, 1)) calc(6px * var(--manual-ticket-ui-scale, 1)) var(--shadow-color-dark);
+}
+
+.manual-ticket-modal-container .upload-modal-title {
+    font-size: calc(16px * var(--manual-ticket-ui-scale, 1));
+    margin: 0 0 calc(5px * var(--manual-ticket-ui-scale, 1)) 0;
+}
+
+.manual-ticket-modal-container .upload-modal-description {
+    font-size: calc(13px * var(--manual-ticket-ui-scale, 1));
+    margin: 0 0 calc(15px * var(--manual-ticket-ui-scale, 1)) 0;
+}
+
+.manual-ticket-modal-container .upload-area {
+    min-height: calc(200px * var(--manual-ticket-ui-scale, 1));
+    border: calc(2px * var(--manual-ticket-ui-scale, 1)) dashed var(--text-secondary);
+    border-radius: calc(8px * var(--manual-ticket-ui-scale, 1));
+}
+
+.manual-ticket-modal-container .upload-area-icon {
+    margin-bottom: calc(15px * var(--manual-ticket-ui-scale, 1));
+}
+
+.manual-ticket-modal-container .upload-area-title {
+    font-size: calc(14px * var(--manual-ticket-ui-scale, 1));
+    margin-bottom: calc(5px * var(--manual-ticket-ui-scale, 1));
+}
+
+.manual-ticket-modal-container .upload-area-description {
+    font-size: calc(12px * var(--manual-ticket-ui-scale, 1));
+}
+
+.manual-ticket-modal-container .upload-modal-footer {
+    gap: calc(10px * var(--manual-ticket-ui-scale, 1));
+    margin-top: calc(20px * var(--manual-ticket-ui-scale, 1));
+}
+
+.manual-ticket-modal-container .btn-secondary,
+.manual-ticket-modal-container .btn-primary {
+    padding: calc(8px * var(--manual-ticket-ui-scale, 1)) calc(16px * var(--manual-ticket-ui-scale, 1));
+    font-size: calc(14px * var(--manual-ticket-ui-scale, 1));
+    border-radius: calc(6px * var(--manual-ticket-ui-scale, 1));
+}

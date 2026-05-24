@@ -156,7 +156,7 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
             <h4 className="service-memo-section-title">Service Memo Details</h4>
             <div className="service-memo-info-grid">
               <div className="service-memo-info-item">
-                <label htmlFor="service_date">Service Date *</label>
+                <label htmlFor="service_date">Service Date</label>
                 <input
                   id="service_date"
                   type="date"
@@ -197,7 +197,7 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
           <div className="service-memo-section">
             <h4 className="service-memo-section-title">Service Memo Content</h4>
             <div className="service-memo-form-group">
-              <label htmlFor="work_performed">Work Performed *</label>
+              <label htmlFor="work_performed">Work Performed</label>
               <textarea
                 id="work_performed"
                 name="work_performed"
@@ -209,7 +209,7 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
               />
             </div>
             <div className="service-memo-form-group">
-              <label htmlFor="resolution_details">Resolution Details *</label>
+              <label htmlFor="resolution_details">Resolution Details</label>
               <textarea
                 id="resolution_details"
                 name="resolution_details"

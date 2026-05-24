@@ -105,6 +105,8 @@ router.get('/service-memos', requireStaff, async (req, res) => {
 
     if (tab === 'saved') {
       query += ` AND sm.memo_status = 'saved'`;
+    } else if (tab === 'deployed') {
+      query += ` AND sm.memo_status = 'deployed'`;
     } else if (tab === 'closed') {
       query += ` AND sm.memo_status = 'closed'`;
     }
@@ -172,7 +174,7 @@ router.get('/service-memos', requireStaff, async (req, res) => {
     }
 
     if (status && status.trim()) {
-      query += ` AND sm.ticket_status = ?`;
+      query += ` AND sm.memo_status = ?`;
       params.push(status.trim());
     }
 
@@ -320,7 +322,10 @@ function buildExtendedFromBody(body) {
 
 // POST /api/service-memos - Create service memo
 router.post('/service-memos', requireStaff, async (req, res) => {
+  const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
+
     const body = req.body || {};
     const {
       ticket_id,
@@ -337,6 +342,7 @@ router.post('/service-memos', requireStaff, async (req, res) => {
     const currentUser = getActorName(req) || '';
 
     if (!currentUserEmail || !String(currentUserEmail).trim()) {
+      await connection.rollback();
       return res.status(400).json({
         success: false,
         message: 'Authentication required: missing user email (X-User-Email).',
@@ -344,11 +350,13 @@ router.post('/service-memos', requireStaff, async (req, res) => {
     }
 
     if (!ticket_id) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'Ticket ID is required.' });
     }
 
     const v = validateMemoPayload(body);
     if (!v.ok) {
+      await connection.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required fields: ${v.missing.join(', ')}`,
@@ -356,18 +364,26 @@ router.post('/service-memos', requireStaff, async (req, res) => {
       });
     }
 
-    const [ticketRows] = await pool.execute(
-      `SELECT status, municipality, category FROM aleco_tickets WHERE ticket_id = ?`,
+    const [ticketRows] = await connection.execute(
+      `SELECT status, municipality, category, first_name, middle_name, last_name, address, phone_number, account_number FROM aleco_tickets WHERE ticket_id = ?`,
       [ticket_id]
     );
 
     if (ticketRows.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ success: false, message: 'Ticket not found.' });
     }
 
     const ticketStatus = ticketRows[0].status;
     const ticketMunicipality = ticketRows[0].municipality;
     const ticketCategory = ticketRows[0].category;
+    const firstName = ticketRows[0].first_name || '';
+    const middleName = ticketRows[0].middle_name || '';
+    const lastName = ticketRows[0].last_name || '';
+    const ticketAddress = ticketRows[0].address || '';
+    const ticketPhone = ticketRows[0].phone_number || '';
+    const ticketAccountNumber = ticketRows[0].account_number || '';
+
     const bodyCat = body.category != null ? String(body.category).trim() : '';
     const snapCat =
       bodyCat !== ''
@@ -376,53 +392,68 @@ router.post('/service-memos', requireStaff, async (req, res) => {
           ? String(ticketCategory).trim()
           : null;
 
-    if (!CLOSED_TICKET_STATUSES.includes(ticketStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: MEMO_SAVE_CLOSED_TICKET_MESSAGE,
-      });
-    }
-
-    const [existingMemo] = await pool.execute(`SELECT id FROM aleco_service_memos WHERE ticket_id = ?`, [ticket_id]);
+    // Check if ticket already has a service memo
+    const [existingMemo] = await connection.execute(`SELECT id FROM aleco_service_memos WHERE ticket_id = ?`, [ticket_id]);
 
     if (existingMemo.length > 0) {
-      return res.status(400).json({ success: false, message: 'Service memo already exists for this ticket.' });
+      await connection.rollback();
+      return res.status(409).json({ success: false, message: 'Service memo already exists for this ticket.' });
     }
 
-    const rawMemo = String(body.control_number ?? '')
-      .trim()
-      .toUpperCase();
-    if (!isValidNewMemoControlNumberFormat(rawMemo)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Memo # is required. Use Generate code (format XXX-##########, e.g. LEG-0000089729).',
-      });
+    // Auto-allocate control_number if not provided
+    let controlNumber;
+    const rawMemo = String(body.control_number ?? '').trim();
+    if (rawMemo) {
+      // Validate provided control_number
+      if (!isValidNewMemoControlNumberFormat(rawMemo)) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Memo # format is invalid. Use format XXX-########## (e.g. LEG-0000089729).',
+        });
+      }
+
+      const expectedPrefix = municipalityToMemoPrefix(ticketMunicipality);
+      const clientPrefix = rawMemo.slice(0, 3);
+      if (!expectedPrefix || clientPrefix !== expectedPrefix) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Memo # prefix does not match this ticket's municipality.",
+        });
+      }
+      controlNumber = rawMemo;
+    } else {
+      // Auto-allocate control_number
+      const prefix = municipalityToMemoPrefix(ticketMunicipality);
+      if (!prefix) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Ticket municipality is missing or not mapped for memo prefix.',
+        });
+      }
+      controlNumber = await peekNextMemoControlNumber(connection, prefix);
     }
 
-    const expectedPrefix = municipalityToMemoPrefix(ticketMunicipality);
-    const clientPrefix = rawMemo.slice(0, 3);
-    if (!expectedPrefix || clientPrefix !== expectedPrefix) {
-      return res.status(400).json({
-        success: false,
-        message: "Memo # prefix does not match this ticket's municipality.",
-      });
-    }
-
-    const controlNumber = rawMemo;
+    // Auto-fill fields from ticket data
+    const customerName = [firstName, middleName, lastName].filter(Boolean).join(' ').trim();
     const intakeDate = intake_date || service_date || new Date().toISOString().split('T')[0];
     const actionText = (action_taken || work_performed || '').trim();
+    const receivedByValue = received_by || currentUser.trim() || '';
+    const referredToValue = referred_to || '';
 
     const extPayload = buildExtendedFromBody(body);
     const internalNotesValue = stringifyExtended(extPayload);
     const photoUrlValue = normalizePhotoUrl(body.photo_url);
 
-    const [result] = await pool.execute(
+    const [result] = await connection.execute(
       `INSERT INTO aleco_service_memos 
             (ticket_id, ticket_status, category, control_number, service_date, work_performed, resolution_details, internal_notes, photo_url, received_by, referred_to, owner_email, owner_name, memo_status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'saved')`,
       [
         ticket_id,
-        ticketStatus,
+        'Ongoing',
         snapCat,
         controlNumber,
         intakeDate,
@@ -430,21 +461,23 @@ router.post('/service-memos', requireStaff, async (req, res) => {
         resolution_details != null ? resolution_details : null,
         internalNotesValue,
         photoUrlValue,
-        (received_by || '').trim(),
-        (referred_to || '').trim(),
+        receivedByValue,
+        referredToValue,
         currentUserEmail.trim(),
         currentUser.trim() || '—',
       ]
     );
 
-    await pool.execute(`UPDATE aleco_tickets SET service_memo_id = ? WHERE ticket_id = ?`, [result.insertId, ticket_id]);
+    await connection.execute(`UPDATE aleco_tickets SET service_memo_id = ?, status = 'Ongoing' WHERE ticket_id = ?`, [result.insertId, ticket_id]);
 
-    await recordMemoNotification(pool, {
+    await recordMemoNotification(connection, {
       eventType: MEMO_EVENT.CREATED,
       subjectName: controlNumber,
       detail: `Ticket ${ticket_id}`,
       actorEmail: currentUserEmail.trim(),
     });
+
+    await connection.commit();
 
     console.log(`✅ Service Memo Created: ID ${result.insertId}, Control #${controlNumber} for Ticket ${ticket_id}`);
     res.json({
@@ -452,6 +485,7 @@ router.post('/service-memos', requireStaff, async (req, res) => {
       data: { id: result.insertId, control_number: controlNumber, photo_url: photoUrlValue },
     });
   } catch (error) {
+    await connection.rollback();
     if (error.errno === 1062 || error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({
         success: false,
@@ -460,6 +494,8 @@ router.post('/service-memos', requireStaff, async (req, res) => {
     }
     console.error('❌ Service Memo Creation Error:', error);
     res.status(500).json({ success: false, message: 'Failed to create service memo.' });
+  } finally {
+    connection.release();
   }
 });
 
@@ -660,7 +696,7 @@ router.put('/service-memos/:id/close', requireStaff, async (req, res) => {
   }
 });
 
-// DELETE /api/service-memos/:id - Delete service memo
+// DELETE /api/service-memos/:id - Delete service memo (keeps ticket status unchanged)
 router.delete('/service-memos/:id', requireStaff, async (req, res) => {
   try {
     const { id } = req.params;
@@ -695,6 +731,297 @@ router.delete('/service-memos/:id', requireStaff, async (req, res) => {
   } catch (error) {
     console.error('❌ Service Memo Delete Error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete service memo.' });
+  }
+});
+
+// DELETE /api/service-memos/:id/undo - Undo service memo (deletes memo AND reverts ticket to Pending)
+router.delete('/service-memos/:id/undo', requireStaff, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const currentUserEmail = getActorEmail(req);
+
+    const [memoRows] = await pool.execute(`SELECT * FROM aleco_service_memos WHERE id = ?`, [id]);
+
+    if (memoRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Service memo not found.' });
+    }
+
+    const memo = memoRows[0];
+
+    // Revert ticket status to Pending and clear service_memo_id
+    await pool.execute(`UPDATE aleco_tickets SET service_memo_id = NULL, status = 'Pending' WHERE ticket_id = ?`, [memo.ticket_id]);
+
+    const controlNo = memo.control_number || String(id);
+    const ticketRef = memo.ticket_id ? `Ticket ${memo.ticket_id}` : null;
+    const deleter =
+      currentUserEmail && String(currentUserEmail).trim() ? String(currentUserEmail).trim() : null;
+
+    await pool.execute(`DELETE FROM aleco_service_memos WHERE id = ?`, [id]);
+
+    await recordMemoNotification(pool, {
+      eventType: MEMO_EVENT.DELETED,
+      subjectName: controlNo,
+      detail: `${ticketRef} (status reverted to Pending)`,
+      actorEmail: deleter,
+    });
+
+    console.log(`✅ Service Memo Undone: ID ${id}, Ticket ${memo.ticket_id} reverted to Pending`);
+    res.json({ success: true, message: 'Service memo undone and ticket reverted to Pending.' });
+  } catch (error) {
+    console.error('❌ Service Memo Undo Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to undo service memo.' });
+  }
+});
+
+// POST /api/service-memos/bulk - Bulk create service memos for multiple tickets
+router.post('/service-memos/bulk', requireStaff, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const { ticket_ids, municipality, skip_existing = false } = body;
+
+    const currentUserEmail = getActorEmail(req);
+    const currentUser = getActorName(req) || '';
+
+    if (!currentUserEmail || !String(currentUserEmail).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Authentication required: missing user email (X-User-Email).',
+      });
+    }
+
+    if (!ticket_ids || !Array.isArray(ticket_ids) || ticket_ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'Ticket IDs array is required.' });
+    }
+
+    // Backward compatibility: if municipality is provided, use old behavior (single prefix, block on existing)
+    const useLegacyMode = municipality != null;
+
+    if (useLegacyMode) {
+      // Legacy mode: single municipality, block on existing memos
+      if (!municipality) {
+        return res.status(400).json({ success: false, message: 'Municipality is required for memo number generation.' });
+      }
+
+      // Get memo prefix from municipality
+      const prefix = municipalityToMemoPrefix(municipality);
+      if (!prefix) {
+        return res.status(400).json({ success: false, message: 'Invalid municipality for memo number generation.' });
+      }
+
+      // Fetch next memo number
+      const nextNumber = await peekNextMemoControlNumber(pool, prefix);
+      const controlNumber = `${prefix}-${String(nextNumber).padStart(8, '0')}`;
+
+      // Check if any tickets already have service memos
+      const [existingMemos] = await pool.execute(
+        `SELECT ticket_id FROM aleco_service_memos WHERE ticket_id IN (${ticket_ids.map(() => '?').join(',')})`,
+        ticket_ids
+      );
+
+      if (existingMemos.length > 0) {
+        const existingTicketIds = existingMemos.map(m => m.ticket_id);
+        return res.status(409).json({
+          success: false,
+          message: `Some tickets already have service memos: ${existingTicketIds.join(', ')}`,
+        });
+      }
+
+      // Create service memos in transaction
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+
+        const createdMemos = [];
+        for (let i = 0; i < ticket_ids.length; i++) {
+          const ticketId = ticket_ids[i];
+          const memoNumber = `${prefix}-${String(nextNumber + i).padStart(8, '0')}`;
+
+          // Get ticket info
+          const [ticketRows] = await connection.execute(
+            `SELECT status, category FROM aleco_tickets WHERE ticket_id = ?`,
+            [ticketId]
+          );
+
+          if (ticketRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: `Ticket ${ticketId} not found.` });
+          }
+
+          const ticketStatus = ticketRows[0].status;
+          const ticketCategory = ticketRows[0].category;
+
+          // Insert service memo
+          const [result] = await connection.execute(
+            `INSERT INTO aleco_service_memos 
+              (ticket_id, ticket_status, category, control_number, service_date, work_performed, resolution_details, internal_notes, photo_url, received_by, referred_to, owner_email, owner_name, memo_status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'saved')`,
+            [
+              ticketId,
+              'Ongoing',
+              ticketCategory,
+              memoNumber,
+              new Date().toISOString().split('T')[0],
+              null,
+              null,
+              null,
+              null,
+              '',
+              '',
+              currentUserEmail.trim(),
+              currentUser.trim() || '—',
+            ]
+          );
+
+          // Update ticket status to Ongoing and link memo
+          await connection.execute(
+            `UPDATE aleco_tickets SET service_memo_id = ?, status = 'Ongoing' WHERE ticket_id = ?`,
+            [result.insertId, ticketId]
+          );
+
+          createdMemos.push({
+            id: result.insertId,
+            ticket_id: ticketId,
+            control_number: memoNumber,
+          });
+        }
+
+        await connection.commit();
+
+        console.log(`✅ Bulk Service Memos Created (Legacy): ${createdMemos.length} memos`);
+        res.json({
+          success: true,
+          message: `Created ${createdMemos.length} service memos successfully.`,
+          data: createdMemos,
+        });
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    } else {
+      // New mode: per-ticket municipality, skip existing memos
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+
+        // Fetch all tickets with their municipalities
+        const placeholders = ticket_ids.map(() => '?').join(',');
+        const [ticketRows] = await connection.execute(
+          `SELECT ticket_id, status, category, municipality FROM aleco_tickets WHERE ticket_id IN (${placeholders})`,
+          ticket_ids
+        );
+
+        if (ticketRows.length === 0) {
+          await connection.rollback();
+          return res.status(404).json({ success: false, message: 'No tickets found.' });
+        }
+
+        // Check which tickets already have memos
+        const [existingMemos] = await connection.execute(
+          `SELECT ticket_id FROM aleco_service_memos WHERE ticket_id IN (${placeholders})`,
+          ticket_ids
+        );
+        const existingTicketIds = new Set(existingMemos.map(m => m.ticket_id));
+
+        // Group tickets by municipality
+        const byMunicipality = {};
+        for (const ticket of ticketRows) {
+          const muni = ticket.municipality;
+          if (!byMunicipality[muni]) byMunicipality[muni] = [];
+          byMunicipality[muni].push(ticket);
+        }
+
+        const createdMemos = [];
+        const skippedMemos = [];
+
+        // For each municipality, generate sequential memo numbers
+        for (const [muni, muniTickets] of Object.entries(byMunicipality)) {
+          const prefix = municipalityToMemoPrefix(muni);
+          if (!prefix) {
+            // Skip tickets with unmapped municipality
+            for (const ticket of muniTickets) {
+              skippedMemos.push({
+                ticket_id: ticket.ticket_id,
+                reason: 'unmapped_municipality',
+              });
+            }
+            continue;
+          }
+
+          const nextNumFull = await peekNextMemoControlNumber(connection, prefix);
+          const nextNum = parseInt(nextNumFull.split('-')[1], 10);
+
+          for (let i = 0; i < muniTickets.length; i++) {
+            const ticket = muniTickets[i];
+            const ticketId = ticket.ticket_id;
+
+            // Skip if ticket already has memo
+            if (existingTicketIds.has(ticketId)) {
+              skippedMemos.push({
+                ticket_id: ticketId,
+                reason: 'existing_memo',
+              });
+              continue;
+            }
+
+            const memoNumber = `${prefix}-${String(nextNum + i).padStart(10, '0')}`;
+
+            const [result] = await connection.execute(
+              `INSERT INTO aleco_service_memos 
+                (ticket_id, ticket_status, category, control_number, service_date, work_performed, resolution_details, internal_notes, photo_url, received_by, referred_to, owner_email, owner_name, memo_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'saved')`,
+              [
+                ticketId,
+                'Ongoing',
+                ticket.category,
+                memoNumber,
+                new Date().toISOString().split('T')[0],
+                null,
+                null,
+                null,
+                null,
+                '',
+                '',
+                currentUserEmail.trim(),
+                currentUser.trim() || '—',
+              ]
+            );
+
+            await connection.execute(
+              `UPDATE aleco_tickets SET service_memo_id = ?, status = 'Ongoing' WHERE ticket_id = ?`,
+              [result.insertId, ticketId]
+            );
+
+            createdMemos.push({
+              id: result.insertId,
+              ticket_id: ticketId,
+              control_number: memoNumber,
+            });
+          }
+        }
+
+        await connection.commit();
+
+        console.log(`✅ Bulk Service Memos Created: ${createdMemos.length} created, ${skippedMemos.length} skipped`);
+        res.json({
+          success: true,
+          message: `Created ${createdMemos.length} service memos${skippedMemos.length > 0 ? `, skipped ${skippedMemos.length}` : ''}.`,
+          data: {
+            created: createdMemos,
+            skipped: skippedMemos,
+          },
+        });
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    }
+  } catch (error) {
+    console.error('❌ Bulk Service Memo Creation Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create bulk service memos.' });
   }
 });
 

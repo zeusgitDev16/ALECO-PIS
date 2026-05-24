@@ -18,14 +18,12 @@ const AlecoScopeDropdown = ({
     const [isSearching, setIsSearching] = useState(false);
     const lastEmittedKey = useRef('');
 
-    // Sync with external changes (GPS auto-fill)
+    // Sync with external changes (GPS auto-fill or address-based autodetect or clear)
     useEffect(() => {
-        if (initialDistrict || initialMunicipality) {
-            setSel({ 
-                dist: initialDistrict, 
-                muni: initialMunicipality 
-            });
-        }
+        setSel({ 
+            dist: initialDistrict, 
+            muni: initialMunicipality 
+        });
     }, [initialDistrict, initialMunicipality]);
 
     // 1. CASCADING RESET LOGIC

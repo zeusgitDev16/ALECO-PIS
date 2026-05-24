@@ -172,6 +172,33 @@ const ReportaProblem = () => {
         return { lat, lng };
     }, [formData.municipality, formData.district]);
 
+    // --- OPTIMIZATION 1: Intelligent Municipality Autodetect ---
+    useEffect(() => {
+        if (gpsData.isLocked) return;
+        const addr = (formData.address || '').trim().toLowerCase();
+        if (!addr || addr.length < 3) return;
+
+        for (const districtObj of ALECO_SCOPE) {
+            for (const muniObj of districtObj.municipalities) {
+                const muniName = muniObj.name.toLowerCase();
+                const cleanMuni = muniName.replace(' city', '').trim();
+                
+                // Construct a regex to match the municipality name as a whole word
+                const regex = new RegExp(`\\b${cleanMuni}\\b`, 'i');
+                if (regex.test(addr)) {
+                    if (formData.municipality !== muniObj.name) {
+                        setFormData(prev => ({
+                            ...prev,
+                            district: districtObj.district,
+                            municipality: muniObj.name
+                        }));
+                    }
+                    return; // Match found, stop scanning
+                }
+            }
+        }
+    }, [formData.address, gpsData.isLocked]);
+
     const canProceed = useCallback((step) => {
         switch (step) {
             case 1: return !!formData.firstName?.trim() && !!formData.lastName?.trim() && !!formData.phoneNumber?.trim();
@@ -194,6 +221,60 @@ const ReportaProblem = () => {
         if (step < currentStep) return 'done';
         if (step === currentStep) return 'active';
         return 'pending';
+    };
+
+    // --- OPTIMIZATION 2: Proximity GPS Fallback (Offline / API Key failure recovery) ---
+    const handleOfflineGPSFallback = (latitude, longitude, accuracy) => {
+        console.log("ℹ️ [GPS FALLBACK] Geocoding API failed or offline. Using local proximity calculations...");
+        
+        let closestMuni = null;
+        let closestDistrict = null;
+        let minDistance = Infinity;
+        
+        for (const districtObj of ALECO_SCOPE) {
+            for (const muniObj of districtObj.municipalities) {
+                if (muniObj.lat && muniObj.lng) {
+                    const dLat = latitude - muniObj.lat;
+                    const dLng = longitude - muniObj.lng;
+                    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+                    
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        closestMuni = muniObj;
+                        closestDistrict = districtObj.district;
+                    }
+                }
+            }
+        }
+        
+        // Approximate Albay province bounds: check if closest municipality is within 0.6 degrees (~66km)
+        if (closestMuni && minDistance < 0.6) {
+            console.log(`✅ [GPS FALLBACK] Closest municipality: ${closestMuni.name} (distance: ${minDistance.toFixed(4)})`);
+            
+            const fallbackAddress = `Approximate location in ${closestMuni.name} (GPS Geocoding Offline)`;
+            
+            setFormData(prev => ({
+                ...prev,
+                address: fallbackAddress,
+                district: closestDistrict,
+                municipality: closestMuni.name
+            }));
+            
+            setGpsData({
+                lat: latitude,
+                lng: longitude,
+                accuracy: Math.round(accuracy),
+                method: 'gps',
+                confidence: 'medium',
+                isLocked: true
+            });
+            
+            setLocationError('');
+        } else {
+            console.warn(`❌ [GPS FALLBACK] Nearest municipality is too far (${minDistance.toFixed(4)}). Outside serving area.`);
+            setLocationError('❌ Location is outside Albay Province. ALECO only serves Albay.');
+        }
+        setIsLocating(false);
     };
 
     // --- ENHANCED: Find My Location Handler ---
@@ -354,16 +435,14 @@ const ReportaProblem = () => {
                         console.error('❌ [STEP 3 FAILED] Google API returned no results');
                         console.error('   Status:', data.status);
                         console.error('   Error Message:', data.error_message);
-                        setLocationError('Could not determine your address from GPS. Please enter manually.');
-                        setIsLocating(false);
+                        handleOfflineGPSFallback(latitude, longitude, accuracy);
                     }
                 } catch (error) {
                     console.error('❌ [STEP 3 EXCEPTION] Geocoding Error:', error);
                     console.error('   Error Name:', error.name);
                     console.error('   Error Message:', error.message);
                     console.error('   Stack:', error.stack);
-                    setLocationError('Failed to process GPS location. Please try again or enter manually.');
-                    setIsLocating(false);
+                    handleOfflineGPSFallback(latitude, longitude, accuracy);
                 }
             },
             (error) => {
@@ -425,9 +504,10 @@ const ReportaProblem = () => {
         submissionData.append('municipality', formData.municipality || "");
 
         // --- NEW: GPS COORDINATES ---
-        submissionData.append('reported_lat', gpsData.lat || null);
-        submissionData.append('reported_lng', gpsData.lng || null);
-        submissionData.append('location_accuracy', gpsData.accuracy || null);
+        // Only append GPS fields if they have actual values (omit if null to avoid FormData converting null to string 'null')
+        if (gpsData.lat != null) submissionData.append('reported_lat', gpsData.lat);
+        if (gpsData.lng != null) submissionData.append('reported_lng', gpsData.lng);
+        if (gpsData.accuracy != null) submissionData.append('location_accuracy', gpsData.accuracy);
         submissionData.append('location_method', gpsData.method);
         submissionData.append('location_confidence', gpsData.confidence || 'medium');
 
@@ -681,84 +761,109 @@ const ReportaProblem = () => {
 
                             {currentStep === 5 && (
                                 <div className="wizard-step-block">
-                                    <h3 className="column-section-title">Find Location</h3>
-                                    <div className="gps-location-section">
-                                        <div className="gps-location-actions">
-                                            <button
-                                                type="button"
-                                                onClick={handleFindMyLocation}
-                                                className="btn-find-location"
-                                                disabled={isLocating || gpsData.isLocked}
-                                            >
-                                                {isLocating ? '📡 Locating...' : '📍 Find My Location'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const muni = (formData.municipality || '').trim();
-                                                    if (!muni) {
-                                                        toast.info('Select a municipality first, then pin the exact spot on the map.');
-                                                        return;
-                                                    }
-                                                    setShowMapPicker(true);
-                                                }}
-                                                className="btn-pin-location"
-                                                disabled={isLocating || gpsData.isLocked}
-                                            >
-                                                🗺️ Pin Location on Map
-                                            </button>
-                                        </div>
-                                        {locationError && (
-                                            <div className="location-error-box">⚠️ {locationError}</div>
+                                    <h3 className="column-section-title">Address & Location Details</h3>
+                                    
+                                    {/* SECTION 1: ADDRESS DETAILS (MANDATORY) */}
+                                    <div className="location-section-group">
+                                        <h4 className="location-section-subtitle">1. Enter Address Details</h4>
+                                        <TextFieldProblem
+                                            id="address"
+                                            label="Full Address *"
+                                            value={formData.address}
+                                            onChange={handleFieldChange('address')}
+                                            placeholder={gpsData.isLocked ? "Auto-filled by GPS" : "Enter your street address / purok / landmarks"}
+                                        />
+                                        
+                                        {(!gpsData.isLocked || locationError) && (
+                                            <div className="aleco-scope-manual">
+                                                <label className="column-section-title-dropdown">Select District & Municipality *</label>
+                                                <AlecoScopeDropdown
+                                                    initialDistrict={formData.district}
+                                                    initialMunicipality={formData.municipality}
+                                                    onLocationSelect={(loc) => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            district: loc?.district || '',
+                                                            municipality: loc?.municipality || ''
+                                                        }));
+                                                    }}
+                                                />
+                                            </div>
                                         )}
                                     </div>
-                                    {gpsData.isLocked && (
-                                        <div className="location-success-box">
-                                            <div className="gps-lock-info">
-                                                <span className="gps-lock-icon">🔒</span>
-                                                <div>
-                                                    <strong>
-                                                        {gpsData.method === 'gps'
-                                                            ? 'Using device location'
-                                                            : gpsData.method === 'map_pin'
-                                                                ? 'Using pinned location'
-                                                                : 'Using selected location'}
-                                                    </strong>
-                                                    <p className="gps-lock-details">
-                                                        📍 {formData.address}<br />
-                                                        <strong>{formData.municipality}</strong>, {formData.district}
-                                                    </p>
-                                                    {gpsData.accuracy != null && (
-                                                        <p className="gps-accuracy">Accuracy: ±{gpsData.accuracy}m</p>
-                                                    )}
-                                                </div>
+                                    
+                                    {/* SECTION 2: MAP PINNING & ACCURACY (OPTIONAL) */}
+                                    <div className="location-section-group accuracy-group">
+                                        <h4 className="location-section-subtitle">2. Pin Exact Location (Optional)</h4>
+                                        <p className="location-section-help">
+                                            Providing coordinates helps our service crew locate the issue faster.
+                                        </p>
+                                        
+                                        <div className="gps-location-section">
+                                            <div className="gps-location-actions">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleFindMyLocation}
+                                                    className="btn-find-location"
+                                                    disabled={isLocating || gpsData.isLocked}
+                                                >
+                                                    {isLocating ? '📡 Locating...' : '📍 Find My Location'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const muni = (formData.municipality || '').trim();
+                                                        if (!muni) {
+                                                            toast.info('Please select a municipality first, then pin the exact spot on the map.');
+                                                            return;
+                                                        }
+                                                        setShowMapPicker(true);
+                                                    }}
+                                                    className="btn-pin-location"
+                                                    disabled={isLocating || gpsData.isLocked}
+                                                >
+                                                    🗺️ Pin Location on Map
+                                                </button>
                                             </div>
-                                            <button type="button" onClick={handleClearGPS} className="location-clear-btn">✖ Clear & Re-locate</button>
+                                            {locationError && (
+                                                <div className="location-error-box">⚠️ {locationError}</div>
+                                            )}
                                         </div>
-                                    )}
-                                    <TextFieldProblem
-                                        id="address"
-                                        label="Full Address *"
-                                        value={formData.address}
-                                        onChange={handleFieldChange('address')}
-                                        placeholder={gpsData.isLocked ? "Auto-filled by GPS" : "Enter your address"}
-                                    />
-                                    {(!gpsData.isLocked || locationError) && (
-                                        <div className="aleco-scope-manual">
-                                            <label className="column-section-title">Or select manually</label>
-                                            <AlecoScopeDropdown
-                                                initialDistrict={formData.district}
-                                                initialMunicipality={formData.municipality}
-                                                onLocationSelect={(loc) => {
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        district: loc?.district || '',
-                                                        municipality: loc?.municipality || ''
-                                                    }));
-                                                }}
-                                            />
-                                        </div>
-                                    )}
+                                    </div>
+                                    
+                                    {/* PIN STATUS BADGE */}
+                                    <div className="location-status-badge-container">
+                                        {gpsData.isLocked ? (
+                                            <div className="location-success-box">
+                                                <div className="gps-lock-info">
+                                                    <span className="gps-lock-icon">✓</span>
+                                                    <div>
+                                                        <strong>
+                                                            {gpsData.method === 'gps'
+                                                                ? 'Precise location captured via GPS'
+                                                                : gpsData.method === 'map_pin'
+                                                                    ? 'Precise location captured via Map Pin'
+                                                                    : 'Precise location captured'}
+                                                        </strong>
+                                                        <p className="gps-lock-details">
+                                                            Coords: {gpsData.lat?.toFixed(6)}, {gpsData.lng?.toFixed(6)}
+                                                            {gpsData.accuracy != null && ` (Accuracy: ±${gpsData.accuracy}m)`}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onClick={handleClearGPS} className="location-clear-btn">✖ Remove Pin</button>
+                                            </div>
+                                        ) : (
+                                            <div className="location-info-box">
+                                                <span className="gps-info-icon">ℹ</span>
+                                                <span className="gps-info-text">
+                                                    No precise coordinates captured. The map will default to your municipality's center.
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* PREVIEW MAP */}
                                     {(gpsData.method === 'gps' || gpsData.method === 'map_pin') && gpsData.lat && gpsData.lng && (
                                         <LocationPreviewMap
                                             latitude={gpsData.lat}

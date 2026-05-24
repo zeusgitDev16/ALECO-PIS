@@ -14,7 +14,7 @@ export const groupTicketsByStatus = (tickets) => {
 
     return {
         pending: safeTickets.filter(t => t.status === 'Pending'),
-        ongoing: safeTickets.filter(t => t.status === 'Ongoing' || t.status === 'OnHold'),
+        ongoing: safeTickets.filter(t => t.status === 'Ongoing'),
         restored: safeTickets.filter(t => t.status === 'Restored'),
         unresolved: safeTickets.filter(t => t.status === 'Unresolved'),
         nofaultfound: safeTickets.filter(t => t.status === 'NoFaultFound'),

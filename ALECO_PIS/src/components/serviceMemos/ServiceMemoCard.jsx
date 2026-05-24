@@ -166,17 +166,6 @@ const ServiceMemoCard = ({
               <IconCloseMemo />
             </button>
           )}
-          {typeof onRequestDelete === 'function' && (
-            <button
-              type="button"
-              className="service-memo-list-action-btn service-memo-list-action-btn--icon service-memo-list-action-btn--danger"
-              onClick={() => onRequestDelete(memo)}
-              title="Delete memo permanently"
-              aria-label="Delete memo permanently"
-            >
-              <IconTrash />
-            </button>
-          )}
         </div>
       </td>
       {closeConfirmOpen && ReactDOM.createPortal(

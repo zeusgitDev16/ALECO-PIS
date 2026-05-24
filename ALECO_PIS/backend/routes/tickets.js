@@ -161,6 +161,16 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
 
         console.log(`🚨 Final Urgent Status: ${finalUrgentStatus} | Concern: "${concern}"`);
 
+        // Normalize GPS fields: convert string 'null' or empty strings to actual SQL NULL
+        const normalizeToNull = (val) => {
+            if (val === 'null' || val === null || val === '' || val === undefined) return null;
+            return val;
+        };
+
+        const lat = normalizeToNull(reported_lat);
+        const lng = normalizeToNull(reported_lng);
+        const accuracy = normalizeToNull(location_accuracy);
+
         // UPDATED SQL: Now includes GPS columns + action_desired (19 placeholders)
         const sql = `
             INSERT INTO aleco_tickets
@@ -187,9 +197,9 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             image_url,
             manilaTime,
             finalUrgentStatus, // Use backend validation
-            reported_lat || null,
-            reported_lng || null,
-            location_accuracy || null,
+            lat,
+            lng,
+            accuracy,
             location_method || 'manual',
             location_confidence || 'medium' // NEW
         ];
@@ -211,6 +221,338 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
     } catch (error) {
         console.error("❌ SUBMISSION ERROR:", error);
         res.status(500).json({ success: false, message: "Server error. Please try again." });
+    }
+});
+
+// --- 1b. MANUAL TICKET CREATION ROUTE (Dispatcher) ---
+router.post('/tickets/manual-create', requireStaff, async (req, res) => {
+    try {
+        const manilaTime = nowPhilippineForMysql();
+
+        const {
+            account_number, first_name, middle_name, last_name,
+            phone_number, address, category, concern, action_desired,
+            district, municipality, is_urgent,
+            reported_lat, reported_lng, location_accuracy, location_method,
+            location_confidence, image_url
+        } = req.body;
+
+        const actorEmail = actorEmailFromReq(req);
+        const actorName = req.authUser?.name || String(req.headers['x-user-name'] || '').trim() || null;
+
+        // --- RELAXED VALIDATION: Minimum required fields only ---
+        if (!first_name || !String(first_name).trim()) {
+            return res.status(400).json({ success: false, message: 'First name is required.' });
+        }
+        if (!last_name || !String(last_name).trim()) {
+            return res.status(400).json({ success: false, message: 'Last name is required.' });
+        }
+        if (!address || !String(address).trim()) {
+            return res.status(400).json({ success: false, message: 'Address is required.' });
+        }
+        if (!concern || !String(concern).trim()) {
+            return res.status(400).json({ success: false, message: 'Concern is required.' });
+        }
+        if (!category || !String(category).trim()) {
+            return res.status(400).json({ success: false, message: 'Category is required.' });
+        }
+
+        // --- RELAXED PHONE VALIDATION: Normalize if provided, but allow empty ---
+        let normalizedPhone = null;
+        if (phone_number && String(phone_number).trim()) {
+            normalizedPhone = normalizePhoneForDB(phone_number);
+            if (!normalizedPhone) {
+                return res.status(400).json({ success: false, message: INVALID_PHONE_MESSAGE });
+            }
+        }
+
+        // --- RELAXED DISTRICT-MUNICIPALITY VALIDATION: Check relationship only if both provided ---
+        if (district && municipality) {
+            const isValid = validateDistrictMunicipality(district, municipality);
+            if (!isValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid location: ${municipality} does not belong to ${district}. Please verify your selection.`
+                });
+            }
+        }
+        // If only one is provided, allow it (relaxed for trusted users)
+
+        // --- DUPLICATE CHECK (5-minute window) - same as public submissions ---
+        if (normalizedPhone) {
+            const duplicateCheckSql = `
+                SELECT ticket_id FROM aleco_tickets
+                WHERE phone_number = ?
+                  AND category = ?
+                  AND concern = ?
+                  AND created_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+                LIMIT 1
+            `;
+            const [existingTickets] = await pool.execute(duplicateCheckSql, [
+                normalizedPhone, category, concern
+            ]);
+
+            if (existingTickets.length > 0) {
+                return res.status(200).json({
+                    success: true,
+                    ticketId: existingTickets[0].ticket_id,
+                    message: "A similar ticket was already created recently. Please check the existing ticket."
+                });
+            }
+        }
+
+        const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+
+        // --- URGENCY OVERRIDE: Dispatcher's choice is final (skip backend keyword validation) ---
+        const finalUrgentStatus = (is_urgent === true || is_urgent === 1 || String(is_urgent).toLowerCase() === 'true') ? 1 : 0;
+
+        // --- Normalize GPS fields: convert string 'null' or empty strings to actual SQL NULL ---
+        const normalizeToNull = (val) => {
+            if (val === 'null' || val === null || val === '' || val === undefined) return null;
+            return val;
+        };
+
+        const lat = normalizeToNull(reported_lat);
+        const lng = normalizeToNull(reported_lng);
+        const accuracy = normalizeToNull(location_accuracy);
+
+        // --- INSERT WITH is_manual = 1 ---
+        const sql = `
+            INSERT INTO aleco_tickets
+            (ticket_id, account_number, first_name, middle_name, last_name,
+             phone_number, address, district, municipality,
+             category, concern, action_desired, image_url, status, created_at, is_urgent,
+             reported_lat, reported_lng, location_accuracy, location_method, location_confidence, is_manual)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?, 1)
+        `;
+
+        const values = [
+            ticket_id,
+            account_number || "",
+            first_name,
+            middle_name || "",
+            last_name,
+            normalizedPhone,
+            address,
+            district || "",
+            municipality || "",
+            category,
+            concern,
+            action_desired || "",
+            image_url,
+            manilaTime,
+            finalUrgentStatus,
+            lat,
+            lng,
+            accuracy,
+            location_method || 'manual',
+            location_confidence || 'low'
+        ];
+
+        await pool.execute(sql, values);
+
+        // --- AUDIT LOG: Record manual creation ---
+        await insertTicketLog(pool, {
+            ticket_id: ticket_id,
+            actor_type: 'manual_creation',
+            actor_email: actorEmail,
+            actor_name: actorName,
+            action: 'Ticket created manually by dispatcher',
+            metadata: JSON.stringify({ is_manual: 1, source: 'manual_creation' })
+        });
+
+        const locHint = [municipality, district].filter(Boolean).join(', ');
+        await recordTicketNotification(pool, {
+          eventType: TICKETS_EVENT.SUBMITTED_REPORT,
+          subjectName: ticket_id,
+          detail: locHint ? `Manual creation · ${locHint}` : 'Manual creation',
+          actorEmail: actorEmail,
+        });
+
+        console.log(`✅ MANUAL TICKET CREATED: ${ticket_id} | Creator: ${actorEmail} | ${municipality}, ${district}`);
+
+        res.json({ success: true, ticketId: ticket_id, message: 'Manual ticket created successfully.' });
+
+    } catch (error) {
+        console.error("❌ MANUAL CREATION ERROR:", error);
+        res.status(500).json({ success: false, message: "Server error. Please try again." });
+    }
+});
+
+// --- 1c. BULK MANUAL TICKET CREATION ROUTE (Dispatcher) ---
+router.post('/tickets/manual-create/bulk', requireStaff, async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { tickets } = req.body;
+        const actorEmail = actorEmailFromReq(req);
+        const actorName = req.authUser?.name || String(req.headers['x-user-name'] || '').trim() || null;
+
+        if (!Array.isArray(tickets) || tickets.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Tickets array is required.' });
+        }
+
+        const manilaTime = nowPhilippineForMysql();
+        const createdTickets = [];
+        const errors = [];
+
+        for (let i = 0; i < tickets.length; i++) {
+            const ticket = tickets[i];
+            const {
+                account_number, first_name, middle_name, last_name,
+                phone_number, address, category, concern, action_desired,
+                district, municipality, is_urgent,
+                reported_lat, reported_lng, location_accuracy, location_method,
+                location_confidence, image_url
+            } = ticket;
+
+            // --- RELAXED VALIDATION: Minimum required fields only ---
+            if (!first_name || !String(first_name).trim()) {
+                errors.push({ index: i, message: 'First name is required.' });
+                continue;
+            }
+            if (!last_name || !String(last_name).trim()) {
+                errors.push({ index: i, message: 'Last name is required.' });
+                continue;
+            }
+            if (!address || !String(address).trim()) {
+                errors.push({ index: i, message: 'Address is required.' });
+                continue;
+            }
+            if (!concern || !String(concern).trim()) {
+                errors.push({ index: i, message: 'Concern is required.' });
+                continue;
+            }
+            if (!category || !String(category).trim()) {
+                errors.push({ index: i, message: 'Category is required.' });
+                continue;
+            }
+
+            // --- RELAXED PHONE VALIDATION ---
+            let normalizedPhone = null;
+            if (phone_number && String(phone_number).trim()) {
+                normalizedPhone = normalizePhoneForDB(phone_number);
+                if (!normalizedPhone) {
+                    errors.push({ index: i, message: INVALID_PHONE_MESSAGE });
+                    continue;
+                }
+            }
+
+            // --- RELAXED DISTRICT-MUNICIPALITY VALIDATION ---
+            if (district && municipality) {
+                const isValid = validateDistrictMunicipality(district, municipality);
+                if (!isValid) {
+                    errors.push({ index: i, message: `Invalid location: ${municipality} does not belong to ${district}.` });
+                    continue;
+                }
+            }
+
+            // --- DUPLICATE CHECK (5-minute window) ---
+            if (normalizedPhone) {
+                const duplicateCheckSql = `
+                    SELECT ticket_id FROM aleco_tickets
+                    WHERE phone_number = ?
+                      AND category = ?
+                      AND concern = ?
+                      AND created_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+                    LIMIT 1
+                `;
+                const [existingTickets] = await connection.execute(duplicateCheckSql, [
+                    normalizedPhone, category, concern
+                ]);
+
+                if (existingTickets.length > 0) {
+                    errors.push({ index: i, message: 'A similar ticket was already created recently.', existingTicketId: existingTickets[0].ticket_id });
+                    continue;
+                }
+            }
+
+            const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+            const finalUrgentStatus = (is_urgent === true || is_urgent === 1 || String(is_urgent).toLowerCase() === 'true') ? 1 : 0;
+
+            const normalizeToNull = (val) => {
+                if (val === 'null' || val === null || val === '' || val === undefined) return null;
+                return val;
+            };
+
+            const lat = normalizeToNull(reported_lat);
+            const lng = normalizeToNull(reported_lng);
+            const accuracy = normalizeToNull(location_accuracy);
+
+            const sql = `
+                INSERT INTO aleco_tickets
+                (ticket_id, account_number, first_name, middle_name, last_name,
+                 phone_number, address, district, municipality,
+                 category, concern, action_desired, image_url, status, created_at, is_urgent,
+                 reported_lat, reported_lng, location_accuracy, location_method, location_confidence, is_manual)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?, 1)
+            `;
+
+            const values = [
+                ticket_id,
+                account_number || "",
+                first_name,
+                middle_name || "",
+                last_name,
+                normalizedPhone,
+                address,
+                district || "",
+                municipality || "",
+                category,
+                concern,
+                action_desired || "",
+                image_url || null,
+                manilaTime,
+                finalUrgentStatus,
+                lat,
+                lng,
+                accuracy,
+                location_method || 'manual',
+                location_confidence || 'low'
+            ];
+
+            await connection.execute(sql, values);
+
+            // --- AUDIT LOG ---
+            await insertTicketLog(connection, {
+                ticket_id: ticket_id,
+                actor_type: 'manual_creation',
+                actor_email: actorEmail,
+                actor_name: actorName,
+                action: 'Ticket created manually by dispatcher (bulk)',
+                metadata: JSON.stringify({ is_manual: 1, source: 'manual_creation_bulk', bulk_index: i })
+            });
+
+            createdTickets.push({ ticket_id, index: i });
+        }
+
+        await connection.commit();
+
+        const locHint = createdTickets.length > 0 ? `${createdTickets.length} tickets` : '0 tickets';
+        await recordTicketNotification(pool, {
+          eventType: TICKETS_EVENT.SUBMITTED_REPORT,
+          subjectName: 'Bulk manual creation',
+          detail: `Manual creation · ${locHint}`,
+          actorEmail: actorEmail,
+        });
+
+        console.log(`✅ BULK MANUAL CREATION: ${createdTickets.length} tickets created | Creator: ${actorEmail}`);
+
+        res.json({
+            success: true,
+            created: createdTickets,
+            errors: errors,
+            message: `${createdTickets.length} ticket(s) created successfully. ${errors.length > 0 ? `${errors.length} failed.` : ''}`
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("❌ BULK MANUAL CREATION ERROR:", error);
+        res.status(500).json({ success: false, message: "Server error. Please try again." });
+    } finally {
+        connection.release();
     }
 });
 
@@ -261,20 +603,26 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
 
 // --- 2b. EDIT TICKET ROUTE (Dispatcher) ---
 router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
+
         const { ticketId } = req.params;
         const body = req.body;
 
         if (!ticketId || ticketId.startsWith('GROUP-')) {
+            await connection.rollback();
             return res.status(400).json({ success: false, message: 'Cannot edit GROUP master. Edit child tickets individually.' });
         }
 
-        const [existing] = await pool.execute('SELECT * FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
+        const [existing] = await connection.execute('SELECT * FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
         if (existing.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ success: false, message: 'Ticket not found.' });
         }
 
         if (existing[0].parent_ticket_id) {
+            await connection.rollback();
             return res.status(400).json({ success: false, message: 'Cannot edit a ticket that is part of a group. Ungroup first.' });
         }
 
@@ -285,21 +633,25 @@ router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
         }
 
         if (Object.keys(updates).length === 0) {
+            await connection.rollback();
             return res.status(400).json({ success: false, message: 'No valid fields to update.' });
         }
 
         if (updates.district && updates.municipality) {
             const isValid = validateDistrictMunicipality(updates.district, updates.municipality);
             if (!isValid) {
+                await connection.rollback();
                 return res.status(400).json({ success: false, message: `Invalid location: ${updates.municipality} does not belong to ${updates.district}.` });
             }
         } else if (updates.district || updates.municipality) {
+            await connection.rollback();
             return res.status(400).json({ success: false, message: 'Both district and municipality must be provided together.' });
         }
 
         if (updates.phone_number) {
             const normalized = normalizePhoneForDB(updates.phone_number);
             if (!normalized) {
+                await connection.rollback();
                 return res.status(400).json({ success: false, message: INVALID_PHONE_MESSAGE });
             }
             updates.phone_number = normalized;
@@ -307,11 +659,19 @@ router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
 
         const setClause = Object.keys(updates).map(k => `${k} = ?`).join(', ');
         const values = [...Object.values(updates), ticketId];
-        await pool.execute(`UPDATE aleco_tickets SET ${setClause} WHERE ticket_id = ?`, values);
+        await connection.execute(`UPDATE aleco_tickets SET ${setClause} WHERE ticket_id = ?`, values);
+
+        // Auto-sync to linked service memo if category was updated
+        if (updates.category && existing[0].service_memo_id) {
+            await connection.execute(
+                `UPDATE aleco_service_memos SET category = ? WHERE id = ?`,
+                [updates.category, existing[0].service_memo_id]
+            );
+        }
 
         const actorEmail = req.body.actor_email || req.headers['x-user-email'];
         const actorName = req.body.actor_name || req.headers['x-user-name'];
-        await insertTicketLog(pool, {
+        await insertTicketLog(connection, {
             ticket_id: ticketId,
             action: 'ticket_edit',
             actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
@@ -320,11 +680,16 @@ router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
             metadata: { updated_fields: Object.keys(updates) }
         });
 
+        await connection.commit();
+
         console.log(`✅ TICKET EDITED: ${ticketId}`);
         res.json({ success: true, message: `Ticket ${ticketId} updated.` });
     } catch (error) {
+        await connection.rollback();
         console.error('❌ TICKET EDIT ERROR:', error);
         res.status(500).json({ success: false, message: error.message || 'Failed to update ticket.' });
+    } finally {
+        connection.release();
     }
 });
 
@@ -542,6 +907,13 @@ ${ticket_id}`;
                 actor_name: actorName || 'System',
                 metadata: { assigned_crew, eta, dispatch_notes: dispatch_notes || null }
             });
+            
+            // Update memo_status to 'deployed' if ticket has linked service memo
+            await pool.execute(
+                `UPDATE aleco_service_memos SET memo_status = 'deployed' WHERE ticket_id = ? AND memo_status = 'saved'`,
+                [ticket_id]
+            );
+            
             console.log(`✅ DATABASE SUCCESS: Ticket ${ticket_id} updated to Ongoing.`);
             
             // Sync crew status
@@ -681,144 +1053,6 @@ router.put('/tickets/:ticket_id/resolve-concern', requireStaff, async (req, res)
     }
 });
 
-// --- ADMIN: PUT TICKET ON HOLD (Dispatcher-initiated) ---
-router.put('/tickets/:ticket_id/hold', requireStaff, async (req, res) => {
-    const { ticket_id } = req.params;
-    const { hold_reason, notify_consumer } = req.body;
-    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
-
-    if (!hold_reason || !hold_reason.trim()) {
-        return res.status(400).json({ success: false, message: 'Hold reason is required.' });
-    }
-
-    try {
-        const optimistic = await buildOptimisticTicketWhere(pool, ticket_id, expectedUpdatedAt);
-        if (optimistic.conflict) {
-            return res.status(409).json({
-                success: false,
-                code: 'CONFLICT_STALE_TICKET',
-                message: 'Ticket was updated by another user. Reload the latest ticket details and try again.',
-                latest: optimistic.latest,
-            });
-        }
-
-        const [dbResult] = await pool.execute(
-            `UPDATE aleco_tickets SET status = 'OnHold', hold_reason = ?, hold_since = ? WHERE ${optimistic.whereSql} AND status = 'Ongoing'`,
-            [hold_reason.trim(), nowPhilippineForMysql(), ...optimistic.whereParams]
-        );
-
-        if (dbResult.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Ticket not found or not Ongoing.' });
-        }
-
-        const sms = { consumer: { attempted: false, skipped: true, reason: 'not_requested' } };
-
-        if (notify_consumer) {
-            const [ticketRows] = await pool.execute('SELECT phone_number FROM aleco_tickets WHERE ticket_id = ?', [ticket_id]);
-            const consumer_phone = ticketRows[0]?.phone_number;
-            if (consumer_phone) {
-                const holdMsg = `ALECO: Your ticket ${ticket_id} has been put on hold. Reason: ${hold_reason.trim()}. We will resume work soon. Thank you for your patience.`;
-                const holdSmsResult = await sendPhilSMS(consumer_phone, holdMsg);
-                sms.consumer = { attempted: true, ...holdSmsResult };
-                if (holdSmsResult.success) {
-                    console.log(`✅ Hold SMS sent to consumer: ${consumer_phone}`);
-                } else {
-                    console.warn(`⚠️ Hold consumer SMS failed for ${ticket_id}:`, holdSmsResult);
-                }
-            } else {
-                sms.consumer = { attempted: false, skipped: true, reason: 'no_phone_on_ticket' };
-            }
-        }
-
-        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
-        const actorName = req.body.actor_name || req.headers['x-user-name'];
-        await insertTicketLog(pool, {
-            ticket_id,
-            action: 'hold',
-            from_status: 'Ongoing',
-            to_status: 'OnHold',
-            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
-            actor_email: actorEmail || null,
-            actor_name: actorName || 'System',
-            metadata: { hold_reason: hold_reason.trim() }
-        });
-
-        // Sync crew status
-        await syncCrewStatusByTicketId(ticket_id);
-
-        console.log(`✅ Ticket ${ticket_id} put on hold by dispatcher.`);
-        const c = sms.consumer;
-        let holdMsgText;
-        if (!c.attempted) {
-            holdMsgText = c.reason === 'not_requested'
-                ? `Ticket ${ticket_id} put on hold.`
-                : `Ticket ${ticket_id} put on hold. Consumer has no phone on file.`;
-        } else if (c.success) {
-            holdMsgText = `Ticket ${ticket_id} put on hold. Consumer notified by SMS.`;
-        } else {
-            holdMsgText = `Ticket ${ticket_id} put on hold. Consumer SMS could not be sent.`;
-        }
-        res.status(200).json({
-            success: true,
-            message: holdMsgText,
-            sms,
-            ...(c.attempted && !c.success ? { warnings: ['consumer_sms_failed'] } : {})
-        });
-    } catch (error) {
-        console.error("❌ HOLD ERROR:", error.message);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// --- RESUME FROM HOLD (Dispatcher) — clears hold fields and returns ticket to Ongoing ---
-router.put('/tickets/:ticket_id/resume-hold', requireStaff, async (req, res) => {
-    const { ticket_id } = req.params;
-    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
-
-    try {
-        const optimistic = await buildOptimisticTicketWhere(pool, ticket_id, expectedUpdatedAt);
-        if (optimistic.conflict) {
-            return res.status(409).json({
-                success: false,
-                code: 'CONFLICT_STALE_TICKET',
-                message: 'Ticket was updated by another user. Reload the latest ticket details and try again.',
-                latest: optimistic.latest,
-            });
-        }
-
-        const [dbResult] = await pool.execute(
-            `UPDATE aleco_tickets SET status = 'Ongoing', hold_reason = NULL, hold_since = NULL WHERE ${optimistic.whereSql} AND status = 'OnHold'`,
-            [...optimistic.whereParams]
-        );
-
-        if (dbResult.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Ticket not found or not On Hold.' });
-        }
-
-        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
-        const actorName = req.body.actor_name || req.headers['x-user-name'];
-        await insertTicketLog(pool, {
-            ticket_id,
-            action: 'resume_hold',
-            from_status: 'OnHold',
-            to_status: 'Ongoing',
-            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
-            actor_email: actorEmail || null,
-            actor_name: actorName || 'System',
-            metadata: null
-        });
-
-        // Sync crew status
-        await syncCrewStatusByTicketId(ticket_id);
-
-        console.log(`✅ Ticket ${ticket_id} resumed from hold.`);
-        res.status(200).json({ success: true, message: `Ticket ${ticket_id} is back in progress.` });
-    } catch (error) {
-        console.error('❌ RESUME HOLD ERROR:', error.message);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
 
 // ============================================================================
 // INBOUND SMS RECEIVER (YEASTAR WEBHOOK) — RETIRED
@@ -881,7 +1115,7 @@ const _retiredInboundKeywordHandler = async (req, res) => {
             if (crewRows.length > 0) {
                 const crewName = crewRows[0].crew_name;
                 const [ongoingTickets] = await pool.execute(
-                    `SELECT ticket_id, parent_ticket_id, status FROM aleco_tickets WHERE assigned_crew = ? AND status IN ('Ongoing', 'OnHold') ORDER BY dispatched_at DESC`,
+                    `SELECT ticket_id, parent_ticket_id, status FROM aleco_tickets WHERE assigned_crew = ? AND status = 'Ongoing' ORDER BY dispatched_at DESC`,
                     [crewName]
                 );
                 if (ongoingTickets.length > 0) {
@@ -943,7 +1177,7 @@ const _retiredInboundKeywordHandler = async (req, res) => {
             );
             if (crewRows.length === 0) return null;
             const [tickets] = await pool.execute(
-                `SELECT ticket_id FROM aleco_tickets WHERE assigned_crew = ? AND status IN ('Ongoing', 'OnHold') ORDER BY dispatched_at DESC LIMIT 1`,
+                `SELECT ticket_id FROM aleco_tickets WHERE assigned_crew = ? AND status = 'Ongoing' ORDER BY dispatched_at DESC LIMIT 1`,
                 [crewRows[0].crew_name]
             );
             return tickets.length > 0 ? tickets[0].ticket_id : null;
@@ -992,7 +1226,7 @@ const _retiredInboundKeywordHandler = async (req, res) => {
             console.log(`🔍 Extracted Ticket ID (Unresolved): ${ticketId}`);
 
             const [prevRows] = await pool.execute(
-                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status = 'Ongoing'`,
                 [ticketId]
             );
             if (prevRows.length === 0) {
@@ -1000,7 +1234,7 @@ const _retiredInboundKeywordHandler = async (req, res) => {
             } else {
                 const fromStatus = prevRows[0].status;
                 const [dbResult] = await pool.execute(
-                    `UPDATE aleco_tickets SET status = 'Unresolved', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                    `UPDATE aleco_tickets SET status = 'Unresolved', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`,
                     [ticketId]
                 );
 
@@ -1101,8 +1335,8 @@ const _retiredInboundKeywordHandler = async (req, res) => {
 
             const phNow = nowPhilippineForMysql();
             const updateQuery = etaUpdate
-                ? `UPDATE aleco_tickets SET eta = ? WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`
-                : `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`;
+                ? `UPDATE aleco_tickets SET eta = ? WHERE ticket_id = ? AND status = 'Ongoing'`
+                : `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status = 'Ongoing'`;
             const updateParams = etaUpdate ? [etaUpdate, ticketId] : [phNow, ticketId];
             const [dbResult] = await pool.execute(updateQuery, updateParams);
 
@@ -1114,7 +1348,7 @@ const _retiredInboundKeywordHandler = async (req, res) => {
             console.log(`🔍 Extracted Ticket ID (Arrived): ${ticketId}`);
 
             const [dbResult] = await pool.execute(
-                `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                `UPDATE aleco_tickets SET updated_at = ? WHERE ticket_id = ? AND status = 'Ongoing'`,
                 [nowPhilippineForMysql(), ticketId]
             );
 
@@ -1203,7 +1437,7 @@ router.post('/check-duplicates', async (req, res) => {
             FROM aleco_tickets
             WHERE phone_number = ?
             AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-            AND status IN ('Pending', 'Ongoing', 'Unresolved', 'OnHold')
+            AND status IN ('Pending', 'Ongoing', 'Unresolved')
             ORDER BY created_at DESC
             LIMIT 5
         `;
@@ -1413,7 +1647,7 @@ const statusUpdateHandler = async (req, res) => {
         console.log(`📊 Manual Status Update Request: ${ticketId} → ${status}`);
 
         // Validate status - Match the actual database enum
-        const validStatuses = ['Pending', 'Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
+        const validStatuses = ['Pending', 'Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -1424,6 +1658,28 @@ const statusUpdateHandler = async (req, res) => {
         // Get current status before update
         const [currentRows] = await pool.execute('SELECT status FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
         const fromStatus = currentRows.length > 0 ? currentRows[0].status : null;
+
+        // Prevent manual reversion to previous status (system-triggered reversion allowed via special flag)
+        const isSystemTriggered = req.body.system_triggered === true;
+        if (!isSystemTriggered && fromStatus) {
+            const statusFlow = {
+                'Pending': 0,
+                'Ongoing': 1,
+                'Restored': 3,
+                'Unresolved': 3,
+                'NoFaultFound': 3,
+                'AccessDenied': 3
+            };
+            const fromLevel = statusFlow[fromStatus] ?? 0;
+            const toLevel = statusFlow[status] ?? 0;
+            
+            if (toLevel < fromLevel) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Cannot revert status from ${fromStatus} to ${status}. Use system-triggered operations for status reversion.`
+                });
+            }
+        }
 
         const optimistic = await buildOptimisticTicketWhere(pool, ticketId, expectedUpdatedAt);
         if (optimistic.conflict) {
@@ -1459,6 +1715,46 @@ const statusUpdateHandler = async (req, res) => {
 
             // Sync crew status
             await syncCrewStatusByTicketId(ticketId);
+
+            // Auto-fill service memo remarks for resolution statuses
+            const resolutionStatuses = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
+            if (resolutionStatuses.includes(status) && req.body.remarks) {
+                const [memoRows] = await pool.execute(
+                    `SELECT id, work_performed FROM aleco_service_memos WHERE ticket_id = ? LIMIT 1`,
+                    [ticketId]
+                );
+                if (memoRows.length > 0) {
+                    const memo = memoRows[0];
+                    
+                    // Append new remark to work_performed
+                    const currentWorkPerformed = memo.work_performed || '';
+                    const updatedWorkPerformed = currentWorkPerformed 
+                        ? `${currentWorkPerformed}\n\n${req.body.remarks}`
+                        : req.body.remarks;
+                    
+                    await pool.execute(
+                        `UPDATE aleco_service_memos SET work_performed = ? WHERE id = ?`,
+                        [updatedWorkPerformed, memo.id]
+                    );
+                    console.log(`✅ Service memo work_performed updated for ticket ${ticketId}`);
+                }
+            }
+
+            // Sync memo_status with ticket status
+            const statusToMemoStatus = {
+                'Restored': 'resolved',
+                'Unresolved': 'unresolved',
+                'NoFaultFound': 'nofaultfound',
+                'AccessDenied': 'accessdenied'
+            };
+            const targetMemoStatus = statusToMemoStatus[status];
+            if (targetMemoStatus) {
+                await pool.execute(
+                    `UPDATE aleco_service_memos SET memo_status = ? WHERE ticket_id = ?`,
+                    [targetMemoStatus, ticketId]
+                );
+                console.log(`✅ Service memo status updated to ${targetMemoStatus} for ticket ${ticketId}`);
+            }
 
             console.log(`✅ SUCCESS: Ticket ${ticketId} updated to ${status}`);
             res.status(200).json({ success: true, message: `Ticket ${ticketId} marked as ${status}` });

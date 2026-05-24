@@ -34,11 +34,13 @@ const MemoBody = ({ memos, loading, activeTab, onView, onEdit, onClose, onReques
           <div className="placeholder-content service-memos-placeholder">
             <h3>No service memos</h3>
             <p className="widget-text">
-              {activeTab === 'saved'
-                ? 'No saved service memos.'
-                : activeTab === 'closed'
-                  ? 'No closed service memos.'
-                  : 'No service memos in the system yet.'}
+              {activeTab === 'deployed'
+                ? 'No deployed service memos.'
+                : activeTab === 'saved'
+                  ? 'No saved service memos.'
+                  : activeTab === 'closed'
+                    ? 'No closed service memos.'
+                    : 'No service memos in the system yet.'}
             </p>
           </div>
         ) : (

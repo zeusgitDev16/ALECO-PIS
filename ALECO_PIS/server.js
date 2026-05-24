@@ -75,17 +75,28 @@ const io = new SocketIOServer(httpServer, {
         origin(origin, callback) {
             if (!origin) return callback(null, true);
             if (allowedOrigins.includes(normalizeOrigin(origin))) return callback(null, true);
+            console.warn(`[socket.io] CORS blocked origin: ${origin}`);
             return callback(null, false);
         },
         methods: ['GET', 'POST'],
+        credentials: true,
     },
     path: '/socket.io',
 });
 
 io.on('connection', (socket) => {
+    console.log(`[socket.io] Client connected: ${socket.id} from ${socket.handshake.headers.origin}`);
     socket.emit('realtime:connected', {
         ts: new Date().toISOString(),
         transport: socket.conn?.transport?.name || 'unknown',
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.log(`[socket.io] Client disconnected: ${socket.id}, reason: ${reason}`);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error(`[socket.io] Connection error: ${error.message}`);
     });
 });
 

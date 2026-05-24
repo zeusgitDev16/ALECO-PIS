@@ -23,7 +23,7 @@ const ServiceMemoTabs = ({ filters, setFilters, activeTab, setActiveTab }) => {
         {/* Row 1: tabs + Status (Status hidden on mobile, shown on desktop) */}
         <div className="service-memo-search-row service-memo-tabs-filter-row">
           <div className="service-memo-tab-row">
-            {['all', 'saved', 'closed'].map((tab) => (
+            {['all', 'deployed', 'saved', 'closed'].map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -42,10 +42,13 @@ const ServiceMemoTabs = ({ filters, setFilters, activeTab, setActiveTab }) => {
               onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}
             >
               <option value="">All statuses</option>
-              <option value="Restored">Restored</option>
-              <option value="Unresolved">Unresolved</option>
-              <option value="NoFaultFound">No Fault Found</option>
-              <option value="AccessDenied">Access Denied</option>
+              <option value="saved">Saved</option>
+              <option value="deployed">Deployed</option>
+              <option value="resolved">Resolved</option>
+              <option value="unresolved">Unresolved</option>
+              <option value="nofaultfound">No Fault Found</option>
+              <option value="accessdenied">Access Denied</option>
+              <option value="closed">Closed</option>
             </select>
           </div>
           <div className="service-memo-search-field service-memo-inline-desktop-field">

@@ -37,6 +37,7 @@ import TicketTableView from './tickets/TicketTableView';
 import TicketKanbanView from './tickets/TicketKanbanView';
 import ConfirmModal from './tickets/ConfirmModal';
 import UrgentKeywordsPanel from './tickets/UrgentKeywordsPanel';
+import ManualTicketModal from './tickets/ManualTicketModal';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 
@@ -45,6 +46,7 @@ const AdminTickets = () => {
     
     const [viewMode, setViewMode] = useState('card');
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+    const [isManualModalOpen, setIsManualModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [isMapOpen, setIsMapOpen] = useState(false);
     const [mapTickets, setMapTickets] = useState([]);
@@ -362,7 +364,7 @@ const AdminTickets = () => {
         }
     };
 
-    const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null) => {
+    const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null, remarks = null) => {
         try {
             const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
             const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
@@ -428,6 +430,11 @@ const AdminTickets = () => {
                         status: newStatus,
                         ...getActor(),
                     };
+
+                // Add remarks if provided (for resolution statuses)
+                if (remarks) {
+                    payload.remarks = remarks;
+                }
 
                 const result = await authMutation(url, {
                     method: 'PUT',
@@ -540,6 +547,13 @@ const AdminTickets = () => {
                         <h2 className="header-title">Support Tickets</h2>
                         <p className="header-subtitle">Track and resolve user reported issues.</p>
                     </div>
+                    <button
+                        type="button"
+                        className="btn-add-ticket"
+                        onClick={() => setIsManualModalOpen(true)}
+                    >
+                        + Add Ticket
+                    </button>
                 </div>
 
                 {error && (
@@ -857,6 +871,12 @@ const AdminTickets = () => {
                         toast.error('Failed to create ticket group. Please try again.');
                     }
                 }}
+            />
+
+            <ManualTicketModal
+                isOpen={isManualModalOpen}
+                onClose={() => setIsManualModalOpen(false)}
+                onRefetch={refetch}
             />
         </AdminLayout>
     );

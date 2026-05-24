@@ -751,7 +751,6 @@
 
 .status-tag.pending { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
 .status-tag.ongoing { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-.status-tag.onhold { background: rgba(100, 116, 139, 0.15); color: #64748b; }
 .status-tag.restored { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
 .status-tag.unresolved { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .status-tag.nofaultfound { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
@@ -1083,12 +1082,13 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.55);
-    z-index: 2000;
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: calc(14px * var(--report-scale, 1));
     box-sizing: border-box;
+    pointer-events: auto;
 }
 
 .report-map-picker-modal {
@@ -1101,6 +1101,8 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    z-index: 10001;
+    pointer-events: auto;
 }
 
 .report-map-picker-header {
@@ -1688,3 +1690,84 @@ select:disabled {
         padding: 11px 14px !important;
     }
 }
+
+/* --- OPTIONAL PINNING & LOCATION LAYOUT STYLES --- */
+.report-problem-container .location-section-group {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: calc(12px * var(--report-scale, 1));
+    padding: calc(16px * var(--report-scale, 1));
+    margin-bottom: calc(20px * var(--report-scale, 1));
+    box-shadow: 0 calc(2px * var(--report-scale, 1)) calc(8px * var(--report-scale, 1)) rgba(0, 0, 0, 0.04);
+}
+
+.report-problem-container .location-section-subtitle {
+    margin: 0 0 calc(12px * var(--report-scale, 1)) 0;
+    font-size: calc(15px * var(--report-scale, 1));
+    font-weight: 700;
+    color: var(--text-header);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: calc(6px * var(--report-scale, 1));
+}
+
+.report-problem-container .location-section-help {
+    margin: 0 0 calc(14px * var(--report-scale, 1)) 0;
+    font-size: calc(13px * var(--report-scale, 1));
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.report-problem-container .column-section-title-dropdown {
+    display: block;
+    margin-top: calc(16px * var(--report-scale, 1));
+    margin-bottom: calc(8px * var(--report-scale, 1));
+    font-size: calc(13px * var(--report-scale, 1));
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.report-problem-container .location-status-badge-container {
+    margin-bottom: calc(16px * var(--report-scale, 1));
+}
+
+.report-problem-container .location-info-box {
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--report-scale, 1));
+    padding: calc(10px * var(--report-scale, 1)) calc(14px * var(--report-scale, 1));
+    background-color: rgba(59, 130, 246, 0.08);
+    border: 1px dashed rgba(59, 130, 246, 0.4);
+    border-radius: calc(8px * var(--report-scale, 1));
+    color: #1e3a8a;
+    font-size: calc(13px * var(--report-scale, 1));
+    line-height: 1.4;
+}
+
+[data-theme="dark"] .report-problem-container .location-info-box {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: #bfdbfe;
+}
+
+.report-problem-container .gps-info-icon {
+    font-weight: bold;
+    background: #3b82f6;
+    color: white;
+    width: calc(18px * var(--report-scale, 1));
+    height: calc(18px * var(--report-scale, 1));
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(11px * var(--report-scale, 1));
+    flex-shrink: 0;
+}
+
+.report-problem-container .gps-info-text {
+    flex: 1;
+}
+
+.report-problem-container .accuracy-group {
+    border-color: rgba(16, 185, 129, 0.2);
+}
+

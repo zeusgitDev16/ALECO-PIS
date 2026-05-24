@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/ServiceMemos.css';
 import '../CSS/ServiceMemoUIScale.css';
@@ -14,6 +15,7 @@ import { REALTIME_MODULES } from '../constants/realtimeModules';
 import { matchesRealtimeModule } from '../utils/realtimeModules';
 
 const ServiceMemos = () => {
+  const [searchParams] = useSearchParams();
   const {
     memos,
     loading,
@@ -36,11 +38,25 @@ const ServiceMemos = () => {
   const [activeMemoId, setActiveMemoId] = useState(null);
   const [detailMemo, setDetailMemo] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [prefilledTicketId, setPrefilledTicketId] = useState(null);
 
   const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
   const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
 
   const { printMemo, isLoading: isPrinting, error: printError } = useServiceMemoPrint();
+
+  // Handle URL parameters for pre-filling ticket_id
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    const ticketId = searchParams.get('ticket_id');
+    
+    if (mode === 'create' && ticketId) {
+      setPrefilledTicketId(ticketId);
+      setScreen('create');
+      // Clear URL params after processing
+      window.history.replaceState({}, '', '/service-memos');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const handleServiceMemoDeleted = () => {
@@ -65,6 +81,32 @@ const ServiceMemos = () => {
     window.addEventListener('aleco:realtime-change', onRealtimeChange);
     return () => window.removeEventListener('aleco:realtime-change', onRealtimeChange);
   }, [fetchList]);
+
+  // Handle custom event to open specific memo
+  useEffect(() => {
+    const handleOpenServiceMemo = async (ev) => {
+      const { memoId, mode = 'view' } = ev.detail || {};
+      if (memoId) {
+        setActiveMemoId(memoId);
+        setDetailMode(mode === 'edit' ? 'update' : 'view');
+        setDetailLoading(true);
+        setDetailMemo(null);
+        try {
+          const r = await getServiceMemo(memoId);
+          if (r.success && r.data) {
+            setDetailMemo(r.data);
+          } else {
+            setMessage({ type: 'err', text: r.message || 'Could not load memo.' });
+          }
+        } finally {
+          setDetailLoading(false);
+        }
+        setScreen('detail');
+      }
+    };
+    window.addEventListener('aleco:open-service-memo', handleOpenServiceMemo);
+    return () => window.removeEventListener('aleco:open-service-memo', handleOpenServiceMemo);
+  }, [setMessage]);
 
   const loadDetail = useCallback(async (id) => {
     setDetailLoading(true);
@@ -138,6 +180,7 @@ const ServiceMemos = () => {
         <ServiceMemoForm
           mode="create"
           memo={null}
+          prefilledTicketId={prefilledTicketId}
           onBack={() => {
             setScreen('browse');
             fetchList();

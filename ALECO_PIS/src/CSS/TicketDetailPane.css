@@ -149,6 +149,40 @@
     flex: 1;
 }
 
+.header-badges {
+    display: flex;
+    align-items: center;
+    gap: calc(6px * var(--ticket-ui-scale, 1));
+    flex-wrap: wrap;
+}
+
+.manual-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: clamp(2px, 0.8vw, calc(3px * var(--ticket-ui-scale, 1))) clamp(4px, 1.2vw, calc(6px * var(--ticket-ui-scale, 1)));
+    border-radius: clamp(4px, 1vw, calc(6px * var(--ticket-ui-scale, 1)));
+    font-size: clamp(0.4rem, 1.2vw, calc(0.45rem * var(--ticket-ui-scale, 1)));
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 1.5px rgba(255,255,255,0.18);
+    width: fit-content;
+}
+
+/* Light mode: purple badge for manual creation */
+html:not([data-theme="dark"]) .manual-badge {
+    background: #faf5ff;
+    color: #7c3aed;
+    border: 1.5px solid #c4b5fd;
+}
+
+/* Dark mode: lighter purple badge */
+[data-theme="dark"] .manual-badge {
+    background: rgba(17, 24, 39, 0.95);
+    color: #e9d5ff;
+    border: 1.5px solid #a78bfa;
+}
+
 .detail-title {
     font-size: calc(1.1rem * var(--ticket-ui-scale, 1));
     font-weight: 800;
@@ -205,12 +239,6 @@ html:not([data-theme="dark"]) .status-tag.ongoing {
     border: 1.5px solid #90caf9;
 }
 
-html:not([data-theme="dark"]) .status-tag.onhold {
-    background: #f1f5f9;
-    color: #334155;
-    border: 1.5px solid #94a3b8;
-}
-
 html:not([data-theme="dark"]) .status-tag.resolved,
 html:not([data-theme="dark"]) .status-tag.restored {
     background: #f0fdf4;
@@ -247,12 +275,6 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
     background: rgba(17, 24, 39, 0.95);
     color: #93c5fd;
     border: 1.5px solid #60a5fa;
-}
-
-[data-theme="dark"] .status-tag.onhold {
-    background: rgba(17, 24, 39, 0.95);
-    color: #cbd5e1;
-    border: 1.5px solid #64748b;
 }
 
 [data-theme="dark"] .status-tag.resolved,
@@ -654,6 +676,11 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
     border-radius: 0 0 calc(16px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1));
 }
 
+/* Pending state: three buttons (Edit, Delete, Create Service Memo) occupy full width */
+.action-footer.pending {
+    grid-template-columns: repeat(3, 1fr);
+}
+
 .btn-action {
     padding: clamp(2px, 1.2vw, 4px) clamp(3px, 1.8vw, 6px);
     font-size: clamp(6px, 2vw, 8px);
@@ -756,17 +783,6 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
     border-color: rgba(59, 130, 246, 0.5);
 }
 
-.btn-hold {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
-    border-color: rgba(245, 158, 11, 0.35);
-}
-
-.btn-hold:hover {
-    background: rgba(245, 158, 11, 0.25);
-    border-color: rgba(245, 158, 11, 0.5);
-}
-
 .btn-edit {
     background: rgba(99, 102, 241, 0.15);
     color: #6366f1;
@@ -787,6 +803,17 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
 .btn-delete:hover {
     background: rgba(239, 68, 68, 0.25);
     border-color: rgba(239, 68, 68, 0.5);
+}
+
+.btn-create-memo {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+.btn-create-memo:hover {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: rgba(34, 197, 94, 0.5);
 }
 
 /* ============================================================================
@@ -2553,5 +2580,30 @@ body.modal-open .kanban-column-header {
     .ticket-modal-content .detail-header .reported-date {
         font-size: calc(0.52rem * var(--ticket-ui-scale, 1)) !important;
         padding: calc(1px * var(--ticket-ui-scale, 1)) calc(3px * var(--ticket-ui-scale, 1)) !important;
+    }
+}
+
+/* Manual badge mobile sizing - extra small on mobile */
+@media (max-width: 425px) {
+    .manual-badge {
+        padding: 2px 4px !important;
+        border-radius: 4px !important;
+        font-size: 0.38rem !important;
+    }
+}
+
+@media (max-width: 375px) {
+    .manual-badge {
+        padding: 1.5px 3.5px !important;
+        border-radius: 3px !important;
+        font-size: 0.35rem !important;
+    }
+}
+
+@media (max-width: 320px) {
+    .manual-badge {
+        padding: 1px 3px !important;
+        border-radius: 3px !important;
+        font-size: 0.32rem !important;
     }
 }

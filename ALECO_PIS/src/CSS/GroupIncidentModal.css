@@ -57,6 +57,37 @@
     cursor: grabbing;
 }
 
+/* Action Tabs */
+.group-modal-action-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 16px 20px;
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+}
+
+.group-modal-action-tab {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary, #666);
+    transition: all 0.2s ease;
+}
+
+.group-modal-action-tab:hover {
+    background: var(--bg-hover, rgba(0, 0, 0, 0.05));
+    color: var(--text-primary, #333);
+}
+
+.group-modal-action-tab.active {
+    background: var(--accent-color, #2563eb);
+    color: white;
+}
+
 /* Scroll outer: same spine as Ticket Detail Pane - flex chain so only middle scrolls */
 .group-modal-scroll-outer {
     flex: 1 1 auto;
@@ -471,6 +502,16 @@
         padding: 18px 44px 14px 18px;
     }
 
+    .group-modal-action-tabs {
+        padding: 0 18px 14px 18px;
+        gap: 6px;
+    }
+
+    .group-modal-action-tab {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+    }
+
     .group-modal-title {
         font-size: 0.95rem;
     }
@@ -587,6 +628,16 @@
 
     .group-modal-header-handle {
         padding: 14px 40px 12px 14px;
+    }
+
+    .group-modal-action-tabs {
+        padding: 0 14px 12px 14px;
+        gap: 6px;
+    }
+
+    .group-modal-action-tab {
+        padding: 7px 10px;
+        font-size: 0.65rem;
     }
 
     .group-modal-title {
@@ -707,6 +758,16 @@
         padding: 14px 40px 12px 14px;
     }
 
+    .group-modal-action-tabs {
+        padding: 0 14px 12px 14px;
+        gap: 6px;
+    }
+
+    .group-modal-action-tab {
+        padding: 7px 10px;
+        font-size: 0.65rem;
+    }
+
     .group-modal-title {
         font-size: 0.78rem;
     }
@@ -823,6 +884,16 @@
 
     .group-modal-header-handle {
         padding: 12px 36px 10px 12px;
+    }
+
+    .group-modal-action-tabs {
+        padding: 0 13px 10px 13px;
+        gap: 4px;
+    }
+
+    .group-modal-action-tab {
+        padding: 6px 9px;
+        font-size: 0.58rem;
     }
 
     .group-modal-title {
@@ -948,6 +1019,16 @@
 
     .group-modal-header-handle {
         padding: 10px 32px 8px 11px;
+    }
+
+    .group-modal-action-tabs {
+        padding: 0 11px 8px 11px;
+        gap: 3px;
+    }
+
+    .group-modal-action-tab {
+        padding: 5px 8px;
+        font-size: 0.5rem;
     }
 
     .group-modal-title {

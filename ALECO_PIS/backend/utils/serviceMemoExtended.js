@@ -110,31 +110,13 @@ export function mergeMemoForResponse(row, ticket) {
 }
 
 /**
- * Validate required memo fields for create/update (optional: site arrived).
+ * Validate required memo fields for create/update.
+ * Only ticket_id is required - all other fields are optional for relaxed flow.
  * @param {object} body
  * @returns {{ ok: boolean, missing: string[] }}
  */
 export function validateMemoPayload(body) {
-  const required = [
-    ['received_by', body.received_by],
-    ['intake_date', body.intake_date ?? body.service_date],
-    ['intake_time', body.intake_time],
-    ['referred_to', body.referred_to],
-    ['referral_received_date', body.referral_received_date],
-    ['referral_received_time', body.referral_received_time],
-    ['action_taken', body.action_taken ?? body.work_performed],
-    ['finished_date', body.finished_date],
-    ['finished_time', body.finished_time],
-  ];
-
-  const missing = [];
-  for (const [key, val] of required) {
-    if (val === undefined || val === null || String(val).trim() === '') {
-      missing.push(key);
-    }
-  }
-
-  // Optional: site_arrived_date / site_arrived_time — no validation
-
-  return { ok: missing.length === 0, missing };
+  // All fields are now optional - no validation needed
+  // Only ticket_id is validated at the route level
+  return { ok: true, missing: [] };
 }

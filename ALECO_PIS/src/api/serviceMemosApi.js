@@ -302,3 +302,24 @@ export async function deleteServiceMemo(id) {
     return { ok: false, success: false, message: 'Network error.' };
   }
 }
+
+/**
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
+ */
+export async function undoServiceMemo(id) {
+  try {
+    const result = await authMutation(apiUrl(`/api/service-memos/${id}/undo`), {
+      method: 'DELETE',
+      body: {},
+      emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
+    });
+    return {
+      ok: result.ok,
+      success: result.success,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+    };
+  } catch {
+    return { ok: false, success: false, message: 'Network error.' };
+  }
+}

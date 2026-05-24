@@ -2,14 +2,16 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
+import { apiUrl } from '../../utils/api';
 import {
   fetchTicketPreviewForMemo,
   createServiceMemo,
   updateServiceMemo,
-  deleteServiceMemo,
+  undoServiceMemo,
   allocateControlNumber,
 } from '../../api/serviceMemosApi';
 import ConfirmModal from '../tickets/ConfirmModal';
+import DispatchTicketModal from '../tickets/DispatchTicketModal';
 import ServiceMemoTopStrip from './ServiceMemoTopStrip';
 
 function todayDateStr() {
@@ -40,11 +42,6 @@ function toTimeInputValue(value, fallback = '') {
   if (match) return match[1];
   return fallback;
 }
-
-const CLOSED_TICKET_STATUSES = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
-
-const MEMO_SAVE_STATUS_TOAST =
-  'Service memo can only be saved when the ticket is closed: Restored, Unresolved, NoFaultFound, or AccessDenied. Pending and Ongoing are not allowed.';
 
 /** Top-strip banner (same pattern as Users → Invite: info banner + short toast on action). */
 const EXISTING_MEMO_BANNER_TEXT =
@@ -114,6 +111,7 @@ const ServiceMemoForm = ({
   onDeleted,
   onSwitchToEdit,
   onPrint,
+  prefilledTicketId,
 }) => {
   const readOnly = mode === 'view';
   const stripVariant = mode === 'create' ? 'input' : mode === 'update' ? 'update' : 'display';
@@ -130,9 +128,11 @@ const ServiceMemoForm = ({
   const [ticketLookupError, setTicketLookupError] = useState(null);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [undoModalOpen, setUndoModalOpen] = useState(false);
+  const [undoBusy, setUndoBusy] = useState(false);
   const [closeMemoConfirmOpen, setCloseMemoConfirmOpen] = useState(false);
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
+  const [crews, setCrews] = useState([]);
 
   /** Invalidates in-flight debounced / manual ticket lookups when the input changes or Load runs. */
   const ticketVerifyGenRef = useRef(0);
@@ -328,6 +328,20 @@ const ServiceMemoForm = ({
     }));
   };
 
+  // Auto-fill ticket query when prefilledTicketId is provided
+  useEffect(() => {
+    if (mode === 'create' && prefilledTicketId) {
+      setStripValues((prev) => ({
+        ...prev,
+        ticket_query: prefilledTicketId,
+      }));
+      // Trigger ticket verification after a short delay to ensure state is updated
+      setTimeout(() => {
+        handleLoadTicket();
+      }, 100);
+    }
+  }, [mode, prefilledTicketId]);
+
   const handleGenerateMemoCode = async () => {
     const q = (stripValues.ticket_query ?? '').trim();
     if (mode !== 'create' || !ticketPreview?.ticket_id || ticketPreview.ticket_id !== q) return;
@@ -396,10 +410,6 @@ const ServiceMemoForm = ({
       return;
     }
     if (mode === 'create') {
-      if (!CLOSED_TICKET_STATUSES.includes(ticketPreview?.status)) {
-        toast.error(MEMO_SAVE_STATUS_TOAST);
-        return;
-      }
       if (!stripValues.control_number?.trim()) {
         toast.warning('Generate a memo number before saving.');
         return;
@@ -491,23 +501,29 @@ const ServiceMemoForm = ({
     Boolean(memo?.id) &&
     (mode === 'view' || mode === 'update');
 
-  const handleConfirmDeleteMemo = async () => {
-    if (!memo?.id || deleteBusy) return;
-    setDeleteBusy(true);
+  const canStartResolution =
+    Boolean(memo?.id) &&
+    (mode === 'view' || mode === 'update') &&
+    memo.memo_status === 'saved' &&
+    memo.ticket_status === 'Ongoing';
+
+  const handleConfirmUndoMemo = async () => {
+    if (!memo?.id || undoBusy) return;
+    setUndoBusy(true);
     try {
-      const r = await deleteServiceMemo(memo.id);
+      const r = await undoServiceMemo(memo.id);
       if (r.success) {
-        toast.success('Service memo deleted.');
+        toast.success('Service memo undone and ticket reverted to Pending.');
         window.dispatchEvent(new Event('service-memo-deleted'));
-        setDeleteModalOpen(false);
+        setUndoModalOpen(false);
         onDeleted?.();
       } else {
-        toast.error(r.message || 'Could not delete memo.');
+        toast.error(r.message || 'Could not undo memo.');
       }
     } catch {
       toast.error('Network error.');
     } finally {
-      setDeleteBusy(false);
+      setUndoBusy(false);
     }
   };
 
@@ -734,11 +750,20 @@ const ServiceMemoForm = ({
         {canDeleteMemo && (
           <button
             type="button"
-            className="service-memo-btn service-memo-btn--danger"
-            disabled={deleteBusy || saving}
-            onClick={() => setDeleteModalOpen(true)}
+            className="service-memo-btn service-memo-btn--secondary"
+            disabled={undoBusy || saving}
+            onClick={() => setUndoModalOpen(true)}
           >
-            Delete
+            Undo
+          </button>
+        )}
+        {canStartResolution && (
+          <button
+            type="button"
+            className="service-memo-btn service-memo-btn--primary"
+            onClick={() => setIsDispatchModalOpen(true)}
+          >
+            Start a Resolution
           </button>
         )}
       </div>
@@ -772,18 +797,51 @@ const ServiceMemoForm = ({
       />
 
       <ConfirmModal
-        isOpen={deleteModalOpen}
-        onClose={() => !deleteBusy && setDeleteModalOpen(false)}
-        onConfirm={handleConfirmDeleteMemo}
-        title="Delete service memo permanently?"
+        isOpen={undoModalOpen}
+        onClose={() => !undoBusy && setUndoModalOpen(false)}
+        onConfirm={handleConfirmUndoMemo}
+        title="Undo service memo?"
         message={
           memo
-            ? `Memo ${memo.control_number || `#${memo.id}`} (ticket ${memo.ticket_id || '—'}) will be removed from the database. The ticket link to this memo will be cleared. This cannot be undone.`
+            ? `Memo ${memo.control_number || `#${memo.id}`} (ticket ${memo.ticket_id || '—'}) will be deleted and the ticket status will be reverted to Pending. Use this to fully undo the service memo creation.`
             : ''
         }
-        confirmLabel={deleteBusy ? 'Deleting…' : 'Delete permanently'}
+        confirmLabel={undoBusy ? 'Undoing…' : 'Undo'}
         cancelLabel="Cancel"
-        variant="danger"
+        variant="warning"
+      />
+
+      <DispatchTicketModal
+        isOpen={isDispatchModalOpen}
+        onClose={() => setIsDispatchModalOpen(false)}
+        ticket={memo}
+        crews={crews}
+        titleOverride="Start a Resolution"
+        subtitleOverride={`Dispatch crew for ticket ${memo?.ticket_id || '—'}`}
+        onSubmit={async (dispatchData) => {
+          try {
+            const res = await fetch(apiUrl(`/api/tickets/${memo.ticket_id}/dispatch`), {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-user-email': localStorage.getItem('userEmail') || '',
+                'x-user-name': localStorage.getItem('userName') || '',
+              },
+              body: JSON.stringify(dispatchData),
+            });
+            const result = await res.json();
+            if (result.success) {
+              toast.success('Dispatch successful. Memo status updated to deployed.');
+              setIsDispatchModalOpen(false);
+              // Refresh memo data
+              if (onSaved) onSaved();
+            } else {
+              toast.error(result.message || 'Dispatch failed');
+            }
+          } catch (error) {
+            toast.error('Network error during dispatch');
+          }
+        }}
       />
     </div>
   );
@@ -801,6 +859,7 @@ ServiceMemoForm.propTypes = {
   onCloseMemoFinalize: PropTypes.func,
   onDeleted: PropTypes.func,
   onSwitchToEdit: PropTypes.func,
+  prefilledTicketId: PropTypes.string,
 };
 
 export default ServiceMemoForm;

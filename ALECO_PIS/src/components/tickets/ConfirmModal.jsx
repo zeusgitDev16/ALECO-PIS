@@ -12,8 +12,9 @@ import '../../CSS/DispatchTicketModal.css';
  * @param {string} cancelLabel - e.g. "Cancel"
  * @param {string} variant - 'danger' | 'default' | 'success' | 'hold' | 'unresolved' | 'nff' | 'access-denied' | 'ungroup' | 'revert-pending' - affects confirm button style
  * @param {string} [requireConfirmText] - When set, user must type this exact string before the confirm button is enabled
+ * @param {React.ReactNode} [children] - Custom content to render between message and buttons
  */
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', variant = 'default', requireConfirmText }) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', variant = 'default', requireConfirmText, children }) => {
     const [typed, setTyped] = useState('');
 
     useEffect(() => {
@@ -73,6 +74,12 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel
                                 outline: 'none',
                             }}
                         />
+                    </div>
+                )}
+
+                {children && (
+                    <div style={{ padding: '0 0 12px 0' }}>
+                        {children}
                     </div>
                 )}
 

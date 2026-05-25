@@ -117,6 +117,21 @@ async function loadPublicVisibleInterruptionRowById(pool, id) {
   return rows[0] || null;
 }
 
+/**
+ * Load interruption by ID without deleted_at restriction (for share links).
+ * Share links should work even for auto-archived advisories.
+ * @param {import('mysql2/promise').Pool} pool
+ * @param {number} id
+ */
+async function loadInterruptionRowById(pool, id) {
+  const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
+  const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
+  const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
+  const sql = `${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`;
+  const [rows] = await pool.execute(sql, [id]);
+  return rows[0] || null;
+}
+
 /** Columns for list + single-row fetch (see `selectInterruptionRowSql`). */
 function buildInterruptionTableColList({ includeDeletedAt, hasPulledFromFeedAt, hasPosterExtras }) {
   const parts = ['id', 'type', 'status', 'affected_areas'];
@@ -452,9 +467,11 @@ router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
-    // Resolve 'Energized' vs 'Restored' depending on what the DB ENUM actually contains
+    // Resolve status literals depending on what the DB ENUM actually contains
     const statusDbEnum = await getAlecoInterruptionsStatusDbEnum(pool);
     const energizedDbLiteral = apiInterruptionStatusToDbLiteral('Energized', statusDbEnum).status ?? 'Energized';
+    const cancelledDbLiteral = apiInterruptionStatusToDbLiteral('Cancelled', statusDbEnum).status ?? 'Cancelled';
+    const rescheduledDbLiteral = apiInterruptionStatusToDbLiteral('Rescheduled', statusDbEnum).status ?? 'Rescheduled';
     const { goLivePosterCandidates } = await runAutoTransitions(pool);
 
     if (goLivePosterCandidates.length > 0) {
@@ -478,11 +495,26 @@ router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
       });
     }
     const phNow = nowPhilippineForMysql();
-    // Auto-archive Energized advisories after 1 day 12 hours from restoration time
+    // Auto-archive Energized, Cancelled, and Rescheduled advisories after 1 week (168h)
+    // Energized: from date_time_restored (restoration time)
+    // Cancelled/Rescheduled: from updated_at (when status changed)
     if (hasDel) {
+      // Archive Energized advisories based on restoration time
       await pool.query(
         `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = '${energizedDbLiteral}' AND deleted_at IS NULL
          AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= ?`,
+        [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
+      );
+      // Archive Cancelled advisories based on updated_at
+      await pool.query(
+        `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = '${cancelledDbLiteral}' AND deleted_at IS NULL
+         AND DATE_ADD(updated_at, INTERVAL ? HOUR) <= ?`,
+        [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
+      );
+      // Archive Rescheduled advisories based on updated_at
+      await pool.query(
+        `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = '${rescheduledDbLiteral}' AND deleted_at IS NULL
+         AND DATE_ADD(updated_at, INTERVAL ? HOUR) <= ?`,
         [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
       );
     }
@@ -543,6 +575,33 @@ router.post('/interruptions/upload-image', requireStaff, upload.single('image'),
 });
 
 /**
+ * Public read-only advisory DTO for share links (no visibility restrictions).
+ * Share links should work even for auto-archived advisories.
+ */
+router.get('/share/interruption/:id/json', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid id.' });
+  }
+
+  try {
+    const row = await loadInterruptionRowById(pool, id);
+    if (!row) {
+      return res.status(404).json({ success: false, message: 'Advisory not found.' });
+    }
+    const dto = mapRowToDto(row);
+    if (!dto) {
+      return res.status(404).json({ success: false, message: 'Advisory not found.' });
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: dto });
+  } catch (error) {
+    console.error('Share interruption snapshot error:', error);
+    res.status(500).json({ success: false, message: 'Failed to load advisory.' });
+  }
+});
+
+/**
  * Public read-only advisory DTO for poster SPA / Puppeteer (no `updates[]`).
  * Same visibility rules as default public list: not archived, not pulled, public_visible_at passed.
  */
@@ -579,7 +638,7 @@ router.get('/share/interruption/:id', async (req, res) => {
   }
 
   try {
-    const row = await loadPublicVisibleInterruptionRowById(pool, id);
+    const row = await loadInterruptionRowById(pool, id);
     if (!row) {
       return res.status(404).type('text/html').send('<!DOCTYPE html><html><body>Not found</body></html>');
     }

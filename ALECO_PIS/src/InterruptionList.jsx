@@ -12,13 +12,23 @@ import VerticalProgressIndicator from './components/interruptions/VerticalProgre
 import AsOfDateTracker from './components/interruptions/AsOfDateTracker';
 import { useSiteSettings } from './context/SiteSettingsContext';
 
-/** True if an Energized advisory should be hidden (past the display window). */
+/** True if an Energized/Cancelled/Rescheduled advisory should be hidden (past the 1-week display window). */
 function isResolvedPastDisplayWindow(item, now) {
-  if (!isInterruptionEnergizedStatus(item?.status)) return false;
-  const restored = item?.dateTimeRestored ? new Date(item.dateTimeRestored).getTime() : 0;
-  if (!restored) return false;
-  const cutoff = restored + RESOLVED_DISPLAY_MS;
-  return now >= cutoff;
+  // Energized: hide after 1 week from restoration time
+  if (isInterruptionEnergizedStatus(item?.status)) {
+    const restored = item?.dateTimeRestored ? new Date(item.dateTimeRestored).getTime() : 0;
+    if (!restored) return false;
+    const cutoff = restored + RESOLVED_DISPLAY_MS;
+    return now >= cutoff;
+  }
+  // Cancelled/Rescheduled: hide after 1 week from status change (updatedAt)
+  if (item?.status === 'Cancelled' || item?.status === 'Rescheduled') {
+    const updated = item?.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+    if (!updated) return false;
+    const cutoff = updated + RESOLVED_DISPLAY_MS;
+    return now >= cutoff;
+  }
+  return false;
 }
 
 function InterruptionList() {

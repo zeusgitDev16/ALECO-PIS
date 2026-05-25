@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { getPublicInterruptionSnapshot } from '../../api/interruptionsApi';
+import { getShareInterruptionSnapshot } from '../../api/interruptionsApi';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
 import {
   getStatusDisplayLabel,
@@ -42,7 +42,7 @@ export default function PublicInterruptionPosterPage() {
         setError('Invalid advisory id.');
         return;
       }
-      const r = await getPublicInterruptionSnapshot(id);
+      const r = await getShareInterruptionSnapshot(id);
       if (cancelled) return;
       if (r.success && r.data) {
         setItem(r.data);

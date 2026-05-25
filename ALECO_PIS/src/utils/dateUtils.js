@@ -156,8 +156,8 @@ export const isPublicVisibilityPending = (publicVisibleAtApi) => {
     }
 };
 
-/** Resolved advisories stay on feed for 36h after restoration. */
-const RESOLVED_DISPLAY_MS = 36 * 60 * 60 * 1000;
+/** Resolved advisories stay on feed for 1 week (168h) after restoration. */
+const RESOLVED_DISPLAY_MS = 168 * 60 * 60 * 1000;
 
 /**
  * True if this advisory would appear on the public feed (InterruptionList).
@@ -171,10 +171,17 @@ export function isCurrentlyOnPublicFeed(item, now = Date.now()) {
     if (item.pulledFromFeedAt) return false;
     const pv = item.publicVisibleAt ? dayjs.utc(item.publicVisibleAt).valueOf() : 0;
     if (pv > 0 && pv > now) return false;
+    // Energized: hide after 1 week from restoration time
     if (item.status === 'Restored' || item.status === 'Energized') {
         const restored = item.dateTimeRestored ? dayjs.utc(item.dateTimeRestored).valueOf() : 0;
         if (!restored) return false;
         if (now >= restored + RESOLVED_DISPLAY_MS) return false;
+    }
+    // Cancelled/Rescheduled: hide after 1 week from status change (updatedAt)
+    if (item.status === 'Cancelled' || item.status === 'Rescheduled') {
+        const updated = item.updatedAt ? dayjs.utc(item.updatedAt).valueOf() : 0;
+        if (!updated) return false;
+        if (now >= updated + RESOLVED_DISPLAY_MS) return false;
     }
     return true;
 }

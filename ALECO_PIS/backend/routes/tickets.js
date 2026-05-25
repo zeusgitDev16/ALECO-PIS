@@ -1684,7 +1684,7 @@ const statusUpdateHandler = async (req, res) => {
         }
 
         // Get current status before update
-        const [currentRows] = await pool.execute('SELECT status FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
+        const [currentRows] = await connection.execute('SELECT status FROM aleco_tickets WHERE ticket_id = ?', [ticketId]);
         const fromStatus = currentRows.length > 0 ? currentRows[0].status : null;
 
         // Prevent manual reversion to previous status (system-triggered reversion allowed via special flag)

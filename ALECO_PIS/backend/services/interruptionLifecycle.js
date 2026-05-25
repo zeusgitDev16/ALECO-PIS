@@ -96,25 +96,52 @@ export async function insertSystemUpdateConn(conn, interruptionId, remark) {
 }
 
 /**
- * Auto-archive Energized advisories past the resolved display window (36h from date_time_restored).
+ * Auto-archive Energized, Cancelled, and Rescheduled advisories past the resolved display window (168h).
  * Runs independently of API requests so public display hides them even if nobody fetches.
+ * Energized: from date_time_restored (restoration time)
+ * Cancelled/Rescheduled: from updated_at (when status changed)
  * @param {import('mysql2/promise').Pool} pool
  * @returns {Promise<{ archived: number }>}
  */
 export async function autoArchiveResolvedInterruptions(pool) {
   const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
   if (!hasDel) return { archived: 0 };
+  const statusDbEnum = await getAlecoInterruptionsStatusDbEnum(pool);
+  const energizedDbLiteral = apiInterruptionStatusToDbLiteral('Energized', statusDbEnum).status ?? 'Energized';
+  const cancelledDbLiteral = apiInterruptionStatusToDbLiteral('Cancelled', statusDbEnum).status ?? 'Cancelled';
+  const rescheduledDbLiteral = apiInterruptionStatusToDbLiteral('Rescheduled', statusDbEnum).status ?? 'Rescheduled';
   const phNow = nowPhilippineForMysql();
-  const [result] = await pool.query(
-    `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = 'Energized' AND deleted_at IS NULL
+  
+  let totalArchived = 0;
+  
+  // Archive Energized advisories based on restoration time
+  const [energizedResult] = await pool.query(
+    `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = '${energizedDbLiteral}' AND deleted_at IS NULL
      AND date_time_restored IS NOT NULL AND DATE_ADD(date_time_restored, INTERVAL ? HOUR) <= ?`,
     [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
   );
-  const archived = result?.affectedRows ?? 0;
-  if (archived > 0) {
-    console.log(`[interruptions] Auto-archived ${archived} Energized advisory(ies) past ${RESOLVED_ARCHIVE_HOURS}h.`);
+  totalArchived += energizedResult?.affectedRows ?? 0;
+  
+  // Archive Cancelled advisories based on updated_at
+  const [cancelledResult] = await pool.query(
+    `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = '${cancelledDbLiteral}' AND deleted_at IS NULL
+     AND DATE_ADD(updated_at, INTERVAL ? HOUR) <= ?`,
+    [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
+  );
+  totalArchived += cancelledResult?.affectedRows ?? 0;
+  
+  // Archive Rescheduled advisories based on updated_at
+  const [rescheduledResult] = await pool.query(
+    `UPDATE aleco_interruptions SET deleted_at = ? WHERE status = '${rescheduledDbLiteral}' AND deleted_at IS NULL
+     AND DATE_ADD(updated_at, INTERVAL ? HOUR) <= ?`,
+    [phNow, RESOLVED_ARCHIVE_HOURS, phNow]
+  );
+  totalArchived += rescheduledResult?.affectedRows ?? 0;
+  
+  if (totalArchived > 0) {
+    console.log(`[interruptions] Auto-archived ${totalArchived} advisory(ies) past ${RESOLVED_ARCHIVE_HOURS}h.`);
   }
-  return { archived };
+  return { archived: totalArchived };
 }
 
 /**

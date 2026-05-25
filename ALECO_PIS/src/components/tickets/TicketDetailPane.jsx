@@ -47,6 +47,21 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
     const mainTicketId = isGroupMaster ? ticket.ticket_id : ticket?.parent_ticket_id;
     const children = groupData?.children || [];
 
+    // Helper function to refetch memo status after ticket update
+    const refetchMemoStatus = (serviceMemoId) => {
+        if (!serviceMemoId) return;
+        const memoId = Number(serviceMemoId);
+        authFetch(apiUrl(`/api/service-memos/${memoId}`))
+            .then((res) => res.json().catch(() => null))
+            .then((json) => {
+                const status = String(json?.data?.memo_status || '').trim();
+                setMemoStatus(status);
+            })
+            .catch(() => {
+                setMemoStatus('');
+            });
+    };
+
     // Fetch group with children when viewing a GROUP master
     useEffect(() => {
         if (ticket?.ticket_id?.startsWith('GROUP-')) {
@@ -670,18 +685,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     }
                     await onUpdateTicket(ticket.ticket_id, 'Restored', null, resolutionRemarks, referredTo, replaceRemarks);
                     // Refetch memo status after update
-                    if (ticket.service_memo_id) {
-                        const memoId = Number(ticket.service_memo_id);
-                        authFetch(apiUrl(`/api/service-memos/${memoId}`))
-                            .then((res) => res.json().catch(() => null))
-                            .then((json) => {
-                                const status = String(json?.data?.memo_status || '').trim();
-                                setMemoStatus(status);
-                            })
-                            .catch(() => {
-                                setMemoStatus('');
-                            });
-                    }
+                    refetchMemoStatus(ticket.service_memo_id);
                     setIsRestoreConfirmOpen(false);
                     onClose();
                 }}
@@ -769,18 +773,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     }
                     await onUpdateTicket(ticket.ticket_id, 'Unresolved', null, resolutionRemarks, referredTo, replaceRemarks);
                     // Refetch memo status after update
-                    if (ticket.service_memo_id) {
-                        const memoId = Number(ticket.service_memo_id);
-                        authFetch(apiUrl(`/api/service-memos/${memoId}`))
-                            .then((res) => res.json().catch(() => null))
-                            .then((json) => {
-                                const status = String(json?.data?.memo_status || '').trim();
-                                setMemoStatus(status);
-                            })
-                            .catch(() => {
-                                setMemoStatus('');
-                            });
-                    }
+                    refetchMemoStatus(ticket.service_memo_id);
                     setIsUnresolvedConfirmOpen(false);
                     onClose();
                 }}
@@ -868,18 +861,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     }
                     await onUpdateTicket(ticket.ticket_id, 'NoFaultFound', null, resolutionRemarks, referredTo, replaceRemarks);
                     // Refetch memo status after update
-                    if (ticket.service_memo_id) {
-                        const memoId = Number(ticket.service_memo_id);
-                        authFetch(apiUrl(`/api/service-memos/${memoId}`))
-                            .then((res) => res.json().catch(() => null))
-                            .then((json) => {
-                                const status = String(json?.data?.memo_status || '').trim();
-                                setMemoStatus(status);
-                            })
-                            .catch(() => {
-                                setMemoStatus('');
-                            });
-                    }
+                    refetchMemoStatus(ticket.service_memo_id);
                     setIsNoFaultFoundConfirmOpen(false);
                     onClose();
                 }}
@@ -967,18 +949,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     }
                     await onUpdateTicket(ticket.ticket_id, 'AccessDenied', null, resolutionRemarks, referredTo, replaceRemarks);
                     // Refetch memo status after update
-                    if (ticket.service_memo_id) {
-                        const memoId = Number(ticket.service_memo_id);
-                        authFetch(apiUrl(`/api/service-memos/${memoId}`))
-                            .then((res) => res.json().catch(() => null))
-                            .then((json) => {
-                                const status = String(json?.data?.memo_status || '').trim();
-                                setMemoStatus(status);
-                            })
-                            .catch(() => {
-                                setMemoStatus('');
-                            });
-                    }
+                    refetchMemoStatus(ticket.service_memo_id);
                     setIsAccessDeniedConfirmOpen(false);
                     onClose();
                 }}

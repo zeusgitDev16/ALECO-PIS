@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getPublicInterruptionSnapshot } from '../../api/interruptionsApi';
+import { getShareInterruptionSnapshot } from '../../api/interruptionsApi';
 import InterruptionAlecoPrintPoster from './InterruptionAlecoPrintPoster';
 import InterruptionNgcpPrintPoster from './InterruptionNgcpPrintPoster';
 import '../../CSS/InterruptionPrintPoster.css';
@@ -35,7 +35,7 @@ export default function PrintInterruptionPosterPage() {
         setError('Invalid advisory id.');
         return;
       }
-      const r = await getPublicInterruptionSnapshot(id);
+      const r = await getShareInterruptionSnapshot(id);
       if (cancelled) return;
       if (r.success && r.data) {
         setItem(r.data);

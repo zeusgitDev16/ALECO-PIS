@@ -627,6 +627,7 @@ router.get('/tickets/export/preview', requireStaff, async (req, res) => {
 
         const ticketIds = ticketRows.map(r => r.ticket_id);
         let logRows = [];
+        let memoRows = [];
         if (ticketIds.length > 0) {
             const placeholders = ticketIds.map(() => '?').join(', ');
             const [logResult] = await pool.execute(
@@ -634,10 +635,17 @@ router.get('/tickets/export/preview', requireStaff, async (req, res) => {
                 ticketIds
             );
             logRows = logResult;
+
+            // Fetch service memos for memo-first flow
+            const [memoResult] = await pool.execute(
+                `SELECT * FROM aleco_service_memos WHERE ticket_id IN (${placeholders}) ORDER BY ticket_id ASC`,
+                ticketIds
+            );
+            memoRows = memoResult;
         }
 
-        const metadata = { dateStart: ds, dateEnd: de, ticketCount: ticketRows.length, logCount: logRows.length };
-        res.json({ success: true, metadata, tickets: ticketRows, logs: logRows });
+        const metadata = { dateStart: ds, dateEnd: de, ticketCount: ticketRows.length, logCount: logRows.length, memoCount: memoRows.length };
+        res.json({ success: true, metadata, tickets: ticketRows, logs: logRows, memos: memoRows });
     } catch (error) {
         console.error('❌ Export preview error:', error);
         res.status(500).json({ success: false, message: error.message || 'Preview failed' });
@@ -666,6 +674,7 @@ router.get('/tickets/export', requireStaff, async (req, res) => {
 
         const ticketIds = ticketRows.map(r => r.ticket_id);
         let logRows = [];
+        let memoRows = [];
         if (ticketIds.length > 0) {
             const placeholders = ticketIds.map(() => '?').join(', ');
             const [logResult] = await pool.execute(
@@ -673,6 +682,13 @@ router.get('/tickets/export', requireStaff, async (req, res) => {
                 ticketIds
             );
             logRows = logResult;
+
+            // Fetch service memos for memo-first flow
+            const [memoResult] = await pool.execute(
+                `SELECT * FROM aleco_service_memos WHERE ticket_id IN (${placeholders}) ORDER BY ticket_id ASC`,
+                ticketIds
+            );
+            memoRows = memoResult;
         }
 
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
@@ -700,6 +716,7 @@ router.get('/tickets/export', requireStaff, async (req, res) => {
             metaSheet.addRow(['Date Range', `${ds} to ${de}`]);
             metaSheet.addRow(['Ticket Count', ticketRows.length]);
             metaSheet.addRow(['Log Count', logRows.length]);
+            metaSheet.addRow(['Memo Count', memoRows.length]);
             metaSheet.addRow(['Format', 'excel']);
             metaSheet.addRow(['Exported By', exportedBy || '']);
 
@@ -738,6 +755,23 @@ router.get('/tickets/export', requireStaff, async (req, res) => {
                 logSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
             });
 
+            const memoSheet = workbook.addWorksheet('ServiceMemos', { properties: { tabColor: { argb: 'FFED7D31' } } });
+            const memoCols = memoRows.length > 0 ? Object.keys(memoRows[0]) : [];
+            const memoHeaderRow = memoSheet.addRow(memoCols);
+            memoHeaderRow.font = { bold: true };
+            memoRows.forEach(row => {
+                memoSheet.addRow(memoCols.map(c => {
+                    const v = row[c];
+                    if (v instanceof Date) return v;
+                    if (Buffer.isBuffer(v)) return v.toString();
+                    return v;
+                }));
+            });
+            memoCols.forEach((col, i) => {
+                const vals = [col, ...memoRows.map((r) => String(r[col] ?? ''))];
+                memoSheet.getColumn(i + 1).width = Math.min(Math.max(Math.max(...vals.map((v) => v.length)) + 2, 10), 60);
+            });
+
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
             await workbook.xlsx.write(res);
@@ -750,9 +784,19 @@ router.get('/tickets/export', requireStaff, async (req, res) => {
                 return v ?? '';
             })), { header: true, columns: ticketCols });
 
+            const memoCols = memoRows.length > 0 ? Object.keys(memoRows[0]) : [];
+            const memoCsv = stringify(memoRows.map(r => memoCols.map(c => {
+                const v = r[c];
+                if (v instanceof Date) return v.toISOString();
+                if (Buffer.isBuffer(v)) return v.toString();
+                return v ?? '';
+            })), { header: true, columns: memoCols });
+
+            const combinedCsv = `${ticketCsv}\n\n--- SERVICE_MEMOS ---\n\n${memoCsv}`;
+
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-            res.send(ticketCsv);
+            res.send(combinedCsv);
         }
     } catch (error) {
         console.error('❌ Export error:', error);
@@ -1710,6 +1754,7 @@ function parseExcelFile(buffer) {
             await workbook.xlsx.load(buffer);
             const ticketSheet = workbook.getWorksheet('Tickets') || workbook.worksheets[1] || workbook.worksheets[0];
             const logSheet = workbook.getWorksheet('TicketLogs') || workbook.worksheets[2];
+            const memoSheet = workbook.getWorksheet('ServiceMemos') || workbook.worksheets[3];
             if (!ticketSheet) return reject(new Error('No Tickets sheet found'));
             const tickets = [];
             ticketSheet.eachRow((row, rowNumber) => {
@@ -1735,7 +1780,20 @@ function parseExcelFile(buffer) {
                     if (Object.keys(obj).length > 0) logs.push(obj);
                 });
             }
-            resolve({ tickets, logs });
+            const memos = [];
+            if (memoSheet) {
+                memoSheet.eachRow((row, rowNumber) => {
+                    if (rowNumber === 1) return;
+                    const headers = memoSheet.getRow(1).values;
+                    const obj = {};
+                    row.eachCell((cell, colNumber) => {
+                        const key = headers[colNumber];
+                        if (key) obj[key] = cell.value;
+                    });
+                    if (Object.keys(obj).length > 0) memos.push(obj);
+                });
+            }
+            resolve({ tickets, logs, memos });
         } catch (e) {
             reject(e);
         }
@@ -1744,8 +1802,23 @@ function parseExcelFile(buffer) {
 
 function parseCsvFile(buffer) {
     const text = buffer.toString('utf8');
-    const records = parse(text, { columns: true, skip_empty_lines: true, relax_column_count: true });
-    return { tickets: records, logs: [] };
+    const lines = text.split('\n');
+    const separatorIndex = lines.findIndex(line => line.includes('--- SERVICE_MEMOS ---'));
+    
+    if (separatorIndex === -1) {
+        // Old format without memos
+        const records = parse(text, { columns: true, skip_empty_lines: true, relax_column_count: true });
+        return { tickets: records, logs: [], memos: [] };
+    }
+    
+    // New format with memos
+    const ticketSection = lines.slice(0, separatorIndex).join('\n');
+    const memoSection = lines.slice(separatorIndex + 1).join('\n');
+    
+    const tickets = parse(ticketSection, { columns: true, skip_empty_lines: true, relax_column_count: true });
+    const memos = parse(memoSection, { columns: true, skip_empty_lines: true, relax_column_count: true });
+    
+    return { tickets, logs: [], memos };
 }
 
 // --- IMPORT ROUTE ---
@@ -1758,15 +1831,18 @@ router.post('/tickets/import', requireStaff, upload.single('file'), async (req, 
         const ext = (req.file.originalname || '').toLowerCase().split('.').pop();
         let tickets = [];
         let logs = [];
+        let memos = [];
 
         if (ext === 'xlsx') {
             const parsed = await parseExcelFile(req.file.buffer);
             tickets = parsed.tickets;
             logs = parsed.logs;
+            memos = parsed.memos || [];
         } else if (ext === 'csv') {
             const parsed = parseCsvFile(req.file.buffer);
             tickets = parsed.tickets;
             logs = parsed.logs;
+            memos = parsed.memos || [];
         } else {
             return res.status(400).json({ success: false, message: 'Format must be .xlsx or .csv' });
         }
@@ -1927,6 +2003,43 @@ router.post('/tickets/import', requireStaff, upload.single('file'), async (req, 
                 await connection.execute(
                     `INSERT INTO aleco_ticket_logs (${cols.join(', ')}) VALUES (${placeholders})`,
                     vals
+                );
+            }
+
+            // Import service memos for memo-first flow
+            const memoCols = ['id', 'control_number', 'ticket_id', 'category', 'service_date', 'work_performed',
+                'received_by', 'referred_to', 'owner_email', 'memo_status', 'internal_notes', 'photo_url',
+                'created_at', 'updated_at', 'closed_at'];
+            const memoIdMap = new Map(); // ticket_id -> memo_id
+            for (const m of memos) {
+                const tid = m.ticket_id;
+                if (!toImport.some(t => String(t.ticket_id).trim() === String(tid).trim())) continue;
+                const cols = [];
+                const vals = [];
+                for (const c of memoCols) {
+                    if (m[c] !== undefined) {
+                        cols.push(c);
+                        let v = m[c];
+                        vals.push(v === '' || v === null ? null : v);
+                    }
+                }
+                if (cols.length === 0) continue;
+                const placeholders = cols.map(() => '?').join(', ');
+                await connection.execute(
+                    `INSERT INTO aleco_service_memos (${cols.join(', ')}) VALUES (${placeholders})`,
+                    vals
+                );
+                // Store memo_id to update ticket's service_memo_id
+                if (m.id) {
+                    memoIdMap.set(String(tid).trim(), m.id);
+                }
+            }
+
+            // Update tickets with service_memo_id to maintain relationship
+            for (const [ticketId, memoId] of memoIdMap) {
+                await connection.execute(
+                    `UPDATE aleco_tickets SET service_memo_id = ? WHERE ticket_id = ?`,
+                    [memoId, ticketId]
                 );
             }
 

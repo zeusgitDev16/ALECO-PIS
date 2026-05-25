@@ -261,6 +261,27 @@ export async function updateServiceMemo(id, body, expectedUpdatedAt = null) {
  * @param {number} id
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
+export async function reopenServiceMemo(id) {
+  try {
+    const result = await authMutation(apiUrl(`/api/service-memos/${id}/reopen`), {
+      method: 'PUT',
+      body: {},
+      emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
+    });
+    return {
+      ok: result.ok,
+      success: result.success,
+      message: typeof result.data?.message === 'string' ? result.data.message : null,
+    };
+  } catch {
+    return { ok: false, success: false, message: 'Network error.' };
+  }
+}
+
+/**
+ * @param {number} id
+ * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
+ */
 export async function closeServiceMemo(id, expectedUpdatedAt = null) {
   try {
     const result = await authMutation(apiUrl(`/api/service-memos/${id}/close`), {

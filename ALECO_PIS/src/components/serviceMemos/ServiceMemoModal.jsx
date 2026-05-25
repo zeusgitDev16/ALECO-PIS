@@ -18,6 +18,9 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
   });
   const [isSaving, setIsSaving] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [closeMemoStatus, setCloseMemoStatus] = useState('');
+  const [closeMemoRemarks, setCloseMemoRemarks] = useState('');
+  const [closeMemoReferredTo, setCloseMemoReferredTo] = useState('');
 
   const isClosed = memo?.memo_status === 'closed';
   const isEditable = !isClosed;
@@ -289,7 +292,12 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
                 <button
                   type="button"
                   className="service-memo-btn service-memo-btn--close"
-                  onClick={() => setCloseConfirmOpen(true)}
+                  onClick={() => {
+                    setCloseMemoStatus('');
+                    setCloseMemoRemarks('');
+                    setCloseMemoReferredTo('');
+                    setCloseConfirmOpen(true);
+                  }}
                   disabled={isSaving}
                 >
                   Close Memo
@@ -322,13 +330,96 @@ const ServiceMemoModal = ({ memo, isOpen, onClose, onSave, onCloseMemo, currentU
       <ConfirmModal
         isOpen={closeConfirmOpen}
         onClose={() => setCloseConfirmOpen(false)}
-        onConfirm={() => { setCloseConfirmOpen(false); handleCloseMemo(); }}
-        title="Close this service memo?"
-        message={`Memo ${memo?.control_number || memo?.id} will be marked as closed. This cannot be undone.`}
+        onConfirm={async () => {
+          if (!closeMemoStatus) {
+            alert('Please select a resolution status.');
+            return;
+          }
+          if (!closeMemoRemarks.trim()) {
+            alert('Resolution remarks are required.');
+            return;
+          }
+          setIsSaving(true);
+          try {
+            const result = await onCloseMemo(memo.id, closeMemoStatus, closeMemoRemarks, closeMemoReferredTo);
+            if (result.closed) {
+              onClose();
+            }
+          } finally {
+            setIsSaving(false);
+          }
+        }}
+        title="Close Service Memo"
+        message={`Memo ${memo?.control_number || memo?.id} will be closed with the selected resolution status.`}
         confirmLabel="Close Memo"
         cancelLabel="Cancel"
         variant="danger"
-      />
+      >
+        <div>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+            Resolution Status (Required)
+          </label>
+          <select
+            value={closeMemoStatus}
+            onChange={(e) => setCloseMemoStatus(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              fontSize: '0.9rem',
+              border: '1.5px solid #ccc',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              outline: 'none',
+              marginBottom: '12px',
+            }}
+            autoFocus
+          >
+            <option value="">Select status...</option>
+            <option value="Restored">Restored</option>
+            <option value="Unresolved">Unresolved</option>
+            <option value="NoFaultFound">No Fault Found</option>
+            <option value="AccessDenied">Access Denied</option>
+          </select>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+            Resolution Remarks (Required)
+          </label>
+          <textarea
+            value={closeMemoRemarks}
+            onChange={(e) => setCloseMemoRemarks(e.target.value)}
+            placeholder="Describe the resolution details..."
+            rows={3}
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              fontSize: '0.9rem',
+              border: '1.5px solid #ccc',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              outline: 'none',
+              resize: 'vertical',
+              marginBottom: '12px',
+            }}
+          />
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+            Referred To (Optional)
+          </label>
+          <input
+            type="text"
+            value={closeMemoReferredTo}
+            onChange={(e) => setCloseMemoReferredTo(e.target.value)}
+            placeholder="e.g., Maintenance Department, External Contractor"
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              fontSize: '0.9rem',
+              border: '1.5px solid #ccc',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              outline: 'none',
+            }}
+          />
+        </div>
+      </ConfirmModal>
     </div>
   );
 };

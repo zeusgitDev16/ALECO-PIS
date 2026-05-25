@@ -33,8 +33,11 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
     const [isNoFaultFoundConfirmOpen, setIsNoFaultFoundConfirmOpen] = useState(false);
     const [isAccessDeniedConfirmOpen, setIsAccessDeniedConfirmOpen] = useState(false);
     const [resolutionRemarks, setResolutionRemarks] = useState('');
+    const [referredTo, setReferredTo] = useState('');
+    const [replaceRemarks, setReplaceRemarks] = useState(false);
     const [groupData, setGroupData] = useState(null);
     const [memoControlNumber, setMemoControlNumber] = useState('');
+    const [memoStatus, setMemoStatus] = useState('');
     const [isMemoLoading, setIsMemoLoading] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -75,11 +78,14 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
             .then((json) => {
                 if (!active) return;
                 const controlNo = String(json?.data?.control_number || '').trim();
+                const status = String(json?.data?.memo_status || '').trim();
                 setMemoControlNumber(controlNo);
+                setMemoStatus(status);
             })
             .catch(() => {
                 if (!active) return;
                 setMemoControlNumber('');
+                setMemoStatus('');
             })
             .finally(() => {
                 if (!active) return;
@@ -537,6 +543,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 className="btn-action btn-resolved"
                                 onClick={() => {
                                     setResolutionRemarks('');
+                                    setReferredTo('');
+                                    setReplaceRemarks(false);
                                     setIsRestoreConfirmOpen(true);
                                 }}
                                 title="Mark as Restored"
@@ -548,6 +556,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 className="btn-action btn-unresolved"
                                 onClick={() => {
                                     setResolutionRemarks('');
+                                    setReferredTo('');
+                                    setReplaceRemarks(false);
                                     setIsUnresolvedConfirmOpen(true);
                                 }}
                                 title="Mark as Unresolved"
@@ -558,6 +568,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 className="btn-action btn-nff"
                                 onClick={() => {
                                     setResolutionRemarks('');
+                                    setReferredTo('');
+                                    setReplaceRemarks(false);
                                     setIsNoFaultFoundConfirmOpen(true);
                                 }}
                                 title="No Fault Found"
@@ -568,6 +580,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 className="btn-action btn-access-denied"
                                 onClick={() => {
                                     setResolutionRemarks('');
+                                    setReferredTo('');
+                                    setReplaceRemarks(false);
                                     setIsAccessDeniedConfirmOpen(true);
                                 }}
                                 title="Access Denied"
@@ -651,12 +665,37 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         alert('Resolution remarks are required.');
                         return;
                     }
-                    await onUpdateTicket(ticket.ticket_id, 'Restored', null, resolutionRemarks);
+                    if (replaceRemarks && !confirm('This will overwrite existing remarks and referred_to. Continue?')) {
+                        return;
+                    }
+                    await onUpdateTicket(ticket.ticket_id, 'Restored', null, resolutionRemarks, referredTo, replaceRemarks);
+                    // Refetch memo status after update
+                    if (ticket.service_memo_id) {
+                        const memoId = Number(ticket.service_memo_id);
+                        authFetch(apiUrl(`/api/service-memos/${memoId}`))
+                            .then((res) => res.json().catch(() => null))
+                            .then((json) => {
+                                const status = String(json?.data?.memo_status || '').trim();
+                                setMemoStatus(status);
+                            })
+                            .catch(() => {
+                                setMemoStatus('');
+                            });
+                    }
                     setIsRestoreConfirmOpen(false);
                     onClose();
                 }}
                 title="Mark as Restored"
-                message={`Mark ticket ${ticket.ticket_id} as Restored? This will close the ticket. Only confirm if resolution has been completed.`}
+                message={
+                    <>
+                        Mark ticket {ticket.ticket_id} as Restored? This will close the ticket. Only confirm if resolution has been completed.
+                        {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
+                            <p style={{ marginTop: '12px', color: '#d32f2f', fontWeight: '600' }}>
+                                ⚠️ Warning: This ticket has a service memo that is already closed (status: {memoStatus}). Changing the status will update the memo again.
+                            </p>
+                        )}
+                    </>
+                }
                 confirmLabel="Mark Restored"
                 cancelLabel="Cancel"
                 variant="success"
@@ -679,9 +718,41 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             boxSizing: 'border-box',
                             outline: 'none',
                             resize: 'vertical',
+                            marginBottom: '12px',
                         }}
                         autoFocus
                     />
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Referred To (Optional)
+                    </label>
+                    <input
+                        type="text"
+                        value={referredTo}
+                        onChange={(e) => setReferredTo(e.target.value)}
+                        placeholder="e.g., Maintenance Department, External Contractor"
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #ccc',
+                            borderRadius: '6px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                        }}
+                    />
+                    {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
+                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={replaceRemarks}
+                                    onChange={(e) => setReplaceRemarks(e.target.checked)}
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                Replace existing remarks and referred_to
+                            </label>
+                        </div>
+                    )}
                 </div>
             </ConfirmModal>
 
@@ -693,12 +764,37 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         alert('Resolution remarks are required.');
                         return;
                     }
-                    await onUpdateTicket(ticket.ticket_id, 'Unresolved', null, resolutionRemarks);
+                    if (replaceRemarks && !confirm('This will overwrite existing remarks and referred_to. Continue?')) {
+                        return;
+                    }
+                    await onUpdateTicket(ticket.ticket_id, 'Unresolved', null, resolutionRemarks, referredTo, replaceRemarks);
+                    // Refetch memo status after update
+                    if (ticket.service_memo_id) {
+                        const memoId = Number(ticket.service_memo_id);
+                        authFetch(apiUrl(`/api/service-memos/${memoId}`))
+                            .then((res) => res.json().catch(() => null))
+                            .then((json) => {
+                                const status = String(json?.data?.memo_status || '').trim();
+                                setMemoStatus(status);
+                            })
+                            .catch(() => {
+                                setMemoStatus('');
+                            });
+                    }
                     setIsUnresolvedConfirmOpen(false);
                     onClose();
                 }}
                 title="Mark as Unresolved"
-                message={`Mark ticket ${ticket.ticket_id} as Unresolved? The ticket will return to the queue for re-dispatch.`}
+                message={
+                    <>
+                        Mark ticket {ticket.ticket_id} as Unresolved? The ticket will return to the queue for re-dispatch.
+                        {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
+                            <p style={{ marginTop: '12px', color: '#d32f2f', fontWeight: '600' }}>
+                                ⚠️ Warning: This ticket has a service memo that is already closed (status: {memoStatus}). Changing the status will update the memo again.
+                            </p>
+                        )}
+                    </>
+                }
                 confirmLabel="Mark Unresolved"
                 cancelLabel="Cancel"
                 variant="unresolved"
@@ -721,9 +817,41 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             boxSizing: 'border-box',
                             outline: 'none',
                             resize: 'vertical',
+                            marginBottom: '12px',
                         }}
                         autoFocus
                     />
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Referred To (Optional)
+                    </label>
+                    <input
+                        type="text"
+                        value={referredTo}
+                        onChange={(e) => setReferredTo(e.target.value)}
+                        placeholder="e.g., Maintenance Department, External Contractor"
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #ccc',
+                            borderRadius: '6px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                        }}
+                    />
+                    {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
+                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={replaceRemarks}
+                                    onChange={(e) => setReplaceRemarks(e.target.checked)}
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                Replace existing remarks and referred_to
+                            </label>
+                        </div>
+                    )}
                 </div>
             </ConfirmModal>
 
@@ -735,12 +863,37 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         alert('Resolution remarks are required.');
                         return;
                     }
-                    await onUpdateTicket(ticket.ticket_id, 'NoFaultFound', null, resolutionRemarks);
+                    if (replaceRemarks && !confirm('This will overwrite existing remarks and referred_to. Continue?')) {
+                        return;
+                    }
+                    await onUpdateTicket(ticket.ticket_id, 'NoFaultFound', null, resolutionRemarks, referredTo, replaceRemarks);
+                    // Refetch memo status after update
+                    if (ticket.service_memo_id) {
+                        const memoId = Number(ticket.service_memo_id);
+                        authFetch(apiUrl(`/api/service-memos/${memoId}`))
+                            .then((res) => res.json().catch(() => null))
+                            .then((json) => {
+                                const status = String(json?.data?.memo_status || '').trim();
+                                setMemoStatus(status);
+                            })
+                            .catch(() => {
+                                setMemoStatus('');
+                            });
+                    }
                     setIsNoFaultFoundConfirmOpen(false);
                     onClose();
                 }}
                 title="No Fault Found"
-                message={`Mark ticket ${ticket.ticket_id} as No Fault Found? This will close the ticket. Only confirm if the field crew verified no fault at the location.`}
+                message={
+                    <>
+                        Mark ticket {ticket.ticket_id} as No Fault Found? This will close the ticket. Only confirm if the field crew verified no fault at the location.
+                        {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
+                            <p style={{ marginTop: '12px', color: '#d32f2f', fontWeight: '600' }}>
+                                ⚠️ Warning: This ticket has a service memo that is already closed (status: {memoStatus}). Changing the status will update the memo again.
+                            </p>
+                        )}
+                    </>
+                }
                 confirmLabel="No Fault Found"
                 cancelLabel="Cancel"
                 variant="nff"
@@ -763,9 +916,41 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             boxSizing: 'border-box',
                             outline: 'none',
                             resize: 'vertical',
+                            marginBottom: '12px',
                         }}
                         autoFocus
                     />
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Referred To (Optional)
+                    </label>
+                    <input
+                        type="text"
+                        value={referredTo}
+                        onChange={(e) => setReferredTo(e.target.value)}
+                        placeholder="e.g., Maintenance Department, External Contractor"
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #ccc',
+                            borderRadius: '6px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                        }}
+                    />
+                    {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
+                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={replaceRemarks}
+                                    onChange={(e) => setReplaceRemarks(e.target.checked)}
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                Replace existing remarks and referred_to
+                            </label>
+                        </div>
+                    )}
                 </div>
             </ConfirmModal>
 
@@ -777,12 +962,37 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         alert('Resolution remarks are required.');
                         return;
                     }
-                    await onUpdateTicket(ticket.ticket_id, 'AccessDenied', null, resolutionRemarks);
+                    if (replaceRemarks && !confirm('This will overwrite existing remarks and referred_to. Continue?')) {
+                        return;
+                    }
+                    await onUpdateTicket(ticket.ticket_id, 'AccessDenied', null, resolutionRemarks, referredTo, replaceRemarks);
+                    // Refetch memo status after update
+                    if (ticket.service_memo_id) {
+                        const memoId = Number(ticket.service_memo_id);
+                        authFetch(apiUrl(`/api/service-memos/${memoId}`))
+                            .then((res) => res.json().catch(() => null))
+                            .then((json) => {
+                                const status = String(json?.data?.memo_status || '').trim();
+                                setMemoStatus(status);
+                            })
+                            .catch(() => {
+                                setMemoStatus('');
+                            });
+                    }
                     setIsAccessDeniedConfirmOpen(false);
                     onClose();
                 }}
                 title="Access Denied"
-                message={`Mark ticket ${ticket.ticket_id} as Access Denied? This will close the ticket. Only confirm if the field crew could not access the service location.`}
+                message={
+                    <>
+                        Mark ticket {ticket.ticket_id} as Access Denied? This will close the ticket. Only confirm if the field crew could not access the service location.
+                        {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
+                            <p style={{ marginTop: '12px', color: '#d32f2f', fontWeight: '600' }}>
+                                ⚠️ Warning: This ticket has a service memo that is already closed (status: {memoStatus}). Changing the status will update the memo again.
+                            </p>
+                        )}
+                    </>
+                }
                 confirmLabel="Access Denied"
                 cancelLabel="Cancel"
                 variant="access-denied"
@@ -805,9 +1015,41 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             boxSizing: 'border-box',
                             outline: 'none',
                             resize: 'vertical',
+                            marginBottom: '12px',
                         }}
                         autoFocus
                     />
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Referred To (Optional)
+                    </label>
+                    <input
+                        type="text"
+                        value={referredTo}
+                        onChange={(e) => setReferredTo(e.target.value)}
+                        placeholder="e.g., Maintenance Department, External Contractor"
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #ccc',
+                            borderRadius: '6px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                        }}
+                    />
+                    {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
+                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={replaceRemarks}
+                                    onChange={(e) => setReplaceRemarks(e.target.checked)}
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                Replace existing remarks and referred_to
+                            </label>
+                        </div>
+                    )}
                 </div>
             </ConfirmModal>
 

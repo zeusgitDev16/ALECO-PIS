@@ -131,6 +131,9 @@ const ServiceMemoForm = ({
   const [undoModalOpen, setUndoModalOpen] = useState(false);
   const [undoBusy, setUndoBusy] = useState(false);
   const [closeMemoConfirmOpen, setCloseMemoConfirmOpen] = useState(false);
+  const [closeMemoStatus, setCloseMemoStatus] = useState('');
+  const [closeMemoRemarks, setCloseMemoRemarks] = useState('');
+  const [closeMemoReferredTo, setCloseMemoReferredTo] = useState('');
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [crews, setCrews] = useState([]);
 
@@ -723,6 +726,33 @@ const ServiceMemoForm = ({
         <button type="button" className="service-memo-btn service-memo-btn--secondary" onClick={onBack}>
           Back to list
         </button>
+        {mode !== 'create' && memo?.memo_status && (
+          <div className="memo-status-badge" style={{
+            padding: '4px 12px',
+            borderRadius: '4px',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            backgroundColor: 
+              memo.memo_status === 'saved' ? '#e3f2fd' :
+              memo.memo_status === 'deployed' ? '#fff3e0' :
+              memo.memo_status === 'resolved' ? '#e8f5e9' :
+              memo.memo_status === 'unresolved' ? '#fff3e0' :
+              memo.memo_status === 'nofaultfound' ? '#f3e5f5' :
+              memo.memo_status === 'accessdenied' ? '#ffebee' :
+              memo.memo_status === 'closed' ? '#e0e0e0' : '#f5f5f5',
+            color: 
+              memo.memo_status === 'saved' ? '#1976d2' :
+              memo.memo_status === 'deployed' ? '#f57c00' :
+              memo.memo_status === 'resolved' ? '#388e3c' :
+              memo.memo_status === 'unresolved' ? '#f57c00' :
+              memo.memo_status === 'nofaultfound' ? '#7b1fa2' :
+              memo.memo_status === 'accessdenied' ? '#d32f2f' :
+              memo.memo_status === 'closed' ? '#616161' : '#424242'
+          }}>
+            Status: {memo.memo_status}
+          </div>
+        )}
         {!readOnly && (
           <button type="button" className="service-memo-btn service-memo-btn--primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
@@ -734,8 +764,22 @@ const ServiceMemoForm = ({
           </button>
         )}
         {mode === 'view' && showCloseMemoFinalize && typeof onCloseMemoFinalize === 'function' && (
-          <button type="button" className="service-memo-btn service-memo-btn--close" onClick={() => setCloseMemoConfirmOpen(true)}>
+          <button type="button" className="service-memo-btn service-memo-btn--close" onClick={() => {
+            setCloseMemoStatus('');
+            setCloseMemoRemarks('');
+            setCloseMemoReferredTo('');
+            setCloseMemoConfirmOpen(true);
+          }}>
             Close Memo
+          </button>
+        )}
+        {mode === 'view' && memo?.memo_status && ['resolved', 'unresolved', 'nofaultfound', 'accessdenied', 'closed'].includes(memo.memo_status) && typeof onReopenMemo === 'function' && (
+          <button type="button" className="service-memo-btn service-memo-btn--secondary" onClick={() => {
+            if (confirm('Reopen this memo? This will change its status back to "saved" and allow further edits.')) {
+              onReopenMemo(memo.id);
+            }
+          }}>
+            Reopen Memo
           </button>
         )}
         {mode === 'view' && typeof onPrint === 'function' && (
@@ -777,7 +821,12 @@ const ServiceMemoForm = ({
           {renderFormGrid()}
           {mode === 'update' && showCloseMemoFinalize && typeof onCloseMemoFinalize === 'function' && (
             <div className="service-memo-close-row">
-              <button type="button" className="service-memo-btn service-memo-btn--close" onClick={() => setCloseMemoConfirmOpen(true)}>
+              <button type="button" className="service-memo-btn service-memo-btn--close" onClick={() => {
+                setCloseMemoStatus('');
+                setCloseMemoRemarks('');
+                setCloseMemoReferredTo('');
+                setCloseMemoConfirmOpen(true);
+              }}>
                 Close memo (finalize)
               </button>
             </div>
@@ -788,13 +837,92 @@ const ServiceMemoForm = ({
       <ConfirmModal
         isOpen={closeMemoConfirmOpen}
         onClose={() => setCloseMemoConfirmOpen(false)}
-        onConfirm={() => { setCloseMemoConfirmOpen(false); onCloseMemoFinalize(); }}
-        title="Close this service memo?"
-        message={`Memo ${memo?.control_number || memo?.id} will be marked as closed. This cannot be undone.`}
+        onConfirm={async () => {
+          if (!closeMemoStatus) {
+            alert('Please select a resolution status.');
+            return;
+          }
+          if (!closeMemoRemarks.trim()) {
+            alert('Resolution remarks are required.');
+            return;
+          }
+          // Update ticket status which will auto-close the memo
+          if (memo?.ticket_id) {
+            await onCloseMemoFinalize(memo.ticket_id, closeMemoStatus, closeMemoRemarks, closeMemoReferredTo);
+          }
+          setCloseMemoConfirmOpen(false);
+        }}
+        title="Close Service Memo"
+        message={`Memo ${memo?.control_number || memo?.id} will be closed with the selected resolution status.`}
         confirmLabel="Close Memo"
         cancelLabel="Cancel"
         variant="danger"
-      />
+      >
+        <div>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+            Resolution Status (Required)
+          </label>
+          <select
+            value={closeMemoStatus}
+            onChange={(e) => setCloseMemoStatus(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              fontSize: '0.9rem',
+              border: '1.5px solid #ccc',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              outline: 'none',
+              marginBottom: '12px',
+            }}
+            autoFocus
+          >
+            <option value="">Select status...</option>
+            <option value="Restored">Restored</option>
+            <option value="Unresolved">Unresolved</option>
+            <option value="NoFaultFound">No Fault Found</option>
+            <option value="AccessDenied">Access Denied</option>
+          </select>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+            Resolution Remarks (Required)
+          </label>
+          <textarea
+            value={closeMemoRemarks}
+            onChange={(e) => setCloseMemoRemarks(e.target.value)}
+            placeholder="Describe the resolution details..."
+            rows={3}
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              fontSize: '0.9rem',
+              border: '1.5px solid #ccc',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              outline: 'none',
+              resize: 'vertical',
+              marginBottom: '12px',
+            }}
+          />
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+            Referred To (Optional)
+          </label>
+          <input
+            type="text"
+            value={closeMemoReferredTo}
+            onChange={(e) => setCloseMemoReferredTo(e.target.value)}
+            placeholder="e.g., Maintenance Department, External Contractor"
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              fontSize: '0.9rem',
+              border: '1.5px solid #ccc',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              outline: 'none',
+            }}
+          />
+        </div>
+      </ConfirmModal>
 
       <ConfirmModal
         isOpen={undoModalOpen}

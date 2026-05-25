@@ -23,6 +23,7 @@ import { sendAppMail } from '../utils/appMail.js';
 import { requireStaff } from '../middleware/requireRole.js';
 import { buildOptimisticTicketWhere, normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
 import { syncCrewStatusByTicketId } from '../utils/crewStatusSync.js';
+import { municipalityToMemoPrefix, peekNextMemoControlNumber } from '../utils/memoControlNumber.js';
 
 function actorEmailFromReq(req) {
   return req.authUser?.email || String(req.headers['x-user-email'] || '').trim() || null;
@@ -667,6 +668,29 @@ router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
                 `UPDATE aleco_service_memos SET category = ? WHERE id = ?`,
                 [updates.category, existing[0].service_memo_id]
             );
+        }
+
+        // Regenerate service memo control number if municipality changed
+        // Note: Customer fields (name, phone, address, etc.) are JOINED from ticket table,
+        // not stored in memo table, so they don't need syncing
+        if (updates.municipality && updates.municipality !== existing[0].municipality && existing[0].service_memo_id) {
+            const [memoStatusRows] = await connection.execute(
+                `SELECT memo_status FROM aleco_service_memos WHERE id = ?`,
+                [existing[0].service_memo_id]
+            );
+            const memoStatus = memoStatusRows[0]?.memo_status;
+
+            // Only regenerate if memo is not closed
+            if (memoStatus === 'saved' || memoStatus === 'deployed') {
+                const newPrefix = municipalityToMemoPrefix(updates.municipality);
+                if (newPrefix) {
+                    const newControlNumber = await peekNextMemoControlNumber(pool, newPrefix, connection);
+                    await connection.execute(
+                        `UPDATE aleco_service_memos SET control_number = ? WHERE id = ?`,
+                        [newControlNumber, existing[0].service_memo_id]
+                    );
+                }
+            }
         }
 
         const actorEmail = req.body.actor_email || req.headers['x-user-email'];
@@ -1639,7 +1663,10 @@ router.get('/tickets/:ticketId/logs', requireStaff, async (req, res) => {
 // Standard path: PUT /api/tickets/:ticketId/status
 // ============================================================================
 const statusUpdateHandler = async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
+
         const { ticketId } = req.params;
         const { status } = req.body;
         const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
@@ -1649,6 +1676,7 @@ const statusUpdateHandler = async (req, res) => {
         // Validate status - Match the actual database enum
         const validStatuses = ['Pending', 'Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
         if (!validStatuses.includes(status)) {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
@@ -1674,6 +1702,7 @@ const statusUpdateHandler = async (req, res) => {
             const toLevel = statusFlow[status] ?? 0;
             
             if (toLevel < fromLevel) {
+                await connection.rollback();
                 return res.status(400).json({
                     success: false,
                     message: `Cannot revert status from ${fromStatus} to ${status}. Use system-triggered operations for status reversion.`
@@ -1683,6 +1712,7 @@ const statusUpdateHandler = async (req, res) => {
 
         const optimistic = await buildOptimisticTicketWhere(pool, ticketId, expectedUpdatedAt);
         if (optimistic.conflict) {
+            await connection.rollback();
             return res.status(409).json({
                 success: false,
                 code: 'CONFLICT_STALE_TICKET',
@@ -1697,12 +1727,12 @@ const statusUpdateHandler = async (req, res) => {
             SET status = ?
             WHERE ${optimistic.whereSql}
         `;
-        const [dbResult] = await pool.execute(updateQuery, [status, ...optimistic.whereParams]);
+        const [dbResult] = await connection.execute(updateQuery, [status, ...optimistic.whereParams]);
 
         if (dbResult.affectedRows > 0) {
             const actorEmail = req.body.actor_email || req.headers['x-user-email'];
             const actorName = req.body.actor_name || req.headers['x-user-name'];
-            await insertTicketLog(pool, {
+            await insertTicketLog(connection, {
                 ticket_id: ticketId,
                 action: 'status_change',
                 from_status: fromStatus,
@@ -1719,24 +1749,103 @@ const statusUpdateHandler = async (req, res) => {
             // Auto-fill service memo remarks for resolution statuses
             const resolutionStatuses = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
             if (resolutionStatuses.includes(status) && req.body.remarks) {
-                const [memoRows] = await pool.execute(
-                    `SELECT id, work_performed FROM aleco_service_memos WHERE ticket_id = ? LIMIT 1`,
+                const [memoRows] = await connection.execute(
+                    `SELECT id, work_performed, memo_status FROM aleco_service_memos WHERE ticket_id = ? LIMIT 1`,
                     [ticketId]
                 );
                 if (memoRows.length > 0) {
                     const memo = memoRows[0];
+                    const isMemoClosed = memo.memo_status && 
+                        ['resolved', 'unresolved', 'nofaultfound', 'accessdenied', 'closed'].includes(memo.memo_status);
+                    const shouldReplace = req.body.replace_remarks === true;
                     
-                    // Append new remark to work_performed
-                    const currentWorkPerformed = memo.work_performed || '';
-                    const updatedWorkPerformed = currentWorkPerformed 
-                        ? `${currentWorkPerformed}\n\n${req.body.remarks}`
-                        : req.body.remarks;
+                    // Validate remarks when replace is checked
+                    if (shouldReplace && !req.body.remarks?.trim()) {
+                        await connection.rollback();
+                        return res.status(400).json({
+                            success: false,
+                            message: 'Remarks are required when replacing existing remarks.'
+                        });
+                    }
                     
-                    await pool.execute(
-                        `UPDATE aleco_service_memos SET work_performed = ? WHERE id = ?`,
-                        [updatedWorkPerformed, memo.id]
-                    );
-                    console.log(`✅ Service memo work_performed updated for ticket ${ticketId}`);
+                    // If memo is closed and replace_remarks is true, replace the remarks
+                    if (isMemoClosed && shouldReplace) {
+                        const newRemarks = req.body.remarks.trim();
+                        const oldRemarks = memo.work_performed || '';
+                        
+                        // Build update query to replace work_performed and referred_to
+                        const updateFields = ['work_performed = ?'];
+                        const updateValues = [newRemarks];
+                        
+                        if (req.body.referred_to) {
+                            updateFields.push('referred_to = ?');
+                            updateValues.push(req.body.referred_to);
+                        }
+                        
+                        updateValues.push(memo.id);
+                        
+                        await connection.execute(
+                            `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE id = ?`,
+                            updateValues
+                        );
+                        
+                        // Log remarks replacement to ticket history
+                        await insertTicketLog(connection, {
+                            ticket_id: ticketId,
+                            action: 'memo_remarks_replaced',
+                            from_status: fromStatus,
+                            to_status: status,
+                            actor_type: 'dispatcher',
+                            actor_email: req.body.actor_email || req.headers['x-user-email'] || null,
+                            actor_name: req.body.actor_name || req.headers['x-user-name'] || 'System',
+                            metadata: JSON.stringify({
+                                memo_id: memo.id,
+                                old_remarks_length: oldRemarks.length,
+                                new_remarks_length: newRemarks.length,
+                                referred_to_updated: !!req.body.referred_to
+                            })
+                        });
+                        
+                        console.log(`✅ Service memo work_performed${req.body.referred_to ? ' and referred_to' : ''} replaced for ticket ${ticketId}`);
+                    }
+                    // If memo is not closed, append remarks (normal behavior)
+                    else if (!isMemoClosed) {
+                        const currentWorkPerformed = memo.work_performed || '';
+                        const newRemarks = req.body.remarks.trim();
+                        
+                        // Check if the new remarks are different from the last appended remarks
+                        // to avoid duplicate entries
+                        const lastRemarkBlock = currentWorkPerformed.split('\n\n').pop().trim();
+                        const isDuplicate = lastRemarkBlock === newRemarks;
+                        
+                        if (!isDuplicate) {
+                            // Append new remark to work_performed
+                            const updatedWorkPerformed = currentWorkPerformed 
+                                ? `${currentWorkPerformed}\n\n${newRemarks}`
+                                : newRemarks;
+                            
+                            // Build update query with optional referred_to
+                            const updateFields = ['work_performed = ?'];
+                            const updateValues = [updatedWorkPerformed];
+                            
+                            if (req.body.referred_to) {
+                                updateFields.push('referred_to = ?');
+                                updateValues.push(req.body.referred_to);
+                            }
+                            
+                            updateValues.push(memo.id);
+                            
+                            await connection.execute(
+                                `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE id = ?`,
+                                updateValues
+                            );
+                            console.log(`✅ Service memo work_performed${req.body.referred_to ? ' and referred_to' : ''} updated for ticket ${ticketId}`);
+                        } else {
+                            console.log(`ℹ️ Remarks are identical to last entry, skipping append for ticket ${ticketId}`);
+                        }
+                    } else {
+                        console.log(`ℹ️ Memo already closed (status: ${memo.memo_status}), skipping remarks append for ticket ${ticketId}`);
+                    }
                 }
             }
 
@@ -1749,22 +1858,69 @@ const statusUpdateHandler = async (req, res) => {
             };
             const targetMemoStatus = statusToMemoStatus[status];
             if (targetMemoStatus) {
-                await pool.execute(
-                    `UPDATE aleco_service_memos SET memo_status = ? WHERE ticket_id = ?`,
-                    [targetMemoStatus, ticketId]
+                // Validate memo status transition with optimistic locking
+                const [memoStatusRows] = await connection.execute(
+                    `SELECT id, memo_status, updated_at FROM aleco_service_memos WHERE ticket_id = ? LIMIT 1`,
+                    [ticketId]
                 );
+                if (memoStatusRows.length > 0) {
+                    const memo = memoStatusRows[0];
+                    const currentMemoStatus = memo.memo_status;
+                    
+                    // Define allowed transitions
+                    const allowedTransitions = {
+                        'saved': ['deployed', 'resolved', 'unresolved', 'nofaultfound', 'accessdenied'],
+                        'deployed': ['resolved', 'unresolved', 'nofaultfound', 'accessdenied'],
+                        'resolved': ['unresolved', 'nofaultfound', 'accessdenied'],
+                        'unresolved': ['resolved', 'nofaultfound', 'accessdenied'],
+                        'nofaultfound': ['resolved', 'unresolved', 'accessdenied'],
+                        'accessdenied': ['resolved', 'unresolved', 'nofaultfound'],
+                        'closed': [] // Cannot transition from closed without reopening
+                    };
+                    
+                    const allowedFromCurrent = allowedTransitions[currentMemoStatus] || [];
+                    if (!allowedFromCurrent.includes(targetMemoStatus)) {
+                        await connection.rollback();
+                        return res.status(400).json({
+                            success: false,
+                            message: `Invalid memo status transition from ${currentMemoStatus} to ${targetMemoStatus}. Reopen the memo first if needed.`
+                        });
+                    }
+                    
+                    // Update with optimistic locking
+                    const [updateResult] = await connection.execute(
+                        `UPDATE aleco_service_memos SET memo_status = ? WHERE id = ? AND updated_at = ?`,
+                        [targetMemoStatus, memo.id, memo.updated_at]
+                    );
+                    
+                    if (updateResult.affectedRows === 0) {
+                        await connection.rollback();
+                        return res.status(409).json({
+                            success: false,
+                            code: 'CONFLICT_STALE_MEMO',
+                            message: 'Service memo was updated by another user. Reload the ticket and try again.',
+                            latest: { id: memo.id, memo_status: currentMemoStatus, updated_at: memo.updated_at }
+                        });
+                    }
+                }
+                
                 console.log(`✅ Service memo status updated to ${targetMemoStatus} for ticket ${ticketId}`);
             }
 
+            await connection.commit();
             console.log(`✅ SUCCESS: Ticket ${ticketId} updated to ${status}`);
             res.status(200).json({ success: true, message: `Ticket ${ticketId} marked as ${status}` });
         } else {
+            await connection.rollback();
             res.status(404).json({ success: false, message: `Ticket ${ticketId} not found` });
         }
 
     } catch (error) {
+        await connection.rollback();
         console.error("❌ STATUS UPDATE ERROR:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
+    } finally {
+        connection.release();
     }
 };
 

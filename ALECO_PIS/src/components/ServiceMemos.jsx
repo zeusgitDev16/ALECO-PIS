@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/ServiceMemos.css';
 import '../CSS/ServiceMemoUIScale.css';
@@ -15,7 +14,6 @@ import { REALTIME_MODULES } from '../constants/realtimeModules';
 import { matchesRealtimeModule } from '../utils/realtimeModules';
 
 const ServiceMemos = () => {
-  const [searchParams] = useSearchParams();
   const {
     memos,
     loading,
@@ -33,30 +31,15 @@ const ServiceMemos = () => {
 
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [screen, setScreen] = useState('browse');
   const [detailMode, setDetailMode] = useState('view');
   const [activeMemoId, setActiveMemoId] = useState(null);
   const [detailMemo, setDetailMemo] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [prefilledTicketId, setPrefilledTicketId] = useState(null);
 
   const userEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null;
   const userName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null;
 
   const { printMemo, isLoading: isPrinting, error: printError } = useServiceMemoPrint();
-
-  // Handle URL parameters for pre-filling ticket_id
-  useEffect(() => {
-    const mode = searchParams.get('mode');
-    const ticketId = searchParams.get('ticket_id');
-    
-    if (mode === 'create' && ticketId) {
-      setPrefilledTicketId(ticketId);
-      setScreen('create');
-      // Clear URL params after processing
-      window.history.replaceState({}, '', '/service-memos');
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     const handleServiceMemoDeleted = () => {
@@ -101,7 +84,6 @@ const ServiceMemos = () => {
         } finally {
           setDetailLoading(false);
         }
-        setScreen('detail');
       }
     };
     window.addEventListener('aleco:open-service-memo', handleOpenServiceMemo);
@@ -124,41 +106,33 @@ const ServiceMemos = () => {
   }, [setMessage]);
 
   useEffect(() => {
-    if (screen === 'detail' && activeMemoId) {
+    if (activeMemoId) {
       loadDetail(activeMemoId);
     }
-  }, [screen, activeMemoId, loadDetail]);
+  }, [activeMemoId, loadDetail]);
 
   const handleViewMemo = (memoId) => {
     setActiveMemoId(memoId);
     setDetailMode('view');
-    setScreen('detail');
   };
 
   const handleEditMemo = (memoId) => {
     setActiveMemoId(memoId);
     setDetailMode('update');
-    setScreen('detail');
   };
 
   const handleBackFromDetail = () => {
-    setScreen('browse');
     setActiveMemoId(null);
     setDetailMemo(null);
     fetchList();
   };
 
-  const handleCreateNew = () => {
-    setScreen('create');
-    setDetailMemo(null);
-    setActiveMemoId(null);
-  };
-
-  const handleCloseMemoFromCard = async (memoId) => {
+  const handleCloseMemoFromCard = async (memoId, status, remarks, referredTo) => {
     const snapshot = memos.find((m) => m.id === memoId);
-    const result = await closeMemo(memoId, snapshot?.updated_at ?? null);
-    if (result.closed) {
+    if (snapshot?.ticket_id) {
+      await handleUpdateTicket(snapshot.ticket_id, status, null, remarks, referredTo);
       setMessage({ type: 'ok', text: 'Service memo closed successfully.' });
+      fetchList();
     }
   };
 
@@ -174,30 +148,7 @@ const ServiceMemos = () => {
     if (deleteTarget?.id != null) void deleteMemo(deleteTarget.id);
   };
 
-  if (screen === 'create') {
-    return (
-      <div className="admin-page-container service-memos-page-container service-memos-page-container--create-memo">
-        <ServiceMemoForm
-          mode="create"
-          memo={null}
-          prefilledTicketId={prefilledTicketId}
-          onBack={() => {
-            setScreen('browse');
-            fetchList();
-          }}
-          onSaved={() => {
-            setScreen('browse');
-            fetchList();
-            setMessage({ type: 'ok', text: 'Service memo created.' });
-          }}
-          currentUserEmail={userEmail}
-          currentUserName={userName}
-        />
-      </div>
-    );
-  }
-
-  if (screen === 'detail') {
+  if (activeMemoId) {
     if (detailLoading || !detailMemo) {
       return (
         <div className="admin-page-container service-memos-page-container">
@@ -221,14 +172,22 @@ const ServiceMemos = () => {
           currentUserEmail={userEmail}
           currentUserName={userName}
           onDeleted={handleBackFromDetail}
-          showCloseMemoFinalize={detailMemo.memo_status === 'saved'}
+          showCloseMemoFinalize={detailMemo.memo_status === 'saved' || detailMemo.memo_status === 'deployed'}
           onSwitchToEdit={() => setDetailMode('update')}
-          onCloseMemoFinalize={async () => {
-            const r = await closeMemo(detailMemo.id, detailMemo.updated_at ?? null);
-            if (r.closed) {
-              setMessage({ type: 'ok', text: 'Memo closed.' });
+          onReopenMemo={async (memoId) => {
+            const { reopenServiceMemo } = await import('../api/serviceMemosApi');
+            const result = await reopenServiceMemo(memoId);
+            if (result.success) {
+              setMessage({ type: 'ok', text: 'Service memo reopened successfully.' });
+              fetchList();
               handleBackFromDetail();
+            } else {
+              setMessage({ type: 'err', text: result.message || 'Failed to reopen memo.' });
             }
+          }}
+          onCloseMemoFinalize={async (ticketId, status, remarks, referredTo) => {
+            await handleUpdateTicket(ticketId, status, null, remarks, referredTo);
+            handleBackFromDetail();
           }}
           onPrint={() => printMemo(detailMemo)}
         />
@@ -239,9 +198,6 @@ const ServiceMemos = () => {
   return (
     <div className="admin-page-container service-memos-page-container">
       <div className="service-memos-toolbar">
-        <button type="button" className="interruptions-admin-btn" onClick={handleCreateNew}>
-          Create memo
-        </button>
         <button
           type="button"
           className="interruption-filter-inline-btn"
@@ -252,9 +208,6 @@ const ServiceMemos = () => {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
-        </button>
-        <button type="button" className="interruptions-admin-btn" onClick={() => fetchList()} disabled={loading}>
-          {loading ? 'Loading…' : 'Refresh list'}
         </button>
       </div>
 
@@ -280,7 +233,7 @@ const ServiceMemos = () => {
       )}
 
       <div className="memo-two-pane-layout">
-        <MemoHeader filters={filters} setFilters={setFilters} activeTab={activeTab} setActiveTab={setActiveTab} />
+        <MemoHeader filters={filters} setFilters={setFilters} activeTab={activeTab} setActiveTab={setActiveTab} onRefresh={() => fetchList()} loading={loading} />
         <MemoBody
           memos={memos}
           loading={loading}

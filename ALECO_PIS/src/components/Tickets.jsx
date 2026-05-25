@@ -364,7 +364,7 @@ const AdminTickets = () => {
         }
     };
 
-    const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null, remarks = null) => {
+    const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null, remarks = null, referredTo = null, replaceRemarks = false) => {
         try {
             const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
             const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
@@ -434,6 +434,16 @@ const AdminTickets = () => {
                 // Add remarks if provided (for resolution statuses)
                 if (remarks) {
                     payload.remarks = remarks;
+                }
+
+                // Add referred_to if provided (for service memo)
+                if (referredTo) {
+                    payload.referred_to = referredTo;
+                }
+
+                // Add replaceRemarks flag if provided
+                if (replaceRemarks) {
+                    payload.replace_remarks = true;
                 }
 
                 const result = await authMutation(url, {

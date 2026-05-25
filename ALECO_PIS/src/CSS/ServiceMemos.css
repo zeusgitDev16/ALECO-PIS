@@ -1065,6 +1065,35 @@
   letter-spacing: 0.5px;
 }
 
+.memo-header-toggle-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memo-header-icon-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.memo-header-icon-btn:hover:not(:disabled) {
+  background: var(--bg-hover, rgba(0,0,0,0.06));
+  color: var(--text-primary);
+}
+
+.memo-header-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .memo-header-toggle-btn {
   background: none;
   border: 1px solid var(--border-color);

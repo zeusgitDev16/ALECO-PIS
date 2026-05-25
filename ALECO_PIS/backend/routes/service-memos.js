@@ -433,7 +433,7 @@ router.post('/service-memos', requireStaff, async (req, res) => {
           message: 'Ticket municipality is missing or not mapped for memo prefix.',
         });
       }
-      controlNumber = await peekNextMemoControlNumber(connection, prefix);
+      controlNumber = await peekNextMemoControlNumber(pool, prefix, connection);
     }
 
     // Auto-fill fields from ticket data
@@ -631,6 +631,44 @@ router.put('/service-memos/:id', requireStaff, async (req, res) => {
   }
 });
 
+// PUT /api/service-memos/:id/reopen - Reopen service memo
+router.put('/service-memos/:id/reopen', requireStaff, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const currentUserEmail = getActorEmail(req);
+
+    const [memoRows] = await pool.execute(`SELECT * FROM aleco_service_memos WHERE id = ?`, [id]);
+
+    if (memoRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Service memo not found.' });
+    }
+
+    const memo = memoRows[0];
+
+    // Check if memo is closed
+    const closedStatuses = ['resolved', 'unresolved', 'nofaultfound', 'accessdenied', 'closed'];
+    if (!closedStatuses.includes(memo.memo_status)) {
+      return res.status(400).json({ success: false, message: 'Can only reopen a closed service memo.' });
+    }
+
+    // Reopen memo by setting status back to 'saved'
+    const [result] = await pool.execute(
+      `UPDATE aleco_service_memos SET memo_status = 'saved', closed_at = NULL, closed_by = NULL WHERE id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Service memo not found.' });
+    }
+
+    console.log(`✅ Service Memo Reopened: ID ${id} by ${currentUserEmail}`);
+    res.json({ success: true, message: 'Service memo reopened successfully.' });
+  } catch (error) {
+    console.error('❌ Service Memo Reopen Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reopen service memo.' });
+  }
+});
+
 // PUT /api/service-memos/:id/close - Close service memo
 router.put('/service-memos/:id/close', requireStaff, async (req, res) => {
   try {
@@ -808,10 +846,6 @@ router.post('/service-memos/bulk', requireStaff, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid municipality for memo number generation.' });
       }
 
-      // Fetch next memo number
-      const nextNumber = await peekNextMemoControlNumber(pool, prefix);
-      const controlNumber = `${prefix}-${String(nextNumber).padStart(8, '0')}`;
-
       // Check if any tickets already have service memos
       const [existingMemos] = await pool.execute(
         `SELECT ticket_id FROM aleco_service_memos WHERE ticket_id IN (${ticket_ids.map(() => '?').join(',')})`,
@@ -834,7 +868,9 @@ router.post('/service-memos/bulk', requireStaff, async (req, res) => {
         const createdMemos = [];
         for (let i = 0; i < ticket_ids.length; i++) {
           const ticketId = ticket_ids[i];
-          const memoNumber = `${prefix}-${String(nextNumber + i).padStart(8, '0')}`;
+
+          // Get unique control number for each ticket
+          const memoNumber = await peekNextMemoControlNumber(pool, prefix, connection);
 
           // Get ticket info
           const [ticketRows] = await connection.execute(
@@ -949,9 +985,6 @@ router.post('/service-memos/bulk', requireStaff, async (req, res) => {
             continue;
           }
 
-          const nextNumFull = await peekNextMemoControlNumber(connection, prefix);
-          const nextNum = parseInt(nextNumFull.split('-')[1], 10);
-
           for (let i = 0; i < muniTickets.length; i++) {
             const ticket = muniTickets[i];
             const ticketId = ticket.ticket_id;
@@ -965,7 +998,8 @@ router.post('/service-memos/bulk', requireStaff, async (req, res) => {
               continue;
             }
 
-            const memoNumber = `${prefix}-${String(nextNum + i).padStart(10, '0')}`;
+            // Get unique control number for each ticket
+            const memoNumber = await peekNextMemoControlNumber(pool, prefix, connection);
 
             const [result] = await connection.execute(
               `INSERT INTO aleco_service_memos 

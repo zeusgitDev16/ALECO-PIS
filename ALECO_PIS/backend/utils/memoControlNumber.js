@@ -48,27 +48,65 @@ export function municipalityToMemoPrefix(municipality) {
 }
 
 /**
- * Next memo # for a prefix — **preview only** (MAX from saved memos + 1). Does not reserve or increment
- * anything until POST /service-memos inserts the memo row.
+ * Next memo # for a prefix — uses sequence table for unique, non-repeating numbers.
+ * Atomically increments and returns the next sequence number.
  * @param {import('mysql2/promise').Pool} pool
  * @param {string} prefixUpper
+ * @param {import('mysql2/promise').PoolConnection} [existingConnection] - Optional existing connection (for use within transactions)
  * @returns {Promise<string>}
  */
-export async function peekNextMemoControlNumber(pool, prefixUpper) {
+export async function peekNextMemoControlNumber(pool, prefixUpper, existingConnection) {
   const p = String(prefixUpper).toUpperCase();
   if (!/^[A-Z]{3}$/.test(p)) {
     throw new Error('INVALID_MEMO_PREFIX');
   }
-  const [maxRows] = await pool.execute(
-    `SELECT COALESCE(MAX(CAST(SUBSTRING(control_number, 5) AS UNSIGNED)), 0) AS m
-     FROM aleco_service_memos
-     WHERE CHAR_LENGTH(control_number) = 14
-       AND SUBSTRING(control_number, 4, 1) = '-'
-       AND UPPER(SUBSTRING(control_number, 1, 3)) = ?`,
-    [p]
-  );
-  const maxVal = Number(maxRows[0]?.m ?? 0);
-  return formatMemoControlNumber(p, maxVal + 1);
+
+  const useOwnTransaction = !existingConnection;
+  const connection = existingConnection || await pool.getConnection();
+
+  try {
+    if (useOwnTransaction) {
+      await connection.beginTransaction();
+    }
+
+    // Ensure row exists for this prefix
+    await connection.execute(
+      `INSERT IGNORE INTO aleco_service_memo_prefix_seq (prefix, next_seq) VALUES (?, 1)`,
+      [p]
+    );
+
+    // Get current sequence and increment atomically
+    const [rows] = await connection.execute(
+      `SELECT next_seq FROM aleco_service_memo_prefix_seq WHERE prefix = ? FOR UPDATE`,
+      [p]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Failed to initialize sequence for prefix');
+    }
+
+    const currentSeq = Number(rows[0].next_seq);
+    const nextSeq = currentSeq;
+
+    // Increment for next time
+    await connection.execute(
+      `UPDATE aleco_service_memo_prefix_seq SET next_seq = next_seq + 1 WHERE prefix = ?`,
+      [p]
+    );
+
+    if (useOwnTransaction) {
+      await connection.commit();
+      connection.release();
+    }
+
+    return formatMemoControlNumber(p, nextSeq);
+  } catch (error) {
+    if (useOwnTransaction) {
+      await connection.rollback();
+      connection.release();
+    }
+    throw error;
+  }
 }
 
 /**

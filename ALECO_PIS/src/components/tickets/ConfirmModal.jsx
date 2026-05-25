@@ -55,33 +55,35 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel
                     <p className="dispatch-modal-subtitle">{message}</p>
                 </div>
 
-                {requireConfirmText && (
-                    <div style={{ padding: '0 0 12px 0' }}>
-                        <input
-                            type="text"
-                            value={typed}
-                            onChange={(e) => setTyped(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
-                            placeholder={`Type "${requireConfirmText}" to confirm`}
-                            autoFocus
-                            style={{
-                                width: '100%',
-                                padding: '8px 10px',
-                                fontSize: '0.9rem',
-                                border: `1.5px solid ${typed === requireConfirmText ? '#d32f2f' : '#ccc'}`,
-                                borderRadius: '6px',
-                                boxSizing: 'border-box',
-                                outline: 'none',
-                            }}
-                        />
-                    </div>
-                )}
+                <div className="confirm-modal-body">
+                    {requireConfirmText && (
+                        <div style={{ padding: '0 0 12px 0' }}>
+                            <input
+                                type="text"
+                                value={typed}
+                                onChange={(e) => setTyped(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
+                                placeholder={`Type "${requireConfirmText}" to confirm`}
+                                autoFocus
+                                style={{
+                                    width: '100%',
+                                    padding: '8px 10px',
+                                    fontSize: '0.9rem',
+                                    border: `1.5px solid ${typed === requireConfirmText ? '#d32f2f' : '#ccc'}`,
+                                    borderRadius: '6px',
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                }}
+                            />
+                        </div>
+                    )}
 
-                {children && (
-                    <div style={{ padding: '0 0 12px 0' }}>
-                        {children}
-                    </div>
-                )}
+                    {children && (
+                        <div className="confirm-modal-scrollable-content">
+                            {children}
+                        </div>
+                    )}
+                </div>
 
                 <div className="dispatch-modal-actions">
                     <button type="button" className="btn-action btn-cancel" onClick={onClose}>

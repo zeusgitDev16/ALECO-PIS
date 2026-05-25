@@ -280,13 +280,14 @@ export async function reopenServiceMemo(id) {
 
 /**
  * @param {number} id
+ * @param {string|null} closedBy
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
-export async function closeServiceMemo(id, expectedUpdatedAt = null) {
+export async function closeServiceMemo(id, expectedUpdatedAt = null, closedBy = null) {
   try {
     const result = await authMutation(apiUrl(`/api/service-memos/${id}/close`), {
       method: 'PUT',
-      body: {},
+      body: closedBy ? { closed_by: closedBy } : {},
       expectedUpdatedAt,
       expectedUpdatedAtField: 'expected_updated_at',
       emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },

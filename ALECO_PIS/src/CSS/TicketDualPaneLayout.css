@@ -127,9 +127,9 @@
 }
 
 /* =========================================
-   RESPONSIVE - 768px to 1023px (Tablet landscape)
+   RESPONSIVE - 768px to 899px (Tablet landscape)
    ========================================= */
-@media (max-width: 1023px) {
+@media (max-width: 899px) {
     .tickets-left-pane {
         width: 48px;
     }

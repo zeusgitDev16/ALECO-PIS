@@ -10,6 +10,8 @@ import ServiceMemoFilters from './serviceMemos/ServiceMemoFilters';
 import ServiceMemoForm from './serviceMemos/ServiceMemoForm';
 import ConfirmModal from './tickets/ConfirmModal';
 import { getServiceMemo } from '../api/serviceMemosApi';
+import { apiUrl } from '../utils/api';
+import { authMutation } from '../utils/authMutation';
 import { REALTIME_MODULES } from '../constants/realtimeModules';
 import { matchesRealtimeModule } from '../utils/realtimeModules';
 
@@ -127,10 +129,60 @@ const ServiceMemos = () => {
     fetchList();
   };
 
-  const handleCloseMemoFromCard = async (memoId, status, remarks, referredTo) => {
+  const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null, remarks = null, referredTo = null, replaceRemarks = false, accomplishedBy = null) => {
+    try {
+      const url = apiUrl(`/api/tickets/${ticketId}/status`);
+      const payload = {
+        status: newStatus,
+      };
+
+      // Add remarks if provided (for resolution statuses)
+      if (remarks) {
+        payload.remarks = remarks;
+      }
+
+      // Add referred_to if provided (for service memo)
+      if (referredTo) {
+        payload.referred_to = referredTo;
+      }
+
+      // Add accomplished_by if provided (for service memo)
+      if (accomplishedBy) {
+        payload.accomplished_by = accomplishedBy;
+      }
+
+      // Add replaceRemarks flag if provided
+      if (replaceRemarks) {
+        payload.replace_remarks = true;
+      }
+
+      const result = await authMutation(url, {
+        method: 'PUT',
+        body: payload,
+        emitRealtime: { module: REALTIME_MODULES.TICKETS },
+      });
+      const data = result.data || {};
+
+      if (result.success) {
+        setMessage({ type: 'ok', text: `Ticket ${ticketId} marked as ${newStatus}.` });
+        fetchList();
+        return data;
+      } else if (result.conflict) {
+        setMessage({ type: 'err', text: 'This ticket was already updated by another user. Reloading latest data.' });
+        fetchList();
+      } else {
+        setMessage({ type: 'err', text: "Status update failed: " + data.message });
+      }
+    } catch (error) {
+      console.error("Network error: ", error);
+      setMessage({ type: 'err', text: "Network error. Please try again." });
+    }
+  };
+
+  const handleCloseMemoFromCard = async (memoId, status, remarks, referredTo, accomplishedBy) => {
     const snapshot = memos.find((m) => m.id === memoId);
     if (snapshot?.ticket_id) {
-      await handleUpdateTicket(snapshot.ticket_id, status, null, remarks, referredTo);
+      await handleUpdateTicket(snapshot.ticket_id, status, null, remarks, referredTo, false, accomplishedBy);
       setMessage({ type: 'ok', text: 'Service memo closed successfully.' });
       fetchList();
     }
@@ -185,8 +237,8 @@ const ServiceMemos = () => {
               setMessage({ type: 'err', text: result.message || 'Failed to reopen memo.' });
             }
           }}
-          onCloseMemoFinalize={async (ticketId, status, remarks, referredTo) => {
-            await handleUpdateTicket(ticketId, status, null, remarks, referredTo);
+          onCloseMemoFinalize={async (ticketId, status, remarks, referredTo, accomplishedBy) => {
+            await handleUpdateTicket(ticketId, status, null, remarks, referredTo, false, accomplishedBy);
             handleBackFromDetail();
           }}
           onPrint={() => printMemo(detailMemo)}
@@ -244,6 +296,7 @@ const ServiceMemos = () => {
           onRequestDelete={handleRequestDeleteFromList}
           onPrint={printMemo}
           currentUserEmail={userEmail}
+          currentUserName={userName}
         />
       </div>
 

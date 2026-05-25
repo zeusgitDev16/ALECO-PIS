@@ -3,7 +3,7 @@ import '../../CSS/ServiceMemos.css';
 import '../../CSS/TicketTableView.css';
 import ServiceMemoCard from './ServiceMemoCard';
 
-const MemoBody = ({ memos, loading, activeTab, onView, onEdit, onClose, onRequestDelete, onPrint, currentUserEmail }) => {
+const MemoBody = ({ memos, loading, activeTab, onView, onEdit, onClose, onRequestDelete, onPrint, currentUserEmail, currentUserName }) => {
   const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
@@ -88,6 +88,7 @@ const MemoBody = ({ memos, loading, activeTab, onView, onEdit, onClose, onReques
                     onRequestDelete={onRequestDelete}
                     onPrint={onPrint}
                     currentUserEmail={currentUserEmail}
+                    currentUserName={currentUserName}
                     selected={selectedIds.includes(memo.id)}
                     onToggleSelect={toggleSelect}
                   />

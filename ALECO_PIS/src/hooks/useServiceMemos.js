@@ -115,14 +115,15 @@ export function useServiceMemos() {
 
   /**
    * @param {number} id
+   * @param {string|null} closedBy
    * @returns {Promise<{ closed: boolean }>}
    */
   const closeMemo = useCallback(
-    async (id, expectedUpdatedAt = null) => {
+    async (id, expectedUpdatedAt = null, closedBy = null) => {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await closeServiceMemo(id, expectedUpdatedAt);
+        const r = await closeServiceMemo(id, expectedUpdatedAt, closedBy);
         if (r.conflict) {
           setMessage({ type: 'err', text: 'This memo was updated by someone else. Reloading latest data.' });
           await fetchList();

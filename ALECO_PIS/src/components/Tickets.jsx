@@ -364,7 +364,7 @@ const AdminTickets = () => {
         }
     };
 
-    const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null, remarks = null, referredTo = null, replaceRemarks = false) => {
+    const handleUpdateTicket = async (ticketId, newStatus, dispatchData = null, remarks = null, referredTo = null, replaceRemarks = false, accomplishedBy = null) => {
         try {
             const latestTicketSnapshot = (tickets || []).find((t) => t.ticket_id === ticketId);
             const expectedUpdatedAt = latestTicketSnapshot?.updated_at || null;
@@ -439,6 +439,11 @@ const AdminTickets = () => {
                 // Add referred_to if provided (for service memo)
                 if (referredTo) {
                     payload.referred_to = referredTo;
+                }
+
+                // Add accomplished_by if provided (for service memo)
+                if (accomplishedBy) {
+                    payload.accomplished_by = accomplishedBy;
                 }
 
                 // Add replaceRemarks flag if provided

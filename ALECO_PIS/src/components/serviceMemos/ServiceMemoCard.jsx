@@ -69,6 +69,7 @@ const ServiceMemoCard = ({
   onRequestDelete,
   onPrint,
   currentUserEmail,
+  currentUserName,
   selected = false,
   onToggleSelect,
 }) => {
@@ -90,6 +91,8 @@ const ServiceMemoCard = ({
   const [closeMemoStatus, setCloseMemoStatus] = useState('');
   const [closeMemoRemarks, setCloseMemoRemarks] = useState('');
   const [closeMemoReferredTo, setCloseMemoReferredTo] = useState('');
+  const [closeMemoAccomplishedBy, setCloseMemoAccomplishedBy] = useState('');
+  const [isClosingMemo, setIsClosingMemo] = useState(false);
 
   const stop = (e) => {
     e.stopPropagation();
@@ -166,6 +169,7 @@ const ServiceMemoCard = ({
                 setCloseMemoStatus('');
                 setCloseMemoRemarks('');
                 setCloseMemoReferredTo('');
+                setCloseMemoAccomplishedBy('');
                 setCloseConfirmOpen(true);
               }}
               title="Close memo (finalize)"
@@ -189,15 +193,24 @@ const ServiceMemoCard = ({
               alert('Resolution remarks are required.');
               return;
             }
-            // Pass status, remarks, and referred_to to onClose handler
-            onClose(memo.id, closeMemoStatus, closeMemoRemarks, closeMemoReferredTo);
-            setCloseConfirmOpen(false);
+            setIsClosingMemo(true);
+            try {
+              // Pass status, remarks, referred_to, and accomplished_by to onClose handler
+              await onClose(memo.id, closeMemoStatus, closeMemoRemarks, closeMemoReferredTo, closeMemoAccomplishedBy);
+              setCloseConfirmOpen(false);
+            } catch (error) {
+              console.error('Error closing memo:', error);
+              alert('Failed to close memo. Please try again.');
+            } finally {
+              setIsClosingMemo(false);
+            }
           }}
           title="Close Service Memo"
           message={`Memo ${memo.control_number || `#${memo.id}`} will be closed with the selected resolution status.`}
-          confirmLabel="Close Memo"
+          confirmLabel={isClosingMemo ? 'Closing Memo...' : 'Close Memo'}
           cancelLabel="Cancel"
           variant="danger"
+          disabled={isClosingMemo}
         >
           <div>
             <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
@@ -260,8 +273,46 @@ const ServiceMemoCard = ({
                 borderRadius: '6px',
                 boxSizing: 'border-box',
                 outline: 'none',
+                marginBottom: '12px',
               }}
             />
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+              Accomplished By (Optional)
+            </label>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <input
+                type="text"
+                value={closeMemoAccomplishedBy}
+                onChange={(e) => setCloseMemoAccomplishedBy(e.target.value)}
+                placeholder="Name of person who accomplished the task"
+                style={{
+                  flex: 1,
+                  padding: '8px 10px',
+                  fontSize: '0.9rem',
+                  border: '1.5px solid #ccc',
+                  borderRadius: '6px',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setCloseMemoAccomplishedBy(currentUserName || '')}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  border: '1.5px solid #3b82f6',
+                  borderRadius: '6px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Me
+              </button>
+            </div>
           </div>
         </ConfirmModal>,
         document.body
@@ -278,6 +329,7 @@ ServiceMemoCard.propTypes = {
   onRequestDelete: PropTypes.func,
   onPrint: PropTypes.func.isRequired,
   currentUserEmail: PropTypes.string,
+  currentUserName: PropTypes.string,
   selected: PropTypes.bool,
   onToggleSelect: PropTypes.func.isRequired,
 };

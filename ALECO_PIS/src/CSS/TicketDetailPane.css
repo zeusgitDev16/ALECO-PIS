@@ -817,11 +817,11 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
 }
 
 /* ============================================================================
-   RESPONSIVE DESIGN - Tablet and Mobile Only (Desktop 1024px+ unchanged)
+   RESPONSIVE DESIGN - Tablet and Mobile Only (Desktop/Laptop 900px+ unchanged)
    ============================================================================ */
 
 /* Tablet and below: Simplified transforms, crisp text, scrollable */
-@media (max-width: 1023px) {
+@media (max-width: 899px) {
     .ticket-modal-content {
         animation: slideUpCompact 0.25s ease-out;
         -webkit-font-smoothing: antialiased;
@@ -875,8 +875,8 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
     }
 }
 
-/* Tablet (768px - 1023px) - Compact, fixed height, scrollable */
-@media (min-width: 768px) and (max-width: 1023px) {
+/* Tablet (768px - 899px) - Compact, fixed height, scrollable */
+@media (min-width: 768px) and (max-width: 899px) {
     .ticket-modal-content {
         max-width: 600px;
         height: auto;
@@ -2202,7 +2202,7 @@ body.modal-open .kanban-column-header {
 /* ============================================================================
    MAP LOCATION — Google Maps link breakpoints
    ============================================================================ */
-@media (max-width: 1024px) {
+@media (max-width: 899px) {
     .ticket-map-external-link {
         font-size: 0.78rem;
         padding: 7px 11px;
@@ -2392,8 +2392,8 @@ body.modal-open .kanban-column-header {
     }
 }
 
-/* ≤ 1024px — tablet / small laptop */
-@media (max-width: 1024px) {
+/* ≤ 899px — tablet / small laptop */
+@media (max-width: 899px) {
     .ticket-modal-content .detail-header {
         padding: calc(16px * var(--ticket-ui-scale, 1)) calc(48px * var(--ticket-ui-scale, 1)) calc(14px * var(--ticket-ui-scale, 1)) calc(20px * var(--ticket-ui-scale, 1)) !important;
     }
@@ -2606,4 +2606,66 @@ body.modal-open .kanban-column-header {
         border-radius: 3px !important;
         font-size: 0.32rem !important;
     }
+}
+
+/* ============================================================================
+   MEDIUM FONT BOOST — Increases font sizes on tablet and mobile views (~15%).
+   Overrides the hardcoded responsive font-sizes above for better readability.
+   Laptop/desktop (≥ 900px) is handled by --ticket-ui-scale = 1.15 in TicketUIScale.css.
+   ============================================================================ */
+
+/* Tablet (768px - 899px) — boost key elements */
+@media (min-width: 768px) and (max-width: 899px) {
+    .ticket-modal-content .detail-title { font-size: 1.25rem; }
+    .ticket-modal-content .status-tag { font-size: 0.52rem; }
+    .ticket-modal-content .reported-label { font-size: 0.64rem; }
+    .ticket-modal-content .reported-date { font-size: 0.75rem; }
+    .ticket-modal-content .detail-group label { font-size: 0.66rem; }
+    .ticket-modal-content .detail-value { font-size: 0.82rem; }
+    .ticket-modal-content .district-sub { font-size: 0.76rem; }
+    .ticket-modal-content .concern-box { font-size: 0.82rem; }
+    .ticket-modal-content .dispatch-info-box,
+    .ticket-modal-content .lineman-remarks-box { font-size: 0.86rem; }
+}
+
+/* Large Mobile (600px - 767px) — boost key elements */
+@media (min-width: 600px) and (max-width: 767px) {
+    .ticket-modal-content .detail-title { font-size: 1.25rem; }
+    .ticket-modal-content .status-tag { font-size: 0.52rem; }
+    .ticket-modal-content .reported-label { font-size: 0.7rem; }
+    .ticket-modal-content .reported-date { font-size: 0.8rem; }
+    .ticket-modal-content .detail-group label { font-size: 0.54rem; }
+    .ticket-modal-content .detail-value { font-size: 0.66rem; }
+    .ticket-modal-content .district-sub { font-size: 0.62rem; }
+    .ticket-modal-content .concern-box { font-size: 0.66rem; }
+    .ticket-modal-content .dispatch-info-box,
+    .ticket-modal-content .lineman-remarks-box { font-size: 0.7rem; }
+}
+
+/* Medium Mobile (480px - 599px) — boost key elements */
+@media (min-width: 480px) and (max-width: 599px) {
+    .ticket-modal-content .detail-title { font-size: 1.15rem; }
+    .ticket-modal-content .status-tag { font-size: 0.5rem; }
+    .ticket-modal-content .reported-label { font-size: 0.63rem; }
+    .ticket-modal-content .reported-date { font-size: 0.75rem; }
+    .ticket-modal-content .detail-group label { font-size: 0.54rem; }
+    .ticket-modal-content .detail-value { font-size: 0.66rem; }
+    .ticket-modal-content .district-sub { font-size: 0.62rem; }
+    .ticket-modal-content .concern-box { font-size: 0.66rem; }
+    .ticket-modal-content .dispatch-info-box,
+    .ticket-modal-content .lineman-remarks-box { font-size: 0.7rem; }
+}
+
+/* Small Mobile (320px - 479px) — boost key elements */
+@media (min-width: 320px) and (max-width: 479px) {
+    .ticket-modal-content .detail-title { font-size: 1.1rem; }
+    .ticket-modal-content .status-tag { font-size: 0.48rem; }
+    .ticket-modal-content .reported-label { font-size: 0.6rem; }
+    .ticket-modal-content .reported-date { font-size: 0.72rem; }
+    .ticket-modal-content .detail-group label { font-size: 0.52rem; }
+    .ticket-modal-content .detail-value { font-size: 0.64rem; }
+    .ticket-modal-content .district-sub { font-size: 0.6rem; }
+    .ticket-modal-content .concern-box { font-size: 0.64rem; }
+    .ticket-modal-content .dispatch-info-box,
+    .ticket-modal-content .lineman-remarks-box { font-size: 0.68rem; }
 }

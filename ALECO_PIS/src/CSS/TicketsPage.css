@@ -103,7 +103,7 @@ html:not([data-theme="dark"]) .btn-add-ticket:hover {
 }
 
 /* Responsive scaling */
-@media (max-width: 1023px) and (min-width: 768px) {
+@media (max-width: 899px) and (min-width: 768px) {
     .btn-add-ticket {
         padding: 7px 14px;
         font-size: 0.8rem;

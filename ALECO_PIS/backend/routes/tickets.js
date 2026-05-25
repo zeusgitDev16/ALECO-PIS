@@ -1776,14 +1776,19 @@ const statusUpdateHandler = async (req, res) => {
                         // Build update query to replace work_performed and referred_to
                         const updateFields = ['work_performed = ?'];
                         const updateValues = [newRemarks];
-                        
+
                         if (req.body.referred_to) {
                             updateFields.push('referred_to = ?');
                             updateValues.push(req.body.referred_to);
                         }
-                        
+
+                        if (req.body.accomplished_by) {
+                            updateFields.push('closed_by = ?');
+                            updateValues.push(req.body.accomplished_by);
+                        }
+
                         updateValues.push(memo.id);
-                        
+
                         await connection.execute(
                             `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE id = ?`,
                             updateValues
@@ -1824,17 +1829,22 @@ const statusUpdateHandler = async (req, res) => {
                                 ? `${currentWorkPerformed}\n\n${newRemarks}`
                                 : newRemarks;
                             
-                            // Build update query with optional referred_to
+                            // Build update query with optional referred_to and accomplished_by
                             const updateFields = ['work_performed = ?'];
                             const updateValues = [updatedWorkPerformed];
-                            
+
                             if (req.body.referred_to) {
                                 updateFields.push('referred_to = ?');
                                 updateValues.push(req.body.referred_to);
                             }
-                            
+
+                            if (req.body.accomplished_by) {
+                                updateFields.push('closed_by = ?');
+                                updateValues.push(req.body.accomplished_by);
+                            }
+
                             updateValues.push(memo.id);
-                            
+
                             await connection.execute(
                                 `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE id = ?`,
                                 updateValues

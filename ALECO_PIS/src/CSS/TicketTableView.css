@@ -496,7 +496,7 @@ body.modal-open .ticket-table-header {
     }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 899px) {
     .col-phone {
         display: none;
     }

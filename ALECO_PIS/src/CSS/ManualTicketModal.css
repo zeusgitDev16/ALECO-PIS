@@ -213,7 +213,7 @@ body.map-picker-open .manual-ticket-modal-container {
     display: flex;
     flex-direction: column;
     gap: calc(8px * var(--manual-ticket-ui-scale, 1));
-    max-height: calc(300px * var(--manual-ticket-ui-scale, 1));
+    max-height: calc(500px * var(--manual-ticket-ui-scale, 1));
     overflow-y: auto;
 }
 

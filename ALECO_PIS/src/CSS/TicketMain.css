@@ -323,8 +323,8 @@
    BULK ACTION BAR - MODULAR SIZE SCALING
    ========================================= */
 
-/* 768–1023px (88%) */
-@media (min-width: 768px) and (max-width: 1023px) {
+/* 768–899px (88%) */
+@media (min-width: 768px) and (max-width: 899px) {
     .bulk-action-bar-floating {
         padding: 7px 12px;
         bottom: 14px;

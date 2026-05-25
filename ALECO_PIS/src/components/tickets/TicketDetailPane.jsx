@@ -34,7 +34,9 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
     const [isAccessDeniedConfirmOpen, setIsAccessDeniedConfirmOpen] = useState(false);
     const [resolutionRemarks, setResolutionRemarks] = useState('');
     const [referredTo, setReferredTo] = useState('');
+    const [accomplishedBy, setAccomplishedBy] = useState('');
     const [replaceRemarks, setReplaceRemarks] = useState(false);
+    const [isUpdatingTicketStatus, setIsUpdatingTicketStatus] = useState(false);
     const [groupData, setGroupData] = useState(null);
     const [memoControlNumber, setMemoControlNumber] = useState('');
     const [memoStatus, setMemoStatus] = useState('');
@@ -559,6 +561,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 onClick={() => {
                                     setResolutionRemarks('');
                                     setReferredTo('');
+                                    setAccomplishedBy('');
                                     setReplaceRemarks(false);
                                     setIsRestoreConfirmOpen(true);
                                 }}
@@ -572,6 +575,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 onClick={() => {
                                     setResolutionRemarks('');
                                     setReferredTo('');
+                                    setAccomplishedBy('');
                                     setReplaceRemarks(false);
                                     setIsUnresolvedConfirmOpen(true);
                                 }}
@@ -584,6 +588,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 onClick={() => {
                                     setResolutionRemarks('');
                                     setReferredTo('');
+                                    setAccomplishedBy('');
                                     setReplaceRemarks(false);
                                     setIsNoFaultFoundConfirmOpen(true);
                                 }}
@@ -596,6 +601,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 onClick={() => {
                                     setResolutionRemarks('');
                                     setReferredTo('');
+                                    setAccomplishedBy('');
                                     setReplaceRemarks(false);
                                     setIsAccessDeniedConfirmOpen(true);
                                 }}
@@ -683,11 +689,19 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     if (replaceRemarks && !confirm('This will overwrite existing remarks and referred_to. Continue?')) {
                         return;
                     }
-                    await onUpdateTicket(ticket.ticket_id, 'Restored', null, resolutionRemarks, referredTo, replaceRemarks);
-                    // Refetch memo status after update
-                    refetchMemoStatus(ticket.service_memo_id);
-                    setIsRestoreConfirmOpen(false);
-                    onClose();
+                    setIsUpdatingTicketStatus(true);
+                    try {
+                        await onUpdateTicket(ticket.ticket_id, 'Restored', null, resolutionRemarks, referredTo, replaceRemarks, accomplishedBy);
+                        // Refetch memo status after update
+                        refetchMemoStatus(ticket.service_memo_id);
+                        setIsRestoreConfirmOpen(false);
+                        onClose();
+                    } catch (error) {
+                        console.error('Error updating ticket status:', error);
+                        alert('Failed to update ticket status. Please try again.');
+                    } finally {
+                        setIsUpdatingTicketStatus(false);
+                    }
                 }}
                 title="Mark as Restored"
                 message={
@@ -700,9 +714,10 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         )}
                     </>
                 }
-                confirmLabel="Mark Restored"
+                confirmLabel={isUpdatingTicketStatus ? 'Updating...' : 'Mark Restored'}
                 cancelLabel="Cancel"
                 variant="success"
+                disabled={isUpdatingTicketStatus}
             >
                 <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
@@ -742,8 +757,49 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             borderRadius: '6px',
                             boxSizing: 'border-box',
                             outline: 'none',
+                            marginBottom: '12px',
                         }}
                     />
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Accomplished By (Optional)
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                            type="text"
+                            value={accomplishedBy}
+                            onChange={(e) => setAccomplishedBy(e.target.value)}
+                            placeholder="Name of person who accomplished the task"
+                            style={{
+                                flex: 1,
+                                padding: '8px 10px',
+                                fontSize: '0.9rem',
+                                border: '1.5px solid #ccc',
+                                borderRadius: '6px',
+                                boxSizing: 'border-box',
+                                outline: 'none',
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const currentUserName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : '';
+                                setAccomplishedBy(currentUserName || '');
+                            }}
+                            style={{
+                                padding: '8px 16px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                border: '1.5px solid #3b82f6',
+                                borderRadius: '6px',
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            Me
+                        </button>
+                    </div>
                     {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
                         <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
@@ -771,11 +827,19 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     if (replaceRemarks && !confirm('This will overwrite existing remarks and referred_to. Continue?')) {
                         return;
                     }
-                    await onUpdateTicket(ticket.ticket_id, 'Unresolved', null, resolutionRemarks, referredTo, replaceRemarks);
-                    // Refetch memo status after update
-                    refetchMemoStatus(ticket.service_memo_id);
-                    setIsUnresolvedConfirmOpen(false);
-                    onClose();
+                    setIsUpdatingTicketStatus(true);
+                    try {
+                        await onUpdateTicket(ticket.ticket_id, 'Unresolved', null, resolutionRemarks, referredTo, replaceRemarks, accomplishedBy);
+                        // Refetch memo status after update
+                        refetchMemoStatus(ticket.service_memo_id);
+                        setIsUnresolvedConfirmOpen(false);
+                        onClose();
+                    } catch (error) {
+                        console.error('Error updating ticket status:', error);
+                        alert('Failed to update ticket status. Please try again.');
+                    } finally {
+                        setIsUpdatingTicketStatus(false);
+                    }
                 }}
                 title="Mark as Unresolved"
                 message={
@@ -788,9 +852,10 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         )}
                     </>
                 }
-                confirmLabel="Mark Unresolved"
+                confirmLabel={isUpdatingTicketStatus ? 'Updating...' : 'Mark Unresolved'}
                 cancelLabel="Cancel"
                 variant="unresolved"
+                disabled={isUpdatingTicketStatus}
             >
                 <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
@@ -830,8 +895,49 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             borderRadius: '6px',
                             boxSizing: 'border-box',
                             outline: 'none',
+                            marginBottom: '12px',
                         }}
                     />
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Accomplished By (Optional)
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                            type="text"
+                            value={accomplishedBy}
+                            onChange={(e) => setAccomplishedBy(e.target.value)}
+                            placeholder="Name of person who accomplished the task"
+                            style={{
+                                flex: 1,
+                                padding: '8px 10px',
+                                fontSize: '0.9rem',
+                                border: '1.5px solid #ccc',
+                                borderRadius: '6px',
+                                boxSizing: 'border-box',
+                                outline: 'none',
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const currentUserName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : '';
+                                setAccomplishedBy(currentUserName || '');
+                            }}
+                            style={{
+                                padding: '8px 16px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                border: '1.5px solid #3b82f6',
+                                borderRadius: '6px',
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            Me
+                        </button>
+                    </div>
                     {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
                         <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
@@ -859,11 +965,19 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     if (replaceRemarks && !confirm('This will overwrite existing remarks and referred_to. Continue?')) {
                         return;
                     }
-                    await onUpdateTicket(ticket.ticket_id, 'NoFaultFound', null, resolutionRemarks, referredTo, replaceRemarks);
-                    // Refetch memo status after update
-                    refetchMemoStatus(ticket.service_memo_id);
-                    setIsNoFaultFoundConfirmOpen(false);
-                    onClose();
+                    setIsUpdatingTicketStatus(true);
+                    try {
+                        await onUpdateTicket(ticket.ticket_id, 'NoFaultFound', null, resolutionRemarks, referredTo, replaceRemarks, accomplishedBy);
+                        // Refetch memo status after update
+                        refetchMemoStatus(ticket.service_memo_id);
+                        setIsNoFaultFoundConfirmOpen(false);
+                        onClose();
+                    } catch (error) {
+                        console.error('Error updating ticket status:', error);
+                        alert('Failed to update ticket status. Please try again.');
+                    } finally {
+                        setIsUpdatingTicketStatus(false);
+                    }
                 }}
                 title="No Fault Found"
                 message={
@@ -876,9 +990,10 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         )}
                     </>
                 }
-                confirmLabel="No Fault Found"
+                confirmLabel={isUpdatingTicketStatus ? 'Updating...' : 'No Fault Found'}
                 cancelLabel="Cancel"
                 variant="nff"
+                disabled={isUpdatingTicketStatus}
             >
                 <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
@@ -918,8 +1033,49 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             borderRadius: '6px',
                             boxSizing: 'border-box',
                             outline: 'none',
+                            marginBottom: '12px',
                         }}
                     />
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Accomplished By (Optional)
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                            type="text"
+                            value={accomplishedBy}
+                            onChange={(e) => setAccomplishedBy(e.target.value)}
+                            placeholder="Name of person who accomplished the task"
+                            style={{
+                                flex: 1,
+                                padding: '8px 10px',
+                                fontSize: '0.9rem',
+                                border: '1.5px solid #ccc',
+                                borderRadius: '6px',
+                                boxSizing: 'border-box',
+                                outline: 'none',
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const currentUserName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : '';
+                                setAccomplishedBy(currentUserName || '');
+                            }}
+                            style={{
+                                padding: '8px 16px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                border: '1.5px solid #3b82f6',
+                                borderRadius: '6px',
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            Me
+                        </button>
+                    </div>
                     {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
                         <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
@@ -947,11 +1103,19 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     if (replaceRemarks && !confirm('This will overwrite existing remarks and referred_to. Continue?')) {
                         return;
                     }
-                    await onUpdateTicket(ticket.ticket_id, 'AccessDenied', null, resolutionRemarks, referredTo, replaceRemarks);
-                    // Refetch memo status after update
-                    refetchMemoStatus(ticket.service_memo_id);
-                    setIsAccessDeniedConfirmOpen(false);
-                    onClose();
+                    setIsUpdatingTicketStatus(true);
+                    try {
+                        await onUpdateTicket(ticket.ticket_id, 'AccessDenied', null, resolutionRemarks, referredTo, replaceRemarks, accomplishedBy);
+                        // Refetch memo status after update
+                        refetchMemoStatus(ticket.service_memo_id);
+                        setIsAccessDeniedConfirmOpen(false);
+                        onClose();
+                    } catch (error) {
+                        console.error('Error updating ticket status:', error);
+                        alert('Failed to update ticket status. Please try again.');
+                    } finally {
+                        setIsUpdatingTicketStatus(false);
+                    }
                 }}
                 title="Access Denied"
                 message={
@@ -964,9 +1128,10 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         )}
                     </>
                 }
-                confirmLabel="Access Denied"
+                confirmLabel={isUpdatingTicketStatus ? 'Updating...' : 'Access Denied'}
                 cancelLabel="Cancel"
                 variant="access-denied"
+                disabled={isUpdatingTicketStatus}
             >
                 <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
@@ -1006,8 +1171,49 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             borderRadius: '6px',
                             boxSizing: 'border-box',
                             outline: 'none',
+                            marginBottom: '12px',
                         }}
                     />
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+                        Accomplished By (Optional)
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                            type="text"
+                            value={accomplishedBy}
+                            onChange={(e) => setAccomplishedBy(e.target.value)}
+                            placeholder="Name of person who accomplished the task"
+                            style={{
+                                flex: 1,
+                                padding: '8px 10px',
+                                fontSize: '0.9rem',
+                                border: '1.5px solid #ccc',
+                                borderRadius: '6px',
+                                boxSizing: 'border-box',
+                                outline: 'none',
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const currentUserName = typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : '';
+                                setAccomplishedBy(currentUserName || '');
+                            }}
+                            style={{
+                                padding: '8px 16px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                border: '1.5px solid #3b82f6',
+                                borderRadius: '6px',
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            Me
+                        </button>
+                    </div>
                     {memoStatus && memoStatus !== 'saved' && memoStatus !== 'deployed' && (
                         <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>

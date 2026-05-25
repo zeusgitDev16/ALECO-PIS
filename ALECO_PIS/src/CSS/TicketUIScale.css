@@ -1,56 +1,57 @@
 /**
  * Admin Support Tickets page — modular UI scale (mirrors public .body-padding tiers in BodyLandPage.css).
  * Set on .tickets-page-container; descendants inherit --ticket-ui-scale for calc(... * var(--ticket-ui-scale, 1)).
+ * Bumped ~15% for medium font increase.
  */
 
 .tickets-page-container {
-  --ticket-ui-scale: 1;
+  --ticket-ui-scale: 1.15;
 }
 
-@media (max-width: 1023px) and (min-width: 768px) {
+@media (max-width: 899px) and (min-width: 768px) {
   .tickets-page-container {
-    --ticket-ui-scale: 0.88;
+    --ticket-ui-scale: 1.0;
   }
 }
 
 @media (max-width: 767px) and (min-width: 600px) {
   .tickets-page-container {
-    --ticket-ui-scale: 0.72;
+    --ticket-ui-scale: 0.85;
   }
 }
 
 @media (max-width: 599px) and (min-width: 480px) {
   .tickets-page-container {
-    --ticket-ui-scale: 0.72;
+    --ticket-ui-scale: 0.85;
   }
 }
 
 @media (max-width: 479px) and (min-width: 425px) {
   .tickets-page-container {
-    --ticket-ui-scale: 0.72;
+    --ticket-ui-scale: 0.85;
   }
 }
 
 @media (max-width: 424px) and (min-width: 375px) {
   .tickets-page-container {
-    --ticket-ui-scale: 0.68;
+    --ticket-ui-scale: 0.80;
   }
 }
 
 @media (max-width: 374px) and (min-width: 321px) {
   .tickets-page-container {
-    --ticket-ui-scale: 0.65;
+    --ticket-ui-scale: 0.78;
   }
 }
 
 @media (max-width: 320px) {
   .tickets-page-container {
-    --ticket-ui-scale: 0.55;
+    --ticket-ui-scale: 0.68;
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .tickets-page-container {
-    --ticket-ui-scale: 1;
+    --ticket-ui-scale: 1.15;
   }
 }

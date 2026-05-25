@@ -134,6 +134,8 @@ const ServiceMemoForm = ({
   const [closeMemoStatus, setCloseMemoStatus] = useState('');
   const [closeMemoRemarks, setCloseMemoRemarks] = useState('');
   const [closeMemoReferredTo, setCloseMemoReferredTo] = useState('');
+  const [closeMemoAccomplishedBy, setCloseMemoAccomplishedBy] = useState('');
+  const [isClosingMemo, setIsClosingMemo] = useState(false);
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [crews, setCrews] = useState([]);
 
@@ -768,6 +770,7 @@ const ServiceMemoForm = ({
             setCloseMemoStatus('');
             setCloseMemoRemarks('');
             setCloseMemoReferredTo('');
+            setCloseMemoAccomplishedBy('');
             setCloseMemoConfirmOpen(true);
           }}>
             Close Memo
@@ -825,6 +828,7 @@ const ServiceMemoForm = ({
                 setCloseMemoStatus('');
                 setCloseMemoRemarks('');
                 setCloseMemoReferredTo('');
+                setCloseMemoAccomplishedBy('');
                 setCloseMemoConfirmOpen(true);
               }}>
                 Close memo (finalize)
@@ -846,17 +850,26 @@ const ServiceMemoForm = ({
             alert('Resolution remarks are required.');
             return;
           }
-          // Update ticket status which will auto-close the memo
-          if (memo?.ticket_id) {
-            await onCloseMemoFinalize(memo.ticket_id, closeMemoStatus, closeMemoRemarks, closeMemoReferredTo);
+          setIsClosingMemo(true);
+          try {
+            // Update ticket status which will auto-close the memo
+            if (memo?.ticket_id) {
+              await onCloseMemoFinalize(memo.ticket_id, closeMemoStatus, closeMemoRemarks, closeMemoReferredTo, closeMemoAccomplishedBy);
+            }
+            setCloseMemoConfirmOpen(false);
+          } catch (error) {
+            console.error('Error closing memo:', error);
+            alert('Failed to close memo. Please try again.');
+          } finally {
+            setIsClosingMemo(false);
           }
-          setCloseMemoConfirmOpen(false);
         }}
         title="Close Service Memo"
         message={`Memo ${memo?.control_number || memo?.id} will be closed with the selected resolution status.`}
-        confirmLabel="Close Memo"
+        confirmLabel={isClosingMemo ? 'Closing Memo...' : 'Close Memo'}
         cancelLabel="Cancel"
         variant="danger"
+        disabled={isClosingMemo}
       >
         <div>
           <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
@@ -919,8 +932,48 @@ const ServiceMemoForm = ({
               borderRadius: '6px',
               boxSizing: 'border-box',
               outline: 'none',
+              marginBottom: '12px',
             }}
           />
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.9rem' }}>
+            Accomplished By (Optional)
+          </label>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <input
+              type="text"
+              value={closeMemoAccomplishedBy}
+              onChange={(e) => setCloseMemoAccomplishedBy(e.target.value)}
+              placeholder="Name of person who accomplished the task"
+              style={{
+                flex: 1,
+                padding: '8px 10px',
+                fontSize: '0.9rem',
+                border: '1.5px solid #ccc',
+                borderRadius: '6px',
+                boxSizing: 'border-box',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setCloseMemoAccomplishedBy(currentUserName || '')}
+              disabled={!currentUserName}
+              style={{
+                padding: '8px 16px',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                border: '1.5px solid #3b82f6',
+                borderRadius: '6px',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                cursor: currentUserName ? 'pointer' : 'not-allowed',
+                opacity: currentUserName ? 1 : 0.5,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Me
+            </button>
+          </div>
         </div>
       </ConfirmModal>
 

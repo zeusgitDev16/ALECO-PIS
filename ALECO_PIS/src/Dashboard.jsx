@@ -554,7 +554,6 @@ const AdminDashboard = () => {
         const total    = ticketDashStats ? Number(ticketDashStats.total)       : tickets.length;
         const pending  = ticketDashStats ? Number(ticketDashStats.pending)      : sourceData.filter(t => t.status === 'Pending').length;
         const ongoing  = ticketDashStats ? Number(ticketDashStats.ongoing)      : sourceData.filter(t => t.status === 'Ongoing').length;
-        const onhold   = ticketDashStats ? Number(ticketDashStats.onhold)       : sourceData.filter(t => t.status === 'OnHold').length;
         const resolved = ticketDashStats ? Number(ticketDashStats.resolved)     : sourceData.filter(t => ['Restored', 'Resolved'].includes(t.status)).length;
         const unresolved = ticketDashStats ? Number(ticketDashStats.unresolved) : sourceData.filter(t => t.status === 'Unresolved').length;
         const nofault  = ticketDashStats ? Number(ticketDashStats.nofault)      : sourceData.filter(t => t.status === 'NoFaultFound').length;
@@ -562,7 +561,7 @@ const AdminDashboard = () => {
         const urgent   = ticketDashStats ? Number(ticketDashStats.urgent)       : sourceData.filter(t => t.is_urgent === 1).length;
         const memoLinked = ticketDashStats ? Number(ticketDashStats.memo_linked) : sourceData.filter(t => Number(t?.service_memo_id || 0) > 0 || Number(t?.has_service_memo || 0) === 1).length;
 
-        return { total, pending, ongoing, onhold, resolved, unresolved, nofault, denied, urgent, memoLinked, trendData, categoryData, topLocations };
+        return { total, pending, ongoing, resolved, unresolved, nofault, denied, urgent, memoLinked, trendData, categoryData, topLocations };
     }, [tickets, ticketDashStats]);
 
     // Dynamic calculations for B2B Mail — real data
@@ -633,14 +632,50 @@ const AdminDashboard = () => {
 
     // Service memo stats — real data
     const memoStats = useMemo(() => {
-        const total  = memos.length;
-        const saved  = memos.filter(m => m.memo_status === 'saved').length;
-        const closed = memos.filter(m => m.memo_status === 'closed').length;
+        const total     = memos.length;
+        const saved     = memos.filter(m => m.memo_status === 'saved').length;
+        const deployed  = memos.filter(m => m.memo_status === 'deployed').length;
+        const resolved  = memos.filter(m => m.memo_status === 'resolved').length;
+        const unresolved = memos.filter(m => m.memo_status === 'unresolved').length;
+        const closed    = memos.filter(m => m.memo_status === 'closed').length;
+
+        // 7-day trend
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const createdThisWeek = memos.filter(m => new Date(m.created_at) >= sevenDaysAgo).length;
+        const closedThisWeek = memos.filter(m => m.memo_status === 'closed' && m.closed_at && new Date(m.closed_at) >= sevenDaysAgo).length;
+
+        // 6-month trend
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const trendMap = {};
+        const today = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const label = months[d.getMonth()];
+            const yearKey = d.getFullYear();
+            const fullKey = `${label}-${yearKey}`;
+            trendMap[fullKey] = { name: label, count: 0, order: 5 - i };
+        }
+        memos.forEach(m => {
+            const date = new Date(m.created_at);
+            const label = months[date.getMonth()];
+            const yearKey = date.getFullYear();
+            const fullKey = `${label}-${yearKey}`;
+            if (trendMap[fullKey] !== undefined) {
+                trendMap[fullKey].count++;
+            }
+        });
+        const trendData = Object.values(trendMap).sort((a, b) => a.order - b.order).map(({ name, count }) => ({ name, count }));
+
         const statusData = [
-            { name: 'Saved',  value: saved,  fill: 'var(--accent-warning)' },
-            { name: 'Closed', value: closed, fill: 'var(--accent-success)' },
-        ];
-        return { total, saved, closed, statusData };
+            { name: 'Saved',     value: saved,     fill: '#f59e0b' },
+            { name: 'Deployed',  value: deployed,  fill: '#3b82f6' },
+            { name: 'Resolved',  value: resolved,  fill: '#22c55e' },
+            { name: 'Unresolved',value: unresolved,fill: '#ef4444' },
+            { name: 'Closed',    value: closed,    fill: '#6b7280' },
+        ].filter(d => d.value > 0);
+
+        return { total, saved, deployed, resolved, unresolved, closed, createdThisWeek, closedThisWeek, trendData, statusData };
     }, [memos]);
 
     // Users stats — real data
@@ -648,13 +683,37 @@ const AdminDashboard = () => {
         const total     = users.length;
         const admins    = users.filter(u => (u.role || '').toLowerCase() === 'admin').length;
         const employees = users.filter(u => (u.role || '').toLowerCase() === 'employee').length;
-        const others    = total - admins - employees;
+
+        // 6-month invitation trend
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const trendMap = {};
+        const today = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const label = months[d.getMonth()];
+            const yearKey = d.getFullYear();
+            const fullKey = `${label}-${yearKey}`;
+            trendMap[fullKey] = { name: label, count: 0, order: 5 - i };
+        }
+        users.forEach(u => {
+            if (u.created_at) {
+                const date = new Date(u.created_at);
+                const label = months[date.getMonth()];
+                const yearKey = date.getFullYear();
+                const fullKey = `${label}-${yearKey}`;
+                if (trendMap[fullKey] !== undefined) {
+                    trendMap[fullKey].count++;
+                }
+            }
+        });
+        const trendData = Object.values(trendMap).sort((a, b) => a.order - b.order).map(({ name, count }) => ({ name, count }));
+
         const roleData = [
-            { name: 'Admins',    value: admins,    fill: 'var(--accent-primary)' },
-            { name: 'Employees', value: employees, fill: 'var(--accent-success)' },
-            { name: 'Others',    value: others,    fill: 'var(--text-secondary)' },
-        ];
-        return { total, admins, employees, others, roleData };
+            { name: 'Admins',    value: admins,    fill: '#a855f7' },
+            { name: 'Employees', value: employees, fill: '#22c55e' },
+        ].filter(d => d.value > 0);
+
+        return { total, admins, employees, trendData, roleData };
     }, [users]);
 
 
@@ -1094,7 +1153,7 @@ const AdminDashboard = () => {
                         </div>
 
                         {/* 1. Top Summary Cards - Unified */}
-                        <div className="dash-summary-grid count-10">
+                        <div className="dash-summary-grid count-9">
                             <div className="dash-summary-card total">
                                 <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={70} height={10} /> : 'Total Tickets'}</div>
                                 <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.total}</div>
@@ -1125,11 +1184,6 @@ const AdminDashboard = () => {
                                 <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.nofault}</div>
                                 <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Verified clear'}</div>
                             </div>
-                            <div className="dash-summary-card onhold">
-                                <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={70} height={10} /> : 'On Hold'}</div>
-                                <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.onhold}</div>
-                                <div className="dash-summary-trend">{ticketStatsLoading ? <Skeleton width={60} height={8} /> : 'Paused tickets'}</div>
-                            </div>
                             <div className="dash-summary-card denied">
                                 <div className="dash-summary-title">{ticketStatsLoading ? <Skeleton width={70} height={10} /> : 'Access Denied'}</div>
                                 <div className="dash-summary-count">{ticketStatsLoading ? <Skeleton width={40} height={16} /> : ticketStats.denied}</div>
@@ -1159,7 +1213,6 @@ const AdminDashboard = () => {
                                     const statusPieData = [
                                         { name: 'Pending',      value: ticketStats.pending,    fill: '#f59e0b' },
                                         { name: 'Ongoing',      value: ticketStats.ongoing,    fill: '#3b82f6' },
-                                        { name: 'On Hold',      value: ticketStats.onhold,     fill: '#64748b' },
                                         { name: 'Resolved',     value: ticketStats.resolved,   fill: '#22c55e' },
                                         { name: 'Unresolved',   value: ticketStats.unresolved, fill: '#ef4444' },
                                         { name: 'No Fault',     value: ticketStats.nofault,    fill: '#a78bfa' },
@@ -1589,21 +1642,36 @@ const AdminDashboard = () => {
                                 <h3 className="column-section-title">Service Memos</h3>
                                 <p className="widget-text">Summary of field service memo records.</p>
                             </div>
-                            <div className="dash-summary-grid count-3 memo-summary-grid">
+                            <div className="dash-summary-grid count-6 memo-summary-grid">
                                 <div className="dash-summary-card memo">
                                     <div className="dash-summary-title">{memosLoading ? <Skeleton width={60} height={10} /> : 'Total Memos'}</div>
                                     <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.total}</div>
                                     <div className="dash-summary-trend">{memosLoading ? <Skeleton width={50} height={8} /> : 'All records'}</div>
                                 </div>
                                 <div className="dash-summary-card pending">
-                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={70} height={10} /> : 'Saved / Open'}</div>
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={50} height={10} /> : 'Saved'}</div>
                                     <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.saved}</div>
-                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'In progress'}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'Drafts'}</div>
+                                </div>
+                                <div className="dash-summary-card ongoing">
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={60} height={10} /> : 'Deployed'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.deployed}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'In field'}</div>
                                 </div>
                                 <div className="dash-summary-card restored">
-                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={40} height={10} /> : 'Closed'}</div>
-                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.closed}</div>
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={60} height={10} /> : 'Resolved'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.resolved}</div>
                                     <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'Completed'}</div>
+                                </div>
+                                <div className="dash-summary-card outage">
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={70} height={10} /> : 'Unresolved'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.unresolved}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'Needs review'}</div>
+                                </div>
+                                <div className="dash-summary-card cancelled">
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={50} height={10} /> : 'Closed'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.closed}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'Archived'}</div>
                                 </div>
                             </div>
                             <div className="charts-grid-main">
@@ -1617,7 +1685,9 @@ const AdminDashboard = () => {
                                             <Skeleton height="100%" borderRadius={8} />
                                         ) : (() => {
                                             const statusData = memoStats.statusData;
-                                            return (
+                                            return statusData.length === 0 ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>N/A</div>
+                                            ) : (
                                                 <>
                                                     <div className="interruption-types-desktop">
                                                         <ResponsiveContainer width="100%" height="100%">
@@ -1660,6 +1730,39 @@ const AdminDashboard = () => {
                                         })()}
                                     </div>
                                 </div>
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaChartLine className="chart-icon" />
+                                        <h4>Monthly Memo Trends</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        {memoStats.trendData.length === 0 ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>N/A</div>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <LineChart data={memoStats.trendData}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                                    <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={12} />
+                                                    <YAxis axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={12} />
+                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderRadius: '8px' }} />
+                                                    <Line type="monotone" dataKey="count" stroke="var(--accent-primary)" strokeWidth={3} dot={{ r: 4 }} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="dash-summary-grid count-2 memo-trend-grid">
+                                <div className="dash-summary-card memo">
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={70} height={10} /> : 'Created This Week'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.createdThisWeek}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'Last 7 days'}</div>
+                                </div>
+                                <div className="dash-summary-card restored">
+                                    <div className="dash-summary-title">{memosLoading ? <Skeleton width={70} height={10} /> : 'Closed This Week'}</div>
+                                    <div className="dash-summary-count">{memosLoading ? <Skeleton width={40} height={16} /> : memoStats.closedThisWeek}</div>
+                                    <div className="dash-summary-trend">{memosLoading ? <Skeleton width={60} height={8} /> : 'Last 7 days'}</div>
+                                </div>
                             </div>
                         </div>
 
@@ -1697,7 +1800,9 @@ const AdminDashboard = () => {
                                             <Skeleton height="100%" borderRadius={8} />
                                         ) : (() => {
                                             const roleData = userStats.roleData;
-                                            return (
+                                            return roleData.length === 0 ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>N/A</div>
+                                            ) : (
                                                 <>
                                                     <div className="interruption-types-desktop">
                                                         <ResponsiveContainer width="100%" height="100%">
@@ -1738,6 +1843,27 @@ const AdminDashboard = () => {
                                                 </>
                                             );
                                         })()}
+                                    </div>
+                                </div>
+                                <div className="chart-card">
+                                    <div className="chart-header-group">
+                                        <FaChartLine className="chart-icon" />
+                                        <h4>Monthly Invitations</h4>
+                                    </div>
+                                    <div className="chart-wrapper">
+                                        {userStats.trendData.length === 0 ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>N/A</div>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <LineChart data={userStats.trendData}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                                    <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={12} />
+                                                    <YAxis axisLine={false} tickLine={false} stroke="var(--text-secondary)" fontSize={12} />
+                                                    <Tooltip contentStyle={{ background: 'var(--bg-card)', borderRadius: '8px' }} />
+                                                    <Line type="monotone" dataKey="count" stroke="var(--accent-success)" strokeWidth={3} dot={{ r: 4 }} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        )}
                                     </div>
                                 </div>
                             </div>

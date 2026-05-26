@@ -1281,16 +1281,16 @@ const _retiredInboundKeywordHandler = async (req, res) => {
             console.log(`🔍 Extracted Ticket ID (No Fault Found): ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
 
             const [prevNff] = await pool.execute(
-                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status = 'Ongoing'`,
                 [ticketId]
             );
             if (prevNff.length === 0) {
-                console.log(`⚠️ Ticket ${ticketId} not found or is not currently active (Ongoing/On Hold).`);
+                console.log(`⚠️ Ticket ${ticketId} not found or is not currently Ongoing.`);
             } else {
                 const fromStatusNff = prevNff[0].status;
                 const updateQuery = remarks
-                    ? `UPDATE aleco_tickets SET status = 'NoFaultFound', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`
-                    : `UPDATE aleco_tickets SET status = 'NoFaultFound', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`;
+                    ? `UPDATE aleco_tickets SET status = 'NoFaultFound', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
+                    : `UPDATE aleco_tickets SET status = 'NoFaultFound', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
                 const updateParams = remarks ? [remarks, ticketId] : [ticketId];
                 const [dbResult] = await pool.execute(updateQuery, updateParams);
 
@@ -1313,16 +1313,16 @@ const _retiredInboundKeywordHandler = async (req, res) => {
             console.log(`🔍 Extracted Ticket ID (Access Denied): ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
 
             const [prevAd] = await pool.execute(
-                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status = 'Ongoing'`,
                 [ticketId]
             );
             if (prevAd.length === 0) {
-                console.log(`⚠️ Ticket ${ticketId} not found or is not currently active (Ongoing/On Hold).`);
+                console.log(`⚠️ Ticket ${ticketId} not found or is not currently Ongoing.`);
             } else {
                 const fromStatusAd = prevAd[0].status;
                 const updateQuery = remarks
-                    ? `UPDATE aleco_tickets SET status = 'AccessDenied', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`
-                    : `UPDATE aleco_tickets SET status = 'AccessDenied', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`;
+                    ? `UPDATE aleco_tickets SET status = 'AccessDenied', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
+                    : `UPDATE aleco_tickets SET status = 'AccessDenied', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
                 const updateParams = remarks ? [remarks, ticketId] : [ticketId];
                 const [dbResult] = await pool.execute(updateQuery, updateParams);
 
@@ -1338,19 +1338,6 @@ const _retiredInboundKeywordHandler = async (req, res) => {
                     });
                     console.log(`✅ SUCCESS: Ticket ${ticketId} marked as AccessDenied.`);
                 }
-            }
-        } else if (holdMatch) {
-            const ticketId = holdMatch[1].toUpperCase();
-            const reason = holdMatch[2] ? holdMatch[2].trim() : 'Awaiting materials or clearance';
-            console.log(`🔍 Extracted Ticket ID (Hold): ${ticketId} | Reason: ${reason}`);
-
-            const [dbResult] = await pool.execute(
-                `UPDATE aleco_tickets SET status = 'OnHold', hold_reason = ?, hold_since = ? WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
-                [reason, nowPhilippineForMysql(), ticketId]
-            );
-
-            if (dbResult.affectedRows > 0) {
-                console.log(`✅ SUCCESS: Ticket ${ticketId} marked as On Hold.`);
             }
         } else if (enrouteMatch) {
             const ticketId = enrouteMatch[1].toUpperCase();
@@ -1398,16 +1385,16 @@ const _retiredInboundKeywordHandler = async (req, res) => {
                 console.log(`🔍 Extracted Ticket ID (Fixed): ${ticketId}${remarks ? ` | Remarks: ${remarks}` : ''}`);
 
                 const [prevFixed] = await pool.execute(
-                    `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`,
+                    `SELECT status FROM aleco_tickets WHERE ticket_id = ? AND status = 'Ongoing'`,
                     [ticketId]
                 );
                 if (prevFixed.length === 0) {
-                    console.log(`⚠️ Ticket ${ticketId} not found or is not currently active (Ongoing/On Hold).`);
+                    console.log(`⚠️ Ticket ${ticketId} not found or is not currently Ongoing.`);
                 } else {
                     const fromStatusFixed = prevFixed[0].status;
                     const updateQuery = remarks
-                        ? `UPDATE aleco_tickets SET status = 'Restored', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`
-                        : `UPDATE aleco_tickets SET status = 'Restored', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status IN ('Ongoing', 'OnHold')`;
+                        ? `UPDATE aleco_tickets SET status = 'Restored', lineman_remarks = ?, hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`
+                        : `UPDATE aleco_tickets SET status = 'Restored', hold_reason = NULL, hold_since = NULL WHERE ticket_id = ? AND status = 'Ongoing'`;
                     const updateParams = remarks ? [remarks, ticketId] : [ticketId];
                     const [dbResult] = await pool.execute(updateQuery, updateParams);
 

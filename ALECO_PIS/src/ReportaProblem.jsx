@@ -965,9 +965,9 @@ const ReportaProblem = () => {
         </div>
         
         {/* STEP 2: Ongoing, On Hold, or Unresolved */}
-        <div className={`step ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
-            <div className={`circle ${ticketData.status === 'Unresolved' ? 'red-glow' : 'blue-glow'} ${['Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
-            <span>{ticketData.status === 'Unresolved' ? 'Unresolved' : ticketData.status === 'OnHold' ? 'On Hold' : 'Ongoing'}</span>
+        <div className={`step ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
+            <div className={`circle ${ticketData.status === 'Unresolved' ? 'red-glow' : 'blue-glow'} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
+            <span>{ticketData.status === 'Unresolved' ? 'Unresolved' : 'Ongoing'}</span>
         </div>
         
         {/* STEP 3: Closed (Restored, NoFaultFound, AccessDenied) */}
@@ -983,13 +983,10 @@ const ReportaProblem = () => {
             <span className={`status-tag ${(ticketData.status || '').toLowerCase()}`}>{formatTicketStatusLabel(ticketData.status)}</span>
         </p>
         
-        {['Ongoing', 'OnHold'].includes(ticketData.status) && (ticketData.assigned_crew || ticketData.eta || ticketData.hold_reason) && (
+        {ticketData.status === 'Ongoing' && (ticketData.assigned_crew || ticketData.eta) && (
             <div className="crew-eta-info">
                 {ticketData.assigned_crew && <p><strong>Crew dispatched:</strong> {ticketData.assigned_crew}</p>}
                 {ticketData.eta && <p><strong>ETA:</strong> {ticketData.eta}</p>}
-                {ticketData.hold_reason && (
-                    <p className="hold-info"><strong>On Hold:</strong> {ticketData.hold_reason}. We will update you when work resumes.</p>
-                )}
             </div>
         )}
         

@@ -494,7 +494,7 @@ body.admin-app-scroll-lock {
     padding-bottom: 80px;
     display: block;
     width: 100%;
-    min-height: 980vh;
+    min-height: 995vh;
     /* Base height for all mobile screens */
     box-sizing: border-box;
 }
@@ -502,43 +502,43 @@ body.admin-app-scroll-lock {
 /* Breakpoints for dynamic vertical runway */
 @media (min-width: 425px) {
     .dashboard-page-container {
-        min-height: 995vh;
+        min-height: 1005vh;
     }
 }
 
 @media (min-width: 768px) {
     .dashboard-page-container {
-        min-height: 1010vh;
+        min-height: 1110vh;
     }
 }
 
 @media (min-width: 1024px) {
     .dashboard-page-container {
-        min-height: 605vh;
+        min-height: 615vh;
     }
 }
 
 @media (min-width: 1366px) {
     .dashboard-page-container {
-        min-height: 490vh;
+        min-height: 530vh;
     }
 }
 
 @media (min-width: 1920px) {
     .dashboard-page-container {
-        min-height: 340vh;
+        min-height: 370vh;
     }
 }
 
 @media (min-width: 2560px) {
     .dashboard-page-container {
-        min-height: 240vh;
+        min-height: 280vh;
     }
 }
 
 @media (min-width: 3840px) {
     .dashboard-page-container {
-        min-height: 140vh;
+        min-height: 200vh;
     }
 }
 
@@ -1225,6 +1225,10 @@ body.admin-app-scroll-lock {
 }
 
 /* Force equal columns when we know the count */
+.dash-summary-grid.count-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .dash-summary-grid.count-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -1260,6 +1264,7 @@ body.admin-app-scroll-lock {
 @media (max-width: 768px) {
 
     .dash-summary-grid,
+    .dash-summary-grid.count-2,
     .dash-summary-grid.count-4,
     .dash-summary-grid.count-5,
     .dash-summary-grid.count-6,

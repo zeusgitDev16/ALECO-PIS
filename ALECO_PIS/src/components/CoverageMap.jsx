@@ -20,7 +20,6 @@ const getStatusIcon = (status) => {
     else if (statusLower === 'unresolved') colorClass = 'pin-red';
     else if (statusLower === 'nofaultfound') colorClass = 'pin-yellow';
     else if (statusLower === 'accessdenied') colorClass = 'pin-red';
-    else if (statusLower === 'onhold') colorClass = 'pin-gray';
 
     return L.divIcon({
         className: 'custom-status-icon',

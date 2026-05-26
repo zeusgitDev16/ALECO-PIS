@@ -281,7 +281,6 @@
 
 .btn-bulk-action.btn-group:hover {
     background: rgba(76, 175, 80, 1);
-    transform: translateY(-1px);
 }
 
 .btn-bulk-action.btn-resolve {
@@ -291,7 +290,6 @@
 
 .btn-bulk-action.btn-resolve:hover {
     background: rgba(33, 150, 243, 1);
-    transform: translateY(-1px);
 }
 
 .btn-bulk-action.btn-cancel {
@@ -299,24 +297,38 @@
     color: white;
     padding: 5px 8px;
     min-width: 24px;
+    opacity: 1;
+    visibility: visible;
+    transition: none;
 }
 
 .btn-bulk-action.btn-cancel:hover {
-    background: rgba(239, 68, 68, 1);
-    transform: translateY(-1px);
+    background: rgba(239, 68, 68, 1) !important;
+    color: white !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transition: none;
 }
 
 /* Light mode button adjustments */
 [data-theme="light"] .btn-bulk-action.btn-group {
     background: rgba(76, 175, 80, 1);
+    color: white;
 }
 
 [data-theme="light"] .btn-bulk-action.btn-resolve {
     background: rgba(33, 150, 243, 1);
+    color: white;
 }
 
 [data-theme="light"] .btn-bulk-action.btn-cancel {
     background: rgba(239, 68, 68, 1);
+    color: white;
+}
+
+[data-theme="light"] .btn-bulk-action.btn-cancel:hover {
+    background: rgba(239, 68, 68, 1) !important;
+    color: white !important;
 }
 
 /* =========================================

@@ -42,7 +42,7 @@ router.get('/filtered-tickets', requireStaff, async (req, res) => {
 
         // --- Status Tabs ---
         if (tab === 'Open') {
-            query += ` AND (t.status IN ('Pending', 'Ongoing', 'Unresolved', 'OnHold') OR t.status IS NULL OR t.status = '')`;
+            query += ` AND (t.status IN ('Pending', 'Ongoing', 'Unresolved') OR t.status IS NULL OR t.status = '')`;
         } else if (tab === 'Closed') {
             query += ` AND t.status IN ('Restored', 'NoFaultFound', 'AccessDenied')`;
         }
@@ -141,7 +141,6 @@ router.get('/tickets/dashboard-stats', requireStaff, async (req, res) => {
                 COUNT(*) AS total,
                 SUM(status = 'Pending') AS pending,
                 SUM(status = 'Ongoing') AS ongoing,
-                SUM(status = 'OnHold') AS onhold,
                 SUM(status IN ('Restored', 'Resolved')) AS resolved,
                 SUM(status = 'Unresolved') AS unresolved,
                 SUM(status = 'NoFaultFound') AS nofault,

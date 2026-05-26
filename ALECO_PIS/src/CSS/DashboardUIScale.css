@@ -190,8 +190,12 @@
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  /* Force 3 columns for Memo and User summary cards on mobile */
-  .memo-summary-grid,
+  /* Force 2 columns for Memo summary cards on mobile (6 cards) */
+  .memo-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Force 3 columns for User summary cards on mobile (3 cards) */
   .user-summary-grid {
     grid-template-columns: repeat(3, 1fr) !important;
   }

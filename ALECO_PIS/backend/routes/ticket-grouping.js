@@ -593,7 +593,9 @@ router.put('/tickets/group/:mainTicketId/status', requireStaff, async (req, res)
         await connection.beginTransaction();
 
         const { mainTicketId } = req.params;
-        const { status } = req.body;
+        const { status, referred_to, accomplished_by } = req.body;
+        // Accept both field names for compatibility with TicketDetailPane (sends `remarks`) and BulkResolveModal (sends `resolution_remarks`)
+        const resolution_remarks = req.body.resolution_remarks || req.body.remarks || null;
 
         // Match the actual enum values in the database
         if (!['Pending', 'Ongoing', 'OnHold', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(status)) {
@@ -627,11 +629,22 @@ router.put('/tickets/group/:mainTicketId/status', requireStaff, async (req, res)
             }
         }
 
-        // Update the master ticket status
-        await connection.execute(
-            `UPDATE aleco_tickets SET status = ? WHERE ticket_id = ?`,
-            [status, mainTicketId]
-        );
+        // Resolution statuses that include accountability fields
+        const resolutionStatuses = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
+        const isResolution = resolutionStatuses.includes(status);
+
+        // Build master update query - include accountability fields for resolution statuses
+        if (isResolution && (resolution_remarks || referred_to || accomplished_by)) {
+            await connection.execute(
+                `UPDATE aleco_tickets SET status = ?, resolution_remarks = ?, referred_to = ?, accomplished_by = ? WHERE ticket_id = ?`,
+                [status, resolution_remarks || null, referred_to || null, accomplished_by || null, mainTicketId]
+            );
+        } else {
+            await connection.execute(
+                `UPDATE aleco_tickets SET status = ? WHERE ticket_id = ?`,
+                [status, mainTicketId]
+            );
+        }
 
         // Get all child tickets
         const [members] = await connection.execute(
@@ -639,16 +652,99 @@ router.put('/tickets/group/:mainTicketId/status', requireStaff, async (req, res)
             [mainTicketId]
         );
 
-        // Update all child tickets to the same status
+        // Update all child tickets to the same status (and accountability fields for resolution)
         const allTicketIds = [mainTicketId, ...members.map(m => m.ticket_id)];
         if (members.length > 0) {
             const ticketIds = members.map(m => m.ticket_id);
             const placeholders = ticketIds.map(() => '?').join(', ');
 
-            await connection.execute(
-                `UPDATE aleco_tickets SET status = ? WHERE ticket_id IN (${placeholders})`,
-                [status, ...ticketIds]
+            if (isResolution && (resolution_remarks || referred_to || accomplished_by)) {
+                await connection.execute(
+                    `UPDATE aleco_tickets SET status = ?, resolution_remarks = ?, referred_to = ?, accomplished_by = ? WHERE ticket_id IN (${placeholders})`,
+                    [status, resolution_remarks || null, referred_to || null, accomplished_by || null, ...ticketIds]
+                );
+            } else {
+                await connection.execute(
+                    `UPDATE aleco_tickets SET status = ? WHERE ticket_id IN (${placeholders})`,
+                    [status, ...ticketIds]
+                );
+            }
+        }
+
+        // Sync with service memo for the master ticket (children inherit via parent reference)
+        if (isResolution) {
+            const statusToMemoStatus = {
+                'Restored': 'resolved',
+                'Unresolved': 'unresolved',
+                'NoFaultFound': 'nofaultfound',
+                'AccessDenied': 'accessdenied'
+            };
+            const targetMemoStatus = statusToMemoStatus[status];
+
+            const [memoRows] = await connection.execute(
+                `SELECT id, work_performed, memo_status FROM aleco_service_memos WHERE ticket_id = ? LIMIT 1`,
+                [mainTicketId]
             );
+
+            if (memoRows.length > 0) {
+                const memo = memoRows[0];
+                const closedMemoStatuses = ['resolved', 'unresolved', 'nofaultfound', 'accessdenied', 'closed'];
+                const isMemoClosed = closedMemoStatuses.includes(memo.memo_status);
+
+                // Append remarks to memo work_performed if not closed
+                if (!isMemoClosed && resolution_remarks) {
+                    const currentWorkPerformed = memo.work_performed || '';
+                    const newRemarks = resolution_remarks.trim();
+                    const lastRemarkBlock = currentWorkPerformed.split('\n\n').pop().trim();
+
+                    if (lastRemarkBlock !== newRemarks) {
+                        const updatedWorkPerformed = currentWorkPerformed
+                            ? `${currentWorkPerformed}\n\n${newRemarks}`
+                            : newRemarks;
+
+                        const updateFields = ['work_performed = ?'];
+                        const updateValues = [updatedWorkPerformed];
+
+                        if (referred_to) {
+                            updateFields.push('referred_to = ?');
+                            updateValues.push(referred_to);
+                        }
+                        if (accomplished_by) {
+                            updateFields.push('closed_by = ?');
+                            updateValues.push(accomplished_by);
+                        }
+                        updateValues.push(memo.id);
+
+                        await connection.execute(
+                            `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE id = ?`,
+                            updateValues
+                        );
+                    }
+                }
+
+                // Sync memo_status with ticket status if not closed
+                if (targetMemoStatus && !isMemoClosed) {
+                    const allowedTransitions = {
+                        'saved': ['deployed', 'resolved', 'unresolved', 'nofaultfound', 'accessdenied'],
+                        'deployed': ['resolved', 'unresolved', 'nofaultfound', 'accessdenied'],
+                        'resolved': ['unresolved', 'nofaultfound', 'accessdenied'],
+                        'unresolved': ['resolved', 'nofaultfound', 'accessdenied'],
+                        'nofaultfound': ['resolved', 'unresolved', 'accessdenied'],
+                        'accessdenied': ['resolved', 'unresolved', 'nofaultfound'],
+                        'closed': []
+                    };
+
+                    const allowedFromCurrent = allowedTransitions[memo.memo_status] || [];
+                    if (allowedFromCurrent.includes(targetMemoStatus)) {
+                        await connection.execute(
+                            `UPDATE aleco_service_memos SET memo_status = ? WHERE id = ?`,
+                            [targetMemoStatus, memo.id]
+                        );
+                    } else {
+                        console.warn(`⚠️ Group: Skipped memo status sync for ${mainTicketId}: ${memo.memo_status} → ${targetMemoStatus} not allowed`);
+                    }
+                }
+            }
         }
 
         await connection.commit();
@@ -924,66 +1020,270 @@ router.put('/tickets/group/:mainTicketId/resume-hold', requireStaff, async (req,
 });
 
 /**
- * BULK RESTORE TICKETS
- * Marks multiple tickets as Restored (using correct enum value)
- * PUT /api/tickets/bulk/restore
+ * BULK UPDATE TICKET STATUS
+ * Updates multiple tickets with individual status, remarks, and other fields
+ * PUT /api/tickets/bulk/status
+ * 
+ * Payload format:
+ * {
+ *   tickets: [
+ *     { ticket_id: "T-123", status: "Restored", resolution_remarks: "...", referred_to: "...", accomplished_by: "..." },
+ *     ...
+ *   ],
+ *   actor_email: "..."
+ * }
  */
-router.put('/tickets/bulk/restore', requireStaff, async (req, res) => {
+router.put('/tickets/bulk/status', requireStaff, async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        const { ticketIds } = req.body;
+        const { tickets } = req.body;
 
-        if (!ticketIds || ticketIds.length === 0) {
+        if (!Array.isArray(tickets) || tickets.length === 0) {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: 'No tickets provided'
             });
         }
 
+        // ✅ HARDENING: Valid status enum (only resolution statuses for bulk update)
+        const ALLOWED_BULK_STATUSES = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
+
+        // ✅ HARDENING: Dedupe by ticket_id (last write wins for any duplicates)
+        const dedupedTickets = Array.from(
+            new Map(tickets.map(t => [t.ticket_id, t])).values()
+        );
+
+        // ✅ HARDENING: Validate every ticket up-front before touching DB
+        for (const ticket of dedupedTickets) {
+            if (!ticket.ticket_id || typeof ticket.ticket_id !== 'string') {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Each ticket must have a valid ticket_id'
+                });
+            }
+            // Reject group-prefixed IDs (they must go through /tickets/group/:mainTicketId/status)
+            if (ticket.ticket_id.startsWith('GROUP-')) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: `Ticket ${ticket.ticket_id} is a group master. Use the group status endpoint instead.`
+                });
+            }
+            if (!ALLOWED_BULK_STATUSES.includes(ticket.status)) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid status "${ticket.status}" for ticket ${ticket.ticket_id}. Allowed: ${ALLOWED_BULK_STATUSES.join(', ')}`
+                });
+            }
+            if (!ticket.resolution_remarks || !String(ticket.resolution_remarks).trim()) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: `Resolution remarks are required for ticket ${ticket.ticket_id}`
+                });
+            }
+        }
+
+        const ticketIds = dedupedTickets.map(t => t.ticket_id);
         const placeholders = ticketIds.map(() => '?').join(', ');
 
+        // ✅ HARDENING: Check that all tickets actually exist before updating
         const [statusRows] = await connection.execute(
             `SELECT ticket_id, status FROM aleco_tickets WHERE ticket_id IN (${placeholders})`,
             ticketIds
         );
         const statusMap = Object.fromEntries(statusRows.map(r => [r.ticket_id, r.status]));
 
-        // Use 'Restored' instead of 'Resolved' to match the enum
-        await connection.execute(
-            `UPDATE aleco_tickets SET status = 'Restored' WHERE ticket_id IN (${placeholders})`,
-            ticketIds
-        );
-
-        await connection.commit();
-
-        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
-        const actorName = req.body.actor_name || req.headers['x-user-name'];
-        for (const tid of ticketIds) {
-            await insertTicketLog(pool, {
-                ticket_id: tid,
-                action: 'bulk_restore',
-                from_status: statusMap[tid] || null,
-                to_status: 'Restored',
-                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
-                actor_email: actorEmail || null,
-                actor_name: actorName || 'System',
-                metadata: { bulk: true }
+        const missingTickets = ticketIds.filter(id => !(id in statusMap));
+        if (missingTickets.length > 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: `Ticket(s) not found: ${missingTickets.join(', ')}`,
+                missing: missingTickets
             });
         }
 
-        console.log(`✅ BULK RESTORE: ${ticketIds.length} tickets marked as Restored`);
+        // ✅ HARDENING: Normalize tickets array to deduped + trimmed copy used downstream
+        const normalizedTickets = dedupedTickets.map(t => ({
+            ticket_id: t.ticket_id,
+            status: t.status,
+            resolution_remarks: String(t.resolution_remarks).trim(),
+            referred_to: t.referred_to ? String(t.referred_to).trim() || null : null,
+            accomplished_by: t.accomplished_by ? String(t.accomplished_by).trim() || null : null,
+        }));
+
+        // Resolution statuses that sync with service memos
+        const resolutionStatuses = ['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'];
+        const statusToMemoStatus = {
+            'Restored': 'resolved',
+            'Unresolved': 'unresolved',
+            'NoFaultFound': 'nofaultfound',
+            'AccessDenied': 'accessdenied'
+        };
+
+        // Track which tickets had memo sync skipped (for reporting)
+        const memoSyncSkipped = [];
+
+        // Update each ticket individually with its status and remarks
+        for (const ticket of normalizedTickets) {
+            const [updateResult] = await connection.execute(
+                `UPDATE aleco_tickets SET status = ?, resolution_remarks = ?, referred_to = ?, accomplished_by = ? WHERE ticket_id = ?`,
+                [ticket.status, ticket.resolution_remarks, ticket.referred_to, ticket.accomplished_by, ticket.ticket_id]
+            );
+
+            // ✅ HARDENING: Defensive check — every ticket should have been confirmed to exist above
+            if (updateResult.affectedRows === 0) {
+                await connection.rollback();
+                return res.status(404).json({
+                    success: false,
+                    message: `Ticket ${ticket.ticket_id} could not be updated (possibly deleted concurrently).`
+                });
+            }
+
+            // Sync with service memo if ticket has one and status is a resolution status
+            if (resolutionStatuses.includes(ticket.status)) {
+                const [memoRows] = await connection.execute(
+                    `SELECT id, work_performed, memo_status FROM aleco_service_memos WHERE ticket_id = ? LIMIT 1`,
+                    [ticket.ticket_id]
+                );
+
+                if (memoRows.length > 0) {
+                    const memo = memoRows[0];
+                    const targetMemoStatus = statusToMemoStatus[ticket.status];
+
+                    // Check if memo is already closed
+                    const closedMemoStatuses = ['resolved', 'unresolved', 'nofaultfound', 'accessdenied', 'closed'];
+                    const isMemoClosed = closedMemoStatuses.includes(memo.memo_status);
+
+                    // Auto-fill work_performed if memo is not closed (mirrors single-ticket logic)
+                    if (!isMemoClosed && ticket.resolution_remarks) {
+                        const currentWorkPerformed = memo.work_performed || '';
+                        const newRemarks = ticket.resolution_remarks;
+
+                        // Use same duplicate detection as single-ticket: split by \n\n, check last block
+                        const lastRemarkBlock = currentWorkPerformed.split('\n\n').pop().trim();
+                        const isDuplicate = lastRemarkBlock === newRemarks;
+
+                        if (!isDuplicate) {
+                            const updatedWorkPerformed = currentWorkPerformed
+                                ? `${currentWorkPerformed}\n\n${newRemarks}`
+                                : newRemarks;
+
+                            // Build update with optional referred_to and accomplished_by → closed_by
+                            const updateFields = ['work_performed = ?'];
+                            const updateValues = [updatedWorkPerformed];
+
+                            if (ticket.referred_to) {
+                                updateFields.push('referred_to = ?');
+                                updateValues.push(ticket.referred_to);
+                            }
+
+                            if (ticket.accomplished_by) {
+                                updateFields.push('closed_by = ?');
+                                updateValues.push(ticket.accomplished_by);
+                            }
+
+                            updateValues.push(memo.id);
+
+                            await connection.execute(
+                                `UPDATE aleco_service_memos SET ${updateFields.join(', ')} WHERE id = ?`,
+                                updateValues
+                            );
+                        }
+                    } else if (isMemoClosed) {
+                        // ✅ HARDENING: Surface skipped memo updates for closed memos
+                        memoSyncSkipped.push({
+                            ticket_id: ticket.ticket_id,
+                            from: memo.memo_status,
+                            to: targetMemoStatus,
+                            reason: 'memo_already_closed'
+                        });
+                    }
+
+                    // Sync memo_status with ticket status if not already closed
+                    if (targetMemoStatus && !isMemoClosed) {
+                        const allowedTransitions = {
+                            'saved': ['deployed', 'resolved', 'unresolved', 'nofaultfound', 'accessdenied'],
+                            'deployed': ['resolved', 'unresolved', 'nofaultfound', 'accessdenied'],
+                            'resolved': ['unresolved', 'nofaultfound', 'accessdenied'],
+                            'unresolved': ['resolved', 'nofaultfound', 'accessdenied'],
+                            'nofaultfound': ['resolved', 'unresolved', 'accessdenied'],
+                            'accessdenied': ['resolved', 'unresolved', 'nofaultfound'],
+                            'closed': []
+                        };
+
+                        const allowedFromCurrent = allowedTransitions[memo.memo_status] || [];
+                        if (allowedFromCurrent.includes(targetMemoStatus)) {
+                            await connection.execute(
+                                `UPDATE aleco_service_memos SET memo_status = ? WHERE id = ?`,
+                                [targetMemoStatus, memo.id]
+                            );
+                        } else {
+                            // Log skipped sync for visibility (bulk should not fail entire batch)
+                            memoSyncSkipped.push({
+                                ticket_id: ticket.ticket_id,
+                                from: memo.memo_status,
+                                to: targetMemoStatus,
+                                reason: 'invalid_transition'
+                            });
+                            console.warn(`⚠️ Bulk: Skipped memo status sync for ${ticket.ticket_id}: ${memo.memo_status} → ${targetMemoStatus} not allowed`);
+                        }
+                    }
+                }
+            }
+        }
+
+        await connection.commit();
+
+        // Sync crew status after commit (mirrors single-ticket flow)
+        for (const ticket of normalizedTickets) {
+            try {
+                await syncCrewStatusByTicketId(ticket.ticket_id);
+            } catch (crewErr) {
+                console.error(`⚠️ Crew sync failed for ${ticket.ticket_id}:`, crewErr.message);
+            }
+        }
+
+        const actorEmail = req.body.actor_email || req.headers['x-user-email'];
+        const actorName = req.body.actor_name || req.headers['x-user-name'];
+
+        for (const ticket of normalizedTickets) {
+            await insertTicketLog(pool, {
+                ticket_id: ticket.ticket_id,
+                action: 'bulk_status_update',
+                from_status: statusMap[ticket.ticket_id] || null,
+                to_status: ticket.status,
+                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                actor_email: actorEmail || null,
+                actor_name: actorName || 'System',
+                metadata: {
+                    bulk: true,
+                    resolution_remarks: ticket.resolution_remarks,
+                    referred_to: ticket.referred_to,
+                    accomplished_by: ticket.accomplished_by
+                }
+            });
+        }
+
+        console.log(`✅ BULK STATUS UPDATE: ${normalizedTickets.length} tickets updated with individual status and remarks`);
 
         res.json({
             success: true,
-            message: `${ticketIds.length} tickets marked as Restored`
+            message: `${normalizedTickets.length} ticket(s) status updated`,
+            updated: normalizedTickets.length,
+            memoSyncSkipped: memoSyncSkipped.length > 0 ? memoSyncSkipped : undefined
         });
 
     } catch (error) {
         await connection.rollback();
-        console.error("❌ Error bulk restoring tickets:", error);
+        console.error("❌ Error bulk updating ticket status:", error);
         res.status(500).json({ success: false, message: error.message });
     } finally {
         connection.release();

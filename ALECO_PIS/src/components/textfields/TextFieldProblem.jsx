@@ -16,11 +16,11 @@ const TextFieldProblem = ({ id, label, value, onChange, filterType, maxLength, p
             }
             val = val.replace(/[^0-9]/g, '');
         } else if (filterType === 'name') {
-            if (/[^a-zA-Z\s]/.test(val)) {
+            if (/[^a-zA-Z\s.]/.test(val)) {
                 setHasError(true);
                 setTimeout(() => setHasError(false), 1500);
             }
-            val = val.replace(/[^a-zA-Z\s]/g, '');
+            val = val.replace(/[^a-zA-Z\s.]/g, '');
             val = val.replace(/\b\w/g, (char) => char.toUpperCase());
         }
 

@@ -38,6 +38,7 @@ import TicketKanbanView from './tickets/TicketKanbanView';
 import ConfirmModal from './tickets/ConfirmModal';
 import UrgentKeywordsPanel from './tickets/UrgentKeywordsPanel';
 import ManualTicketModal from './tickets/ManualTicketModal';
+import BulkResolveModal from './tickets/BulkResolveModal';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 
@@ -47,6 +48,7 @@ const AdminTickets = () => {
     const [viewMode, setViewMode] = useState('card');
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+    const [isBulkResolveModalOpen, setIsBulkResolveModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [isMapOpen, setIsMapOpen] = useState(false);
     const [mapTickets, setMapTickets] = useState([]);
@@ -66,6 +68,17 @@ const AdminTickets = () => {
         return 'regular';
     });
     const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedTickets();
+
+    // Clear bulk resolve draft when selection is cleared (X button clicked)
+    useEffect(() => {
+        if (selectedIds.length === 0) {
+            try {
+                localStorage.removeItem('bulkResolveDrafts');
+            } catch (e) {
+                console.error('Failed to clear bulk resolve draft:', e);
+            }
+        }
+    }, [selectedIds]);
 
     const urgentTickets = useMemo(() =>
         (tickets || []).filter(t => t.is_urgent === 1 || t.is_urgent === true),
@@ -493,60 +506,7 @@ const AdminTickets = () => {
             toast.warning('No tickets selected');
             return;
         }
-        setConfirmState({ open: true, type: 'bulkRestore', payload: null });
-    };
-
-    const executeBulkResolve = async () => {
-        try {
-            const groupMasters = selectedIds.filter(id => id?.startsWith('GROUP-'));
-            const regularTickets = selectedIds.filter(id => !id?.startsWith('GROUP-'));
-
-            for (const mainTicketId of groupMasters) {
-                const snapshot = (tickets || []).find((t) => t.ticket_id === mainTicketId);
-                const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/status`), {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'Restored', ...getActor(), expected_updated_at: snapshot?.updated_at ?? null })
-                });
-                const data = await response.json();
-                if (response.status === 409) {
-                    toast.warning(data.message || `Group ${mainTicketId} was updated by someone else. Reloading latest data.`);
-                    refetch();
-                    return;
-                }
-                if (!response.ok || !data.success) {
-                    toast.error(`Failed to restore group ${mainTicketId}: ${data.message}`);
-                    return;
-                }
-            }
-
-            if (regularTickets.length > 0) {
-                const response = await authFetch(apiUrl('/api/tickets/bulk/restore'), {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ticketIds: regularTickets, ...getActor() })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    toast.error(`Failed: ${data.message}`);
-                    return;
-                }
-            }
-
-            toast.success(`${groupMasters.length + regularTickets.length} ticket(s) marked as Restored.`);
-            setSelectedIds([]);
-            refetch();
-        } catch (error) {
-            console.error('❌ Error bulk restoring tickets:', error);
-            toast.error('Failed to restore tickets. Please try again.');
-        }
-        setConfirmState({ open: false, type: null, payload: null });
-    };
-
-    const handleConfirmBulkRestore = () => {
-        executeBulkResolve();
+        setIsBulkResolveModalOpen(true);
     };
 
     const barRef = useRef(null);
@@ -814,7 +774,7 @@ const AdminTickets = () => {
                                 className="btn-bulk-action btn-resolve"
                                 onClick={() => handleBulkResolve()}
                             >
-                                Restore
+                                Update Status
                             </button>
                             <button
                                 className="btn-bulk-action btn-cancel"
@@ -834,17 +794,13 @@ const AdminTickets = () => {
                 tickets={mapTickets}
             />
 
-            {confirmState.type === 'bulkRestore' && (
-                <ConfirmModal
-                    isOpen={confirmState.open}
-                    onClose={() => setConfirmState({ open: false, type: null, payload: null })}
-                    onConfirm={handleConfirmBulkRestore}
-                    title="Bulk Restore"
-                    message={`Mark ${selectedIds.length} ticket(s) as Restored?`}
-                    confirmLabel="Restore"
-                    cancelLabel="Cancel"
-                />
-            )}
+            <BulkResolveModal
+                isOpen={isBulkResolveModalOpen}
+                onClose={() => setIsBulkResolveModalOpen(false)}
+                selectedIds={selectedIds}
+                tickets={tickets}
+                onRefetch={refetch}
+            />
 
             <TicketFilterDrawer
                 isOpen={filterDrawerOpen}

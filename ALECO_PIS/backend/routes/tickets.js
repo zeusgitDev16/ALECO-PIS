@@ -1662,7 +1662,9 @@ router.get('/tickets/:ticketId/logs', requireStaff, async (req, res) => {
 // MANUAL STATUS UPDATE ROUTE (For Resolved/Unresolved)
 // Standard path: PUT /api/tickets/:ticketId/status
 // ============================================================================
-const statusUpdateHandler = async (req, res) => {
+const statusUpdateHandler = async (req, res, next) => {
+    if (req.params.ticketId === 'bulk') return next();
+
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
@@ -1721,13 +1723,19 @@ const statusUpdateHandler = async (req, res) => {
             });
         }
 
-        // Update the database
+        // Update the database — also persist resolution fields when provided
+        const resolutionFields = [];
+        const resolutionValues = [status];
+        if (req.body.remarks)         { resolutionFields.push('resolution_remarks = ?'); resolutionValues.push(String(req.body.remarks).trim()); }
+        if (req.body.referred_to)     { resolutionFields.push('referred_to = ?');        resolutionValues.push(String(req.body.referred_to).trim()); }
+        if (req.body.accomplished_by) { resolutionFields.push('accomplished_by = ?');    resolutionValues.push(String(req.body.accomplished_by).trim()); }
+
         const updateQuery = `
             UPDATE aleco_tickets
-            SET status = ?
+            SET status = ?${resolutionFields.length ? ', ' + resolutionFields.join(', ') : ''}
             WHERE ${optimistic.whereSql}
         `;
-        const [dbResult] = await connection.execute(updateQuery, [status, ...optimistic.whereParams]);
+        const [dbResult] = await connection.execute(updateQuery, [...resolutionValues, ...optimistic.whereParams]);
 
         if (dbResult.affectedRows > 0) {
             const actorEmail = req.body.actor_email || req.headers['x-user-email'];

@@ -193,11 +193,12 @@ const ServiceMemos = () => {
       id: m.id,
       control_number: m.control_number,
       ticket_id: m.ticket_id,
+      updated_at: m.updated_at,
     });
   };
 
   const handleConfirmDeleteFromList = () => {
-    if (deleteTarget?.id != null) void deleteMemo(deleteTarget.id);
+    if (deleteTarget?.id != null) void deleteMemo(deleteTarget.id, deleteTarget.updated_at);
   };
 
   if (activeMemoId) {
@@ -228,11 +229,14 @@ const ServiceMemos = () => {
           onSwitchToEdit={() => setDetailMode('update')}
           onReopenMemo={async (memoId) => {
             const { reopenServiceMemo } = await import('../api/serviceMemosApi');
-            const result = await reopenServiceMemo(memoId);
+            const result = await reopenServiceMemo(memoId, detailMemo.updated_at);
             if (result.success) {
               setMessage({ type: 'ok', text: 'Service memo reopened successfully.' });
               fetchList();
               handleBackFromDetail();
+            } else if (result.status === 409) {
+              setMessage({ type: 'err', text: result.message || 'This memo was updated by another user. Reloading...' });
+              fetchList();
             } else {
               setMessage({ type: 'err', text: result.message || 'Failed to reopen memo.' });
             }

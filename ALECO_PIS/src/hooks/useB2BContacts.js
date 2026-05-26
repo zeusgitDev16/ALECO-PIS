@@ -91,7 +91,13 @@ export function useB2BContacts() {
 
   const updateContact = useCallback(async (data) => {
     setSaving(true);
-    const r = await updateB2BContact(data.id, data);
+    const r = await updateB2BContact(data.id, data, data.updated_at);
+    if (r.status === 409) {
+      setMessage({ type: 'err', text: r.message || 'This contact was updated by another user. Reloading...' });
+      await loadContacts();
+      setSaving(false);
+      return r;
+    }
     if (r.success) {
       setMessage({ type: 'ok', text: 'Contact updated successfully' });
       await loadContacts();
@@ -122,9 +128,15 @@ export function useB2BContacts() {
     return r;
   }, [loadContacts]);
 
-  const sendVerification = useCallback(async (id) => {
+  const sendVerification = useCallback(async (id, updatedAt = null) => {
     setSaving(true);
-    const r = await sendB2BContactVerification(id);
+    const r = await sendB2BContactVerification(id, updatedAt);
+    if (r.status === 409) {
+      setMessage({ type: 'err', text: r.message || 'This contact was updated by another user. Reloading...' });
+      await loadContacts();
+      setSaving(false);
+      return r;
+    }
     if (r.success) {
       setMessage({ type: 'ok', text: 'Verification email sent' });
       await loadContacts();
@@ -142,7 +154,8 @@ export function useB2BContacts() {
     let failCount = 0;
     
     for (const id of ids) {
-      const r = await sendB2BContactVerification(id);
+      const contact = contacts.find(c => Number(c.id) === Number(id));
+      const r = await sendB2BContactVerification(id, contact?.updated_at);
       if (r.success) successCount++;
       else failCount++;
     }
@@ -154,7 +167,7 @@ export function useB2BContacts() {
     
     await loadContacts();
     setSaving(false);
-  }, [loadContacts]);
+  }, [contacts, loadContacts]);
 
   const bulkToggleActive = useCallback(async (ids) => {
     setSaving(true);

@@ -882,6 +882,7 @@ router.put('/tickets/bulk/status', requireStaff, async (req, res) => {
             resolution_remarks: String(t.resolution_remarks).trim(),
             referred_to: t.referred_to ? String(t.referred_to).trim() || null : null,
             accomplished_by: t.accomplished_by ? String(t.accomplished_by).trim() || null : null,
+            expected_updated_at: t.expected_updated_at || null,
         }));
 
         // Resolution statuses that sync with service memos
@@ -895,12 +896,43 @@ router.put('/tickets/bulk/status', requireStaff, async (req, res) => {
 
         // Track which tickets had memo sync skipped (for reporting)
         const memoSyncSkipped = [];
+        
+        // Track conflicts for concurrency control
+        const conflicts = [];
+        const successfullyUpdated = [];
 
         // Update each ticket individually with its status and remarks
         for (const ticket of normalizedTickets) {
+            // ✅ CONCURRENCY CONTROL: Use buildOptimisticWhere for version checking
+            const optimistic = await buildOptimisticWhere(connection, {
+                table: 'aleco_tickets',
+                idCol: 'ticket_id',
+                idValue: ticket.ticket_id,
+                selectCols: ['status'],
+                expectedUpdatedAt: ticket.expected_updated_at
+            });
+
+            if (optimistic.missing) {
+                await connection.rollback();
+                return res.status(404).json({
+                    success: false,
+                    message: `Ticket ${ticket.ticket_id} not found (possibly deleted concurrently).`
+                });
+            }
+
+            if (optimistic.conflict) {
+                // Version mismatch - record conflict and skip this ticket
+                conflicts.push({
+                    ticket_id: ticket.ticket_id,
+                    expected_updated_at: ticket.expected_updated_at,
+                    actual_updated_at: optimistic.latest.updated_at
+                });
+                continue;
+            }
+            
             const [updateResult] = await connection.execute(
-                `UPDATE aleco_tickets SET status = ?, resolution_remarks = ?, referred_to = ?, accomplished_by = ? WHERE ticket_id = ?`,
-                [ticket.status, ticket.resolution_remarks, ticket.referred_to, ticket.accomplished_by, ticket.ticket_id]
+                `UPDATE aleco_tickets SET status = ?, resolution_remarks = ?, referred_to = ?, accomplished_by = ? WHERE ${optimistic.whereSql}`,
+                [ticket.status, ticket.resolution_remarks, ticket.referred_to, ticket.accomplished_by, ...optimistic.whereParams]
             );
 
             // ✅ HARDENING: Defensive check — every ticket should have been confirmed to exist above
@@ -911,6 +943,8 @@ router.put('/tickets/bulk/status', requireStaff, async (req, res) => {
                     message: `Ticket ${ticket.ticket_id} could not be updated (possibly deleted concurrently).`
                 });
             }
+            
+            successfullyUpdated.push(ticket.ticket_id);
 
             // Sync with service memo if ticket has one and status is a resolution status
             if (resolutionStatuses.includes(ticket.status)) {
@@ -1007,19 +1041,35 @@ router.put('/tickets/bulk/status', requireStaff, async (req, res) => {
 
         await connection.commit();
 
+        // ✅ CONCURRENCY CONTROL: Return 409 if there were conflicts
+        if (conflicts.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: `Some tickets were modified by another user`,
+                conflicts: conflicts,
+                updated: successfullyUpdated,
+                memoSyncSkipped: memoSyncSkipped.length > 0 ? memoSyncSkipped : undefined
+            });
+        }
+
         // Sync crew status after commit (mirrors single-ticket flow)
-        for (const ticket of normalizedTickets) {
+        // Only sync for successfully updated tickets
+        for (const ticketId of successfullyUpdated) {
             try {
-                await syncCrewStatusByTicketId(ticket.ticket_id);
+                await syncCrewStatusByTicketId(ticketId);
             } catch (crewErr) {
-                console.error(`⚠️ Crew sync failed for ${ticket.ticket_id}:`, crewErr.message);
+                console.error(`⚠️ Crew sync failed for ${ticketId}:`, crewErr.message);
             }
         }
 
         const actorEmail = req.body.actor_email || req.headers['x-user-email'];
         const actorName = req.body.actor_name || req.headers['x-user-name'];
 
+        // Log only successfully updated tickets
         for (const ticket of normalizedTickets) {
+            if (!successfullyUpdated.includes(ticket.ticket_id)) {
+                continue; // Skip conflicted tickets
+            }
             await insertTicketLog(pool, {
                 ticket_id: ticket.ticket_id,
                 action: 'bulk_status_update',
@@ -1037,12 +1087,12 @@ router.put('/tickets/bulk/status', requireStaff, async (req, res) => {
             });
         }
 
-        console.log(`✅ BULK STATUS UPDATE: ${normalizedTickets.length} tickets updated with individual status and remarks`);
+        console.log(`✅ BULK STATUS UPDATE: ${successfullyUpdated.length} tickets updated with individual status and remarks`);
 
         res.json({
             success: true,
-            message: `${normalizedTickets.length} ticket(s) status updated`,
-            updated: normalizedTickets.length,
+            message: `${successfullyUpdated.length} ticket(s) status updated`,
+            updated: successfullyUpdated.length,
             memoSyncSkipped: memoSyncSkipped.length > 0 ? memoSyncSkipped : undefined
         });
 

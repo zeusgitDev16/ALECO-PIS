@@ -301,13 +301,17 @@ const BulkResolveModal = ({ isOpen, onClose, selectedIds, tickets, onRefetch }) 
 
             // Handle regular tickets with individual data
             if (regularTickets.length > 0) {
-                const payload = regularTickets.map(ticketId => ({
-                    ticket_id: ticketId,
-                    status: finalStatusData[ticketId],
-                    resolution_remarks: finalRemarksData[ticketId],
-                    referred_to: finalReferredToData[ticketId],
-                    accomplished_by: finalAccomplishedByData[ticketId]
-                }));
+                const payload = regularTickets.map(ticketId => {
+                    const ticket = (tickets || []).find(t => t.ticket_id === ticketId);
+                    return {
+                        ticket_id: ticketId,
+                        status: finalStatusData[ticketId],
+                        resolution_remarks: finalRemarksData[ticketId],
+                        referred_to: finalReferredToData[ticketId],
+                        accomplished_by: finalAccomplishedByData[ticketId],
+                        expected_updated_at: ticket?.updated_at ?? null
+                    };
+                });
 
                 const response = await authFetch(apiUrl('/api/tickets/bulk/status'), {
                     method: 'PUT',
@@ -319,6 +323,30 @@ const BulkResolveModal = ({ isOpen, onClose, selectedIds, tickets, onRefetch }) 
                 });
 
                 const data = await response.json();
+                
+                // Handle 409 Conflict - some tickets were modified by another user
+                if (response.status === 409) {
+                    const conflictIds = data.conflicts?.map(c => c.ticket_id).join(', ') || 'unknown';
+                    const updatedCount = data.updated?.length || 0;
+                    const conflictCount = data.conflicts?.length || 0;
+                    
+                    if (updatedCount > 0) {
+                        toast.warning(
+                            `Partial success: ${updatedCount} ticket(s) updated, ${conflictCount} skipped due to conflicts. Conflicting tickets: ${conflictIds}. Please refresh and try again.`,
+                            { autoClose: 10000 }
+                        );
+                        // Refetch to show updated state of successfully updated tickets
+                        onRefetch();
+                    } else {
+                        toast.error(
+                            `Update failed: All ${conflictCount} ticket(s) were modified by another user. Conflicting tickets: ${conflictIds}. Please refresh and try again.`,
+                            { autoClose: 10000 }
+                        );
+                    }
+                    setIsSubmitting(false);
+                    return;
+                }
+                
                 if (!response.ok || !data.success) {
                     toast.error(`Failed: ${data.message}`);
                     setIsSubmitting(false);

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { generateInterruptionPosterStub, captureInterruptionPoster } from '../api/interruptionsApi';
+import { generateInterruptionPosterStub, captureInterruptionPoster, getPosterJobStatus } from '../api/interruptionsApi';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/Buttons.css';
@@ -121,28 +121,106 @@ const AdminInterruptions = () => {
     setPosterAssetBusy(true);
     setMessage(null);
     try {
-      const r = await generateInterruptionPosterStub(editingId);
-      await applyPosterUrlFromResponse(r, 'Could not set poster stub.');
+      const expectedUpdatedAt = editDetail?.updatedAt || interruptions.find(i => i.id === editingId)?.updatedAt;
+      const r = await generateInterruptionPosterStub(editingId, { expectedUpdatedAt });
+      if (r.status === 409) {
+        setMessage({ type: 'err', text: r.message || 'This advisory was updated by another user. Reloading...' });
+        await loadEditDetail(editingId);
+        setPosterAssetBusy(false);
+        return;
+      }
+      
+      if (!r.success || !r.jobId) {
+        setMessage({ type: 'err', text: r.message || 'Failed to queue poster stub generation.' });
+        setPosterAssetBusy(false);
+        return;
+      }
+
+      // Poll for job status
+      setMessage({ type: 'ok', text: 'Poster stub generation queued. Processing...' });
+      
+      const pollInterval = setInterval(async () => {
+        const statusR = await getPosterJobStatus(r.jobId);
+        if (!statusR.success || !statusR.job) {
+          clearInterval(pollInterval);
+          setMessage({ type: 'err', text: 'Failed to check job status.' });
+          setPosterAssetBusy(false);
+          return;
+        }
+
+        const job = statusR.job;
+        
+        if (job.status === 'completed') {
+          clearInterval(pollInterval);
+          setMessage({ type: 'ok', text: 'Poster stub generated successfully.' });
+          await loadEditDetail(editingId);
+          setPosterAssetBusy(false);
+        } else if (job.status === 'failed') {
+          clearInterval(pollInterval);
+          setMessage({ type: 'err', text: job.error || 'Poster stub generation failed.' });
+          setPosterAssetBusy(false);
+        }
+        // Still pending or processing - continue polling
+      }, 2000); // Poll every 2 seconds
+
     } catch {
       setMessage({ type: 'err', text: 'Network error.' });
-    } finally {
       setPosterAssetBusy(false);
     }
-  }, [editingId, applyPosterUrlFromResponse]);
+  }, [editingId, editDetail, interruptions, loadEditDetail]);
 
   const handlePosterCapture = useCallback(async () => {
     if (!editingId) return;
     setPosterAssetBusy(true);
     setMessage(null);
     try {
-      const r = await captureInterruptionPoster(editingId);
-      await applyPosterUrlFromResponse(r, 'Poster capture failed.');
+      const expectedUpdatedAt = editDetail?.updatedAt || interruptions.find(i => i.id === editingId)?.updatedAt;
+      const r = await captureInterruptionPoster(editingId, { expectedUpdatedAt });
+      if (r.status === 409) {
+        setMessage({ type: 'err', text: r.message || 'This advisory was updated by another user. Reloading...' });
+        await loadEditDetail(editingId);
+        setPosterAssetBusy(false);
+        return;
+      }
+      
+      if (!r.success || !r.jobId) {
+        setMessage({ type: 'err', text: r.message || 'Failed to queue poster generation.' });
+        setPosterAssetBusy(false);
+        return;
+      }
+
+      // Poll for job status
+      setMessage({ type: 'ok', text: 'Poster generation queued. Processing...' });
+      
+      const pollInterval = setInterval(async () => {
+        const statusR = await getPosterJobStatus(r.jobId);
+        if (!statusR.success || !statusR.job) {
+          clearInterval(pollInterval);
+          setMessage({ type: 'err', text: 'Failed to check job status.' });
+          setPosterAssetBusy(false);
+          return;
+        }
+
+        const job = statusR.job;
+        
+        if (job.status === 'completed') {
+          clearInterval(pollInterval);
+          setMessage({ type: 'ok', text: 'Poster generated successfully.' });
+          await loadEditDetail(editingId);
+          setPosterAssetBusy(false);
+        } else if (job.status === 'failed') {
+          clearInterval(pollInterval);
+          setMessage({ type: 'err', text: job.error || 'Poster generation failed.' });
+          setPosterAssetBusy(false);
+        }
+        // Still pending or processing - continue polling
+      }, 2000); // Poll every 2 seconds
+
     } catch {
       setMessage({ type: 'err', text: 'Network error.' });
-    } finally {
       setPosterAssetBusy(false);
     }
-  }, [editingId, applyPosterUrlFromResponse]);
+  }, [editingId, editDetail, interruptions, loadEditDetail]);
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {

@@ -3,6 +3,7 @@ import {
   listB2BMessages,
   saveB2BDraft,
   sendB2BMessage,
+  retryB2BMessage,
   previewB2BRecipientsBody,
   listB2BTemplates,
 } from '../api/b2bMailApi';
@@ -72,7 +73,7 @@ export function useB2BMessages() {
     return r;
   }, [loadMessages]);
 
-  const sendMessage = useCallback(async (formData) => {
+  const sendMessage = useCallback(async (formData, messageUpdatedAt = null) => {
     setSaving(true);
     
     // First save as draft
@@ -95,7 +96,13 @@ export function useB2BMessages() {
     }
     
     // Then send
-    const sendR = await sendB2BMessage(draftR.data.id);
+    const sendR = await sendB2BMessage(draftR.data.id, messageUpdatedAt);
+    if (sendR.status === 409) {
+      setMessage({ type: 'err', text: sendR.message || 'This message was updated by another user. Reloading...' });
+      await loadMessages();
+      setSaving(false);
+      return sendR;
+    }
     if (sendR.success) {
       setMessage({ type: 'ok', text: 'Message sent successfully' });
       await loadMessages();
@@ -105,6 +112,25 @@ export function useB2BMessages() {
     
     setSaving(false);
     return sendR;
+  }, [loadMessages]);
+
+  const retryMessage = useCallback(async (messageId, messageUpdatedAt = null) => {
+    setSaving(true);
+    const r = await retryB2BMessage(messageId, messageUpdatedAt);
+    if (r.status === 409) {
+      setMessage({ type: 'err', text: r.message || 'This message was updated by another user. Reloading...' });
+      await loadMessages();
+      setSaving(false);
+      return r;
+    }
+    if (r.success) {
+      setMessage({ type: 'ok', text: 'Message retry sent successfully' });
+      await loadMessages();
+    } else {
+      setMessage({ type: 'err', text: r.message || 'Failed to retry message' });
+    }
+    setSaving(false);
+    return r;
   }, [loadMessages]);
 
   const previewRecipients = useCallback(async (formData) => {
@@ -143,6 +169,7 @@ export function useB2BMessages() {
     // Operations
     loadMessages,
     sendMessage,
+    retryMessage,
     previewRecipients,
   };
 }

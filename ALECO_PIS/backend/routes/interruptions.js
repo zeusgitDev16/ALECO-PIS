@@ -36,6 +36,7 @@ import {
   captureInterruptionPosterForAdmin,
   deleteCloudinaryAssetsForAdvisory,
 } from '../services/interruptionPosterCapture.js';
+import posterJobQueue from '../services/posterJobQueue.js';
 import { escapeHtmlAttr, shareHeadlineFromType, shareDescriptionFromDto } from '../utils/interruptionShareHtml.js';
 import {
   insertInterruptionLog,
@@ -475,7 +476,7 @@ router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
     const { goLivePosterCandidates } = await runAutoTransitions(pool);
 
     if (goLivePosterCandidates.length > 0) {
-      setImmediate(async () => {
+      posterJobQueue.add(0, 'auto-transition', async () => {
         try {
           const cols = listInterruptionCols(hasDel, hasPulled, hasPoster);
           for (const prevRaw of goLivePosterCandidates) {
@@ -492,7 +493,9 @@ router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
         } catch (e) {
           console.warn('[poster] go-live auto regen:', e?.message || e);
         }
-      });
+      }).catch((e) =>
+        console.warn('[poster] go-live auto regen queue error:', e?.message || e)
+      );
     }
     const phNow = nowPhilippineForMysql();
     // Auto-archive Energized, Cancelled, and Rescheduled advisories after 1 week (168h)
@@ -965,11 +968,11 @@ router.post('/interruptions', requireStaff, async (req, res) => {
     });
 
     const newId = insertHeader.insertId;
-    setImmediate(() => {
-      maybeRegeneratePosterAfterMutation(pool, newId, null, row).catch((e) =>
-        console.warn('[poster] post-create regen:', e?.message || e)
-      );
-    });
+    posterJobQueue.add(newId, 'create', async () => {
+      await maybeRegeneratePosterAfterMutation(pool, newId, null, row);
+    }).catch((e) =>
+      console.warn('[poster] post-create regen:', e?.message || e)
+    );
 
     res.status(201).json({ success: true, data: dto });
   } catch (error) {
@@ -1363,11 +1366,11 @@ router.put('/interruptions/:id', requireStaff, async (req, res) => {
       return res.status(500).json({ success: false, message: 'Failed to load updated interruption.' });
     }
     const nextRaw = rows[0];
-    setImmediate(() => {
-      maybeRegeneratePosterAfterMutation(pool, id, ex, nextRaw).catch((e) =>
-        console.warn('[poster] post-update regen:', e?.message || e)
-      );
-    });
+    posterJobQueue.add(id, 'update', async () => {
+      await maybeRegeneratePosterAfterMutation(pool, id, ex, nextRaw);
+    }).catch((e) =>
+      console.warn('[poster] post-update regen:', e?.message || e)
+    );
     res.json({ success: true, data: dto });
   } catch (error) {
     console.error('Interruptions update error:', error);
@@ -1450,6 +1453,7 @@ router.delete('/interruptions/:id', requireStaff, async (req, res) => {
 router.delete('/interruptions/:id/permanent', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+  const expectedUpdatedAt = req.body?.expectedUpdatedAt ?? req.body?.expected_updated_at;
 
   try {
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
@@ -1462,7 +1466,7 @@ router.delete('/interruptions/:id/permanent', requireStaff, async (req, res) => 
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
     const extraCols = hasPoster ? ', image_url, poster_image_url' : ', image_url';
     const [check] = await pool.execute(
-      `SELECT id, deleted_at${extraCols} FROM aleco_interruptions WHERE id = ?`,
+      `SELECT id, deleted_at, updated_at${extraCols} FROM aleco_interruptions WHERE id = ?`,
       [id]
     );
     if (check.length === 0) {
@@ -1474,8 +1478,25 @@ router.delete('/interruptions/:id/permanent', requireStaff, async (req, res) => 
         message: 'Only archived advisories can be permanently deleted. Archive the advisory first.',
       });
     }
+
+    // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+    if (expectedUpdatedAt) {
+      const dbIso = check[0].updated_at ? new Date(check[0].updated_at).toISOString() : '';
+      let clientIso = '';
+      try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+      if (!dbIso || dbIso !== clientIso) {
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_INTERRUPTION',
+          message: 'This advisory was updated elsewhere. Reload the latest advisory and try again.',
+          latest: { id: check[0].id, updated_at: check[0].updated_at },
+        });
+      }
+    }
+
     const rowSnapshot = check[0];
     await pool.execute('DELETE FROM aleco_interruptions WHERE id = ?', [id]);
+    // Cloudinary cleanup is lightweight, no need to queue
     setImmediate(() => {
       deleteCloudinaryAssetsForAdvisory(id, rowSnapshot).catch((e) =>
         console.warn('[poster] permanent-delete cleanup:', e?.message || e)
@@ -1722,6 +1743,7 @@ router.patch('/interruptions/:id/push-to-feed', requireStaff, async (req, res) =
 router.post('/interruptions/:id/poster-capture', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+  const expectedUpdatedAt = req.body?.expectedUpdatedAt ?? req.body?.expected_updated_at;
 
   try {
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
@@ -1749,6 +1771,21 @@ router.post('/interruptions/:id/poster-capture', requireStaff, async (req, res) 
       });
     }
 
+    // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+    if (expectedUpdatedAt) {
+      const dbIso = rawRow.updated_at ? new Date(rawRow.updated_at).toISOString() : '';
+      let clientIso = '';
+      try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+      if (!dbIso || dbIso !== clientIso) {
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_INTERRUPTION',
+          message: 'This advisory was updated elsewhere. Reload the latest advisory and try again.',
+          latest: { id: rawRow.id, updated_at: rawRow.updated_at },
+        });
+      }
+    }
+
     const env = typeof globalThis.process !== 'undefined' ? globalThis.process.env : {};
     if (!env.CLOUDINARY_CLOUD_NAME || !cloudinary?.uploader?.upload) {
       return res.status(503).json({
@@ -1757,28 +1794,38 @@ router.post('/interruptions/:id/poster-capture', requireStaff, async (req, res) 
       });
     }
 
-    const cap = await captureInterruptionPosterForAdmin(pool, id, rawRow);
-    if (cap.error) {
-      return res.status(500).json({ success: false, message: cap.error });
-    }
-    const posterUrl = cap.posterUrl;
+    // Add job to queue instead of executing synchronously
+    const jobId = await posterJobQueue.add(id, 'manual', async () => {
+      const cap = await captureInterruptionPosterForAdmin(pool, id, rawRow);
+      if (cap.error) {
+        throw new Error(cap.error);
+      }
+      const posterUrl = cap.posterUrl;
 
-    const phNow = nowPhilippineForMysql();
-    await pool.execute('UPDATE aleco_interruptions SET poster_image_url = ?, updated_at = ? WHERE id = ?', [
-      posterUrl,
-      phNow,
-      id,
-    ]);
+      const phNow = nowPhilippineForMysql();
+      const updateWhereSql = expectedUpdatedAt && rawRow.updated_at ? 'id = ? AND updated_at = ?' : 'id = ?';
+      const updateWhereParams = expectedUpdatedAt && rawRow.updated_at ? [id, rawRow.updated_at] : [id];
+      const [upd] = await pool.execute(
+        `UPDATE aleco_interruptions SET poster_image_url = ?, updated_at = ? WHERE ${updateWhereSql}`,
+        [posterUrl, phNow, ...updateWhereParams]
+      );
 
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
-    const dto = rows[0] ? mapRowToDto(rows[0]) : null;
-    if (!dto) {
-      return res.status(500).json({ success: false, message: 'Failed to load interruption after capture.' });
-    }
+      if (upd.affectedRows === 0 && expectedUpdatedAt) {
+        throw new Error('This advisory was updated elsewhere during poster generation.');
+      }
+
+      const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
+      const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+      if (!dto) {
+        throw new Error('Failed to load interruption after capture.');
+      }
+      return dto;
+    });
+
     return res.json({
       success: true,
-      data: dto,
-      message: 'Poster screenshot captured and stored.',
+      jobId,
+      message: 'Poster generation queued. Use the job ID to check status.',
     });
   } catch (err) {
     console.error('Interruptions poster-capture error:', err);
@@ -1793,6 +1840,43 @@ router.post('/interruptions/:id/poster-capture', requireStaff, async (req, res) 
 });
 
 /**
+ * Get poster generation job status
+ */
+router.get('/interruptions/poster-jobs/:jobId', requireStaff, async (req, res) => {
+  const { jobId } = req.params;
+  
+  try {
+    const job = posterJobQueue.getStatus(jobId);
+    
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found.' });
+    }
+
+    return res.json({
+      success: true,
+      job: {
+        id: job.id,
+        interruptionId: job.interruptionId,
+        type: job.type,
+        status: job.status,
+        retryCount: job.retryCount,
+        result: job.result,
+        error: job.error,
+        createdAt: job.createdAt,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+      },
+    });
+  } catch (err) {
+    console.error('Interruptions poster job status error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get job status.',
+    });
+  }
+});
+
+/**
  * Generate poster via HTML fallback (no Puppeteer SPA required).
  * Uses the same `captureInterruptionPosterForAdmin` path — tries print capture first,
  * falls back to the HTML template listing. Replaces the old 1×1-blank stub approach.
@@ -1800,6 +1884,7 @@ router.post('/interruptions/:id/poster-capture', requireStaff, async (req, res) 
 router.post('/interruptions/:id/poster-stub', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+  const expectedUpdatedAt = req.body?.expectedUpdatedAt ?? req.body?.expected_updated_at;
 
   try {
     const hasPoster = await getAlecoInterruptionsPosterExtrasSupported(pool);
@@ -1834,27 +1919,52 @@ router.post('/interruptions/:id/poster-stub', requireStaff, async (req, res) => 
       });
     }
 
-    const cap = await captureInterruptionPosterForAdmin(pool, id, rawRow);
-    if (cap.error) {
-      return res.status(500).json({ success: false, message: cap.error });
+    // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+    if (expectedUpdatedAt) {
+      const dbIso = rawRow.updated_at ? new Date(rawRow.updated_at).toISOString() : '';
+      let clientIso = '';
+      try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+      if (!dbIso || dbIso !== clientIso) {
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_INTERRUPTION',
+          message: 'This advisory was updated elsewhere. Reload the latest advisory and try again.',
+          latest: { id: rawRow.id, updated_at: rawRow.updated_at },
+        });
+      }
     }
 
-    const phNow = nowPhilippineForMysql();
-    await pool.execute('UPDATE aleco_interruptions SET poster_image_url = ?, updated_at = ? WHERE id = ?', [
-      cap.posterUrl,
-      phNow,
-      id,
-    ]);
+    // Add job to queue instead of executing synchronously
+    const jobId = await posterJobQueue.add(id, 'manual', async () => {
+      const cap = await captureInterruptionPosterForAdmin(pool, id, rawRow);
+      if (cap.error) {
+        throw new Error(cap.error);
+      }
 
-    const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
-    const dto = rows[0] ? mapRowToDto(rows[0]) : null;
-    if (!dto) {
-      return res.status(500).json({ success: false, message: 'Failed to load interruption after poster generation.' });
-    }
-    res.json({
+      const phNow = nowPhilippineForMysql();
+      const updateWhereSql = expectedUpdatedAt && rawRow.updated_at ? 'id = ? AND updated_at = ?' : 'id = ?';
+      const updateWhereParams = expectedUpdatedAt && rawRow.updated_at ? [id, rawRow.updated_at] : [id];
+      const [upd] = await pool.execute(
+        `UPDATE aleco_interruptions SET poster_image_url = ?, updated_at = ? WHERE ${updateWhereSql}`,
+        [cap.posterUrl, phNow, ...updateWhereParams]
+      );
+
+      if (upd.affectedRows === 0 && expectedUpdatedAt) {
+        throw new Error('This advisory was updated elsewhere during poster generation.');
+      }
+
+      const [rows] = await pool.execute(`${selectInterruptionRowSql(hasDel, hasPulled, hasPoster)} WHERE id = ?`, [id]);
+      const dto = rows[0] ? mapRowToDto(rows[0]) : null;
+      if (!dto) {
+        throw new Error('Failed to load interruption after stub generation.');
+      }
+      return dto;
+    });
+
+    return res.json({
       success: true,
-      data: dto,
-      message: 'Poster image generated and stored.',
+      jobId,
+      message: 'Poster stub generation queued. Use the job ID to check status.',
     });
   } catch (error) {
     console.error('Interruptions poster-stub error:', error);

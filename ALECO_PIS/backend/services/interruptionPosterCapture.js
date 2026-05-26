@@ -15,6 +15,7 @@ import {
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapRowToDto } from '../utils/interruptionsDto.js';
 import { shareHeadlineFromType, shareDescriptionFromDto, escapeHtmlAttr } from '../utils/interruptionShareHtml.js';
+import { acquireBrowser, releaseBrowser } from './browserPool.js';
 
 /** @param {import('mysql2').RowDataPacket} r */
 export function rowPosterDigest(r) {
@@ -142,12 +143,7 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
 
   let browser;
   try {
-    const puppeteerMod = await import('puppeteer');
-    const puppeteer = puppeteerMod.default || puppeteerMod;
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
+    browser = await acquireBrowser();
     const page = await browser.newPage();
     const vw = Math.min(
       Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_WIDTH || '1200'), 10) || 1200, 700),
@@ -243,11 +239,7 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
     return { error: `${msg} (code: ${code})` };
   } finally {
     if (browser) {
-      try {
-        await browser.close();
-      } catch {
-        /* ignore */
-      }
+      await releaseBrowser(browser);
     }
   }
 }
@@ -263,12 +255,7 @@ export async function captureFallbackListingToCloudinary(dto, id) {
   let browser;
   try {
     const html = buildFallbackListingHtml(dto);
-    const puppeteerMod = await import('puppeteer');
-    const puppeteer = puppeteerMod.default || puppeteerMod;
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
+    browser = await acquireBrowser();
     const page = await browser.newPage();
     await page.setViewport({ width: 800, height: 1100, deviceScaleFactor: 2 });
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
@@ -289,11 +276,7 @@ export async function captureFallbackListingToCloudinary(dto, id) {
     return { error: typeof err?.message === 'string' ? err.message : 'Fallback capture failed.' };
   } finally {
     if (browser) {
-      try {
-        await browser.close();
-      } catch {
-        /* ignore */
-      }
+      await releaseBrowser(browser);
     }
   }
 }

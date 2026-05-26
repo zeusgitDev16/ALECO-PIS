@@ -15,6 +15,7 @@ import { sendB2BMail } from '../utils/b2bMailProvider.js';
 import { pollB2BInboundOnce, relinkUnlinkedInbound, fetchTargetedReplies } from '../services/b2bInboundImapPoll.js';
 import { recordB2BMailNotification, B2B_MAIL_EVENT } from '../utils/adminNotifications.js';
 import { requireAdmin, requireStaff } from '../middleware/requireRole.js';
+import { normalizeExpectedUpdatedAt, buildOptimisticWhere } from '../utils/concurrencyControl.js';
 
 const router = express.Router();
 
@@ -92,6 +93,27 @@ router.put('/b2b-mail/contacts/:id', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
+
+        // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+        if (expectedUpdatedAt) {
+            const optimistic = await buildOptimisticWhere(pool, {
+                table: 'aleco_b2b_contacts',
+                idCol: 'id',
+                idValue: id,
+                selectCols: ['email', 'contact_name'],
+                expectedUpdatedAt
+            });
+            if (optimistic.conflict) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_CONTACT',
+                    message: 'This contact was updated by another user. Reload and try again.',
+                    latest: optimistic.latest
+                });
+            }
+        }
+
         await upsertContact({ ...(req.body || {}), id });
         const rows = await listContacts({});
         const contact = rows.find((r) => Number(r.id) === id) || null;
@@ -114,11 +136,29 @@ router.delete('/b2b-mail/contacts/:id', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
+
         const [[row]] = await pool.execute(
-            `SELECT contact_name, email FROM aleco_b2b_contacts WHERE id = ? LIMIT 1`,
+            `SELECT contact_name, email, updated_at FROM aleco_b2b_contacts WHERE id = ? LIMIT 1`,
             [id]
         );
         if (!row) return res.status(404).json({ success: false, message: 'Contact not found.' });
+
+        // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+        if (expectedUpdatedAt) {
+            const dbIso = row.updated_at ? new Date(row.updated_at).toISOString() : '';
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (!dbIso || dbIso !== clientIso) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_CONTACT',
+                    message: 'This contact was updated by another user. Reload and try again.',
+                    latest: { id: row.id, updated_at: row.updated_at }
+                });
+            }
+        }
+
         await pool.execute(
             `DELETE FROM aleco_b2b_contact_verifications WHERE contact_id = ?`,
             [id]
@@ -176,12 +216,30 @@ router.post('/b2b-mail/contacts/:id/send-verification', requireStaff, async (req
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
+
         const [rows] = await pool.execute(
-            `SELECT id, contact_name, email, email_verified FROM aleco_b2b_contacts WHERE id = ? LIMIT 1`,
+            `SELECT id, contact_name, email, email_verified, updated_at FROM aleco_b2b_contacts WHERE id = ? LIMIT 1`,
             [id]
         );
         const contact = rows?.[0];
         if (!contact) return res.status(404).json({ success: false, message: 'Contact not found.' });
+
+        // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+        if (expectedUpdatedAt) {
+            const dbIso = contact.updated_at ? new Date(contact.updated_at).toISOString() : '';
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (!dbIso || dbIso !== clientIso) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_CONTACT',
+                    message: 'This contact was updated by another user. Reload and try again.',
+                    latest: { id: contact.id, updated_at: contact.updated_at }
+                });
+            }
+        }
+
         if (Number(contact.email_verified) === 1) {
             return res.json({ success: true, data: { alreadyVerified: true } });
         }
@@ -405,6 +463,27 @@ router.put('/b2b-mail/messages/:id', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
+
+        // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+        if (expectedUpdatedAt) {
+            const optimistic = await buildOptimisticWhere(pool, {
+                table: 'aleco_b2b_messages',
+                idCol: 'id',
+                idValue: id,
+                selectCols: ['subject', 'status'],
+                expectedUpdatedAt
+            });
+            if (optimistic.conflict) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_MESSAGE',
+                    message: 'This message was updated by another user. Reload and try again.',
+                    latest: optimistic.latest
+                });
+            }
+        }
+
         await saveDraft(withActorFromReq(req, { ...(req.body || {}), id }));
         const [rows] = await pool.execute('SELECT * FROM aleco_b2b_messages WHERE id = ? LIMIT 1', [id]);
         return res.json({ success: true, data: rows?.[0] || null });
@@ -419,6 +498,27 @@ router.post('/b2b-mail/messages/:id/send', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
+
+        // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+        if (expectedUpdatedAt) {
+            const optimistic = await buildOptimisticWhere(pool, {
+                table: 'aleco_b2b_messages',
+                idCol: 'id',
+                idValue: id,
+                selectCols: ['subject', 'status'],
+                expectedUpdatedAt
+            });
+            if (optimistic.conflict) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_MESSAGE',
+                    message: 'This message was updated by another user. Reload and try again.',
+                    latest: optimistic.latest
+                });
+            }
+        }
+
         const result = await sendMessage(id);
         if (result && Number(result.sent) > 0) {
             const [[m]] = await pool.execute(`SELECT subject FROM aleco_b2b_messages WHERE id = ? LIMIT 1`, [id]);
@@ -443,6 +543,27 @@ router.post('/b2b-mail/messages/:id/retry', requireStaff, async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'Invalid id' });
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
+
+        // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+        if (expectedUpdatedAt) {
+            const optimistic = await buildOptimisticWhere(pool, {
+                table: 'aleco_b2b_messages',
+                idCol: 'id',
+                idValue: id,
+                selectCols: ['subject', 'status'],
+                expectedUpdatedAt
+            });
+            if (optimistic.conflict) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_MESSAGE',
+                    message: 'This message was updated by another user. Reload and try again.',
+                    latest: optimistic.latest
+                });
+            }
+        }
+
         const result = await sendMessage(id, { retryOnlyFailed: true });
         if (result && Number(result.sent) > 0) {
             const [[m]] = await pool.execute(`SELECT subject FROM aleco_b2b_messages WHERE id = ? LIMIT 1`, [id]);

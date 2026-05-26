@@ -636,6 +636,7 @@ router.put('/service-memos/:id/reopen', requireStaff, async (req, res) => {
   try {
     const { id } = req.params;
     const currentUserEmail = getActorEmail(req);
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
 
     const [memoRows] = await pool.execute(`SELECT * FROM aleco_service_memos WHERE id = ?`, [id]);
 
@@ -645,6 +646,21 @@ router.put('/service-memos/:id/reopen', requireStaff, async (req, res) => {
 
     const memo = memoRows[0];
 
+    // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+    if (expectedUpdatedAt) {
+      const dbIso = memo.updated_at ? new Date(memo.updated_at).toISOString() : '';
+      let clientIso = '';
+      try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+      if (!dbIso || dbIso !== clientIso) {
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_MEMO',
+          message: 'This memo was updated by someone else. Reload it and try again.',
+          latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+        });
+      }
+    }
+
     // Check if memo is closed
     const closedStatuses = ['resolved', 'unresolved', 'nofaultfound', 'accessdenied', 'closed'];
     if (!closedStatuses.includes(memo.memo_status)) {
@@ -652,10 +668,21 @@ router.put('/service-memos/:id/reopen', requireStaff, async (req, res) => {
     }
 
     // Reopen memo by setting status back to 'saved'
+    const reopenWhereSql = expectedUpdatedAt && memo.updated_at ? 'id = ? AND updated_at = ?' : 'id = ?';
+    const reopenWhereParams = expectedUpdatedAt && memo.updated_at ? [id, memo.updated_at] : [id];
     const [result] = await pool.execute(
-      `UPDATE aleco_service_memos SET memo_status = 'saved', closed_at = NULL, closed_by = NULL WHERE id = ?`,
-      [id]
+      `UPDATE aleco_service_memos SET memo_status = 'saved', closed_at = NULL, closed_by = NULL WHERE ${reopenWhereSql}`,
+      reopenWhereParams
     );
+
+    if (result.affectedRows === 0 && expectedUpdatedAt) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_MEMO',
+        message: 'This memo was updated by someone else. Reload it and try again.',
+        latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+      });
+    }
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Service memo not found.' });
@@ -739,6 +766,7 @@ router.delete('/service-memos/:id', requireStaff, async (req, res) => {
   try {
     const { id } = req.params;
     const currentUserEmail = getActorEmail(req);
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
 
     const [memoRows] = await pool.execute(`SELECT * FROM aleco_service_memos WHERE id = ?`, [id]);
 
@@ -748,6 +776,21 @@ router.delete('/service-memos/:id', requireStaff, async (req, res) => {
 
     const memo = memoRows[0];
 
+    // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+    if (expectedUpdatedAt) {
+      const dbIso = memo.updated_at ? new Date(memo.updated_at).toISOString() : '';
+      let clientIso = '';
+      try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+      if (!dbIso || dbIso !== clientIso) {
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_MEMO',
+          message: 'This memo was updated by someone else. Reload it and try again.',
+          latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+        });
+      }
+    }
+
     await pool.execute(`UPDATE aleco_tickets SET service_memo_id = NULL WHERE ticket_id = ?`, [memo.ticket_id]);
 
     const controlNo = memo.control_number || String(id);
@@ -755,7 +798,18 @@ router.delete('/service-memos/:id', requireStaff, async (req, res) => {
     const deleter =
       currentUserEmail && String(currentUserEmail).trim() ? String(currentUserEmail).trim() : null;
 
-    await pool.execute(`DELETE FROM aleco_service_memos WHERE id = ?`, [id]);
+    const deleteWhereSql = expectedUpdatedAt && memo.updated_at ? 'id = ? AND updated_at = ?' : 'id = ?';
+    const deleteWhereParams = expectedUpdatedAt && memo.updated_at ? [id, memo.updated_at] : [id];
+    const [deleteResult] = await pool.execute(`DELETE FROM aleco_service_memos WHERE ${deleteWhereSql}`, deleteWhereParams);
+
+    if (deleteResult.affectedRows === 0 && expectedUpdatedAt) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_MEMO',
+        message: 'This memo was updated by someone else. Reload it and try again.',
+        latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+      });
+    }
 
     await recordMemoNotification(pool, {
       eventType: MEMO_EVENT.DELETED,
@@ -777,6 +831,7 @@ router.delete('/service-memos/:id/undo', requireStaff, async (req, res) => {
   try {
     const { id } = req.params;
     const currentUserEmail = getActorEmail(req);
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
 
     const [memoRows] = await pool.execute(`SELECT * FROM aleco_service_memos WHERE id = ?`, [id]);
 
@@ -786,6 +841,21 @@ router.delete('/service-memos/:id/undo', requireStaff, async (req, res) => {
 
     const memo = memoRows[0];
 
+    // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+    if (expectedUpdatedAt) {
+      const dbIso = memo.updated_at ? new Date(memo.updated_at).toISOString() : '';
+      let clientIso = '';
+      try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+      if (!dbIso || dbIso !== clientIso) {
+        return res.status(409).json({
+          success: false,
+          code: 'CONFLICT_STALE_MEMO',
+          message: 'This memo was updated by someone else. Reload it and try again.',
+          latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+        });
+      }
+    }
+
     // Revert ticket status to Pending and clear service_memo_id
     await pool.execute(`UPDATE aleco_tickets SET service_memo_id = NULL, status = 'Pending' WHERE ticket_id = ?`, [memo.ticket_id]);
 
@@ -794,7 +864,18 @@ router.delete('/service-memos/:id/undo', requireStaff, async (req, res) => {
     const deleter =
       currentUserEmail && String(currentUserEmail).trim() ? String(currentUserEmail).trim() : null;
 
-    await pool.execute(`DELETE FROM aleco_service_memos WHERE id = ?`, [id]);
+    const deleteWhereSql = expectedUpdatedAt && memo.updated_at ? 'id = ? AND updated_at = ?' : 'id = ?';
+    const deleteWhereParams = expectedUpdatedAt && memo.updated_at ? [id, memo.updated_at] : [id];
+    const [deleteResult] = await pool.execute(`DELETE FROM aleco_service_memos WHERE ${deleteWhereSql}`, deleteWhereParams);
+
+    if (deleteResult.affectedRows === 0 && expectedUpdatedAt) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_MEMO',
+        message: 'This memo was updated by someone else. Reload it and try again.',
+        latest: { id: memo.id, memo_status: memo.memo_status, updated_at: memo.updated_at },
+      });
+    }
 
     await recordMemoNotification(pool, {
       eventType: MEMO_EVENT.DELETED,

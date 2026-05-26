@@ -157,6 +157,7 @@ const ProfilePage = () => {
           ? data.social_links.map((x) => makeSocialLink(x.platform || 'Website', x.url || ''))
           : (data.social_url ? [makeSocialLink('Website', data.social_url)] : []),
         created_at:  data.created_at  || null,
+        updated_at:  data.updated_at  || null,
       });
     } catch {
       // fall back to localStorage values already in state
@@ -203,11 +204,17 @@ const ProfilePage = () => {
           social_links: (userData.social_links || [])
             .map((s) => ({ platform: s.platform, url: s.url }))
             .filter((s) => s.url && String(s.url).trim()),
+          expected_updated_at: userData.updated_at,
         },
         emitRealtime: { module: REALTIME_MODULES.USERS },
       });
       if (!result.ok) {
         const err = result.data || {};
+        if (result.status === 409) {
+          alert(err.message || 'This profile was updated by another user. Reloading...');
+          fetchProfile();
+          return;
+        }
         alert(err.error || 'Failed to save profile.');
         return;
       }

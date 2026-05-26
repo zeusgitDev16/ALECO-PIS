@@ -87,7 +87,8 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
                 body: {
                 ...formData,
                 actor_email: localStorage.getItem('userEmail') || null,
-                actor_name: localStorage.getItem('userName') || null
+                actor_name: localStorage.getItem('userName') || null,
+                expected_updated_at: ticket.updated_at,
                 },
                 emitRealtime: { module: REALTIME_MODULES.TICKETS },
             });
@@ -95,6 +96,10 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
 
             if (result.ok && data.success) {
                 toast.success(`Ticket ${ticket.ticket_id} updated.`);
+                onSuccess?.();
+                onClose();
+            } else if (result.status === 409) {
+                toast.error(data.message || 'This ticket was updated by another user. Reloading...');
                 onSuccess?.();
                 onClose();
             } else {

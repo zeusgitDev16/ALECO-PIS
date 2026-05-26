@@ -4,6 +4,7 @@ import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { sendAppMail } from '../utils/appMail.js';
 import { recordUserNotification, USER_EVENT } from '../utils/adminNotifications.js';
 import { requireStaff, requireSelfOrAdmin } from '../middleware/requireRole.js';
+import { normalizeExpectedUpdatedAt, buildOptimisticWhere } from '../utils/concurrencyControl.js';
 
 const router = express.Router();
 
@@ -272,7 +273,7 @@ router.get('/users/profile', requireSelfOrAdmin('email', 'query'), async (req, r
 
 // Update profile — persists all editable fields to the DB
 router.put('/users/profile', requireSelfOrAdmin('email', 'body'), async (req, res) => {
-  const { email, name, bio, phone, address, social_url, social_links } = req.body;
+  const { email, name, bio, phone, address, social_url, social_links, expected_updated_at } = req.body;
   if (!email || !name || !name.trim()) return res.status(400).json({ error: 'Missing email or name.' });
 
   const cleanEmail = email.trim().toLowerCase();
@@ -286,9 +287,31 @@ router.put('/users/profile', requireSelfOrAdmin('email', 'body'), async (req, re
     : ((social_url || '').trim() || null);
 
   try {
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(expected_updated_at);
+    const optimistic = await buildOptimisticWhere(pool, {
+      table: 'users',
+      idCol: 'email',
+      idValue: cleanEmail,
+      selectCols: ['name'],
+      expectedUpdatedAt
+    });
+
+    if (optimistic.missing) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (optimistic.conflict) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_USER',
+        message: 'This profile was updated by another user. Reload and try again.',
+        latest: optimistic.latest
+      });
+    }
+
     const [result] = await pool.execute(
-      'UPDATE users SET name = ?, bio = ?, phone = ?, address = ?, social_url = ? WHERE email = ?',
-      [cleanName, cleanBio, cleanPhone, cleanAddr, cleanSocial, cleanEmail]
+      `UPDATE users SET name = ?, bio = ?, phone = ?, address = ?, social_url = ? WHERE ${optimistic.whereSql}`,
+      [cleanName, cleanBio, cleanPhone, cleanAddr, cleanSocial, ...optimistic.whereParams]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found.' });
     res.status(200).json({ message: 'Profile updated successfully.' });
@@ -355,18 +378,40 @@ router.get('/users/activity', requireSelfOrAdmin('email', 'query'), async (req, 
 
 // Toggle Status (Matches Schema Casing)
 router.post('/users/toggle-status', requireStaff, async (req, res) => {
-  const { id, currentStatus } = req.body;
+  const { id, currentStatus, expected_updated_at } = req.body;
   
   // Ensure we use 'Active' and 'Disabled' to match the Enum definition
   const newStatus = currentStatus === 'Active' ? 'Disabled' : 'Active';
 
   try {
+    const expectedUpdatedAt = normalizeExpectedUpdatedAt(expected_updated_at);
+    const optimistic = await buildOptimisticWhere(pool, {
+      table: 'users',
+      idCol: 'id',
+      idValue: id,
+      selectCols: ['email', 'name', 'status'],
+      expectedUpdatedAt
+    });
+
+    if (optimistic.missing) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (optimistic.conflict) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONFLICT_STALE_USER',
+        message: 'This user was updated by another user. Reload and try again.',
+        latest: optimistic.latest
+      });
+    }
+
     const [targetRows] = await pool.execute('SELECT email, name FROM users WHERE id = ?', [id]);
     if (targetRows.length === 0) {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    await pool.execute('UPDATE users SET status = ? WHERE id = ?', [newStatus, id]);
+    await pool.execute(`UPDATE users SET status = ? WHERE ${optimistic.whereSql}`, [newStatus, ...optimistic.whereParams]);
 
     if (newStatus === 'Disabled') {
       await recordUserNotification(pool, {

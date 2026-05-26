@@ -284,12 +284,15 @@ const AdminTickets = () => {
         actor_name: localStorage.getItem('userName') || null
     });
 
-    const handleDeleteTicket = async (ticketId) => {
+    const handleDeleteTicket = async (ticketId, ticketUpdatedAt) => {
         try {
             const response = await authFetch(apiUrl(`/api/tickets/${ticketId}`), {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(getActor())
+                body: JSON.stringify({
+                    ...getActor(),
+                    expected_updated_at: ticketUpdatedAt
+                })
             });
             const data = await response.json();
             if (response.ok && data.success) {
@@ -298,6 +301,9 @@ const AdminTickets = () => {
                 refetch();
                 // Trigger refresh of service memo list
                 window.dispatchEvent(new CustomEvent('service-memo-deleted'));
+            } else if (response.status === 409) {
+                toast.error(data.message || 'This ticket was updated by another user. Reloading...');
+                refetch();
             } else {
                 toast.error('Delete failed: ' + (data.message || 'Unknown error'));
             }

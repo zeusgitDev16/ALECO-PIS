@@ -52,10 +52,10 @@ export const createB2BContact = (body) =>
         body: body || {},
     });
 
-export const updateB2BContact = (id, body) =>
+export const updateB2BContact = (id, body, expectedUpdatedAt = null) =>
     jsonFetch(`/api/b2b-mail/contacts/${id}`, {
         method: 'PUT',
-        body: body || {},
+        body: expectedUpdatedAt ? { ...body, expected_updated_at: expectedUpdatedAt } : (body || {}),
     });
 
 export const toggleB2BContactActive = (id, active) =>
@@ -64,10 +64,10 @@ export const toggleB2BContactActive = (id, active) =>
         body: { active: Boolean(active) },
     });
 
-export const sendB2BContactVerification = (id) =>
+export const sendB2BContactVerification = (id, expectedUpdatedAt = null) =>
     jsonFetch(`/api/b2b-mail/contacts/${id}/send-verification`, {
         method: 'POST',
-        body: {},
+        body: expectedUpdatedAt ? { expected_updated_at: expectedUpdatedAt } : {},
     });
 
 export const listB2BMessages = ({ folder = 'all', q = '' } = {}) =>
@@ -81,10 +81,10 @@ export const saveB2BDraft = (body) =>
         body: body || {},
     });
 
-export const updateB2BDraft = (id, body) =>
+export const updateB2BDraft = (id, body, expectedUpdatedAt = null) =>
     jsonFetch(`/api/b2b-mail/messages/${id}`, {
         method: 'PUT',
-        body: body || {},
+        body: expectedUpdatedAt ? { ...body, expected_updated_at: expectedUpdatedAt } : (body || {}),
     });
 
 export const previewB2BRecipientsBody = (body) =>
@@ -99,16 +99,16 @@ export const previewB2BRecipientsByMessageId = (id) =>
         body: {},
     });
 
-export const sendB2BMessage = (id) =>
+export const sendB2BMessage = (id, expectedUpdatedAt = null) =>
     jsonFetch(`/api/b2b-mail/messages/${id}/send`, {
         method: 'POST',
-        body: {},
+        body: expectedUpdatedAt ? { expected_updated_at: expectedUpdatedAt } : {},
     });
 
-export const retryB2BMessage = (id) =>
+export const retryB2BMessage = (id, expectedUpdatedAt = null) =>
     jsonFetch(`/api/b2b-mail/messages/${id}/retry`, {
         method: 'POST',
-        body: {},
+        body: expectedUpdatedAt ? { expected_updated_at: expectedUpdatedAt } : {},
     });
 
 export const listB2BTemplates = () => jsonFetch('/api/b2b-mail/templates');

@@ -93,13 +93,20 @@ const AllUsers = ({ refreshKey = 0, layout = 'compact', showPendingInvites = tru
       body: {
         id: user.id,
         currentStatus: user.status,
-        requesterEmail: currentAdminEmail
+        requesterEmail: currentAdminEmail,
+        expected_updated_at: user.updated_at,
       },
       emitRealtime: { module: REALTIME_MODULES.USERS },
     });
 
     if (!result.ok) {
       const errorData = result.data || {};
+      if (result.status === 409) {
+        const message = errorData.message || 'This user was updated by another user. Reloading...';
+        alert(message);
+        await fetchData();
+        throw new Error(message);
+      }
       const message = errorData.error || errorData.message || 'Failed to update status.';
       throw new Error(message);
     }

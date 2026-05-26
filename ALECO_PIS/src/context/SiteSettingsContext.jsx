@@ -6,6 +6,7 @@ const SiteSettingsContext = createContext();
 export const SiteSettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
+  const [settingsUpdatedAt, setSettingsUpdatedAt] = useState(null);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -13,6 +14,7 @@ export const SiteSettingsProvider = ({ children }) => {
       const result = await response.json();
       if (result.success) {
         setSettings(result.data || {});
+        setSettingsUpdatedAt(result.data?.updated_at || null);
       }
     } catch (error) {
       console.error('[SiteSettingsContext] fetch error:', error);
@@ -36,6 +38,7 @@ export const SiteSettingsProvider = ({ children }) => {
     getSidebarLabel,
     loading,
     refreshSettings: fetchSettings,
+    settingsUpdatedAt,
   };
 
   // Dynamically update branding icons in <head>

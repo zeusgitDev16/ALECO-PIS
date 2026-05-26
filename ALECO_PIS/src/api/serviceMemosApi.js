@@ -259,22 +259,24 @@ export async function updateServiceMemo(id, body, expectedUpdatedAt = null) {
 
 /**
  * @param {number} id
+ * @param {string|null} expectedUpdatedAt
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
-export async function reopenServiceMemo(id) {
+export async function reopenServiceMemo(id, expectedUpdatedAt = null) {
   try {
     const result = await authMutation(apiUrl(`/api/service-memos/${id}/reopen`), {
       method: 'PUT',
-      body: {},
+      body: expectedUpdatedAt ? { expected_updated_at: expectedUpdatedAt } : {},
       emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
     return {
       ok: result.ok,
       success: result.success,
+      status: result.status,
       message: typeof result.data?.message === 'string' ? result.data.message : null,
     };
   } catch {
-    return { ok: false, success: false, message: 'Network error.' };
+    return { ok: false, success: false, status: 0, message: 'Network error.' };
   }
 }
 
@@ -306,42 +308,46 @@ export async function closeServiceMemo(id, expectedUpdatedAt = null, closedBy = 
 
 /**
  * @param {number} id
+ * @param {string|null} expectedUpdatedAt
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
-export async function deleteServiceMemo(id) {
+export async function deleteServiceMemo(id, expectedUpdatedAt = null) {
   try {
     const result = await authMutation(apiUrl(`/api/service-memos/${id}`), {
       method: 'DELETE',
-      body: {},
+      body: expectedUpdatedAt ? { expected_updated_at: expectedUpdatedAt } : {},
       emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
     return {
       ok: result.ok,
       success: result.success,
+      status: result.status,
       message: typeof result.data?.message === 'string' ? result.data.message : null,
     };
   } catch {
-    return { ok: false, success: false, message: 'Network error.' };
+    return { ok: false, success: false, status: 0, message: 'Network error.' };
   }
 }
 
 /**
  * @param {number} id
+ * @param {string|null} expectedUpdatedAt
  * @returns {Promise<{ ok: boolean, success: boolean, message: string|null }>}
  */
-export async function undoServiceMemo(id) {
+export async function undoServiceMemo(id, expectedUpdatedAt = null) {
   try {
     const result = await authMutation(apiUrl(`/api/service-memos/${id}/undo`), {
       method: 'DELETE',
-      body: {},
+      body: expectedUpdatedAt ? { expected_updated_at: expectedUpdatedAt } : {},
       emitRealtime: { module: REALTIME_MODULES.SERVICE_MEMOS },
     });
     return {
       ok: result.ok,
       success: result.success,
+      status: result.status,
       message: typeof result.data?.message === 'string' ? result.data.message : null,
     };
   } catch {
-    return { ok: false, success: false, message: 'Network error.' };
+    return { ok: false, success: false, status: 0, message: 'Network error.' };
   }
 }

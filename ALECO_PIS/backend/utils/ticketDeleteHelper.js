@@ -1,5 +1,6 @@
 import { deleteCloudinaryAssetByUrl } from '../../cloudinaryConfig.js';
 import { recordTicketNotification, TICKETS_EVENT } from './adminNotifications.js';
+import { normalizeExpectedUpdatedAt, buildOptimisticWhere } from './concurrencyControl.js';
 
 /**
  * Delete a ticket row and its dependent data.
@@ -10,9 +11,10 @@ export async function deleteTicketWithCascade({
     ticketId,
     actorEmail = null,
     allowGrouped = false,
+    expectedUpdatedAt = null,
 }) {
     const [existing] = await db.execute(
-        'SELECT ticket_id, parent_ticket_id, image_url, service_memo_id FROM aleco_tickets WHERE ticket_id = ?',
+        'SELECT ticket_id, parent_ticket_id, image_url, service_memo_id, updated_at FROM aleco_tickets WHERE ticket_id = ?',
         [ticketId]
     );
     if (existing.length === 0) {
@@ -26,6 +28,27 @@ export async function deleteTicketWithCascade({
         }
         if (row.parent_ticket_id) {
             return { success: false, code: 'grouped', message: 'Cannot delete a ticket that is part of a group. Ungroup first.' };
+        }
+    }
+
+    // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+    if (expectedUpdatedAt) {
+        const expected = normalizeExpectedUpdatedAt(expectedUpdatedAt);
+        const optimistic = await buildOptimisticWhere(db, {
+            table: 'aleco_tickets',
+            idCol: 'ticket_id',
+            idValue: ticketId,
+            selectCols: [],
+            expectedUpdatedAt: expected
+        });
+
+        if (optimistic.conflict) {
+            return { 
+                success: false, 
+                code: 'conflict', 
+                message: 'Ticket was updated by another user. Reload and try again.',
+                latest: optimistic.latest
+            };
         }
     }
 

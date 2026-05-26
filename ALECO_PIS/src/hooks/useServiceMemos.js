@@ -148,25 +148,31 @@ export function useServiceMemos() {
 
   /**
    * @param {number} id
+   * @param {string|null} expectedUpdatedAt
    * @returns {Promise<{ deleted: boolean }>}
    */
   const deleteMemo = useCallback(
-    async (id) => {
+    async (id, expectedUpdatedAt = null) => {
       setSaving(true);
       setMessage(null);
       try {
-        const r = await deleteServiceMemo(id);
+        const r = await deleteServiceMemo(id, expectedUpdatedAt);
+        if (r.status === 409) {
+          setMessage({ type: 'err', text: r.message || 'This memo was updated by another user. Reloading...' });
+          await fetchList();
+          return { deleted: false, conflict: true };
+        }
         if (!r.success) {
           setMessage({ type: 'err', text: r.message || 'Delete failed.' });
-          return { deleted: false };
+          return { deleted: false, conflict: false };
         }
         setMessage({ type: 'ok', text: 'Service memo deleted.' });
         window.dispatchEvent(new Event('service-memo-deleted'));
         await fetchList();
-        return { deleted: true };
+        return { deleted: true, conflict: false };
       } catch {
         setMessage({ type: 'err', text: 'Network error.' });
-        return { deleted: false };
+        return { deleted: false, conflict: false };
       } finally {
         setSaving(false);
       }

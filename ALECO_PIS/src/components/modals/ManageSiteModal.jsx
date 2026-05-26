@@ -21,7 +21,7 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   const [manageSiteTab, setManageSiteTab] = useState('settings');
 
   // ── Site Settings — logo (UI only, no backend yet) ──
-  const { siteLogoUrl, siteFaviconUrl, refreshSettings, settings } = useSiteSettings();
+  const { siteLogoUrl, siteFaviconUrl, refreshSettings, settings, settingsUpdatedAt } = useSiteSettings();
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
@@ -349,10 +349,16 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
           'X-Token-Version': localStorage.getItem('tokenVersion'),
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         },
-        body: JSON.stringify({ site_favicon_url: url }),
+        body: JSON.stringify({ 
+          site_favicon_url: url,
+          expected_updated_at: settingsUpdatedAt 
+        }),
       });
       const result = await response.json();
-      if (result.success) {
+      if (response.status === 409) {
+        toast.error(result.message || 'Site settings were updated by another user. Reloading...');
+        refreshSettings();
+      } else if (result.success) {
         toast.success('Favicon updated successfully.');
         refreshSettings();
       } else {
@@ -407,11 +413,17 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
           'X-Token-Version': localStorage.getItem('tokenVersion'),
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({
+          ...updates,
+          expected_updated_at: settingsUpdatedAt
+        }),
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (response.status === 409) {
+        toast.error(result.message || 'Site settings were updated by another user. Reloading...');
+        refreshSettings();
+      } else if (result.success) {
         toast.success('Navigation labels updated successfully.');
         refreshSettings();
       } else {

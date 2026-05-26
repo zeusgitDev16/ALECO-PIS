@@ -378,52 +378,84 @@ export async function addInterruptionUpdate(id, body) {
 
 /**
  * Stub: set poster_image_url (Cloudinary placeholder when configured, else stub:// or INTERRUPTION_POSTER_STUB_BASE_URL).
+ * Now returns a jobId for async processing.
  * @param {number} id
- * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ * @param {{ expectedUpdatedAt?: string|null }} [opts]
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null, jobId?: string }>}
  */
-export async function generateInterruptionPosterStub(id) {
-  let res;
+export async function generateInterruptionPosterStub(id, { expectedUpdatedAt = null } = {}) {
   try {
-    res = await authFetch(apiUrl(`/api/interruptions/${id}/poster-stub`), {
+    const body = withExpectedUpdatedAt({}, expectedUpdatedAt, 'expected_updated_at');
+    const res = await authFetch(apiUrl(`/api/interruptions/${id}/poster-stub`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body: JSON.stringify(body),
     });
+    const json = await res.json().catch(() => null);
+    const success = res.ok && json && json.success === true;
+    return {
+      ok: res.ok,
+      status: res.status,
+      success,
+      data: json?.data ?? null,
+      message: typeof json?.message === 'string' ? json.message : null,
+      code: json?.code ?? null,
+      jobId: json?.jobId ?? null,
+    };
   } catch {
-    return { ok: false, success: false, data: null, message: null };
+    return { ok: false, status: 0, success: false, data: null, message: null, code: null, jobId: null };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    data: json?.data ?? null,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
 }
 
 /**
  * Puppeteer capture of /poster/interruption/:id on the deployed SPA; uploads to Cloudinary.
+ * Now returns a jobId for async processing.
  * @param {number} id
- * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null }>}
+ * @param {{ expectedUpdatedAt?: string|null }} [opts]
+ * @returns {Promise<{ ok: boolean, success: boolean, data: object|null, message: string|null, jobId?: string }>}
  */
-export async function captureInterruptionPoster(id) {
-  let res;
+export async function captureInterruptionPoster(id, { expectedUpdatedAt = null } = {}) {
   try {
-    res = await authFetch(apiUrl(`/api/interruptions/${id}/poster-capture`), {
+    const body = withExpectedUpdatedAt({}, expectedUpdatedAt, 'expected_updated_at');
+    const res = await authFetch(apiUrl(`/api/interruptions/${id}/poster-capture`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body: JSON.stringify(body),
     });
+    const json = await res.json().catch(() => null);
+    const success = res.ok && json && json.success === true;
+    return {
+      ok: res.ok,
+      status: res.status,
+      success,
+      data: json?.data ?? null,
+      message: typeof json?.message === 'string' ? json.message : null,
+      code: json?.code ?? null,
+      jobId: json?.jobId ?? null,
+    };
   } catch {
-    return { ok: false, success: false, data: null, message: null };
+    return { ok: false, status: 0, success: false, data: null, message: null, code: null, jobId: null };
   }
-  const json = await res.json().catch(() => null);
-  const success = res.ok && json && json.success === true;
-  return {
-    ok: res.ok,
-    success,
-    data: json?.data ?? null,
-    message: typeof json?.message === 'string' ? json.message : null,
-  };
+}
+
+/**
+ * Get poster generation job status
+ * @param {string} jobId
+ * @returns {Promise<{ ok: boolean, success: boolean, job: object|null, message: string|null }>}
+ */
+export async function getPosterJobStatus(jobId) {
+  try {
+    const res = await authFetch(apiUrl(`/api/interruptions/poster-jobs/${jobId}`));
+    const json = await res.json().catch(() => null);
+    const success = res.ok && json && json.success === true;
+    return {
+      ok: res.ok,
+      status: res.status,
+      success,
+      job: json?.job ?? null,
+      message: typeof json?.message === 'string' ? json.message : null,
+    };
+  } catch {
+    return { ok: false, status: 0, success: false, job: null, message: null };
+  }
 }

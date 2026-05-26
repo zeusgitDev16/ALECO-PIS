@@ -610,6 +610,7 @@ router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
 
         const { ticketId } = req.params;
         const body = req.body;
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
 
         if (!ticketId || ticketId.startsWith('GROUP-')) {
             await connection.rollback();
@@ -625,6 +626,18 @@ router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
         if (existing[0].parent_ticket_id) {
             await connection.rollback();
             return res.status(400).json({ success: false, message: 'Cannot edit a ticket that is part of a group. Ungroup first.' });
+        }
+
+        // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+        const optimistic = await buildOptimisticTicketWhere(pool, ticketId, expectedUpdatedAt);
+        if (optimistic.conflict) {
+            await connection.rollback();
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_TICKET',
+                message: 'Ticket was updated by another user. Reload the latest ticket details and try again.',
+                latest: optimistic.latest,
+            });
         }
 
         const allowed = ['first_name', 'middle_name', 'last_name', 'phone_number', 'account_number', 'address', 'district', 'municipality', 'category', 'concern', 'action_desired'];
@@ -659,8 +672,8 @@ router.put('/tickets/:ticketId', requireStaff, async (req, res) => {
         }
 
         const setClause = Object.keys(updates).map(k => `${k} = ?`).join(', ');
-        const values = [...Object.values(updates), ticketId];
-        await connection.execute(`UPDATE aleco_tickets SET ${setClause} WHERE ticket_id = ?`, values);
+        const values = [...Object.values(updates), ...optimistic.whereParams];
+        await connection.execute(`UPDATE aleco_tickets SET ${setClause} WHERE ${optimistic.whereSql}`, values);
 
         // Auto-sync to linked service memo if category was updated
         if (updates.category && existing[0].service_memo_id) {
@@ -722,17 +735,27 @@ router.delete('/tickets/:ticketId', requireStaff, async (req, res) => {
     try {
         const { ticketId } = req.params;
         const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
         const result = await deleteTicketWithCascade({
             db: pool,
             ticketId,
             actorEmail,
             allowGrouped: false,
+            expectedUpdatedAt,
         });
         if (!result.success && result.code === 'not_found') {
             return res.status(404).json({ success: false, message: result.message });
         }
         if (!result.success && result.code === 'grouped') {
             return res.status(400).json({ success: false, message: result.message });
+        }
+        if (!result.success && result.code === 'conflict') {
+            return res.status(409).json({
+                success: false,
+                code: 'CONFLICT_STALE_TICKET',
+                message: result.message,
+                latest: result.latest
+            });
         }
         if (!result.success) {
             return res.status(500).json({ success: false, message: 'Failed to delete ticket.' });

@@ -655,7 +655,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                 isOpen={isDeleteConfirmOpen}
                 onClose={() => setIsDeleteConfirmOpen(false)}
                 onConfirm={() => {
-                    onDeleteTicket?.(ticket.ticket_id);
+                    onDeleteTicket?.(ticket.ticket_id, ticket.updated_at);
                 }}
                 title="Permanently Delete Ticket"
                 message={`This will permanently delete ticket ${ticket.ticket_id} and remove any uploaded image from storage. This action cannot be undone.`}

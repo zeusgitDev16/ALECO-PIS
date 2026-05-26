@@ -3,6 +3,7 @@ import pool from '../config/db.js';
 import { upload, cloudinary } from '../../cloudinaryConfig.js';
 import { requireAdmin } from '../middleware/requireRole.js';
 import { extractCloudinaryPublicId } from '../utils/cloudinaryUtils.js';
+import { normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
 
 const router = express.Router();
 
@@ -28,6 +29,8 @@ router.get('/site-settings', async (req, res) => {
  */
 router.patch('/site-settings', requireAdmin, async (req, res) => {
   const updates = req.body; // { key: value }
+  const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at);
+  
   if (!updates || typeof updates !== 'object') {
     return res.status(400).json({ success: false, message: 'Invalid payload.' });
   }
@@ -35,6 +38,32 @@ router.patch('/site-settings', requireAdmin, async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
+    
+    // ✅ CONCURRENCY CONTROL: Check version if expected_updated_at is provided
+    if (expectedUpdatedAt) {
+      const keys = Object.keys(updates);
+      const placeholders = keys.map(() => '?').join(',');
+      const [rows] = await conn.execute(
+        `SELECT setting_key, updated_at FROM aleco_site_settings WHERE setting_key IN (${placeholders})`,
+        keys
+      );
+      // Check if any of the settings being updated have changed
+      for (const row of rows) {
+        const dbIso = row.updated_at ? new Date(row.updated_at).toISOString() : '';
+        let clientIso = '';
+        try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+        if (!dbIso || dbIso !== clientIso) {
+          await conn.rollback();
+          return res.status(409).json({
+            success: false,
+            code: 'CONFLICT_STALE_SETTINGS',
+            message: 'Site settings were updated by another user. Reload and try again.',
+            latest: { updated_at: row.updated_at }
+          });
+        }
+      }
+    }
+
     const allowedKeys = [
       'site_title',
       'site_description',

@@ -516,11 +516,14 @@ const ServiceMemoForm = ({
     if (!memo?.id || undoBusy) return;
     setUndoBusy(true);
     try {
-      const r = await undoServiceMemo(memo.id);
+      const r = await undoServiceMemo(memo.id, memo.updated_at);
       if (r.success) {
         toast.success('Service memo undone and ticket reverted to Pending.');
         window.dispatchEvent(new Event('service-memo-deleted'));
         setUndoModalOpen(false);
+        onDeleted?.();
+      } else if (r.status === 409) {
+        toast.error(r.message || 'This memo was updated by another user. Reloading...');
         onDeleted?.();
       } else {
         toast.error(r.message || 'Could not undo memo.');

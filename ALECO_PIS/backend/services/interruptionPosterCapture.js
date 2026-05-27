@@ -20,6 +20,7 @@ import {
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { shareHeadlineFromType, shareDescriptionFromDto, escapeHtmlAttr } from '../utils/interruptionShareHtml.js';
 import { acquireBrowser, releaseBrowser, forceCloseBrowser } from './browserPool.js';
+import { capturePosterViaWorker } from '../utils/posterClient.js';
 
 // Hard upper-bound for a single capture attempt (browser-side total).
 const CAPTURE_HARD_TIMEOUT_MS = 90_000;
@@ -339,33 +340,39 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
 
 /**
  * Wrap capture with a hard timeout so a hung browser cannot stall the queue indefinitely.
+ * Now uses Cloud Run worker instead of local Puppeteer.
  * @param {number} id
  * @param {'print'|'infographic'} [variant]
  * @returns {Promise<{ posterUrl: string } | { error: string }>}
  */
 async function captureWithHardTimeout(id, variant = 'print') {
-  let timeoutHandle = null;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutHandle = setTimeout(
-      () => reject(new Error(`Capture exceeded hard timeout of ${CAPTURE_HARD_TIMEOUT_MS}ms`)),
-      CAPTURE_HARD_TIMEOUT_MS
-    );
-  });
-  try {
-    const result = await Promise.race([
-      captureInterruptionPosterToCloudinary(id, variant),
-      timeoutPromise,
-    ]);
-    return result;
-  } catch (err) {
-    const msg = typeof err?.message === 'string' ? err.message : 'Capture hard-timeout.';
-    console.error(`[poster] hard-timeout id=${id}:`, msg);
-    // Best-effort: try to force-close the singleton browser to recover.
-    try { await forceCloseBrowser(null); } catch { /* ignore */ }
-    return { error: msg };
-  } finally {
-    if (timeoutHandle) clearTimeout(timeoutHandle);
-  }
+  // Use Cloud Run worker
+  const result = await capturePosterViaWorker(id, variant);
+  return result;
+
+  // OLD CODE (commented out for rollback):
+  // let timeoutHandle = null;
+  // const timeoutPromise = new Promise((_, reject) => {
+  //   timeoutHandle = setTimeout(
+  //     () => reject(new Error(`Capture exceeded hard timeout of ${CAPTURE_HARD_TIMEOUT_MS}ms`)),
+  //     CAPTURE_HARD_TIMEOUT_MS
+  //   );
+  // });
+  // try {
+  //   const result = await Promise.race([
+  //     captureInterruptionPosterToCloudinary(id, variant),
+  //     timeoutPromise,
+  //   ]);
+  //   return result;
+  // } catch (err) {
+  //   const msg = typeof err?.message === 'string' ? err.message : 'Capture hard-timeout.';
+  //   console.error(`[poster] hard-timeout id=${id}:`, msg);
+  //   // Best-effort: try to force-close the singleton browser to recover.
+  //   try { await forceCloseBrowser(null); } catch { /* ignore */ }
+  //   return { error: msg };
+  // } finally {
+  //   if (timeoutHandle) clearTimeout(timeoutHandle);
+  // }
 }
 
 /**

@@ -7,6 +7,11 @@
 const MAX_CONCURRENT = 1;
 const MAX_RETRIES = 3;
 const JOB_RETENTION_MS = 60 * 60 * 1000; // 1 hour
+// Hard timeout for a single executor call (one capture attempt + DB updates).
+// Capture itself has a 90s internal timeout; allow some headroom for DB / Cloudinary.
+const EXECUTOR_TIMEOUT_MS = 3 * 60 * 1000; // 3 min
+// Special id used by auto-transition batch jobs (multiple advisories); never deduped.
+const BATCH_JOB_ID = 0;
 
 /**
  * @typedef {'pending'|'processing'|'completed'|'failed'} JobStatus
@@ -46,13 +51,48 @@ class PosterJobQueue {
   }
 
   /**
-   * Add a job to the queue
+   * Add a job to the queue.
+   *
+   * Deduplication: if a pending (not yet processing) job already exists for the
+   * same interruptionId (and id !== BATCH_JOB_ID, and the new job is not manual),
+   * the queued entry's executor is REPLACED with the new one so the latest
+   * mutation state is captured. This collapses rapid successive edits into a
+   * single capture without blocking concurrent edits.
+   *
+   * Manual jobs (from /poster-capture or /poster-stub) are always enqueued fresh
+   * so admins get explicit feedback per click.
+   *
    * @param {number} interruptionId
-   * @param {JobType} type
+   * @param {JobType|string} type
    * @param {Function} executor - Async function to execute the job
    * @returns {string} jobId
    */
   async add(interruptionId, type, executor) {
+    const canDedup =
+      Number.isFinite(interruptionId) &&
+      interruptionId !== BATCH_JOB_ID &&
+      type !== 'manual';
+
+    if (canDedup) {
+      // Find a still-pending job for this id and swap its executor.
+      for (const queued of this.queue) {
+        const existing = this.jobs.get(queued.jobId);
+        if (
+          existing &&
+          existing.status === 'pending' &&
+          existing.interruptionId === interruptionId
+        ) {
+          queued.executor = executor;
+          console.log(
+            `[posterQueue] dedup: replaced executor for pending job ${existing.id} (id=${interruptionId} type=${existing.type} -> ${type})`
+          );
+          // Keep the original type label for traceability but track the latest trigger too
+          existing.type = type;
+          return existing.id;
+        }
+      }
+    }
+
     const jobId = this.generateJobId();
     const job = {
       id: jobId,
@@ -69,10 +109,10 @@ class PosterJobQueue {
 
     this.jobs.set(jobId, job);
     this.queue.push({ jobId, executor });
-    
+
     // Start processing if not already running
     this.process();
-    
+
     return jobId;
   }
 
@@ -117,6 +157,33 @@ class PosterJobQueue {
   }
 
   /**
+   * Run an async function with a hard timeout. Rejects if the function does not
+   * settle within `timeoutMs`. Used to keep one hung executor from blocking the queue.
+   * @param {Function} fn
+   * @param {number} timeoutMs
+   * @returns {Promise<any>}
+   */
+  runWithTimeout(fn, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`Job executor exceeded timeout of ${timeoutMs}ms`));
+      }, timeoutMs);
+      Promise.resolve()
+        .then(() => fn())
+        .then(
+          (value) => {
+            clearTimeout(timer);
+            resolve(value);
+          },
+          (err) => {
+            clearTimeout(timer);
+            reject(err);
+          }
+        );
+    });
+  }
+
+  /**
    * Execute a single job with retry logic
    * @param {PosterJob} job
    * @param {Function} executor
@@ -126,14 +193,14 @@ class PosterJobQueue {
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const result = await executor();
-        
+        const result = await this.runWithTimeout(executor, EXECUTOR_TIMEOUT_MS);
+
         // Success
         job.status = 'completed';
         job.result = result;
         job.completedAt = Date.now();
         this.active--;
-        
+
         console.log(`[posterQueue] Job ${job.id} completed successfully`);
         this.process(); // Process next job
         return;

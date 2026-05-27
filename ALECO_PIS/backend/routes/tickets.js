@@ -26,6 +26,7 @@ import { requireStaff } from '../middleware/requireRole.js';
 import { buildOptimisticTicketWhere, normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
 import { syncCrewStatusByTicketId } from '../utils/crewStatusSync.js';
 import { municipalityToMemoPrefix, peekNextMemoControlNumber } from '../utils/memoControlNumber.js';
+import { renderLinemanSms, renderConsumerDispatchSms, renderConsumerConcernSms } from '../utils/smsTemplate.js';
 
 function actorEmailFromReq(req) {
   return req.authUser?.email || String(req.headers['x-user-email'] || '').trim() || null;
@@ -918,35 +919,26 @@ router.put('/tickets/:ticket_id/dispatch', requireStaff, async (req, res) => {
         const consumerFullName = [first_name, middle_name, last_name]
             .filter((part) => part && String(part).trim() !== '')
             .join(' ');
-        const linemanMsg = `Hi crew/linemen ${assigned_crew} this is your assigned ticket:
-
-${ticket_id}
-name of consumer: ${consumerFullName || 'N/A'}
-address: ${address || 'N/A'}
-concern: ${concern || 'N/A'}
-action desired: ${action_desired || 'N/A'}
-phone number: ${consumer_phone || 'N/A'}
-
-keep safe!`;
+        const linemanMsg = await renderLinemanSms({
+            ticket_id,
+            crew_name: assigned_crew,
+            consumer_name: consumerFullName,
+            address,
+            concern,
+            action_desired,
+            phone: consumer_phone
+        });
         const linemanSmsResult = await sendPhilSMS(lineman_phone, linemanMsg);
         if (!linemanSmsResult.success) {
-            console.log(`❌ Lineman SMS failed for crew ${assigned_crew}; ticket not updated.`);
-            return res.status(502).json({
-                success: false,
-                message:
-                    'Crew dispatch SMS could not be sent. The ticket was not updated. Check PhilSMS (API key, URL, sender ID) and server logs.',
-                sms: { lineman: linemanSmsResult }
-            });
+            console.warn(`⚠️ Lineman SMS failed for crew ${assigned_crew}:`, linemanSmsResult);
+        } else {
+            console.log(`✅ SMS sent to Lineman (${assigned_crew}): ${lineman_phone}`);
         }
-        console.log(`✅ SMS sent to Lineman (${assigned_crew}): ${lineman_phone}`);
 
         // 2. Notify Consumer (optional - only when Notify Consumer toggle is ON)
         let consumerSmsPayload;
         if (is_consumer_notified && consumer_phone) {
-            const consumerMsg = `Good day! This is ALECO. Your ticket ${ticket_id} is now under dispatch. Our service crew/linemen are scheduled to arrive at your location to address your concern. Please stay available for coordination, and you may track updates using your ticket ID.
-
-You can enter this ticket to track:
-${ticket_id}`;
+            const consumerMsg = await renderConsumerDispatchSms({ ticket_id });
             const consumerResult = await sendPhilSMS(consumer_phone, consumerMsg);
             consumerSmsPayload = { attempted: true, ...consumerResult };
             if (consumerResult.success) {
@@ -1029,26 +1021,38 @@ ${ticket_id}`;
             await syncCrewStatusByTicketId(ticket_id);
             
             const c = consumerSmsPayload;
+            const linemanFailed = !linemanSmsResult.success;
             let dispatchMessage;
             if (!c.attempted) {
                 if (c.reason === 'not_requested') {
-                    dispatchMessage = `Ticket ${ticket_id} dispatched. Crew notified by SMS.`;
+                    dispatchMessage = linemanFailed 
+                        ? `Ticket ${ticket_id} dispatched. Lineman SMS failed.`
+                        : `Ticket ${ticket_id} dispatched. Crew notified by SMS.`;
                 } else {
-                    dispatchMessage = `Ticket ${ticket_id} dispatched. Crew notified by SMS. Consumer has no phone on file.`;
+                    dispatchMessage = linemanFailed
+                        ? `Ticket ${ticket_id} dispatched. Lineman SMS failed. Consumer has no phone on file.`
+                        : `Ticket ${ticket_id} dispatched. Crew notified by SMS. Consumer has no phone on file.`;
                 }
             } else if (c.success) {
-                dispatchMessage = `Ticket ${ticket_id} dispatched. Crew and consumer notified by SMS.`;
+                dispatchMessage = linemanFailed
+                    ? `Ticket ${ticket_id} dispatched. Lineman SMS failed. Consumer notified by SMS.`
+                    : `Ticket ${ticket_id} dispatched. Crew and consumer notified by SMS.`;
             } else {
-                dispatchMessage = `Ticket ${ticket_id} dispatched. Crew notified by SMS. Consumer SMS could not be sent.`;
+                dispatchMessage = linemanFailed
+                    ? `Ticket ${ticket_id} dispatched. Both lineman and consumer SMS failed.`
+                    : `Ticket ${ticket_id} dispatched. Crew notified by SMS. Consumer SMS could not be sent.`;
             }
+            const warnings = [];
+            if (linemanFailed) warnings.push('lineman_sms_failed');
+            if (c.attempted && !c.success) warnings.push('consumer_sms_failed');
             res.status(200).json({
                 success: true,
                 message: dispatchMessage,
                 sms: {
-                    lineman: { success: true },
+                    lineman: linemanSmsResult,
                     consumer: consumerSmsPayload
                 },
-                ...(c.attempted && !c.success ? { warnings: ['consumer_sms_failed'] } : {})
+                ...(warnings.length > 0 ? { warnings } : {})
             });
         } else {
             res.status(500).json({ success: false, message: 'Failed to update ticket status.' });
@@ -1115,7 +1119,7 @@ router.put('/tickets/:ticket_id/resolve-concern', requireStaff, async (req, res)
 
         let consumerSmsPayload = { attempted: false, skipped: true, reason: 'not_requested' };
         if (is_consumer_notified && consumerPhone) {
-            const consumerMsg = `Good day! This is ALECO. Your ticket ${ticket_id} has been endorsed for concern resolution and is now in progress. Our support team is reviewing your concern and will provide updates accordingly. Thank you for your patience and cooperation.`;
+            const consumerMsg = await renderConsumerConcernSms({ ticket_id });
             const consumerResult = await sendPhilSMS(consumerPhone, consumerMsg);
             consumerSmsPayload = { attempted: true, ...consumerResult };
         } else if (is_consumer_notified) {

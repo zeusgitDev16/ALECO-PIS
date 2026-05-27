@@ -1,6 +1,11 @@
 /**
- * Server-side poster capture (Puppeteer → Cloudinary) and optional fallback listing image.
+ * Server-side poster capture (Puppeteer -> Cloudinary).
  * Used by POST /interruptions/:id/poster-capture and idle regeneration after POST/PUT.
+ *
+ * Design contract: this service captures the actual SPA-rendered poster design at
+ * /print-interruption/:id. If Puppeteer cannot render that design, the capture FAILS
+ * (returns { error }) — the dashboard already renders the React component live as a
+ * visual fallback, so a stale/simple HTML card image is never written to Cloudinary.
  */
 
 import { Buffer } from 'node:buffer';
@@ -13,9 +18,11 @@ import {
   getAlecoInterruptionsPulledFromFeedAtSupported,
 } from '../utils/interruptionsDbSupport.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
-import { mapRowToDto } from '../utils/interruptionsDto.js';
 import { shareHeadlineFromType, shareDescriptionFromDto, escapeHtmlAttr } from '../utils/interruptionShareHtml.js';
-import { acquireBrowser, releaseBrowser } from './browserPool.js';
+import { acquireBrowser, releaseBrowser, forceCloseBrowser } from './browserPool.js';
+
+// Hard upper-bound for a single capture attempt (browser-side total).
+const CAPTURE_HARD_TIMEOUT_MS = 90_000;
 
 /** @param {import('mysql2').RowDataPacket} r */
 export function rowPosterDigest(r) {
@@ -127,6 +134,10 @@ export function rawRowVisibleForPublicSnapshot(row, hasDeletedAtColumn, hasPulle
 }
 
 /**
+ * Capture the SPA print poster for an advisory and upload to Cloudinary.
+ * Returns { posterUrl } on success or { error } on failure. NEVER falls back to a
+ * simple HTML card — the dashboard renders the React component live when poster_image_url is null.
+ *
  * @param {number} id
  * @param {'print'|'infographic'} [variant]
  * @returns {Promise<{ posterUrl: string } | { error: string }>}
@@ -141,10 +152,40 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
     return { error: 'PUBLIC_APP_URL or FRONTEND_ORIGIN not set for poster capture.' };
   }
 
+  const startedAt = Date.now();
+  const log = (msg, extra) => {
+    const ms = Date.now() - startedAt;
+    if (extra !== undefined) {
+      console.log(`[poster] id=${id} variant=${variant} +${ms}ms ${msg}`, extra);
+    } else {
+      console.log(`[poster] id=${id} variant=${variant} +${ms}ms ${msg}`);
+    }
+  };
+
   let browser;
+  let page;
+  let pageConsoleErrors = [];
+  let pageRequestFailures = [];
+  let didCaptureFail = false;
   try {
     browser = await acquireBrowser();
-    const page = await browser.newPage();
+    log('browser acquired');
+    page = await browser.newPage();
+
+    // Capture page-side diagnostics for clearer error reporting
+    page.on('console', (msg) => {
+      const t = msg.type();
+      if (t === 'error' || t === 'warning') {
+        pageConsoleErrors.push(`[${t}] ${msg.text()}`);
+      }
+    });
+    page.on('pageerror', (err) => {
+      pageConsoleErrors.push(`[pageerror] ${err?.message || String(err)}`);
+    });
+    page.on('requestfailed', (req) => {
+      pageRequestFailures.push(`${req.method()} ${req.url()} -> ${req.failure()?.errorText || 'failed'}`);
+    });
+
     const vw = Math.min(
       Math.max(parseInt(String(env.POSTER_CAPTURE_VIEWPORT_WIDTH || '1200'), 10) || 1200, 700),
       1800
@@ -158,14 +199,24 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
       4
     );
     await page.setViewport({ width: vw, height: vh, deviceScaleFactor: dsf });
-    await page.goto(posterPageUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
+    log(`viewport set ${vw}x${vh}@${dsf}x url=${posterPageUrl}`);
+
+    // Navigate with stricter wait: wait for load + network mostly idle so JS/CSS/api are done.
+    await page.goto(posterPageUrl, { waitUntil: ['load', 'networkidle2'], timeout: 60_000 });
+    log('page loaded (load + networkidle2)');
+
     const readySelector =
       variant === 'infographic' ? '.feed-advisory-infographic' : '.aleco-print-poster';
+
+    // Wait for the React component to mount (data fetched + render complete)
     try {
-      await page.waitForSelector(readySelector, { timeout: 45000 });
+      await page.waitForSelector(readySelector, { timeout: 45_000 });
+      log(`selector found: ${readySelector}`);
     } catch {
-      /* may be error state; checked below */
+      log(`selector NOT found within timeout: ${readySelector}`);
     }
+
+    // Wait until either selector is present OR error page is rendered
     const rendered = await page.evaluate((sel) => {
       try {
         return Boolean(document.querySelector(sel));
@@ -173,21 +224,33 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
         return false;
       }
     }, readySelector);
+
     if (!rendered) {
+      didCaptureFail = true;
       const errText = await page.evaluate(() => {
         const el = document.querySelector(
           '.print-poster-page--error, .public-poster-page--error, [class*="poster-page--error"]'
         );
         return el?.textContent?.trim() || '';
       });
-      return {
-        error:
-          errText ||
-          (variant === 'print'
-            ? 'Print poster did not render. The advisory may not be public-visible yet, or the SPA/API URL is wrong.'
-            : 'Poster page did not render.'),
-      };
+      const detail = [
+        errText || 'Print poster did not render.',
+        pageRequestFailures.length ? `Failed requests: ${pageRequestFailures.slice(0, 3).join('; ')}` : '',
+        pageConsoleErrors.length ? `Console: ${pageConsoleErrors.slice(0, 3).join('; ')}` : '',
+      ].filter(Boolean).join(' | ');
+      console.warn(`[poster] id=${id} render check failed: ${detail}`);
+      return { error: detail };
     }
+
+    // Wait for web fonts so headings/typography don't flash unstyled
+    try {
+      await page.evaluate(() => (document.fonts && document.fonts.ready) || Promise.resolve());
+      log('fonts ready');
+    } catch (e) {
+      log('fonts ready failed (non-fatal)', e?.message);
+    }
+
+    // Wait for all images inside the poster to finish loading (logo, NGCP image, etc.)
     await page.evaluate(() =>
       Promise.all(
         [...document.images]
@@ -195,30 +258,46 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
           .map((img) => new Promise((res) => { img.onload = img.onerror = res; }))
       )
     );
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    log('images settled');
+
+    // Final settle — animations, layout reflow after late images/fonts
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Verify poster has meaningful content (not just an empty shell)
     const posterBounds = await page.evaluate((sel) => {
       const el = document.querySelector(sel);
       if (!el) return null;
       const r = el.getBoundingClientRect();
+      // Heuristic: meaningful poster should have non-trivial text content
+      const text = String(el.textContent || '').trim();
       return {
         x: Math.max(0, Math.floor(r.left)),
         width: Math.ceil(r.width),
         height: Math.ceil(r.bottom),
+        textLen: text.length,
       };
     }, readySelector);
-    const screenshotOpts =
-      posterBounds && posterBounds.height > 50
-        ? {
-            type: 'png',
-            clip: {
-              x: posterBounds.x,
-              y: 0,
-              width: Math.min(posterBounds.width, vw - posterBounds.x),
-              height: posterBounds.height,
-            },
-          }
-        : { type: 'png', fullPage: true };
+
+    if (!posterBounds || posterBounds.height <= 50 || posterBounds.textLen < 10) {
+      didCaptureFail = true;
+      const detail = `Poster rendered but appears empty (h=${posterBounds?.height || 0}, textLen=${posterBounds?.textLen || 0}).`;
+      console.warn(`[poster] id=${id} ${detail}`);
+      return { error: detail };
+    }
+
+    const screenshotOpts = {
+      type: 'png',
+      clip: {
+        x: posterBounds.x,
+        y: 0,
+        width: Math.min(posterBounds.width, vw - posterBounds.x),
+        height: posterBounds.height,
+      },
+    };
+
     const buf = await page.screenshot(screenshotOpts);
+    log(`screenshot captured size=${buf.length}b`);
+
     const b64 = Buffer.from(buf).toString('base64');
     const dataUri = `data:image/png;base64,${b64}`;
     const up = await cloudinary.uploader.upload(dataUri, {
@@ -230,17 +309,62 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
       format: 'png',
     });
     const posterUrl = up?.secure_url || up?.url || null;
-    if (!posterUrl) return { error: 'Cloudinary did not return a URL.' };
+    if (!posterUrl) {
+      didCaptureFail = true;
+      return { error: 'Cloudinary did not return a URL.' };
+    }
+    log(`upload ok url=${posterUrl}`);
     return { posterUrl };
   } catch (err) {
+    didCaptureFail = true;
     const code = err?.code || err?.statusCode || err?.http_code || 'unknown';
     const msg = typeof err?.message === 'string' ? err.message : 'Poster capture failed.';
     console.error(`[poster] captureInterruptionPosterToCloudinary id=${id} ERROR code=${code}:`, msg, err?.stack || '');
     return { error: `${msg} (code: ${code})` };
   } finally {
-    if (browser) {
-      await releaseBrowser(browser);
+    // Always close page to avoid leaks
+    if (page) {
+      try { await page.close({ runBeforeUnload: false }); } catch { /* ignore */ }
     }
+    if (browser) {
+      if (didCaptureFail) {
+        // Force-close on failure to recover from any hung Chrome state.
+        await forceCloseBrowser(browser);
+      } else {
+        await releaseBrowser(browser);
+      }
+    }
+  }
+}
+
+/**
+ * Wrap capture with a hard timeout so a hung browser cannot stall the queue indefinitely.
+ * @param {number} id
+ * @param {'print'|'infographic'} [variant]
+ * @returns {Promise<{ posterUrl: string } | { error: string }>}
+ */
+async function captureWithHardTimeout(id, variant = 'print') {
+  let timeoutHandle = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error(`Capture exceeded hard timeout of ${CAPTURE_HARD_TIMEOUT_MS}ms`)),
+      CAPTURE_HARD_TIMEOUT_MS
+    );
+  });
+  try {
+    const result = await Promise.race([
+      captureInterruptionPosterToCloudinary(id, variant),
+      timeoutPromise,
+    ]);
+    return result;
+  } catch (err) {
+    const msg = typeof err?.message === 'string' ? err.message : 'Capture hard-timeout.';
+    console.error(`[poster] hard-timeout id=${id}:`, msg);
+    // Best-effort: try to force-close the singleton browser to recover.
+    try { await forceCloseBrowser(null); } catch { /* ignore */ }
+    return { error: msg };
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
   }
 }
 
@@ -301,21 +425,18 @@ export async function maybeRegeneratePosterAfterMutation(pool, id, previousRawRo
       return;
     }
 
+    // Auto-regen runs only for advisories currently public-visible. Hidden/pulled/archived
+    // rows skip Puppeteer work — the dashboard already renders the React component live.
     const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
     const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
     if (!rawRowVisibleForPublicSnapshot(nextRawRow, hasDel, hasPulled)) {
       return;
     }
 
-    let r = await captureInterruptionPosterToCloudinary(id, 'print');
-    if (r.error) {
-      const dto = mapRowToDto(nextRawRow);
-      if (dto) {
-        r = await captureFallbackListingToCloudinary(dto, id);
-      }
-    }
+    const r = await captureWithHardTimeout(id, 'print');
     if (r.error || !r.posterUrl) {
-      console.warn(`[poster] idle regen id=${id}:`, r.error || 'no url');
+      // No simple HTML card fallback. Dashboard live-renders the React poster when null.
+      console.warn(`[poster] idle regen id=${id} failed:`, r.error || 'no url');
       return;
     }
     const phNow = nowPhilippineForMysql();
@@ -368,22 +489,23 @@ export async function deleteCloudinaryAssetsForAdvisory(id, row) {
   }
 }
 
-export async function captureInterruptionPosterForAdmin(pool, id, rawRow) {
-  const hasDel = await getAlecoInterruptionsDeletedAtSupported(pool);
-  const hasPulled = await getAlecoInterruptionsPulledFromFeedAtSupported(pool);
-  const visible = rawRowVisibleForPublicSnapshot(rawRow, hasDel, hasPulled);
-  let r = visible ? await captureInterruptionPosterToCloudinary(id, 'print') : { error: 'not_public_visible' };
-  if (r.error) {
-    const dto = mapRowToDto(rawRow);
-    if (dto) {
-      const fb = await captureFallbackListingToCloudinary(dto, id);
-      if (!fb.error && fb.posterUrl) {
-        r = fb;
-      } else if (!r.posterUrl) {
-        const detail = [r.error, fb?.error].filter(Boolean).join(' · ');
-        r = { error: detail || 'Poster capture failed.' };
-      }
-    }
+/**
+ * Admin-triggered capture (manual via /poster-capture or /poster-stub).
+ * Bypasses the public-visibility check so admins can preview / regenerate posters
+ * for pulled-from-feed, archived, or future-scheduled advisories. The SPA share
+ * endpoint (loadInterruptionRowById) loads any advisory regardless of visibility,
+ * so the print page will render properly.
+ *
+ * NO simple HTML card fallback. If Puppeteer cannot render the design, returns { error }.
+ *
+ * @param {import('mysql2/promise').Pool} _pool unused (kept for signature stability)
+ * @param {number} id
+ * @param {import('mysql2').RowDataPacket} rawRow
+ * @returns {Promise<{ posterUrl: string } | { error: string }>}
+ */
+export async function captureInterruptionPosterForAdmin(_pool, id, rawRow) {
+  if (String(rawRow?.type || '') === 'CustomPoster') {
+    return { error: 'Custom poster advisories use the uploaded image directly and have no template to generate.' };
   }
-  return r;
+  return captureWithHardTimeout(id, 'print');
 }

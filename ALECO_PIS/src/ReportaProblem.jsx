@@ -37,6 +37,25 @@ const ReportaProblem = () => {
     const trackTitle = settings?.public_track_title || 'Track Your Ticket';
     const trackSubtitle = settings?.public_track_subtitle || 'See the real-time status of your concern.';
 
+    // --- SMS Char Limits State ---
+    const [smsCharLimits, setSmsCharLimits] = useState({ concern: 60, action: 120 });
+
+    // --- Fetch SMS Char Limits ---
+    useEffect(() => {
+        const fetchSmsCharLimits = async () => {
+            try {
+                const response = await fetch(apiUrl('/api/site-settings/sms/char-limits'));
+                const result = await response.json();
+                if (result.success) {
+                    setSmsCharLimits(result.data);
+                }
+            } catch (error) {
+                console.error('[ReportaProblem] Failed to fetch SMS char limits:', error);
+            }
+        };
+        fetchSmsCharLimits();
+    }, []);
+
     // --- Wizard State ---
     const [currentStep, setCurrentStep] = useState(1);
     const stepContentRef = useRef(null);
@@ -813,8 +832,8 @@ const ReportaProblem = () => {
                             {currentStep === 2 && (
                                 <div className="wizard-step-block">
                                     <h3 className="column-section-title">Explain the Problem</h3>
-                                    <ExplainTheProblem value={formData.concern} onChange={handleFieldChange('concern')} />
-                                    <ActionDesired value={formData.actionDesired} onChange={handleFieldChange('actionDesired')} />
+                                    <ExplainTheProblem value={formData.concern} onChange={handleFieldChange('concern')} maxLength={smsCharLimits.concern} />
+                                    <ActionDesired value={formData.actionDesired} onChange={handleFieldChange('actionDesired')} maxLength={smsCharLimits.action} />
                                 </div>
                             )}
 

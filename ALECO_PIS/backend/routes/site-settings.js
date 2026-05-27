@@ -4,6 +4,7 @@ import { upload, cloudinary } from '../../cloudinaryConfig.js';
 import { requireAdmin } from '../middleware/requireRole.js';
 import { extractCloudinaryPublicId } from '../utils/cloudinaryUtils.js';
 import { normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
+import { getSmsSettings, resetSmsSettings } from '../utils/smsTemplate.js';
 
 const router = express.Router();
 
@@ -86,7 +87,23 @@ router.patch('/site-settings', requireAdmin, async (req, res) => {
       'public_about_images',
       'public_privacy_title',
       'public_privacy_content',
-      'public_footer_copyright'
+      'public_footer_copyright',
+      // SMS Templates
+      'sms_lineman_template',
+      'sms_consumer_template',
+      'sms_consumer_dispatch_template',
+      'sms_consumer_group_template',
+      // SMS Char Limits
+      'sms_concern_max_chars',
+      'sms_action_max_chars',
+      // SMS Field Inclusion Flags
+      'sms_include_ticket_id',
+      'sms_include_crew_name',
+      'sms_include_consumer_name',
+      'sms_include_address',
+      'sms_include_concern',
+      'sms_include_action_desired',
+      'sms_include_phone'
     ];
     const filteredUpdates = Object.entries(updates).filter(([key]) =>
       allowedKeys.includes(key) ||
@@ -280,6 +297,45 @@ router.post('/site-settings/delete-cloudinary-images', requireAdmin, async (req,
   } catch (error) {
     console.error('[site-settings] bulk delete error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete images.' });
+  }
+});
+
+/**
+ * Public: Get SMS char limits for frontend validation
+ */
+router.get('/site-settings/sms/char-limits', async (req, res) => {
+  try {
+    const smsSettings = await getSmsSettings();
+    res.json({ success: true, data: smsSettings.charLimits });
+  } catch (error) {
+    console.error('[site-settings] SMS char limits fetch error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch SMS char limits.' });
+  }
+});
+
+/**
+ * Admin: Get SMS template settings
+ */
+router.get('/site-settings/sms', requireAdmin, async (req, res) => {
+  try {
+    const smsSettings = await getSmsSettings();
+    res.json({ success: true, data: smsSettings });
+  } catch (error) {
+    console.error('[site-settings] SMS settings fetch error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch SMS settings.' });
+  }
+});
+
+/**
+ * Admin: Reset SMS settings to defaults
+ */
+router.post('/site-settings/sms/reset', requireAdmin, async (req, res) => {
+  try {
+    await resetSmsSettings();
+    res.json({ success: true, message: 'SMS settings reset to defaults.' });
+  } catch (error) {
+    console.error('[site-settings] SMS reset error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reset SMS settings.' });
   }
 });
 

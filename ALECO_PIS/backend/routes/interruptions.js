@@ -476,26 +476,26 @@ router.get('/interruptions', requireStaffIfListQueryFlags, async (req, res) => {
     const { goLivePosterCandidates } = await runAutoTransitions(pool);
 
     if (goLivePosterCandidates.length > 0) {
-      posterJobQueue.add(0, 'auto-transition', async () => {
-        try {
-          const cols = listInterruptionCols(hasDel, hasPulled, hasPoster);
-          for (const prevRaw of goLivePosterCandidates) {
-            const id = Number(prevRaw?.id);
-            if (!Number.isFinite(id) || id <= 0) continue;
-            const [latestRows] = await pool.query(
-              `SELECT ${cols} FROM aleco_interruptions WHERE id = ? LIMIT 1`,
-              [id]
-            );
-            const nextRaw = Array.isArray(latestRows) ? latestRows[0] : null;
-            if (!nextRaw) continue;
-            await maybeRegeneratePosterAfterMutation(pool, id, prevRaw, nextRaw);
-          }
-        } catch (e) {
-          console.warn('[poster] go-live auto regen:', e?.message || e);
-        }
-      }).catch((e) =>
-        console.warn('[poster] go-live auto regen queue error:', e?.message || e)
-      );
+      // Enqueue ONE job per candidate so each respects the per-job executor timeout
+      // and benefits from queue dedup. A single batch job processing N candidates
+      // serially would exceed the executor hard timeout once N * captureTime > 3 min
+      // and would also block manual /poster-capture requests for the whole batch.
+      const cols = listInterruptionCols(hasDel, hasPulled, hasPoster);
+      for (const prevRaw of goLivePosterCandidates) {
+        const candidateId = Number(prevRaw?.id);
+        if (!Number.isFinite(candidateId) || candidateId <= 0) continue;
+        posterJobQueue.add(candidateId, 'auto-transition', async () => {
+          const [latestRows] = await pool.query(
+            `SELECT ${cols} FROM aleco_interruptions WHERE id = ? LIMIT 1`,
+            [candidateId]
+          );
+          const nextRaw = Array.isArray(latestRows) ? latestRows[0] : null;
+          if (!nextRaw) return;
+          await maybeRegeneratePosterAfterMutation(pool, candidateId, prevRaw, nextRaw);
+        }).catch((e) =>
+          console.warn(`[poster] go-live auto regen id=${candidateId}:`, e?.message || e)
+        );
+      }
     }
     const phNow = nowPhilippineForMysql();
     // Auto-archive Energized, Cancelled, and Rescheduled advisories after 1 week (168h)
@@ -1737,8 +1737,14 @@ router.patch('/interruptions/:id/push-to-feed', requireStaff, async (req, res) =
 
 /**
  * Capture poster image to Cloudinary and save `poster_image_url`.
- * Uses the live print page when the advisory is public-visible; otherwise (or if print fails) uses an HTML fallback.
- * For the print path, set `PUBLIC_APP_URL` or `FRONTEND_ORIGIN` to the deployed SPA origin.
+ *
+ * Renders the SPA print page at `/print-interruption/:id` via Puppeteer and uploads
+ * the screenshot. Works for pulled-from-feed / archived / future-scheduled advisories
+ * (admin bypasses public-visibility check). If the SPA cannot render the design, the
+ * job fails with a descriptive error - there is NO simple HTML card fallback. The
+ * dashboard renders the React component live whenever `poster_image_url` is null.
+ *
+ * Required env: `PUBLIC_APP_URL` or `FRONTEND_ORIGIN` must point at the deployed SPA.
  */
 router.post('/interruptions/:id/poster-capture', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);
@@ -1877,9 +1883,12 @@ router.get('/interruptions/poster-jobs/:jobId', requireStaff, async (req, res) =
 });
 
 /**
- * Generate poster via HTML fallback (no Puppeteer SPA required).
- * Uses the same `captureInterruptionPosterForAdmin` path — tries print capture first,
- * falls back to the HTML template listing. Replaces the old 1×1-blank stub approach.
+ * Generate poster image (alias of `/poster-capture`).
+ *
+ * Historical name retained for backward compatibility with older clients. Behaviour is
+ * identical to `/poster-capture`: renders the SPA print poster via Puppeteer and uploads
+ * to Cloudinary. There is no longer a simple HTML card fallback - the dashboard
+ * renders the React component live when `poster_image_url` is null.
  */
 router.post('/interruptions/:id/poster-stub', requireStaff, async (req, res) => {
   const id = parseInt(req.params.id, 10);

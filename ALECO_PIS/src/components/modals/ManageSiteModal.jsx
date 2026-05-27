@@ -76,6 +76,32 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
   const [isSavingPublic, setIsSavingPublic] = useState(false);
   const [isResettingPublic, setIsResettingPublic] = useState(false);
 
+  // ── SMS Templates Settings state ──
+  const [smsSettings, setSmsSettings] = useState({
+    templates: {
+      lineman: '',
+      consumer_dispatch: '',
+      consumer_concern: '',
+      consumer_group: ''
+    },
+    charLimits: {
+      concern: 60,
+      action: 120
+    },
+    fieldFlags: {
+      ticket_id: true,
+      crew_name: true,
+      consumer_name: true,
+      address: true,
+      concern: true,
+      action_desired: true,
+      phone: true
+    }
+  });
+  const [isSavingSms, setIsSavingSms] = useState(false);
+  const [isResettingSms, setIsResettingSms] = useState(false);
+  const [showSmsResetModal, setShowSmsResetModal] = useState(false);
+
   // ── About Images Widget ──
   const aboutWidgetRef = useRef(null);
   const [isAboutWidgetReady, setIsAboutWidgetReady] = useState(false);
@@ -140,6 +166,31 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
       });
     }
   }, [isOpen, settings]);
+
+  // Load SMS settings on open
+  useEffect(() => {
+    if (isOpen && manageSiteTab === 'sms') {
+      loadSmsSettings();
+    }
+  }, [isOpen, manageSiteTab]);
+
+  const loadSmsSettings = async () => {
+    try {
+      const response = await fetch(apiUrl('/api/site-settings/sms'), {
+        headers: {
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const result = await response.json();
+      if (result.success) {
+        setSmsSettings(result.data);
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] load SMS settings error:', error);
+    }
+  };
 
   // ── Notification Flush handler ──
   const handleExecuteFlush = useCallback(async () => {
@@ -715,6 +766,80 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
     }));
   };
 
+  // ── SMS Templates Settings handlers ──
+  const handleSaveSmsSettings = async () => {
+    setIsSavingSms(true);
+    try {
+      const updates = {
+        sms_lineman_template: smsSettings.templates.lineman,
+        sms_consumer_template: smsSettings.templates.consumer_concern,
+        sms_consumer_dispatch_template: smsSettings.templates.consumer_dispatch,
+        sms_consumer_group_template: smsSettings.templates.consumer_group,
+        sms_concern_max_chars: smsSettings.charLimits.concern,
+        sms_action_max_chars: smsSettings.charLimits.action,
+        sms_include_ticket_id: smsSettings.fieldFlags.ticket_id,
+        sms_include_crew_name: smsSettings.fieldFlags.crew_name,
+        sms_include_consumer_name: smsSettings.fieldFlags.consumer_name,
+        sms_include_address: smsSettings.fieldFlags.address,
+        sms_include_concern: smsSettings.fieldFlags.concern,
+        sms_include_action_desired: smsSettings.fieldFlags.action_desired,
+        sms_include_phone: smsSettings.fieldFlags.phone
+      };
+
+      const response = await fetch(apiUrl('/api/site-settings'), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('SMS settings saved successfully.');
+        refreshSettings();
+      } else {
+        toast.error(result.message || 'Failed to save SMS settings.');
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] save SMS settings error:', error);
+      toast.error('An error occurred while saving SMS settings.');
+    } finally {
+      setIsSavingSms(false);
+    }
+  };
+
+  const handleResetSmsSettings = async () => {
+    setIsResettingSms(true);
+    try {
+      const response = await fetch(apiUrl('/api/site-settings/sms/reset'), {
+        method: 'POST',
+        headers: {
+          'X-User-Email': localStorage.getItem('userEmail'),
+          'X-Token-Version': localStorage.getItem('tokenVersion'),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast.success('SMS settings reset to defaults.');
+        await loadSmsSettings();
+        refreshSettings();
+        setShowSmsResetModal(false);
+      } else {
+        toast.error(result.message || 'Failed to reset SMS settings.');
+      }
+    } catch (error) {
+      console.error('[ManageSiteModal] reset SMS settings error:', error);
+      toast.error('Failed to reset SMS settings.');
+    } finally {
+      setIsResettingSms(false);
+    }
+  };
+
   // ── Close flush sub-modal helper ──
   const closeFlushConfirmModal = useCallback(() => {
     setShowFlushConfirmModal(false);
@@ -763,6 +888,13 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
               onClick={() => setManageSiteTab('public')}
             >
               Public View
+            </button>
+            <button
+              type="button"
+              className={`manage-site-tab ${manageSiteTab === 'sms' ? 'manage-site-tab--active' : ''}`}
+              onClick={() => setManageSiteTab('sms')}
+            >
+              SMS Templates
             </button>
           </div>
 
@@ -1358,9 +1490,335 @@ const ManageSiteModal = ({ isOpen, onClose, onFlushComplete }) => {
                 </div>
               </div>
             )}
+
+            {/* ── SMS Templates Tab ── */}
+            {manageSiteTab === 'sms' && (
+              <div className="manage-site-tab-panel">
+                {/* Lineman SMS Template */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">Lineman SMS Template</h4>
+                  <p className="settings-section-description">
+                    Template for SMS sent to crew/linemen when dispatching tickets.
+                  </p>
+                  <div className="config-row stacked">
+                    <label className="config-label-block">Template:</label>
+                    <textarea
+                      className="nav-item-input"
+                      rows={10}
+                      value={smsSettings.templates.lineman}
+                      onChange={(e) => setSmsSettings(s => ({ 
+                        ...s, 
+                        templates: { ...s.templates, lineman: e.target.value }
+                      }))}
+                      placeholder="Hi crew/linemen {crew_name} this is your assigned ticket..."
+                    />
+                    <small style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Available placeholders: {'{ticket_id}'}, {'{crew_name}'}, {'{consumer_name}'}, {'{address}'}, {'{concern}'}, {'{action_desired}'}, {'{phone}'}
+                    </small>
+                  </div>
+                </div>
+
+                {/* Consumer Dispatch SMS Template */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">Consumer Dispatch SMS Template</h4>
+                  <p className="settings-section-description">
+                    Template for SMS sent to consumers when their ticket is dispatched.
+                  </p>
+                  <div className="config-row stacked">
+                    <label className="config-label-block">Template:</label>
+                    <textarea
+                      className="nav-item-input"
+                      rows={6}
+                      value={smsSettings.templates.consumer_dispatch}
+                      onChange={(e) => setSmsSettings(s => ({ 
+                        ...s, 
+                        templates: { ...s.templates, consumer_dispatch: e.target.value }
+                      }))}
+                      placeholder="Good day! This is ALECO. Your ticket {ticket_id} is now under dispatch..."
+                    />
+                    <small style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Available placeholders: {'{ticket_id}'}
+                    </small>
+                  </div>
+                </div>
+
+                {/* Consumer Concern SMS Template */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">Consumer Concern SMS Template</h4>
+                  <p className="settings-section-description">
+                    Template for SMS sent to consumers when their ticket is endorsed for concern resolution.
+                  </p>
+                  <div className="config-row stacked">
+                    <label className="config-label-block">Template:</label>
+                    <textarea
+                      className="nav-item-input"
+                      rows={4}
+                      value={smsSettings.templates.consumer_concern}
+                      onChange={(e) => setSmsSettings(s => ({ 
+                        ...s, 
+                        templates: { ...s.templates, consumer_concern: e.target.value }
+                      }))}
+                      placeholder="Good day! This is ALECO. Your ticket {ticket_id} has been endorsed..."
+                    />
+                    <small style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Available placeholders: {'{ticket_id}'}
+                    </small>
+                  </div>
+                </div>
+
+                {/* Consumer Group SMS Template */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">Consumer Group SMS Template</h4>
+                  <p className="settings-section-description">
+                    Template for SMS sent to consumers when their ticket is grouped.
+                  </p>
+                  <div className="config-row stacked">
+                    <label className="config-label-block">Template:</label>
+                    <textarea
+                      className="nav-item-input"
+                      rows={6}
+                      value={smsSettings.templates.consumer_group}
+                      onChange={(e) => setSmsSettings(s => ({ 
+                        ...s, 
+                        templates: { ...s.templates, consumer_group: e.target.value }
+                      }))}
+                      placeholder="Greetings! This is from ALECO! Your ticket {ticket_id} is currently grouped..."
+                    />
+                    <small style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Available placeholders: {'{ticket_id}'}, {'{main_ticket_id}'}
+                    </small>
+                  </div>
+                </div>
+
+                {/* Character Limits */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">Character Limits</h4>
+                  <p className="settings-section-description">
+                    Maximum characters for concern and action desired fields in Report a Problem form.
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Concern Max Characters:</label>
+                      <input
+                        type="number"
+                        className="nav-item-input"
+                        value={smsSettings.charLimits.concern}
+                        onChange={(e) => setSmsSettings(s => ({ 
+                          ...s, 
+                          charLimits: { ...s.charLimits, concern: parseInt(e.target.value) || 60 }
+                        }))}
+                        min="10"
+                        max="500"
+                      />
+                    </div>
+                    <div className="config-row stacked">
+                      <label className="config-label-block">Action Desired Max Characters:</label>
+                      <input
+                        type="number"
+                        className="nav-item-input"
+                        value={smsSettings.charLimits.action}
+                        onChange={(e) => setSmsSettings(s => ({ 
+                          ...s, 
+                          charLimits: { ...s.charLimits, action: parseInt(e.target.value) || 120 }
+                        }))}
+                        min="10"
+                        max="500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Field Inclusion Flags */}
+                <div className="settings-section">
+                  <h4 className="settings-section-title">Field Inclusion (Lineman SMS)</h4>
+                  <p className="settings-section-description">
+                    Choose which fields to include in the lineman SMS template.
+                  </p>
+                  <div className="public-section-config">
+                    <div className="config-row">
+                      <label className="config-label-inline">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.fieldFlags.ticket_id}
+                          onChange={(e) => setSmsSettings(s => ({ 
+                            ...s, 
+                            fieldFlags: { ...s.fieldFlags, ticket_id: e.target.checked }
+                          }))}
+                        />
+                        <span style={{ marginLeft: '8px' }}>Ticket ID</span>
+                      </label>
+                    </div>
+                    <div className="config-row">
+                      <label className="config-label-inline">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.fieldFlags.crew_name}
+                          onChange={(e) => setSmsSettings(s => ({ 
+                            ...s, 
+                            fieldFlags: { ...s.fieldFlags, crew_name: e.target.checked }
+                          }))}
+                        />
+                        <span style={{ marginLeft: '8px' }}>Crew Name</span>
+                      </label>
+                    </div>
+                    <div className="config-row">
+                      <label className="config-label-inline">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.fieldFlags.consumer_name}
+                          onChange={(e) => setSmsSettings(s => ({ 
+                            ...s, 
+                            fieldFlags: { ...s.fieldFlags, consumer_name: e.target.checked }
+                          }))}
+                        />
+                        <span style={{ marginLeft: '8px' }}>Consumer Name</span>
+                      </label>
+                    </div>
+                    <div className="config-row">
+                      <label className="config-label-inline">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.fieldFlags.address}
+                          onChange={(e) => setSmsSettings(s => ({ 
+                            ...s, 
+                            fieldFlags: { ...s.fieldFlags, address: e.target.checked }
+                          }))}
+                        />
+                        <span style={{ marginLeft: '8px' }}>Address</span>
+                      </label>
+                    </div>
+                    <div className="config-row">
+                      <label className="config-label-inline">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.fieldFlags.concern}
+                          onChange={(e) => setSmsSettings(s => ({ 
+                            ...s, 
+                            fieldFlags: { ...s.fieldFlags, concern: e.target.checked }
+                          }))}
+                        />
+                        <span style={{ marginLeft: '8px' }}>Concern</span>
+                      </label>
+                    </div>
+                    <div className="config-row">
+                      <label className="config-label-inline">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.fieldFlags.action_desired}
+                          onChange={(e) => setSmsSettings(s => ({ 
+                            ...s, 
+                            fieldFlags: { ...s.fieldFlags, action_desired: e.target.checked }
+                          }))}
+                        />
+                        <span style={{ marginLeft: '8px' }}>Action Desired</span>
+                      </label>
+                    </div>
+                    <div className="config-row">
+                      <label className="config-label-inline">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.fieldFlags.phone}
+                          onChange={(e) => setSmsSettings(s => ({ 
+                            ...s, 
+                            fieldFlags: { ...s.fieldFlags, phone: e.target.checked }
+                          }))}
+                        />
+                        <span style={{ marginLeft: '8px' }}>Phone Number</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save/Reset Buttons */}
+                <div className="settings-section" style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                  <h4 className="settings-section-title" style={{ color: 'var(--accent-primary)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Save Changes
+                  </h4>
+                  <p className="settings-section-description">
+                    Save or reset SMS template settings. Changes take effect immediately.
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="settings-btn settings-btn--danger"
+                      onClick={() => setShowSmsResetModal(true)}
+                      disabled={isSavingSms || isResettingSms}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                      </svg>
+                      Reset to Default
+                    </button>
+                    <button
+                      type="button"
+                      className={`settings-btn settings-btn--primary ${isSavingSms ? 'loading' : ''}`}
+                      onClick={handleSaveSmsSettings}
+                      disabled={isSavingSms || isResettingSms}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                      </svg>
+                      {isSavingSms ? 'Saving...' : 'Save SMS Settings'}
+                    </button>
+                    <span className="config-status active" style={{ marginLeft: 'auto' }}>● Live</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* ── SMS Reset Confirmation Sub-Modal ── */}
+      {showSmsResetModal && (
+        <div className="flush-confirm-overlay">
+          <div className="flush-confirm-modal">
+            <div className="flush-confirm-header">
+              <span className="flush-confirm-title">Reset SMS Templates</span>
+              <button
+                type="button"
+                className="flush-confirm-close"
+                onClick={() => setShowSmsResetModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="flush-confirm-body">
+              <div className="flush-confirm-warning-icon">⚠️</div>
+              <h3>Reset to Default Templates</h3>
+              <p>
+                You are about to reset all SMS templates, character limits, and field inclusion flags to their default values. This action cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+                <button
+                  type="button"
+                  className="settings-btn"
+                  onClick={() => setShowSmsResetModal(false)}
+                  disabled={isResettingSms}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="settings-btn settings-btn--danger"
+                  onClick={handleResetSmsSettings}
+                  disabled={isResettingSms}
+                >
+                  {isResettingSms ? 'Resetting...' : 'Confirm Reset'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Hard Flush Confirmation Sub-Modal ── */}
       {showFlushConfirmModal && (

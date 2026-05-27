@@ -7,6 +7,7 @@ import { mapTicketRowToDto } from '../utils/ticketDto.js';
 import { requireStaff } from '../middleware/requireRole.js';
 import { normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
 import { syncCrewStatusByTicketId } from '../utils/crewStatusSync.js';
+import { renderLinemanSms, renderConsumerGroupSms } from '../utils/smsTemplate.js';
 
 const router = express.Router();
 
@@ -440,21 +441,20 @@ action desired: ${m.action_desired || 'N/A'}
 phone number: ${m.phone_number || 'N/A'}`;
         };
         const memberDetails = sortedMembers.map(buildMemberBlock).join('\n\n');
-        const linemanMsg = `Hi crew/linemen ${assigned_crew} this is your assigned tickets:
-
-${memberDetails}
-
-keep safe!`;
+        const linemanMsg = await renderLinemanSms({
+            ticket_id: mainTicketId,
+            crew_name: assigned_crew,
+            consumer_name: 'Multiple',
+            address: 'See details below',
+            concern: memberDetails,
+            action_desired: 'N/A',
+            phone: 'N/A'
+        });
         const linemanSmsResult = await sendPhilSMS(linemanPhone, linemanMsg);
         if (!linemanSmsResult.success) {
-            await connection.rollback();
-            console.log(`❌ Group lineman SMS failed for ${mainTicketId}; no tickets updated.`);
-            return res.status(502).json({
-                success: false,
-                message:
-                    'Crew dispatch SMS could not be sent. No tickets in the group were updated. Check PhilSMS (API key, URL, sender ID) and server logs.',
-                sms: { lineman: linemanSmsResult }
-            });
+            console.warn(`⚠️ Group lineman SMS failed for ${mainTicketId}:`, linemanSmsResult);
+        } else {
+            console.log(`✅ SMS sent to Lineman (${assigned_crew}): ${linemanPhone}`);
         }
 
         const consumerSmsResults = [];
@@ -495,11 +495,10 @@ keep safe!`;
 
         for (const member of sortedMembers) {
             if (is_consumer_notified && member.phone_number) {
-                const consumerMsg = `Greetings! This is from ALECO! Your ticket ${member.ticket_id} is currently grouped. Master ticket id is ${mainTicketId} and is now being processed. Please be in touch or visit our website to track your ticket and for follow ups.
-
-You can enter these tickets to track:
-${member.ticket_id}
-${mainTicketId}`;
+                const consumerMsg = await renderConsumerGroupSms({
+                    ticket_id: member.ticket_id,
+                    main_ticket_id: mainTicketId
+                });
                 const consumerResult = await sendPhilSMS(member.phone_number, consumerMsg);
                 consumerSmsResults.push({ ticket_id: member.ticket_id, attempted: true, ...consumerResult });
                 if (!consumerResult.success) {
@@ -563,15 +562,19 @@ ${mainTicketId}`;
         }
 
         const consumerAnyFailed = failedCount > 0;
+        const linemanAnyFailed = !linemanSmsResult.success;
+        const warnings = [];
+        if (consumerAnyFailed) warnings.push('consumer_sms_failed');
+        if (linemanAnyFailed) warnings.push('lineman_sms_failed');
         res.json({
             success: true,
             message: groupMsg,
             dispatchedCount: members.length,
             sms: {
-                lineman: { success: true },
+                lineman: linemanSmsResult,
                 consumers: consumerSmsResults
             },
-            ...(consumerAnyFailed ? { warnings: ['consumer_sms_failed'] } : {})
+            ...(warnings.length > 0 ? { warnings } : {})
         });
     } catch (error) {
         console.error('❌ Group dispatch error:', error);

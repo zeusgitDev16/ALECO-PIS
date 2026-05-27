@@ -108,3 +108,18 @@
         font-size: 14px;
     }
 }
+
+/* Character Counter */
+.char-counter {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+.char-counter--error {
+    color: #ef4444;
+    font-weight: 500;
+}

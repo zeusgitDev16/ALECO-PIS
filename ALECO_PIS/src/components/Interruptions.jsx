@@ -137,9 +137,22 @@ const AdminInterruptions = () => {
       }
 
       // Poll for job status
-      setMessage({ type: 'ok', text: 'Poster stub generation queued. Processing...' });
-      
+      setMessage({ type: 'ok', text: 'Poster generation queued. Processing...' });
+
+      const POLL_INTERVAL_MS = 2000;
+      // Backend worst case: 4 attempts * 90s capture + 7s backoff = ~6.5 min.
+      // Use 7 min so the spinner doesn't quit before a legitimate retry finishes.
+      const MAX_POLL_MS = 7 * 60 * 1000;
+      const startedAt = Date.now();
+
       const pollInterval = setInterval(async () => {
+        if (Date.now() - startedAt > MAX_POLL_MS) {
+          clearInterval(pollInterval);
+          setMessage({ type: 'err', text: 'Poster generation timed out. Please try again.' });
+          setPosterAssetBusy(false);
+          return;
+        }
+
         const statusR = await getPosterJobStatus(r.jobId);
         if (!statusR.success || !statusR.job) {
           clearInterval(pollInterval);
@@ -149,19 +162,21 @@ const AdminInterruptions = () => {
         }
 
         const job = statusR.job;
-        
+
         if (job.status === 'completed') {
           clearInterval(pollInterval);
-          setMessage({ type: 'ok', text: 'Poster stub generated successfully.' });
+          setMessage({ type: 'ok', text: 'Poster generated successfully.' });
           await loadEditDetail(editingId);
           setPosterAssetBusy(false);
         } else if (job.status === 'failed') {
           clearInterval(pollInterval);
-          setMessage({ type: 'err', text: job.error || 'Poster stub generation failed.' });
+          setMessage({ type: 'err', text: job.error || 'Poster generation failed.' });
           setPosterAssetBusy(false);
+        } else if (job.status === 'processing' && job.retryCount > 0) {
+          setMessage({ type: 'ok', text: `Retrying poster generation (attempt ${job.retryCount + 1})...` });
         }
         // Still pending or processing - continue polling
-      }, 2000); // Poll every 2 seconds
+      }, POLL_INTERVAL_MS);
 
     } catch {
       setMessage({ type: 'err', text: 'Network error.' });
@@ -191,8 +206,21 @@ const AdminInterruptions = () => {
 
       // Poll for job status
       setMessage({ type: 'ok', text: 'Poster generation queued. Processing...' });
-      
+
+      const POLL_INTERVAL_MS = 2000;
+      // Backend worst case: 4 attempts * 90s capture + 7s backoff = ~6.5 min.
+      // Use 7 min so the spinner doesn't quit before a legitimate retry finishes.
+      const MAX_POLL_MS = 7 * 60 * 1000;
+      const startedAt = Date.now();
+
       const pollInterval = setInterval(async () => {
+        if (Date.now() - startedAt > MAX_POLL_MS) {
+          clearInterval(pollInterval);
+          setMessage({ type: 'err', text: 'Poster generation timed out. Please try again.' });
+          setPosterAssetBusy(false);
+          return;
+        }
+
         const statusR = await getPosterJobStatus(r.jobId);
         if (!statusR.success || !statusR.job) {
           clearInterval(pollInterval);
@@ -202,7 +230,7 @@ const AdminInterruptions = () => {
         }
 
         const job = statusR.job;
-        
+
         if (job.status === 'completed') {
           clearInterval(pollInterval);
           setMessage({ type: 'ok', text: 'Poster generated successfully.' });
@@ -212,9 +240,11 @@ const AdminInterruptions = () => {
           clearInterval(pollInterval);
           setMessage({ type: 'err', text: job.error || 'Poster generation failed.' });
           setPosterAssetBusy(false);
+        } else if (job.status === 'processing' && job.retryCount > 0) {
+          setMessage({ type: 'ok', text: `Retrying poster generation (attempt ${job.retryCount + 1})...` });
         }
         // Still pending or processing - continue polling
-      }, 2000); // Poll every 2 seconds
+      }, POLL_INTERVAL_MS);
 
     } catch {
       setMessage({ type: 'err', text: 'Network error.' });

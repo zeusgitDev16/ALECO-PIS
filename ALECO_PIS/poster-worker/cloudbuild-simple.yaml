@@ -1,0 +1,30 @@
+# Cloud Build configuration for deploying poster-worker to Cloud Run (simple version)
+# This version uses environment variables directly instead of Secret Manager
+# Usage: gcloud builds submit --config cloudbuild-simple.yaml . --substitutions=_CLOUDINARY_CLOUD_NAME=xxx,_CLOUDINARY_API_KEY=xxx,_CLOUDINARY_API_SECRET=xxx,_PUBLIC_APP_URL_PRODUCTION=xxx,_POSTER_WORKER_API_KEY=xxx
+
+steps:
+  # 1. Build
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/aleco-pis/poster-worker:latest', '.']
+  
+  # 2. Push
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/aleco-pis/poster-worker:latest']
+  
+  # 3. Deploy
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'poster-worker'
+      - '--image'
+      - 'gcr.io/aleco-pis/poster-worker:latest'
+      - '--region'
+      - 'asia-southeast1'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'CLOUDINARY_CLOUD_NAME=dunqagymj,CLOUDINARY_API_KEY=375714411523529,CLOUDINARY_API_SECRET=YaY9SeVUbdGsIZKeFsHRWIOoPEM,PUBLIC_APP_URL_PRODUCTION=https://apisph.org,POSTER_WORKER_API_KEY=qRKAQuUIPDnySYliBFtxE9kLXhsfwg35'
+
+images:
+  - 'gcr.io/aleco-pis/poster-worker:latest'

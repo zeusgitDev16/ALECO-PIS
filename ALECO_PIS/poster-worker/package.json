@@ -1,0 +1,20 @@
+{
+  "name": "poster-worker",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Cloud Run worker for poster generation using Puppeteer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^22.0.0",
+    "cloudinary": "^2.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -346,33 +346,8 @@ export async function captureInterruptionPosterToCloudinary(id, variant = 'print
  * @returns {Promise<{ posterUrl: string } | { error: string }>}
  */
 async function captureWithHardTimeout(id, variant = 'print') {
-  // Use Cloud Run worker
   const result = await capturePosterViaWorker(id, variant);
   return result;
-
-  // OLD CODE (commented out for rollback):
-  // let timeoutHandle = null;
-  // const timeoutPromise = new Promise((_, reject) => {
-  //   timeoutHandle = setTimeout(
-  //     () => reject(new Error(`Capture exceeded hard timeout of ${CAPTURE_HARD_TIMEOUT_MS}ms`)),
-  //     CAPTURE_HARD_TIMEOUT_MS
-  //   );
-  // });
-  // try {
-  //   const result = await Promise.race([
-  //     captureInterruptionPosterToCloudinary(id, variant),
-  //     timeoutPromise,
-  //   ]);
-  //   return result;
-  // } catch (err) {
-  //   const msg = typeof err?.message === 'string' ? err.message : 'Capture hard-timeout.';
-  //   console.error(`[poster] hard-timeout id=${id}:`, msg);
-  //   // Best-effort: try to force-close the singleton browser to recover.
-  //   try { await forceCloseBrowser(null); } catch { /* ignore */ }
-  //   return { error: msg };
-  // } finally {
-  //   if (timeoutHandle) clearTimeout(timeoutHandle);
-  // }
 }
 
 /**

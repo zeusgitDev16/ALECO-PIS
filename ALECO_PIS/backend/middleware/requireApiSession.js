@@ -79,6 +79,9 @@ export function isPublicApiRoute(req) {
   /** HTML share page for Open Graph (Facebook crawler) */
   if (m === 'GET' && /^\/api\/share\/interruption\/[0-9]+$/i.test(path)) return true;
 
+  /** JSON share snapshot for poster capture (Puppeteer) */
+  if (m === 'GET' && /^\/api\/share\/interruption\/[0-9]+\/json$/i.test(path)) return true;
+
   if (m === 'GET' && /^\/api\/contact-numbers$/i.test(path)) return true;
   if (m === 'GET' && /^\/api\/urgent-keywords$/i.test(path)) return true;
   if (m === 'GET' && /^\/api\/feeders$/i.test(path)) return true;

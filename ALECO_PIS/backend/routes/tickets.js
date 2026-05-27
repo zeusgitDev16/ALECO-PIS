@@ -8,6 +8,8 @@ import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
 import { toIsoForClient } from '../utils/interruptionsDto.js';
 import { listUrgentKeywords } from '../utils/urgentKeywordsDb.js';
+import ticketSubmissionQueue from '../services/ticketSubmissionQueue.js';
+import { rateLimitTicketSubmission } from '../middleware/rateLimiter.js';
 import { concernMatchesUrgentKeywords } from '../utils/urgentKeywordMatch.js';
 import { DEFAULT_URGENT_KEYWORDS } from '../constants/defaultUrgentKeywords.js';
 import { clampSqlInt } from '../utils/safeSqlInt.js';
@@ -72,7 +74,7 @@ const validateDistrictMunicipality = (district, municipality) => {
 };
 
 // --- 1. THE MASTER TICKET SUBMISSION ROUTE ---
-router.post('/tickets/submit', upload.single('image'), async (req, res) => {
+router.post('/tickets/submit', rateLimitTicketSubmission, upload.single('image'), async (req, res) => {
     try {
         const manilaTime = nowPhilippineForMysql();
 
@@ -81,7 +83,7 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
             phone_number, address, category, concern, action_desired,
             district, municipality, is_urgent,
             reported_lat, reported_lng, location_accuracy, location_method,
-            location_confidence // NEW: Track GPS confidence
+            location_confidence
         } = req.body;
 
         console.log("📍 GPS Data Received:", { reported_lat, reported_lng, location_accuracy, location_method });
@@ -136,92 +138,152 @@ router.post('/tickets/submit', upload.single('image'), async (req, res) => {
         }
 
         const image_url = req.file ? req.file.path : null;
-        const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-        // --- BACKEND URGENT VALIDATION (DB keywords + shared matcher; fallback if table missing) ---
-        let urgentKeywordList;
-        try {
-            urgentKeywordList = await listUrgentKeywords(pool);
-        } catch (e) {
-            console.error('[tickets/submit] urgent keywords DB:', e?.message || e);
-            urgentKeywordList = DEFAULT_URGENT_KEYWORDS;
-        }
-
-        const backendUrgentCheck =
-            urgentKeywordList.length > 0 &&
-            concernMatchesUrgentKeywords(concern, urgentKeywordList);
-
-        // Use backend validation as source of truth
-        const finalUrgentStatus = backendUrgentCheck ? 1 : 0;
-
-        // Log discrepancies (for debugging)
-        if (is_urgent != finalUrgentStatus) {
-            console.warn(`⚠️ URGENT MISMATCH: Frontend=${is_urgent}, Backend=${finalUrgentStatus}`);
-            console.warn(`   Concern: "${concern}"`);
-        }
-
-        console.log(`🚨 Final Urgent Status: ${finalUrgentStatus} | Concern: "${concern}"`);
-
-        // Normalize GPS fields: convert string 'null' or empty strings to actual SQL NULL
-        const normalizeToNull = (val) => {
-            if (val === 'null' || val === null || val === '' || val === undefined) return null;
-            return val;
+        // Prepare submission data for queue
+        const submissionData = {
+            account_number, first_name, middle_name, last_name,
+            phone_number: normalizedPhone, address, category, concern, action_desired,
+            district, municipality, is_urgent,
+            reported_lat, reported_lng, location_accuracy, location_method,
+            location_confidence, image_url, manilaTime
         };
 
-        const lat = normalizeToNull(reported_lat);
-        const lng = normalizeToNull(reported_lng);
-        const accuracy = normalizeToNull(location_accuracy);
+        // Determine if this is an urgent submission (based on frontend is_urgent flag)
+        const isUrgentSubmission = is_urgent === 1 || is_urgent === true;
 
-        // UPDATED SQL: Now includes GPS columns + action_desired (19 placeholders)
-        const sql = `
-            INSERT INTO aleco_tickets
-            (ticket_id, account_number, first_name, middle_name, last_name,
-             phone_number, address, district, municipality,
-             category, concern, action_desired, image_url, status, created_at, is_urgent,
-             reported_lat, reported_lng, location_accuracy, location_method, location_confidence)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
-        `;
+        // Add job to queue with priority
+        const jobId = await ticketSubmissionQueue.add(submissionData, async () => {
+            const ticket_id = `ALECO-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-        const values = [
-            ticket_id,
-            account_number || "",
-            first_name,
-            middle_name || "",
-            last_name,
-            normalizedPhone,
-            address,
-            district || "",
-            municipality || "",
-            category,
-            concern,
-            action_desired,
-            image_url,
-            manilaTime,
-            finalUrgentStatus, // Use backend validation
-            lat,
-            lng,
-            accuracy,
-            location_method || 'manual',
-            location_confidence || 'medium' // NEW
-        ];
+            // --- BACKEND URGENT VALIDATION (DB keywords + shared matcher; fallback if table missing) ---
+            let urgentKeywordList;
+            try {
+                urgentKeywordList = await listUrgentKeywords(pool);
+            } catch (e) {
+                console.error('[tickets/submit] urgent keywords DB:', e?.message || e);
+                urgentKeywordList = DEFAULT_URGENT_KEYWORDS;
+            }
 
-        await pool.execute(sql, values);
+            const backendUrgentCheck =
+                urgentKeywordList.length > 0 &&
+                concernMatchesUrgentKeywords(concern, urgentKeywordList);
 
-        const locHint = [municipality, district].filter(Boolean).join(', ');
-        await recordTicketNotification(pool, {
-          eventType: TICKETS_EVENT.SUBMITTED_REPORT,
-          subjectName: ticket_id,
-          detail: locHint ? `Report a problem · ${locHint}` : 'Report a problem',
-          actorEmail: null,
+            // Use backend validation as source of truth
+            const finalUrgentStatus = backendUrgentCheck ? 1 : 0;
+
+            // Log discrepancies (for debugging)
+            if (is_urgent != finalUrgentStatus) {
+                console.warn(`⚠️ URGENT MISMATCH: Frontend=${is_urgent}, Backend=${finalUrgentStatus}`);
+                console.warn(`   Concern: "${concern}"`);
+            }
+
+            console.log(`🚨 Final Urgent Status: ${finalUrgentStatus} | Concern: "${concern}"`);
+
+            // Normalize GPS fields: convert string 'null' or empty strings to actual SQL NULL
+            const normalizeToNull = (val) => {
+                if (val === 'null' || val === null || val === '' || val === undefined) return null;
+                return val;
+            };
+
+            const lat = normalizeToNull(reported_lat);
+            const lng = normalizeToNull(reported_lng);
+            const accuracy = normalizeToNull(location_accuracy);
+
+            // UPDATED SQL: Now includes GPS columns + action_desired (19 placeholders)
+            const sql = `
+                INSERT INTO aleco_tickets
+                (ticket_id, account_number, first_name, middle_name, last_name,
+                 phone_number, address, district, municipality,
+                 category, concern, action_desired, image_url, status, created_at, is_urgent,
+                 reported_lat, reported_lng, location_accuracy, location_method, location_confidence)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            const values = [
+                ticket_id,
+                account_number || "",
+                first_name,
+                middle_name || "",
+                last_name,
+                normalizedPhone,
+                address,
+                district || "",
+                municipality || "",
+                category,
+                concern,
+                action_desired,
+                image_url,
+                manilaTime,
+                finalUrgentStatus,
+                lat,
+                lng,
+                accuracy,
+                location_method || 'manual',
+                location_confidence || 'medium'
+            ];
+
+            await pool.execute(sql, values);
+
+            const locHint = [municipality, district].filter(Boolean).join(', ');
+            await recordTicketNotification(pool, {
+              eventType: TICKETS_EVENT.SUBMITTED_REPORT,
+              subjectName: ticket_id,
+              detail: locHint ? `Report a problem · ${locHint}` : 'Report a problem',
+              actorEmail: null,
+            });
+
+            console.log(`✅ TICKET CREATED: ${ticket_id} | ${municipality}, ${district}`);
+
+            return { ticketId: ticket_id };
+        }, isUrgentSubmission);
+
+        return res.json({
+            success: true,
+            jobId,
+            message: 'Your submission is being processed. Use the job ID to check status.',
         });
-
-        console.log(`✅ TICKET CREATED: ${ticket_id} | ${municipality}, ${district}`);
-
-        res.json({ success: true, ticketId: ticket_id });
 
     } catch (error) {
         console.error("❌ SUBMISSION ERROR:", error);
         res.status(500).json({ success: false, message: "Server error. Please try again." });
+    }
+});
+
+/**
+ * Get ticket submission job status
+ */
+router.get('/tickets/jobs/:jobId', async (req, res) => {
+    const { jobId } = req.params;
+    
+    try {
+        const job = ticketSubmissionQueue.getStatus(jobId);
+        
+        if (!job) {
+            return res.status(404).json({ success: false, message: 'Job not found.' });
+        }
+
+        return res.json({
+            success: true,
+            job: {
+                id: job.id,
+                status: job.status,
+                priority: job.priority,
+                retryCount: job.retryCount,
+                ticketId: job.ticketId,
+                error: job.error,
+                createdAt: job.createdAt,
+                startedAt: job.startedAt,
+                completedAt: job.completedAt,
+                queuePosition: job.queuePosition,
+                estimatedWaitSeconds: job.estimatedWaitSeconds,
+            },
+        });
+    } catch (err) {
+        console.error('Ticket job status error:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to get job status.',
+        });
     }
 });
 

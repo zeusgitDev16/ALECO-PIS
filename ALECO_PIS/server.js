@@ -411,6 +411,7 @@ app.get('/api/debug/routes', (req, res) => {
             'GET /api/tickets/track/:ticketId',
             'POST /api/check-duplicates',
             'POST /api/tickets/send-copy',
+            'GET /api/tickets/jobs/:jobId',
         ],
         ticketsAdmin: [
             'GET /api/filtered-tickets',

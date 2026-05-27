@@ -343,78 +343,6 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
 }
 
 /* ============================================================================
-   RESOLUTION STEPPER (1. Dispatch → 2. In Progress → 3. Resolved)
-   ============================================================================ */
-
-.resolution-stepper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: calc(4px * var(--ticket-ui-scale, 1));
-    padding: calc(12px * var(--ticket-ui-scale, 1)) calc(20px * var(--ticket-ui-scale, 1));
-    background: var(--bg-body);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.stepper-step {
-    display: flex;
-    align-items: center;
-    gap: calc(6px * var(--ticket-ui-scale, 1));
-    padding: calc(4px * var(--ticket-ui-scale, 1)) calc(10px * var(--ticket-ui-scale, 1));
-    border-radius: calc(8px * var(--ticket-ui-scale, 1));
-    font-size: calc(0.65rem * var(--ticket-ui-scale, 1));
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    color: var(--text-secondary);
-    opacity: 0.6;
-}
-
-.stepper-step.done {
-    opacity: 0.9;
-    color: var(--text-secondary);
-}
-
-.stepper-step.active {
-    opacity: 1;
-    color: var(--primary-color);
-    background: rgba(59, 130, 246, 0.15);
-}
-
-.stepper-num {
-    width: calc(18px * var(--ticket-ui-scale, 1));
-    height: calc(18px * var(--ticket-ui-scale, 1));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: var(--bg-card);
-    font-size: calc(0.6rem * var(--ticket-ui-scale, 1));
-    font-weight: 800;
-}
-
-.stepper-step.active .stepper-num {
-    background: var(--primary-color);
-    color: #fff;
-}
-
-.stepper-step.done .stepper-num {
-    background: rgba(76, 175, 80, 0.3);
-    color: #4caf50;
-}
-
-.stepper-connector {
-    width: calc(20px * var(--ticket-ui-scale, 1));
-    height: max(1px, calc(2px * var(--ticket-ui-scale, 1)));
-    background: var(--border-color);
-    opacity: 0.5;
-}
-
-.stepper-label-short {
-    display: none;
-}
-
-/* ============================================================================
    DETAIL GRID SECTION
    ============================================================================ */
 
@@ -920,25 +848,6 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
         padding: 4px 8px;
     }
 
-    .resolution-stepper {
-        padding: 10px 16px;
-    }
-
-    .stepper-step {
-        padding: 3px 8px;
-        font-size: 0.6rem;
-    }
-
-    .stepper-num {
-        width: 16px;
-        height: 16px;
-        font-size: 0.55rem;
-    }
-
-    .stepper-connector {
-        width: 12px;
-    }
-
     .detail-grid {
         padding: 18px;
         gap: 12px;
@@ -1058,25 +967,6 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
         padding: 4px 8px;
     }
 
-    .resolution-stepper {
-        padding: 8px 12px;
-    }
-
-    .stepper-step {
-        padding: 3px 6px;
-        font-size: 0.6rem;
-    }
-
-    .stepper-num {
-        width: 15px;
-        height: 15px;
-        font-size: 0.55rem;
-    }
-
-    .stepper-connector {
-        width: 10px;
-    }
-
     .detail-grid {
         grid-template-columns: 1fr;
         padding: 14px;
@@ -1188,25 +1078,6 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
     .reported-date {
         font-size: 0.65rem;
         padding: 3px 6px;
-    }
-
-    .resolution-stepper {
-        padding: 6px 10px;
-    }
-
-    .stepper-step {
-        padding: 2px 5px;
-        font-size: 0.58rem;
-    }
-
-    .stepper-num {
-        width: 14px;
-        height: 14px;
-        font-size: 0.5rem;
-    }
-
-    .stepper-connector {
-        width: 8px;
     }
 
     .detail-grid {
@@ -1367,25 +1238,6 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
     .reported-date {
         font-size: 0.6rem;
         padding: 3px 6px;
-    }
-
-    .resolution-stepper {
-        padding: 5px 8px;
-    }
-
-    .stepper-step {
-        padding: 2px 4px;
-        font-size: 0.55rem;
-    }
-
-    .stepper-num {
-        width: 13px;
-        height: 13px;
-        font-size: 0.5rem;
-    }
-
-    .stepper-connector {
-        width: 6px;
     }
 
     .detail-grid {
@@ -1552,50 +1404,9 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
         border-radius: 4px;
     }
 
-    /* Stepper: 375px values × 0.92 (8% smaller) */
-    .resolution-stepper {
-        padding: 4.6px 7.4px;
-        gap: 3.7px;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        min-width: 0;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .stepper-step {
-        padding: 1.85px 3.7px;
-        gap: 5.5px;
-        flex: 0 1 auto;
-        min-width: 0;
-        justify-content: center;
-        white-space: nowrap;
+    /* Detail grid: 375px values × 0.92 (8% smaller) */
+    .detail-grid {
         font-size: 0.506rem;
-    }
-
-    .stepper-label-full {
-        display: none;
-    }
-
-    .stepper-label-short {
-        display: inline;
-        font-size: 0.506rem;
-        font-weight: 700;
-        letter-spacing: -0.2px;
-    }
-
-    .stepper-num {
-        width: 12px;
-        height: 12px;
-        font-size: 0.46rem;
-        flex-shrink: 0;
-    }
-
-    .stepper-connector {
-        width: 5.5px;
-        min-width: 5.5px;
-        flex-shrink: 0;
-        align-self: center;
     }
 
     .detail-divider {
@@ -1693,11 +1504,6 @@ html:not([data-theme="dark"]) .status-tag.accessdenied {
     background: linear-gradient(135deg, rgba(37, 99, 235, 0.26) 0%, rgba(59, 130, 246, 0.26) 100%);
     border-color: #2563eb;
     color: #1e3a8a;
-}
-
-/* Keep step 3 number readable in light mode when Resolved is active */
-[data-theme="light"] .resolution-stepper .stepper-step:last-child.active .stepper-num {
-    color: #111827;
 }
 
 [data-theme="light"] .concern-box {
@@ -1914,7 +1720,6 @@ body.modal-open .kanban-column-header {
 }
 
 .ticket-detail-front > .detail-header,
-.ticket-detail-front > .resolution-stepper,
 .ticket-detail-front > .detail-divider {
     flex-shrink: 0;
 }

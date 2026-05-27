@@ -53,6 +53,11 @@ const ReportaProblem = () => {
     const [ticketData, setTicketData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    // --- Submission Job State ---
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionJobId, setSubmissionJobId] = useState(null);
+    const [submissionStatus, setSubmissionStatus] = useState(null);
+
     // --- File/Image State ---
     const [selectedFile, setSelectedFile] = useState(null);
 
@@ -488,6 +493,9 @@ const ReportaProblem = () => {
     };
 
     const executeSubmit = async () => {
+        setIsSubmitting(true);
+        setSubmissionStatus('submitting');
+
         // 1. DATA PREPARATION
         const submissionData = new FormData();
 
@@ -535,26 +543,93 @@ const ReportaProblem = () => {
             const data = await response.json();
             
             if (data.success) {
-                setGeneratedId(data.ticketId);
-                setShowModal(true);
-                setCurrentStep(1);
-
-                // RESET FORM
-                setFormData({
-                    accountNumber: '', firstName: '', middleName: '',
-                    lastName: '', phoneNumber: '', address: '',
-                    category: '', concern: '', actionDesired: '', district: '',
-                    municipality: ''
-                });
-                setSelectedFile(null);
-                setGpsData({ lat: null, lng: null, accuracy: null, method: 'manual', isLocked: false, confidence: 'low' });
+                if (data.jobId) {
+                    // New async flow: poll for job status
+                    setSubmissionJobId(data.jobId);
+                    setSubmissionStatus('queued');
+                    pollJobStatus(data.jobId);
+                } else if (data.ticketId) {
+                    // Legacy flow (should not happen with new backend)
+                    setGeneratedId(data.ticketId);
+                    setShowModal(true);
+                    setCurrentStep(1);
+                    resetForm();
+                }
             } else {
                 toast.error("Submission failed: " + data.message);
+                setIsSubmitting(false);
+                setSubmissionStatus(null);
             }
         } catch (error) {
             console.error("Submission Error:", error);
             toast.error("Connection error. Is the server running?");
+            setIsSubmitting(false);
+            setSubmissionStatus(null);
         }
+    };
+
+    const pollJobStatus = async (jobId) => {
+        const pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch(apiUrl(`/api/tickets/jobs/${jobId}`));
+                const data = await response.json();
+
+                if (data.success && data.job) {
+                    const job = data.job;
+
+                    if (job.status === 'pending' && job.queuePosition > 0) {
+                        const waitText = job.estimatedWaitSeconds > 0
+                            ? ` (~${job.estimatedWaitSeconds}s)`
+                            : '';
+                        setSubmissionStatus(`queued:${job.queuePosition}${waitText}`);
+                    } else {
+                        setSubmissionStatus(job.status);
+                    }
+
+                    if (job.status === 'completed' && job.ticketId) {
+                        clearInterval(pollInterval);
+                        setGeneratedId(job.ticketId);
+                        setShowModal(true);
+                        setCurrentStep(1);
+                        resetForm();
+                        setIsSubmitting(false);
+                        setSubmissionJobId(null);
+                        setSubmissionStatus(null);
+                    } else if (job.status === 'failed') {
+                        clearInterval(pollInterval);
+                        toast.error("Submission failed: " + (job.error || 'Unknown error'));
+                        setIsSubmitting(false);
+                        setSubmissionJobId(null);
+                        setSubmissionStatus(null);
+                    }
+                }
+            } catch (error) {
+                console.error("Polling error:", error);
+                // Continue polling on error
+            }
+        }, 2000); // Poll every 2 seconds
+
+        // Stop polling after 2 minutes (timeout)
+        setTimeout(() => {
+            clearInterval(pollInterval);
+            if (isSubmitting) {
+                toast.error("Submission timed out. Please try again.");
+                setIsSubmitting(false);
+                setSubmissionJobId(null);
+                setSubmissionStatus(null);
+            }
+        }, 120000);
+    };
+
+    const resetForm = () => {
+        setFormData({
+            accountNumber: '', firstName: '', middleName: '',
+            lastName: '', phoneNumber: '', address: '',
+            category: '', concern: '', actionDesired: '', district: '',
+            municipality: ''
+        });
+        setSelectedFile(null);
+        setGpsData({ lat: null, lng: null, accuracy: null, method: 'manual', isLocked: false, confidence: 'low' });
     };
 
     const handleSubmit = async (e) => {
@@ -917,14 +992,21 @@ const ReportaProblem = () => {
                                     <button
                                         type="button"
                                         className="btn-submit-report"
-                                        disabled={!canProceed(6)}
+                                        disabled={!canProceed(6) || isSubmitting}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             handleSubmit(e);
                                         }}
                                     >
-                                        Submit Report
+                                        {isSubmitting ? (
+                                            <span>
+                                                {submissionStatus === 'submitting' && 'Submitting...'}
+                                                {typeof submissionStatus === 'string' && submissionStatus.startsWith('queued:') && `Queue #${submissionStatus.replace('queued:', '')}`}
+                                                {submissionStatus === 'processing' && 'Processing...'}
+                                                {(!submissionStatus || submissionStatus === 'queued') && 'Queued...'}
+                                            </span>
+                                        ) : 'Submit Report'}
                                     </button>
                                 )}
                             </div>

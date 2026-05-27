@@ -258,27 +258,6 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     </div>
                 </div>
 
-                {/* Resolution stepper: 1) Dispatch → 2) In Progress → 3) Resolved */}
-                <div className="resolution-stepper">
-                    <div className={`stepper-step ${['Pending', 'Unresolved'].includes(ticket.status) ? 'active' : ''} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
-                        <span className="stepper-num">1</span>
-                        <span className="stepper-label stepper-label-full">Dispatch</span>
-                        <span className="stepper-label stepper-label-short" aria-hidden="true">Disp</span>
-                    </div>
-                    <div className="stepper-connector" />
-                    <div className={`stepper-step ${['Ongoing'].includes(ticket.status) ? 'active' : ''} ${['Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'done' : ''}`}>
-                        <span className="stepper-num">2</span>
-                        <span className="stepper-label stepper-label-full">In Progress</span>
-                        <span className="stepper-label stepper-label-short" aria-hidden="true">Prog</span>
-                    </div>
-                    <div className="stepper-connector" />
-                    <div className={`stepper-step ${['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticket.status) ? 'active' : ''}`}>
-                        <span className="stepper-num">3</span>
-                        <span className="stepper-label stepper-label-full">Resolved</span>
-                        <span className="stepper-label stepper-label-short" aria-hidden="true">Done</span>
-                    </div>
-                </div>
-
                 <hr className="detail-divider" />
 
                 {/* --- SCROLLABLE BODY (middle only; footer stays fixed like advisory modal) --- */}
@@ -1239,17 +1218,8 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         onClose();
                     }}
                     onConfirm={() => {
-                        if (memoCreatedData.type === 'single') {
-                            // Dispatch custom event to open service memo modal
-                            window.dispatchEvent(new CustomEvent('aleco:open-service-memo', { 
-                                detail: { memoId: memoCreatedData.id, mode: 'edit' }
-                            }));
-                            setMemoCreatedData(null);
-                            onClose();
-                        } else {
-                            setMemoCreatedData(null);
-                            onClose();
-                        }
+                        setMemoCreatedData(null);
+                        onClose();
                     }}
                     title={memoCreatedData.type === 'single' ? 'Service Memo Created' : 'Service Memos Created'}
                     message={
@@ -1257,7 +1227,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             ? `Memo #${memoCreatedData.control_number} has been created successfully.`
                             : `${memoCreatedData.created.length} memo(s) created successfully.\n\nCreated: ${memoCreatedData.created.map(m => m.control_number).join(', ')}${memoCreatedData.skipped.length > 0 ? `\n\nSkipped: ${memoCreatedData.skipped.length} ticket(s) (already have memos)` : ''}`
                     }
-                    confirmLabel={memoCreatedData.type === 'single' ? 'View Memo' : 'Close'}
+                    confirmLabel="Close"
                     cancelLabel="Close"
                     variant="success"
                 />

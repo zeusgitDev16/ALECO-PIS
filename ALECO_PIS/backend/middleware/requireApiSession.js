@@ -85,6 +85,7 @@ export function isPublicApiRoute(req) {
   if (m === 'GET' && /^\/api\/site-settings$/i.test(path)) return true;
 
   if (m === 'GET' && /^\/api\/tickets\/track\//i.test(path)) return true;
+  if (m === 'GET' && /^\/api\/tickets\/jobs\//i.test(path)) return true;
   if (m === 'GET' && /^\/api\/tickets\/sms\/receive/i.test(path)) return true;
 
   if (m === 'GET' && /^\/api\/b2b-mail\/contacts\/verify/i.test(path)) return true;

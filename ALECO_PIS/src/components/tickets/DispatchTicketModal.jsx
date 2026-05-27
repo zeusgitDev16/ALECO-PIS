@@ -7,7 +7,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
     // Form States
     const [crew, setCrew] = useState('');
     const [eta, setEta] = useState('');
-    const [notifyConsumer, setNotifyConsumer] = useState(true);
+    const [notifyConsumer, setNotifyConsumer] = useState(false);
     const [notes, setNotes] = useState('');
     
     // Database State
@@ -32,7 +32,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
             setCrew('');
             setEta('');
             setNotes('');
-            setNotifyConsumer(true);
+            setNotifyConsumer(false);
             setGroupMembers([]);
         }
     }, [isOpen]);

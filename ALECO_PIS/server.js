@@ -70,11 +70,25 @@ const corsOptions = {
     exposedHeaders: ['Content-Disposition'],
 };
 
-// Nuclear hardcoding for diagnostic testing
-const socketAllowedOrigins = ['https://apisph.org'];
+// Socket.io CORS origins - dynamic from env with sanitized defaults
+const socketAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS
+  ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(url => url.trim().replace(/\/$/, ''))
+  : [
+      'https://apisph.org',
+      'https://api.apisph.org',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:4173',
+      'http://127.0.0.1:4173',
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+    ];
 
-console.log('[DEBUG] Final Origin List for Socket.io:', socketAllowedOrigins);
-console.log('[DEBUG] Environment Variable Value:', process.env.CORS_ALLOWED_ORIGINS);
+// Debug logging for CORS troubleshooting
+console.log('[socket.io] Allowed origins:', socketAllowedOrigins);
+if (process.env.CORS_ALLOWED_ORIGINS) {
+  console.log('[socket.io] CORS_ALLOWED_ORIGINS env var:', process.env.CORS_ALLOWED_ORIGINS);
+}
 
 const io = new SocketIOServer(httpServer, {
     cors: {

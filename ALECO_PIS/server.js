@@ -61,7 +61,10 @@ if (process.env.NODE_ENV === 'production' && !hasExplicitPublicCorsEnv()) {
 const corsOptions = {
     origin(origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(normalizeOrigin(origin))) return callback(null, true);
+        const normalized = normalizeOrigin(origin);
+        const allowed = allowedOrigins.includes(normalized);
+        console.log(`[cors] origin=${normalized} allowed=${allowed} list=`, allowedOrigins);
+        if (allowed) return callback(null, true);
         console.warn(`[cors] blocked origin: ${origin}`);
         return callback(null, false);
     },

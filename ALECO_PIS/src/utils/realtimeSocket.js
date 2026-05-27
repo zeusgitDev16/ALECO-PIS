@@ -10,7 +10,8 @@ export function getRealtimeSocket() {
   
   socketSingleton = io(baseUrl, {
     path: '/socket.io',
-    transports: ['websocket', 'polling'],
+    transports: ['websocket'],
+    upgrade: false,
     withCredentials: true,
   });
 

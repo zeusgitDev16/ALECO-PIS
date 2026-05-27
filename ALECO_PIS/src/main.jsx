@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { HelmetProvider } from 'react-helmet-async';
 import { installFetchSessionHeaders } from './utils/installFetchSessionHeaders.js';
 
+// Build version for deployment verification
+console.log('Current Build Version: 1.0.4 - May 27, 2026 23:56');
+
 installFetchSessionHeaders();
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

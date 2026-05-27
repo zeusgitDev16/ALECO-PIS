@@ -71,6 +71,9 @@ const corsOptions = {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Email', 'X-User-Name', 'X-Token-Version'],
     exposedHeaders: ['Content-Disposition'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
 };
 
 // Socket.io CORS origins - dynamic from env with sanitized defaults

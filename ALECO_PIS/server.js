@@ -70,14 +70,15 @@ const corsOptions = {
     exposedHeaders: ['Content-Disposition'],
 };
 
+// Nuclear hardcoding for diagnostic testing
+const socketAllowedOrigins = ['https://apisph.org'];
+
+console.log('[DEBUG] Final Origin List for Socket.io:', socketAllowedOrigins);
+console.log('[DEBUG] Environment Variable Value:', process.env.CORS_ALLOWED_ORIGINS);
+
 const io = new SocketIOServer(httpServer, {
     cors: {
-        origin(origin, callback) {
-            if (!origin) return callback(null, true);
-            if (allowedOrigins.includes(normalizeOrigin(origin))) return callback(null, true);
-            console.warn(`[socket.io] CORS blocked origin: ${origin}`);
-            return callback(null, false);
-        },
+        origin: socketAllowedOrigins,
         methods: ['GET', 'POST'],
         credentials: true,
     },

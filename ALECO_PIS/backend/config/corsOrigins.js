@@ -17,6 +17,7 @@ export function normalizeOrigin(origin) {
 export function buildAllowedCorsOrigins() {
     const defaults = [
         'https://apisph.org',
+        'https://api.apisph.org',
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:4173',

@@ -6,9 +6,10 @@ let socketSingleton = null;
 export function getRealtimeSocket() {
   if (socketSingleton) return socketSingleton;
   const baseUrl = getApiBaseUrl();
-  console.log(`[socket.io] Connecting to: ${baseUrl}`);
+  const baseUrlWithSlash = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  console.log(`[socket.io] Connecting to: ${baseUrlWithSlash}`);
   
-  socketSingleton = io(baseUrl, {
+  socketSingleton = io(baseUrlWithSlash, {
     path: '/socket.io',
     transports: ['websocket'],
     upgrade: false,

@@ -39,6 +39,10 @@ export const SiteSettingsProvider = ({ children }) => {
     loading,
     refreshSettings: fetchSettings,
     settingsUpdatedAt,
+    smsCharLimits: {
+      concern: settings.sms_concern_max_chars ? parseInt(settings.sms_concern_max_chars, 10) : 60,
+      action: settings.sms_action_max_chars ? parseInt(settings.sms_action_max_chars, 10) : 120,
+    },
   };
 
   // Dynamically update branding icons in <head>

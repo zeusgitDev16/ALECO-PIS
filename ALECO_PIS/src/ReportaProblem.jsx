@@ -31,30 +31,11 @@ import './CSS/ReportaProblemViewportFix.css';
 const TOTAL_STEPS = 6;
 
 const ReportaProblem = () => {
-    const { settings } = useSiteSettings();
+    const { settings, smsCharLimits } = useSiteSettings();
     const reportTitle = settings?.public_report_title || 'Report a Problem';
     const reportSubtitle = settings?.public_report_subtitle || 'Brownouts, damaged posts, broken wires, etc.';
     const trackTitle = settings?.public_track_title || 'Track Your Ticket';
     const trackSubtitle = settings?.public_track_subtitle || 'See the real-time status of your concern.';
-
-    // --- SMS Char Limits State ---
-    const [smsCharLimits, setSmsCharLimits] = useState({ concern: 60, action: 120 });
-
-    // --- Fetch SMS Char Limits ---
-    useEffect(() => {
-        const fetchSmsCharLimits = async () => {
-            try {
-                const response = await fetch(apiUrl('/api/site-settings/sms/char-limits'));
-                const result = await response.json();
-                if (result.success) {
-                    setSmsCharLimits(result.data);
-                }
-            } catch (error) {
-                console.error('[ReportaProblem] Failed to fetch SMS char limits:', error);
-            }
-        };
-        fetchSmsCharLimits();
-    }, []);
 
     // --- Wizard State ---
     const [currentStep, setCurrentStep] = useState(1);

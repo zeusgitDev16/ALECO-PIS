@@ -19,7 +19,7 @@
 .group-modal-content {
     background: var(--bg-card, #fff);
     width: 94%;
-    max-width: 400px;
+    max-width: 550px;
     max-height: calc(100vh - 48px);
     border-radius: 12px;
     position: relative;
@@ -72,7 +72,7 @@
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 1.17rem !important;
     font-weight: 500;
     color: var(--text-secondary, #666);
     transition: all 0.2s ease;
@@ -177,7 +177,7 @@
 
 .group-modal-label {
     display: block;
-    font-size: 11px;
+    font-size: 14.3px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -217,13 +217,13 @@
 }
 
 .tab-title {
-    font-size: 13px;
+    font-size: 16.9px;
     font-weight: 600;
     color: var(--text-main, #111);
 }
 
 .tab-desc {
-    font-size: 11px;
+    font-size: 14.3px;
     color: var(--text-secondary, #666);
 }
 
@@ -302,18 +302,18 @@
 }
 
 .group-modal-ticket-id {
-    font-size: 12px;
+    font-size: 15.6px;
     font-weight: 700;
     color: var(--accent-primary, #3b82f6);
 }
 
 .group-modal-ticket-meta {
-    font-size: 10px;
+    font-size: 13px;
     color: var(--text-secondary, #666);
 }
 
 .group-modal-ticket-location {
-    font-size: 11px;
+    font-size: 14.3px;
     color: var(--text-main, #111);
     white-space: nowrap;
     overflow: hidden;
@@ -390,6 +390,23 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
+/* Dropdown options - scale with modal */
+.group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select optgroup {
+    font-size: 12px;
+    font-weight: 600;
+    background-color: var(--bg-body, #f4f6f9);
+    color: var(--text-main, #111);
+    padding: 4px 8px;
+}
+
+.group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select option {
+    font-size: 13px;
+    font-weight: normal;
+    background-color: var(--bg-card, #fff);
+    color: var(--text-main, #333);
+    padding: 6px 12px;
+}
+
 .group-modal-input,
 .group-modal-textarea {
     width: 100%;
@@ -398,7 +415,7 @@
     border-radius: 8px;
     background: var(--bg-body, #f8f9fa);
     color: var(--text-main, #111);
-    font-size: 13px;
+    font-size: 16.9px;
     font-family: inherit;
     box-sizing: border-box;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -487,7 +504,7 @@
 @media (min-width: 768px) and (max-width: 1023px) {
     .group-modal-content {
         width: 92%;
-        max-width: 352px;
+        max-width: 484px;
     }
 
     .group-modal-close-btn {
@@ -509,15 +526,15 @@
 
     .group-modal-action-tab {
         padding: 8px 12px;
-        font-size: 0.75rem;
+        font-size: 0.98rem !important;
     }
 
     .group-modal-title {
-        font-size: 0.95rem;
+        font-size: 1.27rem;
     }
 
     .group-modal-desc {
-        font-size: 0.75rem;
+        font-size: 1.00rem;
     }
 
     .group-modal-body {
@@ -525,7 +542,7 @@
     }
 
     .group-modal-label {
-        font-size: 0.6rem;
+        font-size: 0.78rem;
         margin-bottom: 6px;
     }
 
@@ -538,11 +555,11 @@
     }
 
     .tab-title {
-        font-size: 0.75rem;
+        font-size: 0.98rem;
     }
 
     .tab-desc {
-        font-size: 0.6rem;
+        font-size: 0.78rem;
     }
 
     .group-modal-ticket-list {
@@ -554,28 +571,38 @@
     }
 
     .group-modal-ticket-id {
-        font-size: 0.7rem;
+        font-size: 0.91rem;
     }
 
     .group-modal-ticket-meta {
-        font-size: 0.58rem;
+        font-size: 0.75rem;
     }
 
     .group-modal-ticket-location {
-        font-size: 0.65rem;
+        font-size: 0.85rem;
         max-width: 120px;
     }
 
     .group-modal-input,
     .group-modal-textarea {
         padding: 9px 10px;
-        font-size: 0.75rem;
+        font-size: 0.98rem;
     }
 
     .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
         padding: 9px 10px;
         font-size: 0.75rem;
         border-radius: 7px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select optgroup {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select option {
+        font-size: 0.75rem;
+        padding: 5px 10px;
     }
 
     .group-modal-textarea {
@@ -615,7 +642,7 @@
 @media (min-width: 600px) and (max-width: 767px) {
     .group-modal-content {
         width: 92%;
-        max-width: 288px;
+        max-width: 396px;
     }
 
     .group-modal-close-btn {
@@ -637,15 +664,15 @@
 
     .group-modal-action-tab {
         padding: 7px 10px;
-        font-size: 0.65rem;
+        font-size: 0.85rem !important;
     }
 
     .group-modal-title {
-        font-size: 0.78rem;
+        font-size: 1.01rem;
     }
 
     .group-modal-desc {
-        font-size: 0.65rem;
+        font-size: 0.85rem;
     }
 
     .group-modal-body {
@@ -653,7 +680,7 @@
     }
 
     .group-modal-label {
-        font-size: 0.52rem;
+        font-size: 0.68rem;
         margin-bottom: 5px;
     }
 
@@ -666,11 +693,11 @@
     }
 
     .tab-title {
-        font-size: 0.65rem;
+        font-size: 0.85rem;
     }
 
     .tab-desc {
-        font-size: 0.52rem;
+        font-size: 0.68rem;
     }
 
     .group-modal-ticket-list {
@@ -682,28 +709,38 @@
     }
 
     .group-modal-ticket-id {
-        font-size: 0.6rem;
+        font-size: 0.78rem;
     }
 
     .group-modal-ticket-meta {
-        font-size: 0.5rem;
+        font-size: 0.65rem;
     }
 
     .group-modal-ticket-location {
-        font-size: 0.56rem;
+        font-size: 0.73rem;
         max-width: 100px;
     }
 
     .group-modal-input,
     .group-modal-textarea {
         padding: 7px 9px;
-        font-size: 0.65rem;
+        font-size: 0.85rem;
     }
 
     .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
         padding: 7px 9px;
         font-size: 0.65rem;
         border-radius: 6px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select optgroup {
+        font-size: 0.6rem;
+        padding: 3px 5px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select option {
+        font-size: 0.65rem;
+        padding: 4px 9px;
     }
 
     .group-modal-textarea {
@@ -743,7 +780,7 @@
 @media (min-width: 480px) and (max-width: 599px) {
     .group-modal-content {
         width: 92%;
-        max-width: 288px;
+        max-width: 396px;
     }
 
     .group-modal-close-btn {
@@ -765,15 +802,15 @@
 
     .group-modal-action-tab {
         padding: 7px 10px;
-        font-size: 0.65rem;
+        font-size: 0.85rem !important;
     }
 
     .group-modal-title {
-        font-size: 0.78rem;
+        font-size: 1.01rem;
     }
 
     .group-modal-desc {
-        font-size: 0.65rem;
+        font-size: 0.85rem;
     }
 
     .group-modal-body {
@@ -781,7 +818,7 @@
     }
 
     .group-modal-label {
-        font-size: 0.52rem;
+        font-size: 0.68rem;
         margin-bottom: 5px;
     }
 
@@ -794,11 +831,11 @@
     }
 
     .tab-title {
-        font-size: 0.65rem;
+        font-size: 0.85rem;
     }
 
     .tab-desc {
-        font-size: 0.52rem;
+        font-size: 0.68rem;
     }
 
     .group-modal-ticket-list {
@@ -810,28 +847,38 @@
     }
 
     .group-modal-ticket-id {
-        font-size: 0.6rem;
+        font-size: 0.78rem;
     }
 
     .group-modal-ticket-meta {
-        font-size: 0.5rem;
+        font-size: 0.65rem;
     }
 
     .group-modal-ticket-location {
-        font-size: 0.56rem;
+        font-size: 0.73rem;
         max-width: 100px;
     }
 
     .group-modal-input,
     .group-modal-textarea {
         padding: 7px 9px;
-        font-size: 0.65rem;
+        font-size: 0.85rem;
     }
 
     .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
         padding: 7px 9px;
         font-size: 0.65rem;
         border-radius: 6px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select optgroup {
+        font-size: 0.6rem;
+        padding: 3px 5px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select option {
+        font-size: 0.65rem;
+        padding: 4px 9px;
     }
 
     .group-modal-textarea {
@@ -871,7 +918,7 @@
 @media (min-width: 320px) and (max-width: 479px) {
     .group-modal-content {
         width: 94%;
-        max-width: 260px;
+        max-width: 357px;
     }
 
     .group-modal-close-btn {
@@ -893,15 +940,15 @@
 
     .group-modal-action-tab {
         padding: 6px 9px;
-        font-size: 0.58rem;
+        font-size: 0.75rem !important;
     }
 
     .group-modal-title {
-        font-size: 0.7rem;
+        font-size: 0.91rem;
     }
 
     .group-modal-desc {
-        font-size: 0.58rem;
+        font-size: 0.75rem;
     }
 
     .group-modal-body {
@@ -909,7 +956,7 @@
     }
 
     .group-modal-label {
-        font-size: 0.47rem;
+        font-size: 0.61rem;
         margin-bottom: 4px;
     }
 
@@ -923,11 +970,11 @@
     }
 
     .tab-title {
-        font-size: 0.58rem;
+        font-size: 0.75rem;
     }
 
     .tab-desc {
-        font-size: 0.47rem;
+        font-size: 0.61rem;
     }
 
     .group-modal-ticket-list {
@@ -939,28 +986,38 @@
     }
 
     .group-modal-ticket-id {
-        font-size: 0.55rem;
+        font-size: 0.72rem;
     }
 
     .group-modal-ticket-meta {
-        font-size: 0.45rem;
+        font-size: 0.59rem;
     }
 
     .group-modal-ticket-location {
-        font-size: 0.5rem;
+        font-size: 0.65rem;
         max-width: 90px;
     }
 
     .group-modal-input,
     .group-modal-textarea {
         padding: 6px 8px;
-        font-size: 0.58rem;
+        font-size: 0.75rem;
     }
 
     .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
         padding: 6px 8px;
         font-size: 0.58rem;
         border-radius: 6px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select optgroup {
+        font-size: 0.52rem;
+        padding: 2px 4px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select option {
+        font-size: 0.58rem;
+        padding: 3px 8px;
     }
 
     .group-modal-textarea {
@@ -1004,7 +1061,7 @@
 
     .group-modal-content {
         width: 96%;
-        max-width: 220px;
+        max-width: 302px;
         max-height: calc(100vh - 8px);
         border-radius: 8px;
     }
@@ -1028,15 +1085,15 @@
 
     .group-modal-action-tab {
         padding: 5px 8px;
-        font-size: 0.5rem;
+        font-size: 0.65rem !important;
     }
 
     .group-modal-title {
-        font-size: 0.6rem;
+        font-size: 0.78rem;
     }
 
     .group-modal-desc {
-        font-size: 0.5rem;
+        font-size: 0.65rem;
     }
 
     .group-modal-body {
@@ -1044,7 +1101,7 @@
     }
 
     .group-modal-label {
-        font-size: 0.42rem;
+        font-size: 0.55rem;
         margin-bottom: 3px;
     }
 
@@ -1058,11 +1115,11 @@
     }
 
     .tab-title {
-        font-size: 0.52rem;
+        font-size: 0.68rem;
     }
 
     .tab-desc {
-        font-size: 0.42rem;
+        font-size: 0.55rem;
     }
 
     .group-modal-ticket-list {
@@ -1074,28 +1131,38 @@
     }
 
     .group-modal-ticket-id {
-        font-size: 0.5rem;
+        font-size: 0.65rem;
     }
 
     .group-modal-ticket-meta {
-        font-size: 0.4rem;
+        font-size: 0.52rem;
     }
 
     .group-modal-ticket-location {
-        font-size: 0.45rem;
+        font-size: 0.59rem;
         max-width: 80px;
     }
 
     .group-modal-input,
     .group-modal-textarea {
         padding: 5px 7px;
-        font-size: 0.5rem;
+        font-size: 0.65rem;
     }
 
     .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select {
         padding: 5px 7px;
         font-size: 0.5rem;
         border-radius: 5px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select optgroup {
+        font-size: 0.45rem;
+        padding: 2px 4px;
+    }
+
+    .group-modal-content .group-modal-category-field .issue-dropdown-container .issue-select option {
+        font-size: 0.5rem;
+        padding: 3px 7px;
     }
 
     .group-modal-textarea {

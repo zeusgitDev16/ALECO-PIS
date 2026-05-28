@@ -171,11 +171,11 @@ const AddCrew = ({ isOpen, onClose, onSave, linemenPool = [], initialData = null
                     </div>
 
                     <div className="personnel-modal-footer">
-                        <button type="submit" className="personnel-modal-btn personnel-modal-btn-submit">
-                            {initialData ? 'Update Unit' : 'Deploy Unit'}
-                        </button>
                         <button type="button" className="personnel-modal-btn personnel-modal-btn-cancel" onClick={onClose}>
                             Cancel
+                        </button>
+                        <button type="submit" className="personnel-modal-btn personnel-modal-btn-submit">
+                            {initialData ? 'Update Unit' : 'Deploy Unit'}
                         </button>
                     </div>
                 </form>

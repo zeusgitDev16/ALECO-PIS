@@ -35,8 +35,8 @@
 
 .personnel-management-container .personnel-modal {
   width: min(100%, calc(100vw - calc(20px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
-  max-width: min(480px, calc(100vw - calc(20px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
-  max-height: min(600px, 88dvh, 92vh, calc(100dvh - calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
+  max-width: min(600px, calc(100vw - calc(20px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
+  max-height: min(800px, 88dvh, 95vh, calc(100dvh - calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))));
   min-height: min(420px, 65vh);
   border-radius: calc(16px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
   box-shadow: 0 calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
@@ -57,12 +57,12 @@
 }
 
 .personnel-management-container .personnel-modal-title {
-  font-size: max(0.95rem, calc(18px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(1.1rem, calc(22px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
   margin: 0 0 calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1))) 0;
 }
 
 .personnel-management-container .personnel-modal-subtitle {
-  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(12px, calc(13px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
 }
 
 .personnel-management-container .personnel-modal-close {
@@ -86,10 +86,10 @@
 }
 
 .personnel-management-container .personnel-modal-footer .personnel-modal-btn {
-  min-height: max(40px, calc(44px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
-  padding: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
-    calc(16px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
-  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  min-height: max(36px, calc(40px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  padding: calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(11px, calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
   border-radius: calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
 }
 
@@ -98,15 +98,15 @@
 }
 
 .personnel-management-container .personnel-modal-form-group label {
-  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
-  margin-bottom: calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(10px, calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  margin-bottom: calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
 }
 
 .personnel-management-container .personnel-modal-input {
-  padding: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
-    calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  padding: calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
   border-radius: calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
-  font-size: max(11px, calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(13px, calc(15px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
 }
 
 /* --------------------------------------------------------------------------
@@ -121,23 +121,23 @@
 }
 
 .personnel-management-container .personnel-pool-fieldset legend {
-  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
   gap: calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
 }
 
 .personnel-management-container .personnel-selection-count {
-  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
-  padding: calc(1px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
-    calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  padding: calc(2px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
   border-radius: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
 }
 
 .personnel-management-container .personnel-search-input {
-  padding: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
-    calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
-    calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
-    calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
-  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  padding: calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(28px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(12px, calc(13px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
   border-radius: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
 }
 
@@ -147,27 +147,27 @@
 }
 
 .personnel-management-container .personnel-list-item {
-  padding: calc(2px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
-    calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
-  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
-  gap: calc(6px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  padding: calc(4px * var(--pm-field-scale, var(--personnel-ui-scale, 1)))
+    calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(12px, calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  gap: calc(8px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
 }
 
 .personnel-management-container .personnel-list-check {
-  width: calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
-  height: calc(14px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  width: calc(16px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  height: calc(16px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
   border-radius: calc(3px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
-  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
-}
-
-.personnel-management-container .personnel-list-contact {
   font-size: max(9px, calc(10px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
 }
 
+.personnel-management-container .personnel-list-contact {
+  font-size: max(11px, calc(12px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+}
+
 .personnel-management-container .personnel-list-lead-btn {
-  font-size: max(8px, calc(9px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
-  min-width: calc(24px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
-  height: calc(18px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  font-size: max(10px, calc(11px * var(--pm-field-scale, var(--personnel-ui-scale, 1))));
+  min-width: calc(28px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
+  height: calc(20px * var(--pm-field-scale, var(--personnel-ui-scale, 1)));
 }
 
 /* --------------------------------------------------------------------------

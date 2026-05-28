@@ -1228,7 +1228,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                             : `${memoCreatedData.created.length} memo(s) created successfully.\n\nCreated: ${memoCreatedData.created.map(m => m.control_number).join(', ')}${memoCreatedData.skipped.length > 0 ? `\n\nSkipped: ${memoCreatedData.skipped.length} ticket(s) (already have memos)` : ''}`
                     }
                     confirmLabel="Close"
-                    cancelLabel="Close"
+                    hideCancel={true}
                     variant="success"
                 />
             )}

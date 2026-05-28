@@ -157,6 +157,10 @@
   padding: calc(20px * var(--ticket-ui-scale, 1)) calc(48px * var(--ticket-ui-scale, 1)) calc(16px * var(--ticket-ui-scale, 1)) calc(20px * var(--ticket-ui-scale, 1));
 }
 
+.tickets-page-container .group-modal-action-tab {
+  font-size: max(0.65rem, calc(1.17rem * var(--ticket-ui-scale, 1)));
+}
+
 .tickets-page-container .group-modal-body-scroll::-webkit-scrollbar {
   width: max(4px, calc(6px * var(--ticket-ui-scale, 1)));
 }

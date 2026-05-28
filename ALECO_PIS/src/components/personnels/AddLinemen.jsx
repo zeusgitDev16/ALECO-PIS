@@ -161,11 +161,11 @@ const AddLinemen = ({ isOpen, onClose, onSave, initialData = null }) => {
                     </div>
 
                     <div className="personnel-modal-footer">
-                        <button type="submit" className="personnel-modal-btn personnel-modal-btn-submit">
-                            {initialData ? 'Update Record' : 'Register Operator'}
-                        </button>
                         <button type="button" className="personnel-modal-btn personnel-modal-btn-cancel" onClick={onClose}>
                             Cancel
+                        </button>
+                        <button type="submit" className="personnel-modal-btn personnel-modal-btn-submit">
+                            {initialData ? 'Update Record' : 'Register Operator'}
                         </button>
                     </div>
                 </form>

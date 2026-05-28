@@ -14,6 +14,7 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
     const [availableCrews, setAvailableCrews] = useState([]);
     const [isLoadingCrews, setIsLoadingCrews] = useState(false);
     const [groupMembers, setGroupMembers] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // --- FETCH CREWS ON OPEN (availableOnly for dispatch) ---
     useEffect(() => {
@@ -55,23 +56,29 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
     // Idempotent Guard
     if (!isOpen || !ticket) return null;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (activeTab === 'concern') {
-            onSubmit({
-                resolution_mode: 'concern',
-                is_consumer_notified: notifyConsumer,
-                concern_resolution_notes: notes
-            });
-            return;
+        setIsSubmitting(true);
+        
+        try {
+            if (activeTab === 'concern') {
+                await onSubmit({
+                    resolution_mode: 'concern',
+                    is_consumer_notified: notifyConsumer,
+                    concern_resolution_notes: notes
+                });
+            } else {
+                await onSubmit({
+                    resolution_mode: 'dispatch',
+                    assigned_crew: crew,
+                    eta: eta,
+                    is_consumer_notified: notifyConsumer,
+                    dispatch_notes: notes
+                });
+            }
+        } finally {
+            setIsSubmitting(false);
         }
-        onSubmit({
-            resolution_mode: 'dispatch',
-            assigned_crew: crew,
-            eta: eta,
-            is_consumer_notified: notifyConsumer,
-            dispatch_notes: notes
-        });
     };
 
     return (
@@ -209,11 +216,11 @@ const DispatchTicketModal = ({ isOpen, onClose, ticket, onSubmit, titleOverride,
                     </div>
 
                     <div className="dispatch-modal-actions">
-                        <button type="button" className="btn-action btn-cancel" onClick={onClose}>
+                        <button type="button" className="btn-action btn-cancel" onClick={onClose} disabled={isSubmitting}>
                             Cancel
                         </button>
-                        <button type="submit" className="btn-action btn-ongoing">
-                            {activeTab === 'dispatch' ? 'Confirm Dispatch' : 'Start Concern Resolution'}
+                        <button type="submit" className="btn-action btn-ongoing" disabled={isSubmitting}>
+                            {isSubmitting ? 'Dispatching...' : (activeTab === 'dispatch' ? 'Confirm Dispatch' : 'Start Concern Resolution')}
                         </button>
                     </div>
                 </form>

@@ -10,11 +10,12 @@ import '../../CSS/DispatchTicketModal.css';
  * @param {string} message
  * @param {string} confirmLabel - e.g. "Confirm", "Delete"
  * @param {string} cancelLabel - e.g. "Cancel"
+ * @param {boolean} hideCancel - When true, hides the cancel button
  * @param {string} variant - 'danger' | 'default' | 'success' | 'hold' | 'unresolved' | 'nff' | 'access-denied' | 'ungroup' | 'revert-pending' - affects confirm button style
  * @param {string} [requireConfirmText] - When set, user must type this exact string before the confirm button is enabled
  * @param {React.ReactNode} [children] - Custom content to render between message and buttons
  */
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', variant = 'default', requireConfirmText, children }) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', hideCancel = false, variant = 'default', requireConfirmText, children }) => {
     const [typed, setTyped] = useState('');
 
     useEffect(() => {
@@ -86,9 +87,11 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel
                 </div>
 
                 <div className="dispatch-modal-actions">
-                    <button type="button" className="btn-action btn-cancel" onClick={onClose}>
-                        {cancelLabel}
-                    </button>
+                    {!hideCancel && (
+                        <button type="button" className="btn-action btn-cancel" onClick={onClose}>
+                            {cancelLabel}
+                        </button>
+                    )}
                     <button
                         type="button"
                         className={`btn-action ${getConfirmClass()}`}

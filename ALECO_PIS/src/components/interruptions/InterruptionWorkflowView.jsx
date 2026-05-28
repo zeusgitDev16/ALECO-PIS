@@ -186,8 +186,10 @@ export default function InterruptionWorkflowView({
                         <div className="interruption-workflow-card-body" title={bodyOrCause}>
                           {bodyShort}
                         </div>
-                        <div className="interruption-workflow-card-time">
-                          {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
+                        <div className="interruption-workflow-card-footer">
+                          <div className="interruption-workflow-card-time">
+                            {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
+                          </div>
                         </div>
                         <div className="interruption-workflow-card-actions">
                           {/* Share button - same behavior as public feed */}

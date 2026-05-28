@@ -5,22 +5,13 @@
  * TicketModalUIScale.css (confirm, filter drawer, layout picker patterns).
  */
 
-/* Field density: mobile (≤425px) keeps the 0.65 cap so controls stay compact; tablet/laptop (≥426px)
-   use full --interruption-ui-scale (1 → 0.88 → …) so new/edit advisory modals match original desktop sizing.
-   Existing @media blocks for 425 / 375 / 320 elsewhere in this file are unchanged. */
+/* Field density: use full --interruption-ui-scale for all breakpoints */
 .interruptions-page-container .interruptions-admin-modal {
-  --im-field-scale: min(var(--interruption-ui-scale, 1), 0.65);
+  --im-field-scale: var(--interruption-ui-scale, 1);
 }
 
 .interruptions-page-container .interruption-detail-modal {
-  --im-field-scale: min(var(--interruption-ui-scale, 1), 0.65);
-}
-
-@media (min-width: 426px) {
-  .interruptions-page-container .interruptions-admin-modal,
-  .interruptions-page-container .interruption-detail-modal {
-    --im-field-scale: var(--interruption-ui-scale, 1);
-  }
+  --im-field-scale: var(--interruption-ui-scale, 1);
 }
 
 /* --------------------------------------------------------------------------
@@ -129,9 +120,11 @@
 
 .interruptions-page-container .interruptions-admin-modal-footer .interruptions-admin-btn,
 .interruptions-page-container .interruptions-admin-modal-footer .interruptions-admin-btn--submit {
-  min-height: max(34px, calc(40px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
-  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  font-size: max(0.75rem, calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  min-height: max(32px, calc(36px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.8rem, calc(0.85rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  border: 2px solid var(--border-color);
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
 /* --------------------------------------------------------------------------
@@ -179,7 +172,7 @@
 
 .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-textarea {
   box-sizing: border-box;
-  font-size: calc(0.8rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   font-weight: 600;
   color: var(--text-primary);
   padding: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(12px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
@@ -214,7 +207,7 @@
 }
 
 .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-fieldset legend {
-  font-size: calc(0.65rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: calc(0.845rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -274,6 +267,15 @@
   display: flex;
   flex-direction: column;
   gap: calc(10px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+}
+
+.interruptions-page-container .interruptions-admin-modal--update .interruptions-admin-memo-form .interruptions-admin-btn--submit,
+.interruptions-page-container .interruptions-admin-modal--update .update-advisory-status-actions .interruptions-admin-btn--submit {
+  min-height: max(32px, calc(36px * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  padding: calc(8px * var(--im-field-scale, var(--interruption-ui-scale, 1))) calc(24px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
+  font-size: max(0.8rem, calc(0.85rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  border: 2px solid var(--border-color);
+  border-radius: calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
 }
 
 [data-theme='dark'] .interruptions-page-container .interruptions-admin-modal--update input[type='text'],

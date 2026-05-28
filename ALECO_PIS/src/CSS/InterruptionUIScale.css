@@ -4,53 +4,53 @@
  */
 
 .interruptions-page-container {
-  --interruption-ui-scale: 1;
+  --interruption-ui-scale: 1.15;
 }
 
 @media (max-width: 1023px) and (min-width: 768px) {
   .interruptions-page-container {
-    --interruption-ui-scale: 0.88;
+    --interruption-ui-scale: 1.10;
   }
 }
 
 @media (max-width: 767px) and (min-width: 600px) {
   .interruptions-page-container {
-    --interruption-ui-scale: 0.72;
+    --interruption-ui-scale: 1.15;
   }
 }
 
 @media (max-width: 599px) and (min-width: 480px) {
   .interruptions-page-container {
-    --interruption-ui-scale: 0.72;
+    --interruption-ui-scale: 1.15;
   }
 }
 
 @media (max-width: 479px) and (min-width: 425px) {
   .interruptions-page-container {
-    --interruption-ui-scale: 0.72;
+    --interruption-ui-scale: 1.15;
   }
 }
 
 @media (max-width: 424px) and (min-width: 375px) {
   .interruptions-page-container {
-    --interruption-ui-scale: 0.68;
+    --interruption-ui-scale: 0.85;
   }
 }
 
 @media (max-width: 374px) and (min-width: 321px) {
   .interruptions-page-container {
-    --interruption-ui-scale: 0.65;
+    --interruption-ui-scale: 0.80;
   }
 }
 
 @media (max-width: 320px) {
   .interruptions-page-container {
-    --interruption-ui-scale: 0.55;
+    --interruption-ui-scale: 0.75;
   }
 }
 
 @media (min-width: 1024px) {
   .interruptions-page-container {
-    --interruption-ui-scale: 1;
+    --interruption-ui-scale: 1.15;
   }
 }

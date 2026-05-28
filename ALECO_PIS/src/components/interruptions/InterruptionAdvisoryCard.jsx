@@ -92,11 +92,13 @@ export default function InterruptionAdvisoryCard({ item, onEdit, onUpdate, onDel
         </div>
       )}
 
-      <div className="interruptions-admin-card-meta">
-        <span className="interruptions-admin-card-meta-label">Start</span>
-        <span className="interruptions-admin-card-meta-value">
-          {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
-        </span>
+      <div className="interruptions-admin-card-footer">
+        <div className="interruptions-admin-card-meta">
+          <span className="interruptions-admin-card-meta-label">Start</span>
+          <span className="interruptions-admin-card-meta-value">
+            {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
+          </span>
+        </div>
       </div>
 
       <div className="interruptions-admin-card-actions interruptions-admin-card-actions--compact">

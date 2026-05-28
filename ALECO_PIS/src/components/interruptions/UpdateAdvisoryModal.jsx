@@ -199,22 +199,6 @@ export default function UpdateAdvisoryModal({
             <fieldset className="interruptions-admin-fieldset interruptions-admin-fieldset--compact">
               <legend>Change Lifecycle Status</legend>
 
-              <div className="interruptions-admin-lifecycle-stepper" role="status" aria-live="polite">
-                {lifecycleSteps.map((step, i) => (
-                  <React.Fragment key={step}>
-                    <div
-                      className={`interruptions-admin-stepper-step${newStatus === step ? ` interruptions-admin-stepper-step--active interruptions-admin-stepper-step--${step.toLowerCase()}` : ''}`}
-                    >
-                      <span className="interruptions-admin-stepper-dot" aria-hidden="true" />
-                      <span className="interruptions-admin-stepper-label">{updateModalStatusLabel(step)}</span>
-                    </div>
-                    {i < lifecycleSteps.length - 1 && (
-                      <span className="interruptions-admin-stepper-connector" aria-hidden="true" />
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-
               <div className="interruptions-admin-form-grid interruptions-admin-form-grid--modal">
                 <label className="interruptions-admin-span2">
                   New status

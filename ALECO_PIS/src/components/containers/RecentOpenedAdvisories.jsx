@@ -133,10 +133,12 @@ const RecentOpenedAdvisories = ({
             </h3>
           </div>
           <p className="recent-opened-advisory-preview">{truncate(item.body || item.cause, 50)}</p>
-          <div className="interruptions-admin-card-meta">
-            <span className="interruptions-admin-card-meta-value">
-              {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
-            </span>
+          <div className="interruptions-admin-card-footer">
+            <div className="interruptions-admin-card-meta">
+              <span className="interruptions-admin-card-meta-value">
+                {item.dateTimeStart ? formatToPhilippineTime(item.dateTimeStart) : '—'}
+              </span>
+            </div>
           </div>
           {renderCardActions(item)}
         </article>

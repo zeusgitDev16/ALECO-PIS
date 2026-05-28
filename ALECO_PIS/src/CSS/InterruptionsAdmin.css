@@ -702,7 +702,31 @@
   .interruptions-admin-card--compact {
     padding: 3.45px;
     gap: 2.3px;
-    min-height: 75px;
+    min-height: 110px;
+    max-height: 110px;
+    height: 110px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-head {
+    flex-shrink: 0;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-identity {
+    flex-shrink: 0;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-preview {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-footer {
+    flex-shrink: 0;
+    margin-top: auto;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-head {
@@ -713,59 +737,68 @@
     padding-bottom: 2.3px;
   }
 
-  /* Status + Type + Archived/Scheduled chips */
-  .interruptions-admin-card--compact .interruptions-admin-status-chip {
-    padding: 1.15px 3.45px;
-    font-size: 6.2px;
-  }
-
-  .interruptions-admin-card--compact .interruptions-admin-type-pill {
-    font-size: 6.2px;
-    padding: 1.15px 3.45px;
-  }
-
+  /* Hide type, archived, and scheduled chips on mobile - only show status */
+  .interruptions-admin-card--compact .interruptions-admin-type-pill,
   .interruptions-admin-card--compact .interruptions-admin-archived-chip,
   .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
-    font-size: 6.2px;
-    padding: 1.15px 2.3px;
+    display: none;
+  }
+
+  /* Status chip - make very small */
+  .interruptions-admin-card--compact .interruptions-admin-status-chip {
+    padding: 1px 4px;
+    font-size: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
-    font-size: 6.2px;
+    font-size: 0.6rem;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
-    font-size: 7.4px;
+    font-size: 0.85rem;
     line-height: 1.1;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
-    padding: 1.15px 2.3px;
-    font-size: 5.75px !important;
+    padding: 2px 6px;
+    font-size: 0.6rem !important;
   }
 
   .interruptions-admin-card-preview-text,
   .interruptions-admin-card-preview-areas {
-    font-size: 7.4px;
+    font-size: 0.7rem;
     -webkit-line-clamp: 1;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 1.2em;
   }
 
   .interruptions-admin-card-preview-areas {
-    font-size: 6.2px;
+    font-size: 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card-meta {
-    font-size: 6.2px;
-    gap: 2.3px;
+    font-size: 0.6rem;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card-meta-label,
   .interruptions-admin-card-meta-value {
-    font-size: 6.2px;
+    font-size: 0.65rem;
   }
 
   /* Hide actions below 768px; whole card opens action modal */
@@ -792,7 +825,31 @@
   .interruptions-admin-card--compact {
     padding: 3.81px;
     gap: 2.54px;
-    min-height: 82px;
+    min-height: 120px;
+    max-height: 120px;
+    height: 120px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-head {
+    flex-shrink: 0;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-identity {
+    flex-shrink: 0;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-preview {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-footer {
+    flex-shrink: 0;
+    margin-top: auto;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-head {
@@ -803,51 +860,64 @@
     padding-bottom: 2.54px;
   }
 
-  .interruptions-admin-card--compact .interruptions-admin-status-chip {
-    padding: 1.27px 3.81px;
-    font-size: 6.9px;
-  }
-
-  .interruptions-admin-card--compact .interruptions-admin-type-pill {
-    font-size: 6.9px;
-    padding: 1.27px 3.81px;
-  }
-
+  /* Hide type, archived, and scheduled chips on mobile - only show status */
+  .interruptions-admin-card--compact .interruptions-admin-type-pill,
   .interruptions-admin-card--compact .interruptions-admin-archived-chip,
   .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
-    font-size: 6.9px;
-    padding: 1.27px 2.54px;
+    display: none;
+  }
+
+  /* Status chip - make very small */
+  .interruptions-admin-card--compact .interruptions-admin-status-chip {
+    padding: 1px 4px;
+    font-size: 0.55rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
-    font-size: 6.9px;
+    font-size: 0.65rem;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
-    font-size: 8.2px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
-    padding: 1.27px 2.54px;
-    font-size: 6.35px !important;
+    padding: 2px 6px;
+    font-size: 0.65rem !important;
   }
 
   .interruptions-admin-card-preview-text {
-    font-size: 8.2px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 1.2em;
   }
 
   .interruptions-admin-card-preview-areas {
-    font-size: 6.9px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card-meta {
-    font-size: 6.9px;
-    gap: 2.54px;
+    font-size: 0.65rem;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card-meta-label,
   .interruptions-admin-card-meta-value {
-    font-size: 6.9px;
+    font-size: 0.7rem;
   }
 }
 
@@ -860,7 +930,31 @@
   .interruptions-admin-card--compact {
     padding: 4.4px;
     gap: 2.98px;
-    min-height: 95px;
+    min-height: 130px;
+    max-height: 130px;
+    height: 130px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-head {
+    flex-shrink: 0;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-identity {
+    flex-shrink: 0;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-preview {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .interruptions-admin-card--compact .interruptions-admin-card-footer {
+    flex-shrink: 0;
+    margin-top: auto;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-head {
@@ -871,51 +965,64 @@
     padding-bottom: 2.94px;
   }
 
-  .interruptions-admin-card--compact .interruptions-admin-status-chip {
-    padding: 1.46px 4.4px;
-    font-size: 7.9px;
-  }
-
-  .interruptions-admin-card--compact .interruptions-admin-type-pill {
-    font-size: 7.9px;
-    padding: 1.46px 4.4px;
-  }
-
+  /* Hide type, archived, and scheduled chips on mobile - only show status */
+  .interruptions-admin-card--compact .interruptions-admin-type-pill,
   .interruptions-admin-card--compact .interruptions-admin-archived-chip,
   .interruptions-admin-card--compact .interruptions-admin-bull-scheduled-chip {
-    font-size: 7.9px;
-    padding: 1.46px 2.94px;
+    display: none;
+  }
+
+  /* Status chip - make very small */
+  .interruptions-admin-card--compact .interruptions-admin-status-chip {
+    padding: 1px 4px;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-label {
-    font-size: 7.9px;
+    font-size: 0.7rem;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-feeder-value--compact {
-    font-size: 9.5px;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card--compact .interruptions-admin-card-ref-id--compact {
-    padding: 1.46px 2.94px;
-    font-size: 7.34px !important;
+    padding: 2px 6px;
+    font-size: 0.7rem !important;
   }
 
   .interruptions-admin-card-preview-text {
-    font-size: 9.5px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 1.2em;
   }
 
   .interruptions-admin-card-preview-areas {
-    font-size: 7.9px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card-meta {
-    font-size: 7.9px;
-    gap: 2.94px;
+    font-size: 0.7rem;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .interruptions-admin-card-meta-label,
   .interruptions-admin-card-meta-value {
-    font-size: 7.9px;
+    font-size: 0.75rem;
   }
 }
 
@@ -3448,7 +3555,7 @@
 
 .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-fieldset legend {
   padding: 0 calc(6px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
-  font-size: max(0.65rem, calc(0.7rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  font-size: calc(0.7rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -3464,7 +3571,7 @@
 }
 
 .interruptions-page-container .interruptions-admin-modal-form .interruptions-admin-body-textarea {
-  font-size: max(0.85rem, calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1))));
+  font-size: calc(0.95rem * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   padding: calc(14px * var(--im-field-scale, var(--interruption-ui-scale, 1))) 
             calc(16px * var(--im-field-scale, var(--interruption-ui-scale, 1)));
   min-height: max(80px, calc(120px * var(--im-field-scale, var(--interruption-ui-scale, 1))));

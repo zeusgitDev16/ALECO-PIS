@@ -176,6 +176,7 @@
 .recent-opened-kanban-card-wrap .kanban-ticket-card {
     min-width: 220px;
     max-width: 220px;
+    min-height: 100px;
 }
 
 /* 320px and small phones: shrink header so main content dominates */
@@ -216,5 +217,12 @@
         padding: 0 2px;
         margin-left: 1px;
         font-size: 0.45rem;
+    }
+
+    .recent-opened-kanban-card-wrap .recent-opened-kanban-card,
+    .recent-opened-kanban-card-wrap .kanban-ticket-card {
+        min-width: 160px;
+        max-width: 160px;
+        min-height: 130px;
     }
 }

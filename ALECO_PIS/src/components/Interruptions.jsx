@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { generateInterruptionPosterStub, captureInterruptionPoster, getPosterJobStatus } from '../api/interruptionsApi';
+import { generateInterruptionPosterStub, captureInterruptionPoster } from '../api/interruptionsApi';
+import { pollPosterJob } from '../utils/posterPolling';
 import AdminLayout from './AdminLayout';
 import '../CSS/AdminPageLayout.css';
 import '../CSS/Buttons.css';
@@ -83,6 +84,7 @@ const AdminInterruptions = () => {
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [posterAssetBusy, setPosterAssetBusy] = useState(false);
   const [posterUpdateRequired, setPosterUpdateRequired] = useState(false);
+  const posterPollCleanupRef = useRef(null);
   const { addOpened, recentIds, timeRange, setTimeRange, isCollapsed, setIsCollapsed } = useRecentOpenedAdvisories();
 
   const handleRestoreFromDetailModal = useCallback(
@@ -118,10 +120,18 @@ const AdminInterruptions = () => {
 
   const handlePosterStub = useCallback(async () => {
     if (!editingId) return;
+    
+    // Validate expectedUpdatedAt
+    const expectedUpdatedAt = editDetail?.updatedAt || interruptions.find(i => i.id === editingId)?.updatedAt;
+    if (!expectedUpdatedAt) {
+      setMessage({ type: 'err', text: 'Unable to verify advisory version. Please refresh.' });
+      return;
+    }
+    
     setPosterAssetBusy(true);
     setMessage(null);
+    
     try {
-      const expectedUpdatedAt = editDetail?.updatedAt || interruptions.find(i => i.id === editingId)?.updatedAt;
       const r = await generateInterruptionPosterStub(editingId, { expectedUpdatedAt });
       if (r.status === 409) {
         setMessage({ type: 'err', text: r.message || 'This advisory was updated by another user. Reloading...' });
@@ -136,60 +146,49 @@ const AdminInterruptions = () => {
         return;
       }
 
-      // Poll for job status
+      // Use shared polling utility
       setMessage({ type: 'ok', text: 'Poster generation queued. Processing...' });
-
-      const POLL_INTERVAL_MS = 2000;
-      // Backend worst case: 4 attempts * 90s capture + 7s backoff = ~6.5 min.
-      // Use 7 min so the spinner doesn't quit before a legitimate retry finishes.
-      const MAX_POLL_MS = 7 * 60 * 1000;
-      const startedAt = Date.now();
-
-      const pollInterval = setInterval(async () => {
-        if (Date.now() - startedAt > MAX_POLL_MS) {
-          clearInterval(pollInterval);
-          setMessage({ type: 'err', text: 'Poster generation timed out. Please try again.' });
-          setPosterAssetBusy(false);
-          return;
-        }
-
-        const statusR = await getPosterJobStatus(r.jobId);
-        if (!statusR.success || !statusR.job) {
-          clearInterval(pollInterval);
-          setMessage({ type: 'err', text: 'Failed to check job status.' });
-          setPosterAssetBusy(false);
-          return;
-        }
-
-        const job = statusR.job;
-
-        if (job.status === 'completed') {
-          clearInterval(pollInterval);
+      
+      const cleanup = pollPosterJob(r.jobId, {
+        onProgress: (job, retryCount) => {
+          setMessage({ type: 'ok', text: `Retrying poster generation (attempt ${retryCount + 1})...` });
+        },
+        onComplete: async (job) => {
           setMessage({ type: 'ok', text: 'Poster generated successfully.' });
           await loadEditDetail(editingId);
           setPosterAssetBusy(false);
-        } else if (job.status === 'failed') {
-          clearInterval(pollInterval);
-          setMessage({ type: 'err', text: job.error || 'Poster generation failed.' });
+        },
+        onError: (error) => {
+          setMessage({ type: 'err', text: error });
           setPosterAssetBusy(false);
-        } else if (job.status === 'processing' && job.retryCount > 0) {
-          setMessage({ type: 'ok', text: `Retrying poster generation (attempt ${job.retryCount + 1})...` });
-        }
-        // Still pending or processing - continue polling
-      }, POLL_INTERVAL_MS);
-
-    } catch {
-      setMessage({ type: 'err', text: 'Network error.' });
+        },
+        onTimeout: () => {
+          setMessage({ type: 'err', text: 'Poster generation timed out. Please try again.' });
+          setPosterAssetBusy(false);
+        },
+      });
+      
+      posterPollCleanupRef.current = cleanup;
+    } catch (error) {
+      setMessage({ type: 'err', text: error.message || 'Network error. Please check your connection.' });
       setPosterAssetBusy(false);
     }
-  }, [editingId, editDetail, interruptions, loadEditDetail]);
+  }, [editingId, editDetail, interruptions, loadEditDetail, setMessage]);
 
   const handlePosterCapture = useCallback(async () => {
     if (!editingId) return;
+    
+    // Validate expectedUpdatedAt
+    const expectedUpdatedAt = editDetail?.updatedAt || interruptions.find(i => i.id === editingId)?.updatedAt;
+    if (!expectedUpdatedAt) {
+      setMessage({ type: 'err', text: 'Unable to verify advisory version. Please refresh.' });
+      return;
+    }
+    
     setPosterAssetBusy(true);
     setMessage(null);
+    
     try {
-      const expectedUpdatedAt = editDetail?.updatedAt || interruptions.find(i => i.id === editingId)?.updatedAt;
       const r = await captureInterruptionPoster(editingId, { expectedUpdatedAt });
       if (r.status === 409) {
         setMessage({ type: 'err', text: r.message || 'This advisory was updated by another user. Reloading...' });
@@ -204,53 +203,34 @@ const AdminInterruptions = () => {
         return;
       }
 
-      // Poll for job status
+      // Use shared polling utility
       setMessage({ type: 'ok', text: 'Poster generation queued. Processing...' });
-
-      const POLL_INTERVAL_MS = 2000;
-      // Backend worst case: 4 attempts * 90s capture + 7s backoff = ~6.5 min.
-      // Use 7 min so the spinner doesn't quit before a legitimate retry finishes.
-      const MAX_POLL_MS = 7 * 60 * 1000;
-      const startedAt = Date.now();
-
-      const pollInterval = setInterval(async () => {
-        if (Date.now() - startedAt > MAX_POLL_MS) {
-          clearInterval(pollInterval);
-          setMessage({ type: 'err', text: 'Poster generation timed out. Please try again.' });
-          setPosterAssetBusy(false);
-          return;
-        }
-
-        const statusR = await getPosterJobStatus(r.jobId);
-        if (!statusR.success || !statusR.job) {
-          clearInterval(pollInterval);
-          setMessage({ type: 'err', text: 'Failed to check job status.' });
-          setPosterAssetBusy(false);
-          return;
-        }
-
-        const job = statusR.job;
-
-        if (job.status === 'completed') {
-          clearInterval(pollInterval);
+      
+      const cleanup = pollPosterJob(r.jobId, {
+        onProgress: (job, retryCount) => {
+          setMessage({ type: 'ok', text: `Retrying poster generation (attempt ${retryCount + 1})...` });
+        },
+        onComplete: async (job) => {
           setMessage({ type: 'ok', text: 'Poster generated successfully.' });
           await loadEditDetail(editingId);
           setPosterAssetBusy(false);
-        } else if (job.status === 'failed') {
-          clearInterval(pollInterval);
-          setMessage({ type: 'err', text: job.error || 'Poster generation failed.' });
+        },
+        onError: (error) => {
+          setMessage({ type: 'err', text: error });
           setPosterAssetBusy(false);
-        } else if (job.status === 'processing' && job.retryCount > 0) {
-          setMessage({ type: 'ok', text: `Retrying poster generation (attempt ${job.retryCount + 1})...` });
-        }
-        // Still pending or processing - continue polling
-      }, POLL_INTERVAL_MS);
-
-    } catch {
-      setMessage({ type: 'err', text: 'Network error.' });
+        },
+        onTimeout: () => {
+          setMessage({ type: 'err', text: 'Poster generation timed out. Please try again.' });
+          setPosterAssetBusy(false);
+        },
+      });
+      
+      posterPollCleanupRef.current = cleanup;
+    } catch (error) {
+      setMessage({ type: 'err', text: error.message || 'Network error. Please check your connection.' });
       setPosterAssetBusy(false);
     }
-  }, [editingId, editDetail, interruptions, loadEditDetail]);
+  }, [editingId, editDetail, interruptions, loadEditDetail, setMessage]);
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
@@ -272,6 +252,11 @@ const AdminInterruptions = () => {
     if (!modalOpen || !editingId) {
       setBaselineForm(null);
       formLoadedForIdRef.current = null;
+      // Cleanup poster polling when modal closes
+      if (posterPollCleanupRef.current) {
+        posterPollCleanupRef.current();
+        posterPollCleanupRef.current = null;
+      }
       return;
     }
     if (editDetail && editDetail.id === editingId) {

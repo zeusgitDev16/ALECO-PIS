@@ -632,9 +632,13 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
         // Returns consumer-relevant fields including crew/ETA when Ongoing, lineman_remarks, hold_reason
         const [rows] = await pool.execute(
             `SELECT
+                ticket_id,
                 first_name,
                 middle_name,
                 last_name,
+                phone_number,
+                account_number,
+                address,
                 status,
                 created_at,
                 concern,
@@ -647,7 +651,12 @@ router.get('/tickets/track/:ticketId', async (req, res) => {
                 concern_resolution_notes,
                 lineman_remarks,
                 hold_reason,
-                hold_since
+                hold_since,
+                service_memo_id,
+                image_url,
+                reported_lat,
+                reported_lng,
+                location_accuracy
              FROM aleco_tickets
              WHERE ticket_id = ?`,
             [ticketId]

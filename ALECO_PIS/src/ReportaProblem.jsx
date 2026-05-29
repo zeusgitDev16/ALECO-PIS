@@ -9,6 +9,7 @@ import { formatToPhilippineTime, formatToPhilippineTimeShort } from './utils/dat
 import { formatTicketStatusLabel } from './utils/ticketStatusDisplay';
 import { ALECO_SCOPE } from '../alecoScope';
 import { matchGPSToAlecoScope, validateDistrictMunicipality } from './utils/gpsLocationMatcher';
+import { getSafeResourceUrl } from './utils/safeUrl';
 
 // Importing the Lego Bricks
 import TextFieldProblem from './components/textfields/TextFieldProblem';
@@ -27,6 +28,7 @@ import HotlinesDisplay from './components/contact/HotlinesDisplay';
 import { DEFAULT_URGENT_KEYWORDS } from './constants/urgentKeywordsDefaults';
 import { concernMatchesUrgentKeywords } from './utils/urgentKeywordMatch';
 import './CSS/ReportaProblemViewportFix.css';
+import TicketHistoryLogs from './components/tickets/TicketHistoryLogs';
 
 const TOTAL_STEPS = 6;
 
@@ -52,6 +54,11 @@ const ReportaProblem = () => {
     const [trackingId, setTrackingId] = useState('');
     const [ticketData, setTicketData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [copiedField, setCopiedField] = useState(null);
+    const [memoControlNumber, setMemoControlNumber] = useState('');
+    const [memoStatus, setMemoStatus] = useState('');
+    const [isMemoLoading, setIsMemoLoading] = useState(false);
+    const [groupData, setGroupData] = useState(null);
 
     // --- Submission Job State ---
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -718,17 +725,71 @@ const ReportaProblem = () => {
         try {
             const response = await fetch(apiUrl(`/api/tickets/track/${trackingId}`));
             const result = await response.json();
+            console.log('Track ticket response:', result);
             if (result.success) {
                 setTicketData(result.data);
+                console.log('Ticket data:', result.data);
+                console.log('Service memo ID:', result.data.service_memo_id);
+                // Fetch memo data if service_memo_id exists
+                if (result.data.service_memo_id) {
+                    setIsMemoLoading(true);
+                    try {
+                        const memoRes = await fetch(apiUrl(`/api/service-memos/${result.data.service_memo_id}`));
+                        const memoData = await memoRes.json();
+                        console.log('Memo response:', memoData);
+                        if (memoData.success) {
+                            setMemoControlNumber(memoData.data.control_number || '');
+                            setMemoStatus(memoData.data.memo_status || '');
+                        } else {
+                            console.error('Memo fetch failed:', memoData.message);
+                        }
+                    } catch (memoError) {
+                        console.error('Failed to fetch memo:', memoError);
+                    } finally {
+                        setIsMemoLoading(false);
+                    }
+                } else {
+                    setMemoControlNumber('');
+                    setMemoStatus('');
+                }
+                // Fetch group data if it's a GROUP ticket
+                if (result.data.ticket_id?.startsWith('GROUP-')) {
+                    try {
+                        const groupRes = await fetch(apiUrl(`/api/tickets/group/${result.data.ticket_id}`));
+                        const groupResult = await groupRes.json();
+                        if (groupResult.success) {
+                            setGroupData(groupResult.data);
+                        } else {
+                            setGroupData(null);
+                        }
+                    } catch (groupError) {
+                        console.error('Failed to fetch group data:', groupError);
+                        setGroupData(null);
+                    }
+                } else {
+                    setGroupData(null);
+                }
             } else {
                 toast.error(result.message);
                 setTicketData(null);
+                setMemoControlNumber('');
+                setMemoStatus('');
+                setGroupData(null);
             }
         } catch (error) {
             console.error("Tracking Error:", error);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // --- Copy to Clipboard ---
+    const handleCopy = (text, fieldName) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            setCopiedField(fieldName);
+            setTimeout(() => setCopiedField(null), 2000);
+        }).catch(err => console.error("Failed to copy text: ", err));
     };
 
     // --- Backend: Email Logic (Triggered from PopUp) ---
@@ -1046,24 +1107,108 @@ const ReportaProblem = () => {
             <span>Pending</span>
         </div>
         
-        {/* STEP 2: Ongoing, On Hold, or Unresolved */}
+        {/* STEP 2: Ongoing */}
         <div className={`step ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
-            <div className={`circle ${ticketData.status === 'Unresolved' ? 'red-glow' : 'blue-glow'} ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
-            <span>{ticketData.status === 'Unresolved' ? 'Unresolved' : 'Ongoing'}</span>
+            <div className={`circle blue-glow ${['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>2</div>
+            <span>Ongoing</span>
         </div>
         
-        {/* STEP 3: Closed (Restored, NoFaultFound, AccessDenied) */}
-        <div className={`step ${['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>
-            <div className={`circle green-glow ${['Restored', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) ? 'active' : ''}`}>3</div>
+        {/* STEP 3: Closed (Restored, NoFaultFound, AccessDenied, Unresolved) */}
+        <div className={`step ${['Restored', 'NoFaultFound', 'AccessDenied', 'Unresolved'].includes(ticketData.status) ? 'active' : ''}`}>
+            <div className={`circle ${
+                ticketData.status === 'Restored' ? 'green-glow' :
+                ticketData.status === 'Unresolved' ? 'red-glow' :
+                ticketData.status === 'NoFaultFound' ? 'violet-glow' :
+                ticketData.status === 'AccessDenied' ? 'orange-glow' :
+                'green-glow'
+            } ${['Restored', 'NoFaultFound', 'AccessDenied', 'Unresolved'].includes(ticketData.status) ? 'active' : ''}`}>3</div>
             <span>Closed</span>
         </div>
     </div>
 
+    <div className="status-details-scroll">
     <div className="status-details-card">
-        <p>
+        <p className="status-row">
             <strong>Current Status:</strong> 
             <span className={`status-tag ${(ticketData.status || '').toLowerCase()}`}>{formatTicketStatusLabel(ticketData.status)}</span>
         </p>
+        
+        {/* Service Memo Status */}
+        <p className="status-row">
+            <strong>Service Memo:</strong> 
+            <span className="memo-link-highlight">
+                {isMemoLoading ? 'Loading...' : (memoStatus || 'No Service Memo yet')}
+            </span>
+        </p>
+        
+        {/* Account Number */}
+        {ticketData.account_number && (
+            <div className="copyable-box" onClick={() => handleCopy(ticketData.account_number, 'account')}>
+                <strong>Account Number:</strong> 
+                <span>{ticketData.account_number}</span>
+                <span className={`copy-indicator ${copiedField === 'account' ? 'success' : ''}`}>
+                    {copiedField === 'account' ? '✓ Copied' : '📋 Copy'}
+                </span>
+            </div>
+        )}
+        
+        {/* Contact Number (copyable) */}
+        <p className="status-row">
+            <strong>Contact Number:</strong> 
+            <span>{ticketData.phone_number}</span>
+            <span className={`copy-indicator ${copiedField === 'phone' ? 'success' : ''}`} onClick={() => handleCopy(ticketData.phone_number, 'phone')}>
+                {copiedField === 'phone' ? '✓ Copied' : '📋 Copy'}
+            </span>
+        </p>
+        
+        {/* Full Address Details */}
+        <p>
+            <strong>Service Location:</strong> 
+            <span className="location-text">
+                📍 {ticketData.address ? `${ticketData.address}, ` : ''}
+                {ticketData.municipality || '—'}
+                <br />
+                <small className="district-sub">{ticketData.district || ''}</small>
+            </span>
+        </p>
+        
+        {/* Map Location */}
+        {ticketData.reported_lat && ticketData.reported_lng && (
+            <div className="map-location-section">
+                <strong>Map Location:</strong>
+                <p className="coordinates">
+                    Coords: {Number(ticketData.reported_lat).toFixed(6)}, {Number(ticketData.reported_lng).toFixed(6)}
+                    {ticketData.location_accuracy != null && ` (Accuracy: ±${ticketData.location_accuracy}m)`}
+                </p>
+                <a
+                    className="ticket-map-external-link"
+                    href={`https://maps.google.com/?q=${ticketData.reported_lat},${ticketData.reported_lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    View on Google Maps
+                </a>
+            </div>
+        )}
+        
+        {/* Action Desired */}
+        <div className="concern-preview">
+            <label>Action Desired:</label>
+            <p>{ticketData.action_desired || '—'}</p>
+        </div>
+        
+        {/* Dispatch Info */}
+        {(ticketData.assigned_crew || ticketData.eta || ticketData.dispatch_notes || ticketData.concern_resolution_notes) && ['Ongoing', 'Restored', 'Unresolved', 'NoFaultFound', 'AccessDenied'].includes(ticketData.status) && (
+            <div className="dispatch-info-section">
+                <label>{ticketData.concern_resolution_notes ? 'Resolution Info' : 'Dispatch Info'}</label>
+                <div className="dispatch-info-box">
+                    {ticketData.assigned_crew && <p><strong>Crew:</strong> {ticketData.assigned_crew}</p>}
+                    {ticketData.eta && <p><strong>ETA:</strong> {ticketData.eta}</p>}
+                    {ticketData.dispatch_notes && <p><strong>Notes:</strong> {ticketData.dispatch_notes}</p>}
+                    {ticketData.concern_resolution_notes && <p><strong>Concern Notes:</strong> {ticketData.concern_resolution_notes}</p>}
+                </div>
+            </div>
+        )}
         
         {ticketData.status === 'Ongoing' && (ticketData.assigned_crew || ticketData.eta) && (
             <div className="crew-eta-info">
@@ -1112,11 +1257,59 @@ const ReportaProblem = () => {
             <p>{ticketData.concern}</p>
         </div>
         
+        {/* Attached Evidence */}
+        {ticketData.image_url && (
+            <div className="evidence-section">
+                <label>Attached Evidence:</label>
+                <div className="image-wrapper">
+                    <img 
+                        src={getSafeResourceUrl(ticketData.image_url)} 
+                        alt="Evidence" 
+                        className="evidence-img" 
+                        onClick={() => window.open(getSafeResourceUrl(ticketData.image_url), '_blank', 'noopener,noreferrer')}
+                    />
+                    <span className="image-hint">Click image to expand</span>
+                </div>
+            </div>
+        )}
+        
+        {/* Group Ticket Info */}
+        {ticketData.ticket_id?.startsWith('GROUP-') && groupData?.children && groupData.children.length > 0 && (
+            <div className="group-children-section">
+                <label>Child Tickets ({groupData.children.length}):</label>
+                <ul className="group-children-list">
+                    {groupData.children.map((c) => {
+                        const childLocation = c.municipality
+                            ? `${c.municipality}, ${c.district || 'Albay'}`
+                            : (c.address || '—');
+                        const statusKey = c.status ? c.status.toLowerCase().replace(/\s/g, '') : 'pending';
+                        return (
+                            <li key={c.ticket_id} className="group-child-item">
+                                <div className="group-child-top">
+                                    <span className="child-id">{c.ticket_id}</span>
+                                    <span className="child-category">{c.category}</span>
+                                </div>
+                                <div className="card-footer-metadata group-child-foot">
+                                    <div className="location-scroll-wrapper">
+                                        <span className="location-text-full">{childLocation}</span>
+                                    </div>
+                                    <span className={`status-pill-solid ${statusKey}`}>
+                                        {formatTicketStatusLabel(c.status)}
+                                    </span>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
+        )}
+        
         {(ticketData.status === 'Unresolved' || ticketData.status === 'NoFaultFound' || ticketData.status === 'AccessDenied') && (
             <button type="button" className="btn-report-again" onClick={() => { setIsFlipped(false); setTicketData(null); setTrackingId(''); }}>
                 Report Again
             </button>
         )}
+    </div>
     </div>
 </div>
                         )}

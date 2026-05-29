@@ -282,7 +282,34 @@ router.post('/service-memos/allocate-control-number', requireStaff, async (req, 
 });
 
 // GET /api/service-memos/:id - Single memo with ticket join
-router.get('/service-memos/:id', requireStaff, async (req, res) => {
+// GET /api/service-memos/:id - Fetch service memo by ID (public for ticket tracking)
+router.get('/service-memos/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid memo id.' });
+    }
+
+    const [rows] = await pool.execute(`${MEMO_JOIN_SQL} WHERE sm.id = ?`, [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Service memo not found.' });
+    }
+
+    // Return only public-safe fields for tracking
+    const memo = {
+      control_number: rows[0].control_number,
+      memo_status: rows[0].memo_status
+    };
+
+    res.json({ success: true, data: memo });
+  } catch (error) {
+    console.error('❌ Service Memo Get Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch service memo.' });
+  }
+});
+
+// GET /api/service-memos/:id/admin - Fetch full service memo (staff only)
+router.get('/service-memos/:id/admin', requireStaff, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isFinite(id) || id <= 0) {

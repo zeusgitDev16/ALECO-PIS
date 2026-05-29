@@ -91,6 +91,9 @@ export function isPublicApiRoute(req) {
   if (m === 'GET' && /^\/api\/tickets\/jobs\//i.test(path)) return true;
   if (m === 'GET' && /^\/api\/tickets\/sms\/receive/i.test(path)) return true;
 
+  /** Public memo fetch for ticket tracking */
+  if (m === 'GET' && /^\/api\/service-memos\/[0-9]+$/i.test(path)) return true;
+
   if (m === 'GET' && /^\/api\/b2b-mail\/contacts\/verify/i.test(path)) return true;
 
   if (m === 'POST' && /^\/api\/b2b-mail\/inbound\/webhook$/i.test(path)) return true;

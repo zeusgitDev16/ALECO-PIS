@@ -14,6 +14,7 @@ import {
 import { recordMemoNotification, MEMO_EVENT } from '../utils/adminNotifications.js';
 import { requireStaff } from '../middleware/requireRole.js';
 import { normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
+import { insertTicketLog } from '../utils/ticketLogHelper.js';
 
 const router = express.Router();
 
@@ -1049,12 +1050,14 @@ router.post('/service-memos/bulk', requireStaff, async (req, res) => {
       try {
         await connection.beginTransaction();
 
-        // Fetch all tickets with their municipalities
+        // Fetch all tickets with their municipalities (include parent linkage so we can
+        // keep a GROUP master consistent when its children are advanced to Ongoing).
         const placeholders = ticket_ids.map(() => '?').join(',');
         const [ticketRows] = await connection.execute(
-          `SELECT ticket_id, status, category, municipality FROM aleco_tickets WHERE ticket_id IN (${placeholders})`,
+          `SELECT ticket_id, status, category, municipality, parent_ticket_id FROM aleco_tickets WHERE ticket_id IN (${placeholders})`,
           ticket_ids
         );
+        const parentByTicket = new Map(ticketRows.map(t => [t.ticket_id, t.parent_ticket_id]));
 
         if (ticketRows.length === 0) {
           await connection.rollback();
@@ -1139,6 +1142,34 @@ router.post('/service-memos/bulk', requireStaff, async (req, res) => {
               id: result.insertId,
               ticket_id: ticketId,
               control_number: memoNumber,
+            });
+          }
+        }
+
+        // Keep GROUP masters consistent: the loop above advanced each child to 'Ongoing',
+        // so any parent group whose child just received a memo must also move off 'Pending'.
+        // Without this the board would show the master as Pending while its children are
+        // Ongoing — a broken group invariant.
+        const parentsToAdvance = new Set();
+        for (const m of createdMemos) {
+          const parentId = parentByTicket.get(m.ticket_id);
+          if (parentId && String(parentId).trim() !== '') parentsToAdvance.add(parentId);
+        }
+        for (const parentId of parentsToAdvance) {
+          const [masterUpdate] = await connection.execute(
+            `UPDATE aleco_tickets SET status = 'Ongoing' WHERE ticket_id = ? AND status = 'Pending'`,
+            [parentId]
+          );
+          if (masterUpdate.affectedRows > 0) {
+            await insertTicketLog(connection, {
+              ticket_id: parentId,
+              action: 'status_change',
+              from_status: 'Pending',
+              to_status: 'Ongoing',
+              actor_type: currentUserEmail ? 'dispatcher' : 'system',
+              actor_email: currentUserEmail.trim() || null,
+              actor_name: currentUser.trim() || 'System',
+              metadata: { reason: 'group_memo_created' },
             });
           }
         }

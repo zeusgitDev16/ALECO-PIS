@@ -279,6 +279,80 @@ const AdminTickets = () => {
         }
     };
 
+    const handleAddTicketsToGroup = async (mainTicketId, ticketIds) => {
+        if (!mainTicketId || !Array.isArray(ticketIds) || ticketIds.length === 0) {
+            toast.error('Select at least one ticket to add.');
+            return { success: false };
+        }
+        try {
+            const snapshot = (tickets || []).find((t) => t.ticket_id === mainTicketId);
+            const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/add-tickets`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ticket_ids: ticketIds,
+                    ...getActor(),
+                    expected_updated_at: snapshot?.updated_at ?? null,
+                }),
+            });
+            const data = await response.json();
+            if (response.status === 409) {
+                toast.warning(data.message || 'This group was updated by someone else. Reloading latest data.');
+                refetch();
+                return { success: false, conflict: true };
+            }
+            if (response.ok && data.success) {
+                const skippedCount = Array.isArray(data.skipped) ? data.skipped.length : 0;
+                if (skippedCount > 0) {
+                    toast.warning(`ALECO System: ${data.message}`);
+                } else {
+                    toast.success(`ALECO System: ${data.message}`);
+                }
+                refetch();
+                return { success: true, data };
+            }
+            toast.error('Add tickets failed: ' + (data.message || 'Unknown error'));
+            return { success: false, data };
+        } catch (error) {
+            console.error('Add tickets to group error:', error);
+            toast.error('Failed to add tickets. Please try again.');
+            return { success: false };
+        }
+    };
+
+    const handleEditGroupDetails = async (mainTicketId, fields) => {
+        if (!mainTicketId) return { success: false };
+        try {
+            const snapshot = (tickets || []).find((t) => t.ticket_id === mainTicketId);
+            const response = await authFetch(apiUrl(`/api/tickets/group/${mainTicketId}/details`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...fields,
+                    ...getActor(),
+                    expected_updated_at: snapshot?.updated_at ?? null,
+                }),
+            });
+            const data = await response.json();
+            if (response.status === 409) {
+                toast.warning(data.message || 'This group was updated by someone else. Reloading latest data.');
+                refetch();
+                return { success: false, conflict: true };
+            }
+            if (response.ok && data.success) {
+                toast.success(`ALECO System: ${data.message}`);
+                refetch();
+                return { success: true, data };
+            }
+            toast.error('Update group failed: ' + (data.message || 'Unknown error'));
+            return { success: false, data };
+        } catch (error) {
+            console.error('Edit group details error:', error);
+            toast.error('Failed to update group. Please try again.');
+            return { success: false };
+        }
+    };
+
     const getActor = () => ({
         actor_email: localStorage.getItem('userEmail') || null,
         actor_name: localStorage.getItem('userName') || null
@@ -746,6 +820,8 @@ const AdminTickets = () => {
                 onResumeFromHold={handleResumeFromHold}
                 onDispatchGroup={handleDispatchGroup}
                 onUngroup={executeUngroup}
+                onAddTicketsToGroup={handleAddTicketsToGroup}
+                onEditGroupDetails={handleEditGroupDetails}
                 onDeleteTicket={handleDeleteTicket}
                 onRefetch={refetch}
                 crews={availableCrews}

@@ -509,8 +509,7 @@ const ServiceMemoForm = ({
   const canStartResolution =
     Boolean(memo?.id) &&
     (mode === 'view' || mode === 'update') &&
-    memo.memo_status === 'saved' &&
-    memo.ticket_status === 'Ongoing';
+    !['resolved', 'unresolved', 'nofaultfound', 'accessdenied', 'closed'].includes(memo.memo_status?.toLowerCase());
 
   const handleConfirmUndoMemo = async () => {
     if (!memo?.id || undoBusy) return;

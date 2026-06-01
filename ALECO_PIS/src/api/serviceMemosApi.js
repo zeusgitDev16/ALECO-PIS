@@ -149,7 +149,7 @@ export async function listServiceMemos({
 export async function getServiceMemo(id) {
   let res;
   try {
-    res = await fetch(apiUrl(`/api/service-memos/${id}`), {
+    res = await fetch(apiUrl(`/api/service-memos/${id}/admin`), {
       headers: { ...authHeaders() },
     });
   } catch {

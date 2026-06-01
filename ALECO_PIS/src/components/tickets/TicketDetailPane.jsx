@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiUrl } from '../../utils/api';
 import { formatToPhilippineTime } from '../../utils/dateUtils';
@@ -8,6 +8,8 @@ import '../../CSS/TicketDetailPane.css';
 import '../../CSS/TicketDashboard.css';
 import DispatchTicketModal from './DispatchTicketModal';
 import EditTicketModal from './EditTicketModal';
+import EditGroupDetailsModal from './EditGroupDetailsModal';
+import AddTicketToGroupModal from './AddTicketToGroupModal';
 import ConfirmModal from './ConfirmModal';
 import TicketHistoryLogs from './TicketHistoryLogs';
 import { getSafeResourceUrl } from '../../utils/safeUrl';
@@ -16,13 +18,15 @@ import { authFetch } from '../../utils/authFetch';
 /**
  * TicketDetailPane - A high-fidelity modal for viewing and updating ticket specifics.
  */
-const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, onDeleteTicket, onClose, onRefetch, crews }) => {
+const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, onAddTicketsToGroup, onEditGroupDetails, onDeleteTicket, onClose, onRefetch, crews }) => {
     const navigate = useNavigate();
     const [copiedField, setCopiedField] = useState(null);
     const [uiScale, setUiScale] = useState(null);
     const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
     const [isGroupDispatchOpen, setIsGroupDispatchOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
+    const [isAddTicketOpen, setIsAddTicketOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isUngroupConfirmOpen, setIsUngroupConfirmOpen] = useState(false);
     const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
@@ -64,17 +68,23 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
             });
     };
 
+    // Fetch group master + children. Reusable so we can refresh after add/edit without
+    // closing the pane (the parent list refetch does not mutate the open selectedTicket).
+    const refetchGroupData = useCallback(() => {
+        if (!ticket?.ticket_id?.startsWith('GROUP-')) {
+            setGroupData(null);
+            return;
+        }
+        fetch(apiUrl(`/api/tickets/group/${ticket.ticket_id}`))
+            .then(res => res.json())
+            .then(data => data.success ? setGroupData(data.data) : setGroupData(null))
+            .catch(() => setGroupData(null));
+    }, [ticket?.ticket_id]);
+
     // Fetch group with children when viewing a GROUP master
     useEffect(() => {
-        if (ticket?.ticket_id?.startsWith('GROUP-')) {
-            fetch(apiUrl(`/api/tickets/group/${ticket.ticket_id}`))
-                .then(res => res.json())
-                .then(data => data.success ? setGroupData(data.data) : setGroupData(null))
-                .catch(() => setGroupData(null));
-        } else {
-            setGroupData(null);
-        }
-    }, [ticket?.ticket_id]);
+        refetchGroupData();
+    }, [refetchGroupData]);
 
     useEffect(() => {
         let active = true;
@@ -220,6 +230,26 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
         }
     };
 
+    // Group membership/metadata mutations. After the parent persists + refetches the list,
+    // we also refresh this pane's group data so the change is visible without reopening.
+    const handleAddTicketsSubmit = async (mid, ids) => {
+        const result = await onAddTicketsToGroup?.(mid, ids);
+        if (result?.success) refetchGroupData();
+        return result;
+    };
+
+    const handleEditGroupSubmit = async (mid, fields) => {
+        const result = await onEditGroupDetails?.(mid, fields);
+        if (result?.success) refetchGroupData();
+        return result;
+    };
+
+    // For a GROUP master, prefer freshly-fetched groupData for the display fields so edits
+    // reflect immediately (the `ticket` prop is the stale list snapshot until reopened).
+    const groupDisplayTitle = isGroupMaster && groupData ? (groupData.address ?? ticket.address) : ticket.address;
+    const groupDisplaySummary = isGroupMaster && groupData ? (groupData.concern ?? ticket.concern) : ticket.concern;
+    const displayCategory = isGroupMaster && groupData ? (groupData.category ?? ticket.category) : ticket.category;
+
     return (
         <div
             className="ticket-modal-overlay"
@@ -321,7 +351,7 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
 
                     <div className="detail-group">
                         <label>Issue Category</label>
-                        <p className="detail-value category-highlight">{ticket.category}</p>
+                        <p className="detail-value category-highlight">{displayCategory}</p>
                     </div>
                     
                     <div className="detail-group full-width">
@@ -365,13 +395,13 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     {isGroupMaster && (
                         <div className="detail-group full-width">
                             <label>Group Title</label>
-                            <p className="detail-value">{ticket.address}</p>
+                            <p className="detail-value">{groupDisplayTitle}</p>
                         </div>
                     )}
                     <div className="detail-group">
                         <label>{isGroupMaster ? 'Summary / Remarks' : "User's Concern"}</label>
                         <div className="concern-box">
-                            {ticket.concern}
+                            {isGroupMaster ? groupDisplaySummary : ticket.concern}
                         </div>
                     </div>
 
@@ -405,6 +435,18 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                                     {formatTicketStatusLabel(c.status)}
                                                 </span>
                                             </div>
+                                            {(c.service_memo_id || c.assigned_crew) && (
+                                                <div className="group-child-badges">
+                                                    {c.service_memo_id && (
+                                                        <span className="child-badge child-badge-memo" title="Has a service memo">Memo</span>
+                                                    )}
+                                                    {c.assigned_crew && (
+                                                        <span className="child-badge child-badge-crew" title={`Assigned crew: ${c.assigned_crew}`}>
+                                                            {c.assigned_crew}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </li>
                                     );
                                 })}
@@ -476,10 +518,50 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                         </>
                     )}
                     
+                    {/* Ungroup for Pending groups/children lives here since the status-action
+                        block below only renders for non-Pending statuses. */}
+                    {(isGroupMaster || isGroupChild) && ticket.status === 'Pending' && mainTicketId && onUngroup && (
+                        <button
+                            type="button"
+                            className="btn-action btn-ungroup"
+                            onClick={() => setIsUngroupConfirmOpen(true)}
+                            title="Ungroup"
+                        >
+                            Ungroup
+                        </button>
+                    )}
+
+                    {/* Group management actions (membership/metadata) — only meaningful for a
+                        Pending GROUP master, before any dispatch has occurred. */}
+                    {isGroupMaster && ticket.status === 'Pending' && (
+                        <>
+                            {onEditGroupDetails && (
+                                <button
+                                    type="button"
+                                    className="btn-action btn-edit"
+                                    onClick={() => setIsEditGroupOpen(true)}
+                                    title="Edit Group Details"
+                                >
+                                    Edit Group
+                                </button>
+                            )}
+                            {onAddTicketsToGroup && (
+                                <button
+                                    type="button"
+                                    className="btn-action btn-ongoing"
+                                    onClick={() => setIsAddTicketOpen(true)}
+                                    title="Add Tickets to Group"
+                                >
+                                    Add Ticket
+                                </button>
+                            )}
+                        </>
+                    )}
+
                     {!isGroupChild && (!ticket.service_memo_id || isGroupMaster) && (
                         <button
                             type="button"
-                            className="btn-action btn-create-memo"
+                            className="btn-action btn-create-memo btn-create-memo-full"
                             onClick={handleCreateServiceMemo}
                             disabled={isMemoCreating}
                             title="Create Service Memo"
@@ -529,7 +611,10 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                                 <button
                                     className="btn-action btn-ungroup"
                                     onClick={() => setIsUngroupConfirmOpen(true)}
-                                    title="Ungroup"
+                                    disabled={ticket.status === 'Ongoing'}
+                                    title={ticket.status === 'Ongoing'
+                                        ? 'Cannot ungroup while the group is Ongoing. Resolve or hold the group first.'
+                                        : 'Ungroup'}
                                 >
                                     Ungroup
                                 </button>
@@ -630,6 +715,20 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                 }}
             />
 
+            <EditGroupDetailsModal
+                isOpen={isEditGroupOpen}
+                onClose={() => setIsEditGroupOpen(false)}
+                group={groupData || ticket}
+                onSubmit={handleEditGroupSubmit}
+            />
+
+            <AddTicketToGroupModal
+                isOpen={isAddTicketOpen}
+                onClose={() => setIsAddTicketOpen(false)}
+                group={groupData || ticket}
+                onSubmit={handleAddTicketsSubmit}
+            />
+
             <ConfirmModal
                 isOpen={isDeleteConfirmOpen}
                 onClose={() => setIsDeleteConfirmOpen(false)}
@@ -651,7 +750,16 @@ const TicketDetailPane = ({ ticket, onUpdateTicket, onDispatchGroup, onUngroup, 
                     onUngroup?.(mainTicketId);
                 }}
                 title="Dissolve Group"
-                message="All tickets will become standalone. Continue?"
+                message={
+                    <>
+                        {children.length > 0
+                            ? `${children.length} ticket${children.length === 1 ? '' : 's'} will become standalone`
+                            : 'All member tickets will become standalone'}
+                        {`. Each ticket keeps its current status.`}
+                        <br />
+                        Service memos already created stay attached to their individual tickets. Continue?
+                    </>
+                }
                 confirmLabel="Dissolve"
                 cancelLabel="Cancel"
                 variant="ungroup"

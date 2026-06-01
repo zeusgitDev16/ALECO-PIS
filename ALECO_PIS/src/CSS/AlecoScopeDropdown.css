@@ -28,8 +28,8 @@
     padding: 12px 15px;
     font-size: 15px;
     color: var(--text-main);
-    background-color: var(--bg-body);
-    border: 1px solid var(--text-secondary);
+    background-color: var(--bg-body, #f8f9fa);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
     border-radius: 8px;
     outline: none;
     box-sizing: border-box;
@@ -74,8 +74,8 @@
     padding: 12px 15px;
     font-size: 15px;
     color: var(--text-main);
-    background-color: var(--bg-body);
-    border: 1px solid var(--text-secondary);
+    background-color: var(--bg-body, #f8f9fa);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
     border-radius: 8px;
     outline: none;
     box-sizing: border-box;
@@ -90,6 +90,12 @@
 .location-select:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+[data-theme="dark"] .location-select:disabled {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #64748b;
 }
 
 /* --- SELECTION PREVIEW (Shows selected location) --- */
@@ -288,7 +294,24 @@
     box-shadow: 0 0 0 3px rgba(41, 121, 255, 0.15);
 }
 
+/* Light mode specific adjustments */
+[data-theme="light"] .location-select,
+[data-theme="light"] .location-search-input,
+[data-theme="light"] .selection-preview {
+    background-color: #f8f9fa;
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #111;
+}
+
 /* Dark mode specific adjustments */
+[data-theme="dark"] .location-select,
+[data-theme="dark"] .location-search-input,
+[data-theme="dark"] .selection-preview {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #e5e5e5;
+}
+
 [data-theme="dark"] .location-select:focus,
 [data-theme="dark"] .location-search-input:focus,
 [data-theme="dark"] .filter-dropdown:focus {

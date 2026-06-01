@@ -206,6 +206,12 @@ body.map-picker-open .manual-ticket-modal-container {
     border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
     border-radius: calc(8px * var(--manual-ticket-ui-scale, 1));
     overflow: hidden;
+    background: var(--bg-body, #f8f9fa);
+}
+
+[data-theme="dark"] .map-picker-wrapper {
+    background: #1e293b;
+    border-color: #334155;
 }
 
 /* Draft Preview */
@@ -408,8 +414,8 @@ body.map-picker-open .manual-ticket-modal-container {
 [data-theme="dark"] .manual-ticket-modal-container,
 [data-theme="dark"] .manual-ticket-modal-header,
 [data-theme="dark"] .manual-ticket-modal-footer {
-    background: #1a1a1a;
-    border-color: #333;
+    background: #1e293b;
+    border-color: #334155;
 }
 
 [data-theme="dark"] .header-title {
@@ -422,8 +428,8 @@ body.map-picker-open .manual-ticket-modal-container {
 
 [data-theme="dark"] .form-field input[type="text"],
 [data-theme="dark"] .form-field textarea {
-    background: #2a2a2a;
-    border-color: #333;
+    background: #1e293b;
+    border-color: #334155;
     color: #e5e5e5;
 }
 
@@ -436,18 +442,18 @@ body.map-picker-open .manual-ticket-modal-container {
 [data-theme="dark"] .btn-gps-clear,
 [data-theme="dark"] .draft-edit-btn,
 [data-theme="dark"] .draft-delete-btn {
-    background: #2a2a2a;
-    border-color: #333;
+    background: #1e293b;
+    border-color: #334155;
     color: #e5e5e5;
 }
 
 [data-theme="dark"] .draft-item {
-    background: #2a2a2a;
-    border-color: #333;
+    background: #1e293b;
+    border-color: #334155;
 }
 
 [data-theme="dark"] .draft-empty {
-    background: #2a2a2a;
+    background: #1e293b;
 }
 
 /* UploadTheProblem Component - Modular Scale Overrides for ManualTicketModal */

@@ -1137,6 +1137,11 @@
     pointer-events: auto;
 }
 
+[data-theme="dark"] .report-map-picker-modal {
+    background: #1e293b;
+    border-color: #334155;
+}
+
 .report-map-picker-header {
     display: flex;
     align-items: flex-start;

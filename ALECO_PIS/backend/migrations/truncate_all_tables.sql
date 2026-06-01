@@ -91,12 +91,7 @@ ALTER TABLE aleco_feeder_areas AUTO_INCREMENT = 1;
 ALTER TABLE aleco_feeders AUTO_INCREMENT = 1;
 ALTER TABLE aleco_contact_numbers AUTO_INCREMENT = 1;
 ALTER TABLE aleco_urgent_keywords AUTO_INCREMENT = 1;
--- User management tables excluded - no auto-increment reset needed
--- ALTER TABLE access_codes AUTO_INCREMENT = 1;
--- ALTER TABLE password_resets AUTO_INCREMENT = 1;
--- ALTER TABLE aleco_admin_notification_reads AUTO_INCREMENT = 1;
--- ALTER TABLE aleco_admin_notifications AUTO_INCREMENT = 1;
--- ALTER TABLE users AUTO_INCREMENT = 1;
+
 ALTER TABLE aleco_site_settings AUTO_INCREMENT = 1;
 
 -- ============================================================

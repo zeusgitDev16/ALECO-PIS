@@ -5,8 +5,8 @@ import { insertTicketLog } from '../utils/ticketLogHelper.js';
 import { nowPhilippineForMysql } from '../utils/dateTimeUtils.js';
 import { mapTicketRowToDto } from '../utils/ticketDto.js';
 import { requireStaff } from '../middleware/requireRole.js';
-import { normalizeExpectedUpdatedAt } from '../utils/concurrencyControl.js';
-import { syncCrewStatusByTicketId } from '../utils/crewStatusSync.js';
+import { normalizeExpectedUpdatedAt, buildOptimisticWhere } from '../utils/concurrencyControl.js';
+import { syncCrewStatusByTicketId, syncCrewStatus } from '../utils/crewStatusSync.js';
 import { renderLinemanSms, renderConsumerGroupSms } from '../utils/smsTemplate.js';
 
 const router = express.Router();
@@ -291,14 +291,22 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireStaff, async (req, res
         }
 
         const [childRows] = await connection.execute(
-            `SELECT ticket_id, status FROM aleco_tickets WHERE parent_ticket_id = ?`,
+            `SELECT ticket_id, status, assigned_crew FROM aleco_tickets WHERE parent_ticket_id = ?`,
             [mainTicketId]
         );
 
-        // Sync children's status to master's current status, then unlink them
+        // Capture the master's assigned crew too (resolution/hold states may retain a crew reference)
+        const [masterCrewRows] = await connection.execute(
+            `SELECT assigned_crew FROM aleco_tickets WHERE ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        // Unlink children WITHOUT overwriting their status. Each child keeps whatever
+        // status it currently holds so individually-resolved members (e.g. a child marked
+        // Restored while the rest of the group is Unresolved) are not silently reverted.
         const [result] = await connection.execute(
-            `UPDATE aleco_tickets SET status = ?, parent_ticket_id = NULL, visit_order = NULL WHERE parent_ticket_id = ?`,
-            [masterStatus, mainTicketId]
+            `UPDATE aleco_tickets SET parent_ticket_id = NULL, visit_order = NULL WHERE parent_ticket_id = ?`,
+            [mainTicketId]
         );
 
         // Delete the GROUP master record
@@ -309,29 +317,46 @@ router.put('/tickets/group/:mainTicketId/ungroup', requireStaff, async (req, res
 
         await connection.commit();
 
-        const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
-        const actorName = req.body?.actor_name || req.headers['x-user-name'];
+        // Crew status sync: after dissolving the group the master row no longer exists,
+        // so re-evaluate every crew that was referenced by the master or its (now standalone)
+        // children. This keeps "Deployed"/"Available" accurate when the group was in a
+        // post-dispatch state (e.g. Unresolved) at ungroup time.
+        const crewsToSync = new Set();
+        if (masterCrewRows[0]?.assigned_crew) crewsToSync.add(masterCrewRows[0].assigned_crew);
         for (const child of childRows) {
-            if (child.status !== masterStatus) {
-                await insertTicketLog(pool, {
-                    ticket_id: child.ticket_id,
-                    action: 'status_change',
-                    from_status: child.status,
-                    to_status: masterStatus,
-                    actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
-                    actor_email: actorEmail || null,
-                    actor_name: actorName || 'System',
-                    metadata: { reason: 'ungroup_status_sync', main_ticket_id: mainTicketId }
-                });
+            if (child.assigned_crew) crewsToSync.add(child.assigned_crew);
+        }
+        for (const crewName of crewsToSync) {
+            try {
+                await syncCrewStatus(crewName);
+            } catch (crewErr) {
+                console.error(`⚠️ Ungroup crew sync failed for "${crewName}":`, crewErr.message);
             }
         }
 
+        // Audit: log the ungroup event per child. Status is preserved on ungroup, so this
+        // is a membership change (not a status_change). Capture each child's retained status.
+        const actorEmail = req.body?.actor_email || req.headers['x-user-email'];
+        const actorName = req.body?.actor_name || req.headers['x-user-name'];
+        for (const child of childRows) {
+            await insertTicketLog(pool, {
+                ticket_id: child.ticket_id,
+                action: 'group_ungroup',
+                from_status: null,
+                to_status: null,
+                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                actor_email: actorEmail || null,
+                actor_name: actorName || 'System',
+                metadata: { main_ticket_id: mainTicketId, retained_status: child.status }
+            });
+        }
+
         const affected = result.affectedRows || 0;
-        console.log(`✅ UNGROUP: ${mainTicketId} - ${affected} tickets ungrouped, status synced to "${masterStatus}"`);
+        console.log(`✅ UNGROUP: ${mainTicketId} - ${affected} tickets ungrouped (statuses preserved)`);
 
         res.json({
             success: true,
-            message: `Group dissolved. ${affected} tickets ungrouped with status "${masterStatus}".`,
+            message: `Group dissolved. ${affected} ticket${affected === 1 ? '' : 's'} are now standalone and keep their current status.`,
             ungroupedCount: affected
         });
     } catch (error) {
@@ -1102,6 +1127,346 @@ router.put('/tickets/bulk/status', requireStaff, async (req, res) => {
     } catch (error) {
         await connection.rollback();
         console.error("❌ Error bulk updating ticket status:", error);
+        res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+/**
+ * ADD TICKETS TO EXISTING GROUP
+ * Links standalone tickets to an existing GROUP master.
+ * POST /api/tickets/group/:mainTicketId/add-tickets
+ *
+ * Production rules / edge cases handled:
+ *  - Group must exist and be in 'Pending' status (cannot mutate membership after dispatch).
+ *  - Optimistic locking on the master row (expected_updated_at) to avoid racing ungroup/dispatch.
+ *  - Per-ticket validation; invalid candidates are SKIPPED (not fatal) with a reason:
+ *      not_found | soft_deleted | is_group_master | already_grouped
+ *  - Tickets that already carry a service memo are ACCEPTED (memo stays linked to the ticket).
+ *  - routing_batch groups: new tickets are appended after the current max visit_order.
+ *  - Whole operation is transactional; partial success returns added + skipped breakdown.
+ */
+router.post('/tickets/group/:mainTicketId/add-tickets', requireStaff, async (req, res) => {
+    const { mainTicketId } = req.params;
+
+    if (!mainTicketId || !mainTicketId.startsWith('GROUP-')) {
+        return res.status(400).json({ success: false, message: 'Invalid group ID.' });
+    }
+
+    const rawIds = Array.isArray(req.body?.ticket_ids) ? req.body.ticket_ids : null;
+    if (!rawIds || rawIds.length === 0) {
+        return res.status(400).json({ success: false, message: 'ticket_ids must be a non-empty array.' });
+    }
+
+    // Normalize + dedupe; reject non-string entries defensively.
+    const ticketIds = Array.from(new Set(
+        rawIds
+            .filter((id) => typeof id === 'string')
+            .map((id) => id.trim())
+            .filter((id) => id !== '')
+    ));
+    if (ticketIds.length === 0) {
+        return res.status(400).json({ success: false, message: 'No valid ticket IDs provided.' });
+    }
+
+    // Guard: a group can never be nested inside itself or another group.
+    if (ticketIds.some((id) => id.startsWith('GROUP-'))) {
+        return res.status(400).json({ success: false, message: 'Cannot add a GROUP master to a group.' });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // Master must exist and be Pending. Lock the row for the duration of the txn.
+        const [masterRows] = await connection.execute(
+            `SELECT ticket_id, status, group_type, updated_at FROM aleco_tickets WHERE ticket_id = ? FOR UPDATE`,
+            [mainTicketId]
+        );
+        if (masterRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Group not found.' });
+        }
+        const master = masterRows[0];
+
+        if (master.status !== 'Pending') {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: `Cannot add tickets to a group that is "${master.status}". Only Pending groups can be modified.`,
+            });
+        }
+
+        // Optimistic concurrency on the master row.
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+        if (expectedUpdatedAt) {
+            const dbIso = master.updated_at ? new Date(master.updated_at).toISOString() : '';
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (!dbIso || dbIso !== clientIso) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_TICKET',
+                    message: 'This group was updated by someone else. Reload and try again.',
+                    latest: { ticket_id: mainTicketId, updated_at: master.updated_at },
+                });
+            }
+        }
+
+        const isRoutingBatch = (master.group_type || 'similar_incident') === 'routing_batch';
+
+        // Pull every candidate in one query (include deleted_at + parent linkage to classify).
+        const placeholders = ticketIds.map(() => '?').join(', ');
+        const [candidateRows] = await connection.execute(
+            `SELECT ticket_id, parent_ticket_id, deleted_at FROM aleco_tickets WHERE ticket_id IN (${placeholders})`,
+            ticketIds
+        );
+        const candidateMap = new Map(candidateRows.map((r) => [r.ticket_id, r]));
+
+        const toAdd = [];
+        const skipped = [];
+        for (const id of ticketIds) {
+            const row = candidateMap.get(id);
+            if (!row) {
+                skipped.push({ ticket_id: id, reason: 'not_found' });
+                continue;
+            }
+            if (row.deleted_at) {
+                skipped.push({ ticket_id: id, reason: 'soft_deleted' });
+                continue;
+            }
+            if (id.startsWith('GROUP-')) {
+                skipped.push({ ticket_id: id, reason: 'is_group_master' });
+                continue;
+            }
+            if (row.parent_ticket_id && String(row.parent_ticket_id).trim() !== '') {
+                // Already part of some group (could be this one or another) — skip, don't silently move.
+                skipped.push({ ticket_id: id, reason: 'already_grouped' });
+                continue;
+            }
+            toAdd.push(id);
+        }
+
+        if (toAdd.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'No tickets could be added.',
+                addedCount: 0,
+                skipped,
+            });
+        }
+
+        // For routing_batch, append after the current highest visit_order.
+        let nextOrder = null;
+        if (isRoutingBatch) {
+            const [orderRows] = await connection.execute(
+                `SELECT COALESCE(MAX(visit_order), 0) AS maxOrder FROM aleco_tickets WHERE parent_ticket_id = ?`,
+                [mainTicketId]
+            );
+            nextOrder = Number(orderRows[0]?.maxOrder || 0) + 1;
+        }
+
+        const actorEmail = req.body?.actor_email || req.headers['x-user-email'] || null;
+        const actorName = req.body?.actor_name || req.headers['x-user-name'] || null;
+
+        for (const id of toAdd) {
+            const vo = isRoutingBatch ? nextOrder++ : null;
+            await connection.execute(
+                `UPDATE aleco_tickets SET parent_ticket_id = ?, visit_order = ? WHERE ticket_id = ?`,
+                [mainTicketId, vo, id]
+            );
+        }
+
+        // Touch the master so its optimistic token advances for the next editor.
+        await connection.execute(
+            `UPDATE aleco_tickets SET updated_at = CURRENT_TIMESTAMP WHERE ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        await connection.commit();
+
+        // Audit log after commit (non-blocking to the transaction outcome).
+        for (const id of toAdd) {
+            await insertTicketLog(pool, {
+                ticket_id: id,
+                action: 'group_add',
+                from_status: null,
+                to_status: null,
+                actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+                actor_email: actorEmail,
+                actor_name: actorName || 'System',
+                metadata: { main_ticket_id: mainTicketId },
+            });
+        }
+
+        console.log(`✅ GROUP ADD: ${toAdd.length} ticket(s) added to ${mainTicketId}; ${skipped.length} skipped`);
+
+        const skippedNote = skipped.length > 0 ? ` ${skipped.length} skipped.` : '';
+        res.json({
+            success: true,
+            message: `${toAdd.length} ticket(s) added to group.${skippedNote}`,
+            addedCount: toAdd.length,
+            added: toAdd,
+            skipped,
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('❌ Group add-tickets error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+/**
+ * EDIT GROUP DETAILS (metadata only)
+ * Updates the master's display fields without touching child tickets.
+ * PATCH /api/tickets/group/:mainTicketId/details
+ *
+ * Field mapping (mirrors how the detail pane reads a GROUP master):
+ *   title   -> address   (shown as "Group Title")
+ *   summary -> concern   (shown as "Summary / Remarks")
+ *   category-> category
+ *   remarks -> remarks   (internal remarks column, optional)
+ *
+ * Rules:
+ *  - Group must exist and be 'Pending'.
+ *  - Optimistic locking on the master row.
+ *  - At least one editable field must be provided.
+ */
+router.patch('/tickets/group/:mainTicketId/details', requireStaff, async (req, res) => {
+    const { mainTicketId } = req.params;
+
+    if (!mainTicketId || !mainTicketId.startsWith('GROUP-')) {
+        return res.status(400).json({ success: false, message: 'Invalid group ID.' });
+    }
+
+    const { title, category, summary, remarks } = req.body || {};
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [masterRows] = await connection.execute(
+            `SELECT ticket_id, status, updated_at FROM aleco_tickets WHERE ticket_id = ? FOR UPDATE`,
+            [mainTicketId]
+        );
+        if (masterRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Group not found.' });
+        }
+        const master = masterRows[0];
+
+        if (master.status !== 'Pending') {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: `Cannot edit a group that is "${master.status}". Only Pending groups can be edited.`,
+            });
+        }
+
+        const expectedUpdatedAt = normalizeExpectedUpdatedAt(req.body?.expected_updated_at ?? req.body?.expectedUpdatedAt);
+        if (expectedUpdatedAt) {
+            const dbIso = master.updated_at ? new Date(master.updated_at).toISOString() : '';
+            let clientIso = '';
+            try { clientIso = new Date(expectedUpdatedAt).toISOString(); } catch { /* invalid */ }
+            if (!dbIso || dbIso !== clientIso) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    code: 'CONFLICT_STALE_TICKET',
+                    message: 'This group was updated by someone else. Reload and try again.',
+                    latest: { ticket_id: mainTicketId, updated_at: master.updated_at },
+                });
+            }
+        }
+
+        const setClauses = [];
+        const params = [];
+        if (title !== undefined) {
+            const t = String(title).trim();
+            if (t === '') {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'Group title cannot be empty.' });
+            }
+            setClauses.push('address = ?');
+            params.push(t);
+        }
+        if (category !== undefined) {
+            const c = String(category).trim();
+            if (c === '') {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'Category cannot be empty.' });
+            }
+            setClauses.push('category = ?');
+            params.push(c);
+        }
+        if (summary !== undefined) {
+            setClauses.push('concern = ?');
+            params.push(String(summary).trim());
+        }
+        if (remarks !== undefined) {
+            setClauses.push('remarks = ?');
+            params.push(String(remarks).trim());
+        }
+
+        if (setClauses.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'No editable fields provided.' });
+        }
+
+        // Always advance the optimistic token.
+        setClauses.push('updated_at = CURRENT_TIMESTAMP');
+        params.push(mainTicketId);
+
+        await connection.execute(
+            `UPDATE aleco_tickets SET ${setClauses.join(', ')} WHERE ticket_id = ?`,
+            params
+        );
+
+        const [updatedRows] = await connection.execute(
+            `SELECT ticket_id, updated_at FROM aleco_tickets WHERE ticket_id = ?`,
+            [mainTicketId]
+        );
+
+        await connection.commit();
+
+        const actorEmail = req.body?.actor_email || req.headers['x-user-email'] || null;
+        const actorName = req.body?.actor_name || req.headers['x-user-name'] || null;
+        await insertTicketLog(pool, {
+            ticket_id: mainTicketId,
+            action: 'group_edit',
+            from_status: null,
+            to_status: null,
+            actor_type: actorEmail || actorName ? 'dispatcher' : 'system',
+            actor_email: actorEmail,
+            actor_name: actorName || 'System',
+            metadata: {
+                edited_fields: {
+                    ...(title !== undefined ? { title: true } : {}),
+                    ...(category !== undefined ? { category: true } : {}),
+                    ...(summary !== undefined ? { summary: true } : {}),
+                    ...(remarks !== undefined ? { remarks: true } : {}),
+                },
+            },
+        });
+
+        console.log(`✅ GROUP EDIT: ${mainTicketId} details updated`);
+
+        res.json({
+            success: true,
+            message: 'Group details updated.',
+            data: {
+                ticket_id: mainTicketId,
+                updated_at: updatedRows[0]?.updated_at ?? null,
+            },
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('❌ Group edit-details error:', error);
         res.status(500).json({ success: false, message: error.message });
     } finally {
         connection.release();
